@@ -1,0 +1,41 @@
+{
+  "name": "project-saturday",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.24.0",
+  "engines": {
+    "node": "^22.22.2 || ^24.15.0 || >=26.0.0"
+  },
+  "scripts": {
+    "dev": "corepack pnpm --filter @project-saturday/game-content build && corepack pnpm --filter @project-saturday/web dev",
+    "build": "corepack pnpm -r --if-present build && node scripts/verify-build.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.tools.json && corepack pnpm -r --if-present typecheck",
+    "lint": "eslint . --max-warnings 0 && node scripts/check-boundaries.mjs && node scripts/check-localized-copy.mjs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "node --test scripts/check-localized-copy.test.mjs && vitest run",
+    "test:content": "vitest run --project game-content",
+    "test:sim": "vitest run --project game-core --project testkit",
+    "e2e": "corepack pnpm e2e:prepare && cross-env PLAYWRIGHT_BROWSERS_PATH=.playwright-browsers playwright test",
+    "e2e:prepare": "corepack pnpm --filter @project-saturday/game-content build && corepack pnpm --filter @project-saturday/web build",
+    "e2e:install": "cross-env PLAYWRIGHT_BROWSERS_PATH=.playwright-browsers playwright install chromium",
+    "e2e:install:ci": "cross-env PLAYWRIGHT_BROWSERS_PATH=.playwright-browsers playwright install --with-deps chromium",
+    "check": "corepack pnpm typecheck && corepack pnpm lint && corepack pnpm format:check && corepack pnpm test && corepack pnpm test:content && corepack pnpm test:sim && corepack pnpm e2e && corepack pnpm build"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.62.1",
+    "@types/node": "22.20.0",
+    "cross-env": "10.1.0",
+    "eslint": "10.9.1",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "eslint-plugin-react-refresh": "0.5.5",
+    "eslint-plugin-i18next": "6.1.5",
+    "globals": "17.11.0",
+    "prettier": "3.9.6",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.68.0",
+    "vitest": "4.1.11"
+  }
+}

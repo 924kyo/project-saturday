@@ -1,0 +1,45 @@
+{
+  "name": "@project-saturday/game-content",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "source": "./src/index.ts",
+      "default": "./dist/index.js"
+    },
+    "./content": {
+      "types": "./src/content/index.ts",
+      "source": "./src/content/index.ts",
+      "default": "./dist/content/index.js"
+    },
+    "./locales": {
+      "types": "./src/locales/index.ts",
+      "source": "./src/locales/index.ts",
+      "default": "./dist/locales/index.js"
+    },
+    "./schema": {
+      "types": "./src/schema/content.ts",
+      "source": "./src/schema/content.ts",
+      "default": "./dist/schema/content.js"
+    },
+    "./validation": {
+      "types": "./src/validation/index.ts",
+      "source": "./src/validation/index.ts",
+      "default": "./dist/validation/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "test": "vitest run --config vitest.config.ts",
+    "test:content": "vitest run --config vitest.config.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@project-saturday/game-core": "workspace:*",
+    "@formatjs/icu-messageformat-parser": "3.5.17",
+    "zod": "4.4.3"
+  }
+}

@@ -1,0 +1,12 @@
+node_modules/
+dist/
+coverage/
+.corepack/
+.npm-cache/
+.pnpm-store/
+.playwright-browsers/
+playwright-report/
+test-results/
+*.tsbuildinfo
+.DS_Store
+Thumbs.db
