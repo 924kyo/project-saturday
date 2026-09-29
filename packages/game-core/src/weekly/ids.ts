@@ -36,6 +36,12 @@ export const POSITION_TRAINING_ACTION_IDS = Object.freeze([
   'action_wr_route_craft',
   'action_wr_separation',
   'action_wr_catch_point',
+  'action_lb_run_fits',
+  'action_lb_coverage_drops',
+  'action_lb_pressure_package',
+  'action_edge_get_off',
+  'action_edge_hand_fighting',
+  'action_edge_edge_discipline',
 ] as const);
 
 export const POSITION_TRAINING_PROFICIENCY_IDS = Object.freeze([
@@ -51,6 +57,12 @@ export const POSITION_TRAINING_PROFICIENCY_IDS = Object.freeze([
   'proficiency_wr_route_craft',
   'proficiency_wr_separation',
   'proficiency_wr_catch_point',
+  'proficiency_lb_run_fits',
+  'proficiency_lb_coverage_drops',
+  'proficiency_lb_pressure_package',
+  'proficiency_edge_get_off',
+  'proficiency_edge_hand_fighting',
+  'proficiency_edge_edge_discipline',
 ] as const);
 
 export const WEEKLY_ACTION_EFFECT_IDS = Object.freeze([

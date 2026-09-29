@@ -76,12 +76,32 @@ export const POSITION_STAT_IDS = Object.freeze({
     'stat_cb_tackles',
     'stat_cb_missed_tackles',
   ]),
+  position_lb: Object.freeze([
+    'stat_lb_snaps',
+    'stat_lb_tackles',
+    'stat_lb_tackles_for_loss',
+    'stat_lb_sacks',
+    'stat_lb_passes_defended',
+    'stat_lb_interceptions',
+    'stat_lb_yards_allowed',
+    'stat_lb_missed_tackles',
+  ]),
+  position_edge: Object.freeze([
+    'stat_edge_snaps',
+    'stat_edge_pressures',
+    'stat_edge_sacks',
+    'stat_edge_tackles',
+    'stat_edge_tackles_for_loss',
+    'stat_edge_forced_fumbles',
+    'stat_edge_yards_allowed',
+    'stat_edge_missed_tackles',
+  ]),
 } as const satisfies Readonly<Record<PositionId, readonly `stat_${string}`[]>>);
 
 export type PositionStatId = (typeof POSITION_STAT_IDS)[PositionId][number];
 export type PositionRelationshipActorId = 'POSITION_COACH' | 'ROOM_LEADER' | 'DIRECT_COMPETITOR';
 export type PositionLifecycleEligibilityTagId =
-  | `tag_position_${'wr' | 'qb' | 'rb' | 'cb'}`
+  | `tag_position_${'wr' | 'qb' | 'rb' | 'cb' | 'lb' | 'edge'}`
   | `tag_role_${'starter' | 'rotation' | 'reserve' | 'developmental'}`
   | `tag_performance_${'featured' | 'steady' | 'developing'}`
   | `tag_relationship_${'coach' | 'room' | 'competitor'}_${'high' | 'low'}`;

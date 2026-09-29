@@ -27,8 +27,11 @@ function patternsFor(positionId: VNextPositionId, mechanics: CareerVNextMechanic
   const source =
     positionId === 'position_wr'
       ? mechanics.wr.patterns
-      : mechanics[positionId === 'position_qb' ? 'qb' : positionId === 'position_rb' ? 'rb' : 'cb']
-          .patterns;
+      : positionId === 'position_lb' || positionId === 'position_edge'
+        ? mechanics.defenders[positionId].patterns
+        : mechanics[
+            positionId === 'position_qb' ? 'qb' : positionId === 'position_rb' ? 'rb' : 'cb'
+          ].patterns;
   return [...(source as readonly SidelinePattern[])].sort((left, right) =>
     left.id.localeCompare(right.id),
   );

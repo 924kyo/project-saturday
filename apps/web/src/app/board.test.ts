@@ -5,6 +5,7 @@ import {
   qbAlphaContent,
   rbAlphaContent,
 } from '@project-saturday/game-content';
+import { edgeContent, lbContent } from '@project-saturday/game-content/content';
 import { describe, expect, it } from 'vitest';
 
 import { buildScene, pathD, resultMotion, techniquePath } from './board';
@@ -14,6 +15,8 @@ const catalogs: Readonly<Record<VNextPositionId, readonly { readonly id: string 
   position_rb: rbAlphaContent.decisions,
   position_wr: gameContent.decisions,
   position_cb: cbAlphaContent.decisions,
+  position_lb: lbContent.decisions,
+  position_edge: edgeContent.decisions,
 };
 
 function frame(positionId: VNextPositionId, decisionIds: readonly string[]): SnapBoardFrame {
@@ -29,7 +32,9 @@ function frame(positionId: VNextPositionId, decisionIds: readonly string[]): Sna
     situation: {
       period: 2,
       secondsRemaining: 300,
-      offense: positionId === 'position_cb' ? 'OPPONENT' : 'PLAYER',
+      offense: ['position_cb', 'position_lb', 'position_edge'].includes(positionId)
+        ? 'OPPONENT'
+        : 'PLAYER',
       down: 2,
       distanceYards: 7,
       lineOfScrimmageYards: 42,

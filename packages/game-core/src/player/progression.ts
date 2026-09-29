@@ -3,9 +3,13 @@ import { ATTRIBUTE_PROGRESS_XP_BOUNDS, ATTRIBUTE_RATING_BOUNDS } from './bounds.
 import { deepFreeze } from './immutable.js';
 import {
   CB_ATTRIBUTE_IDS,
+  EDGE_ATTRIBUTE_IDS,
+  LB_ATTRIBUTE_IDS,
   MENTAL_ATTRIBUTE_IDS,
   PHYSICAL_ATTRIBUTE_IDS,
   POSITION_CB_ID,
+  POSITION_EDGE_ID,
+  POSITION_LB_ID,
   POSITION_QB_ID,
   POSITION_RB_ID,
   POSITION_WR_ID,
@@ -64,6 +68,10 @@ export function getPositionAttributeIds(
       return RB_ATTRIBUTE_IDS;
     case POSITION_CB_ID:
       return CB_ATTRIBUTE_IDS;
+    case POSITION_LB_ID:
+      return LB_ATTRIBUTE_IDS;
+    case POSITION_EDGE_ID:
+      return EDGE_ATTRIBUTE_IDS;
   }
 }
 

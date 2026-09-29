@@ -156,3 +156,4 @@ export {
   programIdentityVNext,
   type ProgramIdentityVNext,
 } from './vnext.js';
+export { defenderCatalog, edgeContent, lbContent, type DefenderContent } from './defenders.js';

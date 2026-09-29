@@ -10,6 +10,11 @@ import { cloneSerializable } from '../player/immutable.js';
 import type { PlayerState } from '../player/types.js';
 import { createRng, nextUint32, type RngState } from '../random/rng.js';
 import { selectCbEvent, getAvailableCbEventChoices } from '../games/cb-events.js';
+import {
+  getAvailableDefenderEventChoices,
+  resolveDefenderEventChoice,
+  selectDefenderEvent,
+} from '../games/defender-events.js';
 import { selectQbEvent, getAvailableQbEventChoices } from '../games/qb-events.js';
 import { selectRbEvent, getAvailableRbEventChoices } from '../games/rb-events.js';
 import { resolvePositionAlphaEventChoiceResult } from '../season/position-alpha-session.js';
@@ -190,6 +195,30 @@ export function attemptWeeklyEventVNext(
         );
   }
   const state = profile.state;
+  if (profile.positionId === 'position_lb' || profile.positionId === 'position_edge') {
+    const catalog = mechanics.defenders[profile.positionId];
+    const selected = selectDefenderEvent(
+      {
+        weekIndex,
+        body: state.body,
+        preparation: state.preparation,
+        confidence: state.confidence,
+        coachTrust: state.coachTrust,
+        gpaMilli: Math.round(state.gpa * 1_000),
+        brand: state.brand,
+        recentEvents: career.condition.recentEvents,
+      },
+      catalog.events,
+      VNEXT_EVENT_CHANCE_PERMILLE,
+      weekStream(career, 'event'),
+    );
+    if (selected.event === undefined) return null;
+    const owned = catalog.skills.filter(({ id }) => equipped(career).includes(id));
+    return pending(
+      selected.event.id,
+      getAvailableDefenderEventChoices(selected.event, owned).map(({ id }) => id),
+    );
+  }
   const context = {
     weekIndex,
     body: state.body,
@@ -305,6 +334,47 @@ export function resolveWeeklyEventChoiceVNext(
       gaugeAfter: gauge,
       event: { ...event, chosenChoiceId: choiceId, effects },
       modifiers: NEUTRAL_GAME_MODIFIERS,
+    };
+  }
+  if (profile.positionId === 'position_lb' || profile.positionId === 'position_edge') {
+    const catalog = mechanics.defenders[profile.positionId];
+    const definition = catalog.events.find(({ id }) => id === event.eventId);
+    if (definition === undefined) return null;
+    const resolved = resolveDefenderEventChoice(
+      {
+        weekIndex: event.weekIndex,
+        body: before.body,
+        preparation: before.preparation,
+        confidence: before.confidence,
+        coachTrust: before.coachTrust,
+        gpaMilli: Math.round(before.gpa * 1_000),
+        brand: before.brand,
+        recentEvents: career.condition.recentEvents,
+      },
+      definition,
+      choiceId,
+      catalog.skills.filter(({ id }) => equipped(career).includes(id)),
+    );
+    if (resolved === null) return null;
+    const next = resolved.nextContext;
+    const state: PlayerState = {
+      ...before,
+      body: next.body,
+      preparation: next.preparation,
+      confidence: next.confidence,
+      coachTrust: next.coachTrust,
+      gpa: next.gpaMilli / 1_000,
+      brand: next.brand,
+    };
+    return {
+      state,
+      gaugeAfter: gaugeBefore,
+      event: {
+        ...event,
+        chosenChoiceId: choiceId,
+        effects: effectsBetween(before, state, 0, resolved.gameModifiers),
+      },
+      modifiers: resolved.gameModifiers,
     };
   }
   const result = resolvePositionAlphaEventChoiceResult(

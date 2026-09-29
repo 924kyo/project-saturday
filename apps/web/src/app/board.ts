@@ -31,10 +31,18 @@ export interface Scene {
   readonly wr: Pt;
   readonly wr2: Pt;
   readonly cb: Pt;
+  readonly lb: Pt;
+  readonly edge: Pt;
   readonly safeties: readonly Pt[];
   readonly athlete: Pt;
   readonly playerOnOffense: boolean;
   readonly gapLabels: readonly Pt[];
+}
+
+export function isDefense(positionId: VNextPositionId): boolean {
+  return (
+    positionId === 'position_cb' || positionId === 'position_lb' || positionId === 'position_edge'
+  );
 }
 
 export function buildScene(
@@ -80,10 +88,13 @@ export function buildScene(
         { x: los + 124, y: 70 },
         { x: los + 124, y: 150 },
       ];
+  const edge = { x: los + 8, y: MID - 40 };
+  const lb = { x: los + 46, y: MID };
   const defense: Pt[] = [
-    ...[-30, -10, 10, 30].map((dy) => ({ x: los + 8, y: MID + dy })),
+    edge,
+    ...[-10, 10, 32].map((dy) => ({ x: los + 8, y: MID + dy })),
     { x: los + 46, y: 82 },
-    { x: los + 46, y: MID },
+    lb,
     { x: los + 46, y: 138 },
     cb,
     { x: los + 44, y: 176 },
@@ -96,7 +107,11 @@ export function buildScene(
         ? rb
         : positionId === 'position_wr'
           ? wr
-          : cb;
+          : positionId === 'position_lb'
+            ? lb
+            : positionId === 'position_edge'
+              ? edge
+              : cb;
   const firstDown =
     situation !== null && situation.firstDownYards < 100 ? x(situation.firstDownYards) : null;
   return {
@@ -112,10 +127,11 @@ export function buildScene(
     wr,
     wr2,
     cb,
+    lb,
+    edge,
     safeties,
     athlete,
-    playerOnOffense:
-      situation === null ? positionId !== 'position_cb' : situation.offense === 'PLAYER',
+    playerOnOffense: situation === null ? !isDefense(positionId) : situation.offense === 'PLAYER',
     gapLabels: [
       { x: los + 4, y: MID - 6 },
       { x: los + 4, y: MID - 18 },
@@ -131,8 +147,8 @@ const at = (p: Pt, dx: number, dy: number): Pt => ({ x: p.x + dx, y: p.y + dy })
 
 /** Schematic drawing of each authored technique (never an outcome). */
 export function techniquePath(scene: Scene, decisionId: string, index: number): TechniquePath {
-  const { los, qb: q, rb: r, wr: w, cb: c } = scene;
-  const id = decisionId.replace(/^key_snap_decision_(qb_|rb_|cb_)?/u, '');
+  const { los, qb: q, rb: r, wr: w, cb: c, lb: l, edge: e } = scene;
+  const id = decisionId.replace(/^key_snap_decision_(qb_|rb_|cb_|lb_|edge_)?/u, '');
   switch (id) {
     // WR release / route / catch point / after the catch
     case 'speed_release':
@@ -234,6 +250,56 @@ export function techniquePath(scene: Scene, decisionId: string, index: number): 
       return route(c, at(c, 10, -12));
     case 'attack_strip':
       return route(c, at(c, 34, 10));
+    // LB key / fit / drop / blitz (the defense faces the offense, so attacking is toward -x)
+    case 'trust_guard':
+      return route(l, at(l, -20, -18));
+    case 'trigger_downhill':
+      return route(l, { x: los + 4, y: MID - 12 });
+    case 'read_backfield':
+      return route(l, at(l, -8, 0));
+    case 'fill_gap':
+      return route(l, { x: los + 6, y: MID - 18 });
+    case 'spill_outside':
+      return route(l, { x: los + 10, y: MID - 50 }, { x: los - 6, y: MID - 66 });
+    case 'scrape_over':
+      return route(l, at(l, -10, -40), { x: los + 2, y: MID - 62 });
+    case 'hook_curl_depth':
+      return route(l, at(l, 40, -24));
+    case 'match_back':
+      return route(l, at(l, 10, 50), at(l, 60, 64));
+    case 'rob_crosser':
+      return route(l, at(l, 30, -6));
+    case 'a_gap_mug':
+      return route(l, { x: los + 2, y: MID - 6 }, { x: q.x + 10, y: MID });
+    case 'delay_blitz':
+      return route(l, at(l, 0, 10), { x: los, y: MID + 14 }, { x: q.x + 8, y: MID + 4 });
+    case 'peel_with_back':
+      return route(l, { x: los + 10, y: MID + 30 }, { x: los + 30, y: MID + 60 });
+    // EDGE rush / contain / option / finish
+    case 'speed_dip':
+      return route(e, { x: los - 20, y: MID - 52 }, { x: q.x + 4, y: q.y - 8 });
+    case 'long_arm':
+      return route(e, at(e, -18, 4), { x: q.x + 10, y: q.y - 14 });
+    case 'contain_rush':
+      return route(e, at(e, -30, -10), at(e, -44, 6));
+    case 'set_hard_edge':
+      return route(e, at(e, -6, -6));
+    case 'squeeze_down':
+      return route(e, at(e, -8, 22));
+    case 'chase_flat':
+      return route(e, at(e, -20, 30), { x: los - 6, y: MID + 40 });
+    case 'take_dive':
+      return route(e, { x: los - 14, y: MID - 8 });
+    case 'take_quarterback':
+      return route(e, at(e, -24, -6));
+    case 'slow_play':
+      return route(e, at(e, -4, -14), at(e, -28, -20));
+    case 'wrap_sack':
+      return route(e, { x: q.x + 6, y: q.y - 6 });
+    case 'strip_swipe':
+      return route(e, { x: q.x + 8, y: q.y - 14 }, at(q, 2, -2));
+    case 'get_hands_up':
+      return route(e, at(e, -10, 6));
     default:
       return route(scene.athlete, at(scene.athlete, 60, [-30, 0, 30][index % 3]!));
   }
@@ -334,6 +400,19 @@ export function resultMotion(
       athlete:
         result.playResultId === 'INTERCEPTION' ? `${techniqueD} L${end.x} ${end.y}` : techniqueD,
       ball: result.playResultId === 'NO_TARGET' ? null : pathD(throwTo(scene.qb, target)),
+      end,
+      tag,
+    };
+  }
+  if (positionId === 'position_lb' || positionId === 'position_edge') {
+    // Front seven: the technique, then the saved spot; pass results draw the saved throw.
+    const end = spotX === null ? last : { x: spotX, y: last.y };
+    const thrown = ['PASS_DEFENDED', 'INTERCEPTION', 'PRESSURE', 'GAIN_ALLOWED'].includes(
+      result.playResultId,
+    );
+    return {
+      athlete: techniqueD,
+      ball: thrown ? pathD(throwTo(scene.qb, end)) : null,
       end,
       tag,
     };

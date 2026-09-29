@@ -33,6 +33,8 @@ const archetypes: Readonly<Record<PositionId, PlayerArchetypeId>> = {
   position_qb: 'archetype_qb_field_general',
   position_rb: 'archetype_rb_all_purpose',
   position_cb: 'archetype_cb_zone_technician',
+  position_lb: 'archetype_lb_run_stopper',
+  position_edge: 'archetype_edge_speed_rusher',
 };
 
 const actions: Readonly<Record<PositionId, string>> = {
@@ -40,6 +42,8 @@ const actions: Readonly<Record<PositionId, string>> = {
   position_qb: 'action_qb_delivery_work',
   position_rb: 'action_rb_third_down_work',
   position_cb: 'action_cb_zone_recognition',
+  position_lb: 'action_lb_coverage_drops',
+  position_edge: 'action_edge_edge_discipline',
 };
 
 const currentProgramId = worldAlphaMechanicsDefinition.programProfiles[0]!.programId;
@@ -133,6 +137,8 @@ function offseasonWorld(seasonIndex = 0): WorldAlphaOffseasonProjection {
           position_qb: Math.min(95, profile.positionRatings.position_qb + (index % 3)),
           position_rb: Math.min(95, profile.positionRatings.position_rb + (index % 3)),
           position_cb: Math.min(95, profile.positionRatings.position_cb + (index % 3)),
+          position_lb: Math.min(95, profile.positionRatings.position_lb + (index % 3)),
+          position_edge: Math.min(95, profile.positionRatings.position_edge + (index % 3)),
         },
       },
     })),
@@ -166,8 +172,8 @@ describe('M7 four-position lifecycle foundation', () => {
       ),
     );
     expect(risks.every((risk) => risk !== null)).toBe(true);
-    expect(risks.map((risk) => risk!.positionExposurePermille)).toEqual([42, 34, 62, 48]);
-    expect(new Set(risks.map((risk) => risk!.totalRiskPermille)).size).toBe(4);
+    expect(risks.map((risk) => risk!.positionExposurePermille)).toEqual([42, 34, 62, 48, 56, 58]);
+    expect(new Set(risks.map((risk) => risk!.totalRiskPermille)).size).toBe(6);
     expect(risks[2]!.totalRiskPermille).toBeGreaterThan(risks[1]!.totalRiskPermille);
 
     const limited = derivePositionInjuryExposure(

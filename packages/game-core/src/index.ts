@@ -243,6 +243,10 @@ export {
   CREATION_STATE_IDS,
   CB_ARCHETYPE_IDS,
   CB_ATTRIBUTE_IDS,
+  EDGE_ARCHETYPE_IDS,
+  EDGE_ATTRIBUTE_IDS,
+  LB_ARCHETYPE_IDS,
+  LB_ATTRIBUTE_IDS,
   MENTAL_ATTRIBUTE_IDS,
   MULTI_POSITION_ATTRIBUTE_IDS,
   PERSONALITY_TRAIT_IDS,
@@ -252,6 +256,8 @@ export {
   PLAYER_ARCHETYPE_IDS,
   POSITION_IDS,
   POSITION_CB_ID,
+  POSITION_EDGE_ID,
+  POSITION_LB_ID,
   POSITION_QB_ID,
   POSITION_RB_ID,
   POSITION_WR_ID,
@@ -268,6 +274,8 @@ export {
   isCareerId,
   isCreationStateId,
   isCbArchetypeId,
+  isEdgeArchetypeId,
+  isLbArchetypeId,
   isMultiPositionAttributeId,
   isPersonalityTraitId,
   isPlayerAttributeId,
@@ -286,6 +294,10 @@ export {
   type CareerId,
   type CbArchetypeId,
   type CbAttributeId,
+  type EdgeArchetypeId,
+  type EdgeAttributeId,
+  type LbArchetypeId,
+  type LbAttributeId,
   type CreationStateId,
   type EyeBlackId,
   type FaceId,
@@ -1311,3 +1323,5 @@ export {
   type WrMetaRegistryEntryV1,
 } from './season/wr-meta-registry.js';
 export * from './vnext/index.js';
+export * from './games/defender.js';
+export * from './games/defender-events.js';

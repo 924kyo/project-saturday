@@ -4,6 +4,10 @@ import {
   CAREER_SCHEMA_VERSION_V7,
   CAREER_SESSION_SCHEMA_VERSION_V7,
   CB_ARCHETYPE_IDS,
+  EDGE_ARCHETYPE_IDS,
+  EDGE_ATTRIBUTE_IDS,
+  LB_ARCHETYPE_IDS,
+  LB_ATTRIBUTE_IDS,
   CB_ATTRIBUTE_IDS,
   MULTI_POSITION_ATTRIBUTE_IDS,
   PLAYER_ARCHETYPE_IDS,
@@ -135,19 +139,30 @@ describe('CareerRun schema v7 compatibility checkpoint', () => {
     expectDeepFrozen(v7);
   });
 
-  it('reserves canonical four-position identifiers without activating non-WR player saves', () => {
-    expect(POSITION_IDS).toEqual(['position_wr', 'position_qb', 'position_rb', 'position_cb']);
+  it('reserves canonical position identifiers without activating non-WR player saves', () => {
+    expect(POSITION_IDS).toEqual([
+      'position_wr',
+      'position_qb',
+      'position_rb',
+      'position_cb',
+      'position_lb',
+      'position_edge',
+    ]);
     expect(PLAYER_ARCHETYPE_IDS).toEqual([
       ...WR_ARCHETYPE_IDS,
       ...QB_ARCHETYPE_IDS,
       ...RB_ARCHETYPE_IDS,
       ...CB_ARCHETYPE_IDS,
+      ...LB_ARCHETYPE_IDS,
+      ...EDGE_ARCHETYPE_IDS,
     ]);
     expect(MULTI_POSITION_ATTRIBUTE_IDS).toEqual([
       ...PLAYER_ATTRIBUTE_IDS,
       ...QB_ATTRIBUTE_IDS,
       ...RB_ATTRIBUTE_IDS,
       ...CB_ATTRIBUTE_IDS,
+      ...LB_ATTRIBUTE_IDS,
+      ...EDGE_ATTRIBUTE_IDS,
     ]);
     expect(new Set(MULTI_POSITION_ATTRIBUTE_IDS).size).toBe(MULTI_POSITION_ATTRIBUTE_IDS.length);
     expect(PLAYER_ATTRIBUTE_IDS).toEqual(expect.arrayContaining([...WR_ATTRIBUTE_IDS]));

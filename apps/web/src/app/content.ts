@@ -12,7 +12,9 @@ import {
 } from '@project-saturday/game-content';
 import {
   buildCareerVNextMechanics,
+  edgeContent,
   eventContent,
+  lbContent,
   injuryContent,
   programIdentityVNext,
   type ProgramIdentityVNext,
@@ -36,6 +38,8 @@ export const VNEXT_POSITIONS: readonly VNextPositionId[] = [
   'position_rb',
   'position_wr',
   'position_cb',
+  'position_lb',
+  'position_edge',
 ];
 
 export const POSITION_ABBR_KEYS = {
@@ -43,18 +47,24 @@ export const POSITION_ABBR_KEYS = {
   position_rb: 'v2.position.rb.abbr',
   position_wr: 'v2.position.wr.abbr',
   position_cb: 'v2.position.cb.abbr',
+  position_lb: 'v2.position.lb.abbr',
+  position_edge: 'v2.position.edge.abbr',
 } as const satisfies Record<VNextPositionId, MessageKey>;
 export const POSITION_PITCH_KEYS = {
   position_qb: 'v2.position.qb.pitch',
   position_rb: 'v2.position.rb.pitch',
   position_wr: 'v2.position.wr.pitch',
   position_cb: 'v2.position.cb.pitch',
+  position_lb: 'v2.position.lb.pitch',
+  position_edge: 'v2.position.edge.pitch',
 } as const satisfies Record<VNextPositionId, MessageKey>;
 export const POSITION_NAME_KEYS = {
   position_qb: 'v2.position.qb.name',
   position_rb: 'v2.position.rb.name',
   position_wr: 'v2.position.wr.name',
   position_cb: 'v2.position.cb.name',
+  position_lb: 'v2.position.lb.name',
+  position_edge: 'v2.position.edge.name',
 } as const satisfies Record<VNextPositionId, MessageKey>;
 
 interface Named {
@@ -73,6 +83,8 @@ const CATALOGS: Readonly<Record<VNextPositionId, GameCatalog>> = {
   position_rb: rbAlphaContent as unknown as GameCatalog,
   position_wr: gameContent as unknown as GameCatalog,
   position_cb: cbAlphaContent as unknown as GameCatalog,
+  position_lb: lbContent as unknown as GameCatalog,
+  position_edge: edgeContent as unknown as GameCatalog,
 };
 
 function named(list: readonly Named[], id: string): Named {
@@ -287,6 +299,20 @@ export const VERDICT_KEYS = {
   F: 'v2.post.verdict.f',
 } as const satisfies Record<'A' | 'B' | 'C' | 'D' | 'F', MessageKey>;
 
+/** LB and EDGE share the front-seven result vocabulary, so they share its headlines. */
+const DEFENDER_PLAY_KEYS: Readonly<Record<string, MessageKey>> = {
+  NO_PLAY: 'v2.play.def.noPlay',
+  STOP: 'v2.play.def.stop',
+  LOSS: 'v2.play.def.loss',
+  SACK: 'v2.play.def.sack',
+  PRESSURE: 'v2.play.def.pressure',
+  PASS_DEFENDED: 'v2.play.def.passDefended',
+  INTERCEPTION: 'v2.play.def.interception',
+  FORCED_FUMBLE: 'v2.play.def.forcedFumble',
+  GAIN_ALLOWED: 'v2.play.def.gainAllowed',
+  MISSED_TACKLE: 'v2.play.def.missedTackle',
+};
+
 const PLAY_KEYS: Readonly<Record<string, MessageKey>> = {
   'position_qb:COMPLETION': 'v2.play.qb.completion',
   'position_qb:INCOMPLETION': 'v2.play.qb.incompletion',
@@ -310,6 +336,14 @@ const PLAY_KEYS: Readonly<Record<string, MessageKey>> = {
   'position_cb:INTERCEPTION': 'v2.play.cb.interception',
   'position_cb:TACKLE': 'v2.play.cb.tackle',
   'position_cb:MISSED_TACKLE': 'v2.play.cb.missedTackle',
+  ...Object.fromEntries(
+    (['position_lb', 'position_edge'] as const).flatMap((positionId) =>
+      Object.entries(DEFENDER_PLAY_KEYS).map(([result, messageKey]) => [
+        `${positionId}:${result}`,
+        messageKey,
+      ]),
+    ),
+  ),
 };
 
 export function playHeadlineKey(positionId: VNextPositionId, playResultId: string): MessageKey {
@@ -327,6 +361,8 @@ const EVENT_TEXT = new Map<string, EventText>(
     ...qbAlphaContent.events,
     ...rbAlphaContent.events,
     ...cbAlphaContent.events,
+    ...lbContent.events.map((event) => ({ ...event, choices: [] })),
+    ...edgeContent.events.map((event) => ({ ...event, choices: [] })),
     ...eventContent.events,
   ].map((event) => [event.id, event as EventText]),
 );
@@ -344,11 +380,11 @@ const camel = (value: string) =>
   value.replace(/_([a-z0-9])/g, (_, letter: string) => letter.toUpperCase());
 
 /**
- * QB/RB/CB shipped choice names are generic ("Commit fully"), so VNext authors a label per event
+ * QB/RB/CB (and LB/EDGE) shipped choice names are generic ("Commit fully"), so VNext authors a label per event
  * choice; WR events already carry specific authored choice copy.
  */
 export function eventChoiceKey(eventId: string, choiceId: string): MessageKey {
-  const shared = /^event_((?:qb|rb|cb)_[a-z0-9_]+)$/.exec(eventId);
+  const shared = /^event_((?:qb|rb|cb|lb|edge)_[a-z0-9_]+)$/.exec(eventId);
   if (shared !== null) return key(`v2.evt.${camel(shared[1]!)}.${choiceId.split('_').at(-1)!}`);
   const choice = EVENT_TEXT.get(eventId)?.choices.find(({ id }) => id === choiceId);
   if (choice === undefined) throw new Error(`Missing event choice presentation for ${choiceId}.`);
@@ -360,6 +396,8 @@ export const EXPOSURE_KEYS = {
   position_rb: 'v2.evt.modExposure.rb',
   position_wr: 'v2.evt.modExposure.wr',
   position_cb: 'v2.evt.modExposure.cb',
+  position_lb: 'v2.evt.modExposure.lb',
+  position_edge: 'v2.evt.modExposure.edge',
 } as const satisfies Record<VNextPositionId, MessageKey>;
 
 const INJURY_TEXT = new Map<string, Named>(
@@ -421,20 +459,25 @@ const WEEKLY_KEYS = new Map(
     .map(({ skillId, descriptionKey }) => [skillId as string, key(descriptionKey)]),
 );
 const CARD_TEXT = new Map<string, CardView>(
-  [...qbAlphaContent.skills, ...rbAlphaContent.skills, ...cbAlphaContent.skills, ...wrSkills].map(
-    (card) => [
-      card.id,
-      {
-        id: card.id,
-        nameKey: key(card.nameKey),
-        descriptionKey: key(card.descriptionKey),
-        gradeKey: GRADE_KEYS[card.gradeId as keyof typeof GRADE_KEYS],
-        gradeLetter: card.gradeId.slice(-1).toUpperCase(),
-        familyKey: FAMILY_KEYS[card.familyId as keyof typeof FAMILY_KEYS],
-        weeklyKey: WEEKLY_KEYS.get(card.id) ?? null,
-      },
-    ],
-  ),
+  [
+    ...qbAlphaContent.skills,
+    ...rbAlphaContent.skills,
+    ...cbAlphaContent.skills,
+    ...lbContent.skills,
+    ...edgeContent.skills,
+    ...wrSkills,
+  ].map((card) => [
+    card.id,
+    {
+      id: card.id,
+      nameKey: key(card.nameKey),
+      descriptionKey: key(card.descriptionKey),
+      gradeKey: GRADE_KEYS[card.gradeId as keyof typeof GRADE_KEYS],
+      gradeLetter: card.gradeId.slice(-1).toUpperCase(),
+      familyKey: FAMILY_KEYS[card.familyId as keyof typeof FAMILY_KEYS],
+      weeklyKey: WEEKLY_KEYS.get(card.id) ?? null,
+    },
+  ]),
 );
 
 export function cardView(id: string): CardView {
@@ -465,6 +508,11 @@ export const STAT_KEYS: Readonly<Record<string, MessageKey>> = {
   touchdownsAllowed: 'v2.stats.tdAllowed',
   passesDefended: 'v2.stats.pbu',
   tackles: 'v2.stats.tackles',
+  tacklesForLoss: 'v2.stats.tfl',
+  sacks: 'v2.stats.sacks',
+  pressures: 'v2.stats.pressures',
+  forcedFumbles: 'v2.stats.forcedFumbles',
+  missedTackles: 'v2.stats.missedTackles',
   drops: 'v2.stats.drops',
   turnovers: 'v2.stats.turnovers',
 };

@@ -18,6 +18,14 @@ import type { WorldAlphaSeasonState } from '../season/world-alpha.js';
 import type { GameStakesVNext } from './stakes.js';
 import type { WrAlphaGameState } from '../games/wr-alpha.js';
 import type {
+  DefenderDecisionDefinition,
+  DefenderGameState,
+  DefenderPatternDefinition,
+  DefenderPositionId,
+  DefenderSkillDefinition,
+} from '../games/defender.js';
+import type { DefenderEventDefinition } from '../games/defender-events.js';
+import type {
   KeySnapFamilyMechanicsDefinition,
   KeySnapPatternMechanicsDefinition,
 } from '../games/types.js';
@@ -42,10 +50,20 @@ export const CAREER_VNEXT_SEASONS = 4 as const;
 export const CAREER_VNEXT_MIN_GAME_DECISIONS = 2 as const;
 
 /** Positions with a VNext game adapter. WR/LB/EDGE join through the same interface. */
-export type VNextPositionId = 'position_qb' | 'position_rb' | 'position_wr' | 'position_cb';
+export type VNextPositionId =
+  'position_qb' | 'position_rb' | 'position_wr' | 'position_cb' | 'position_lb' | 'position_edge';
 
 /** The shipped content bundle; VNext reuses catalogs, not the old aggregate. */
+/** Authored catalogs for a front-seven position (M8). */
+export interface DefenderCatalogVNext {
+  readonly patterns: readonly DefenderPatternDefinition[];
+  readonly decisions: readonly DefenderDecisionDefinition[];
+  readonly skills: readonly (DefenderSkillDefinition & { readonly baseOfferWeight: number })[];
+  readonly events: readonly DefenderEventDefinition[];
+}
+
 export type CareerVNextMechanics = PositionAlphaSessionCommandMechanics & {
+  readonly defenders: Readonly<Record<DefenderPositionId, DefenderCatalogVNext>>;
   readonly wr: {
     readonly events: readonly EventMechanicsDefinition[];
     readonly families: readonly KeySnapFamilyMechanicsDefinition[];
@@ -55,7 +73,9 @@ export type CareerVNextMechanics = PositionAlphaSessionCommandMechanics & {
 
 /** Engine state for any VNext position: shared QB/RB/CB kernels plus the WR kernel. */
 export type VNextGameState =
-  PositionAlphaGameState | { readonly positionId: 'position_wr'; readonly game: WrAlphaGameState };
+  | PositionAlphaGameState
+  | { readonly positionId: 'position_wr'; readonly game: WrAlphaGameState }
+  | { readonly positionId: DefenderPositionId; readonly game: DefenderGameState };
 
 export interface RecruitOfferVNext {
   readonly programId: ProgramId;

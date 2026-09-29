@@ -23,6 +23,8 @@ const archetypeByPosition = {
   position_qb: 'archetype_qb_field_general',
   position_rb: 'archetype_rb_all_purpose',
   position_wr: 'archetype_wr_route_technician',
+  position_lb: 'archetype_lb_run_stopper',
+  position_edge: 'archetype_edge_speed_rusher',
 } as const satisfies Readonly<Record<PositionId, PlayerArchetypeId>>;
 
 function personality(
@@ -104,7 +106,7 @@ function validInput(positionId: PositionId): CreatePositionPlayerProfileInput {
 }
 
 describe('M7 deterministic position player profile creation', () => {
-  it('builds all four strict profiles without RNG or live-career activation', () => {
+  it('builds all six strict profiles without RNG or live-career activation', () => {
     for (const positionId of POSITION_IDS) {
       const input = validInput(positionId);
       const result = createPositionPlayerProfile(input);

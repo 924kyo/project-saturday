@@ -24,6 +24,7 @@ import {
 } from '@project-saturday/game-core';
 
 import { cbAlphaDecisions, cbAlphaEvents, cbAlphaPatterns, cbAlphaSkills } from './cb-alpha.js';
+import { edgeContent, lbContent } from './defenders.js';
 import { injuryOutcomeMechanicsDefinitions, injuryTuning } from './injuries.js';
 import { positionCommonFocusDefinitions, positionFocusInjuryPolicies } from './position-focus.js';
 import { positionSkillBuilds, positionSkillActionTags } from './position-skill-builds.js';
@@ -55,18 +56,28 @@ export function buildShippedPositionAlphaSessionFoundation(
   });
   const room = buildPositionRoomMechanics(input.identity.positionId);
   if (!creation.ok || room === undefined) return null;
+  const positionId: string = input.identity.positionId;
+  const defender =
+    positionId === 'position_lb' ? lbContent : positionId === 'position_edge' ? edgeContent : null;
   const skillIds =
-    input.identity.positionId === 'position_qb'
-      ? qbAlphaSkills.map(({ id }) => id)
-      : input.identity.positionId === 'position_rb'
-        ? rbAlphaSkills.map(({ id }) => id)
-        : cbAlphaSkills.map(({ id }) => id);
-  const events =
-    input.identity.positionId === 'position_qb'
-      ? qbAlphaEvents
-      : input.identity.positionId === 'position_rb'
-        ? rbAlphaEvents
-        : cbAlphaEvents;
+    defender !== null
+      ? defender.skills.map(({ id }) => id)
+      : positionId === 'position_qb'
+        ? qbAlphaSkills.map(({ id }) => id)
+        : positionId === 'position_rb'
+          ? rbAlphaSkills.map(({ id }) => id)
+          : cbAlphaSkills.map(({ id }) => id);
+  const events: readonly {
+    readonly id: string;
+    readonly choices: readonly { readonly id: string }[];
+  }[] =
+    defender !== null
+      ? defender.events
+      : positionId === 'position_qb'
+        ? qbAlphaEvents
+        : positionId === 'position_rb'
+          ? rbAlphaEvents
+          : cbAlphaEvents;
   return {
     creation: creation.mechanics,
     room,

@@ -102,6 +102,8 @@ function definition(): WorldAlphaMechanicsDefinition {
           position_qb: base + 2,
           position_rb: base - 1,
           position_wr: base + 1,
+          position_lb: base,
+          position_edge: base - 1,
         },
         programId,
         rivalProgramId: groups[groupIndex]!.programIds[rivalOffset]!,

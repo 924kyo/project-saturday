@@ -40,12 +40,14 @@ export function selectReactions(
     stat(recap, 'passingTouchdowns') +
     stat(recap, 'rushingTouchdowns') +
     stat(recap, 'receivingTouchdowns');
-  const takeaways = positionId === 'position_cb' ? stat(recap, 'interceptions') : 0;
-  const giveaways =
-    positionId === 'position_cb'
-      ? 0
-      : stat(recap, 'interceptions') + stat(recap, 'fumbles') + stat(recap, 'turnovers');
-  const big = positionId === 'position_cb' ? 0 : bestPlayYards(recap);
+  const defense =
+    positionId === 'position_cb' || positionId === 'position_lb' || positionId === 'position_edge';
+  const takeaways = defense ? stat(recap, 'interceptions') + stat(recap, 'forcedFumbles') : 0;
+  const sacks = defense ? stat(recap, 'sacks') : 0;
+  const giveaways = defense
+    ? 0
+    : stat(recap, 'interceptions') + stat(recap, 'fumbles') + stat(recap, 'turnovers');
+  const big = defense ? 0 : bestPlayYards(recap);
   const sharpReps = recap.sideline.filter(({ grade }) => grade === 'SHARP').length;
   const candidates: (ReactionView | false)[] = [
     won &&
@@ -77,6 +79,7 @@ export function selectReactions(
       params: { count: touchdowns },
     },
     takeaways > 0 && { id: 'takeaway', speaker: 'fans', key: 'v2.react.takeaway', params: {} },
+    sacks > 0 && { id: 'sack', speaker: 'fans', key: 'v2.react.sack', params: {} },
     big >= 20 && {
       id: 'bigPlay',
       speaker: 'teammate',

@@ -10,6 +10,7 @@ import {
   techniquePath,
   type ResultMotion,
   type Scene,
+  isDefense,
 } from './board';
 
 const FONT = "'Barlow Condensed', 'Arial Narrow', sans-serif";
@@ -153,7 +154,7 @@ export function TacticalBoard(props: TacticalBoardProps): React.JSX.Element {
     props.previewDecisionId !== null && result === null
       ? techniquePath(scene, props.previewDecisionId, previewIndex)
       : null;
-  const athleteOnDefense = positionId === 'position_cb';
+  const athleteOnDefense = isDefense(positionId);
   const focusDefender =
     positionId === 'position_wr' ? scene.cb : positionId === 'position_cb' ? scene.wr : null;
   const animate = !props.reducedMotion && motion !== null;
@@ -202,7 +203,7 @@ export function TacticalBoard(props: TacticalBoardProps): React.JSX.Element {
           <Marker
             at={point}
             color={defenseColor}
-            hidden={athleteOnDefense && point === scene.cb}
+            hidden={athleteOnDefense && point === scene.athlete}
             key={`d${index}`}
             cross={!athleteOnDefense}
           />

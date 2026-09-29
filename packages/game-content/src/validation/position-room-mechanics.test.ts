@@ -130,7 +130,7 @@ describe('M7 position room content adapter', () => {
       'archetype_qb_field_general'
     ] = 80;
     expect(positionAlphaContentSchema.safeParse(crossFit).success).toBe(false);
-    expect(buildPositionRoomMechanics('position_lb')).toBeUndefined();
+    expect(buildPositionRoomMechanics('position_te' as never)).toBeUndefined();
   });
 
   it('defines exactly 16 recruiting inputs and 1,000 permille for every position', () => {

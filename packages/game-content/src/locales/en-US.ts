@@ -12,6 +12,9 @@ import { enUSHubMessages } from './m7-hub.js';
 import { enUSWrTerminalMessages } from './m75-wr-terminal.js';
 import { enUSVNextMessages } from './r-vnext.js';
 import { enUSVNextWeekMessages } from './r-vnext-week.js';
+import { enUSDefenderMessages } from './m8-defenders.js';
+import { enUSDefenderUiMessages } from './m8-defenders-ui.js';
+import { enUSM8PositionMessages } from './m8-positions.js';
 import { m7BuildEn } from './m7-builds.js';
 import { m7DirectEn } from './m7-direct.js';
 import { m7GameDayEn } from './m7-game-day.js';
@@ -26,6 +29,9 @@ export const enUSMessages = {
   ...enUSWrTerminalMessages,
   ...enUSVNextMessages,
   ...enUSVNextWeekMessages,
+  ...enUSM8PositionMessages,
+  ...enUSDefenderMessages,
+  ...enUSDefenderUiMessages,
   ...enUSEventBatchMessages,
   ...enUSInjuryBatchMessages,
   ...enUSM6UiMessages,

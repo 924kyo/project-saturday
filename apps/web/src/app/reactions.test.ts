@@ -60,6 +60,13 @@ describe('post-game reactions', () => {
     expect(offense.map(({ id }) => id)).toEqual(['giveaway']);
   });
 
+  it('credits front-seven forced fumbles as takeaways and sacks as their own moment', () => {
+    const feed = selectReactions(recap({ stat: { forcedFumbles: 1, sacks: 2 } }), 'position_edge');
+    expect(feed.map(({ id }) => id)).toEqual(['takeaway', 'sack']);
+    const quiet = selectReactions(recap({ stat: { sacks: 1 } }), 'position_qb');
+    expect(quiet).toEqual([]);
+  });
+
   it('rewards a perfect sideline day for a reserve', () => {
     const feed = selectReactions(recap({ live: 0, sideline: ['SHARP', 'SHARP'] }), 'position_wr');
     expect(feed.map(({ id }) => id)).toEqual(['sidelineSharp', 'stayReady']);

@@ -2,11 +2,15 @@ export const POSITION_WR_ID = 'position_wr' as const;
 export const POSITION_QB_ID = 'position_qb' as const;
 export const POSITION_RB_ID = 'position_rb' as const;
 export const POSITION_CB_ID = 'position_cb' as const;
+export const POSITION_LB_ID = 'position_lb' as const;
+export const POSITION_EDGE_ID = 'position_edge' as const;
 export const POSITION_IDS = Object.freeze([
   POSITION_WR_ID,
   POSITION_QB_ID,
   POSITION_RB_ID,
   POSITION_CB_ID,
+  POSITION_LB_ID,
+  POSITION_EDGE_ID,
 ] as const);
 
 export const WR_ARCHETYPE_IDS = Object.freeze([
@@ -33,11 +37,25 @@ export const CB_ARCHETYPE_IDS = Object.freeze([
   'archetype_cb_zone_technician',
 ] as const);
 
+export const LB_ARCHETYPE_IDS = Object.freeze([
+  'archetype_lb_run_stopper',
+  'archetype_lb_coverage_backer',
+  'archetype_lb_hybrid_blitzer',
+] as const);
+
+export const EDGE_ARCHETYPE_IDS = Object.freeze([
+  'archetype_edge_speed_rusher',
+  'archetype_edge_power_rusher',
+  'archetype_edge_edge_setter',
+] as const);
+
 export const PLAYER_ARCHETYPE_IDS = Object.freeze([
   ...WR_ARCHETYPE_IDS,
   ...QB_ARCHETYPE_IDS,
   ...RB_ARCHETYPE_IDS,
   ...CB_ARCHETYPE_IDS,
+  ...LB_ARCHETYPE_IDS,
+  ...EDGE_ARCHETYPE_IDS,
 ] as const);
 
 export const RECRUITING_BACKGROUND_IDS = Object.freeze([
@@ -111,6 +129,24 @@ export const CB_ATTRIBUTE_IDS = Object.freeze([
   'attribute_cb_recovery_technique',
 ] as const);
 
+export const LB_ATTRIBUTE_IDS = Object.freeze([
+  'attribute_lb_run_recognition',
+  'attribute_lb_zone_coverage',
+  'attribute_lb_man_match',
+  'attribute_lb_tackling',
+  'attribute_lb_block_shed',
+  'attribute_lb_blitz_timing',
+] as const);
+
+export const EDGE_ATTRIBUTE_IDS = Object.freeze([
+  'attribute_edge_get_off',
+  'attribute_edge_speed_rush',
+  'attribute_edge_power_rush',
+  'attribute_edge_counter_move',
+  'attribute_edge_edge_setting',
+  'attribute_edge_tackling',
+] as const);
+
 /**
  * All attributes reserved by the M7 position contract. The current WR engine
  * continues to use PLAYER_ATTRIBUTE_IDS until position-aware creation is
@@ -123,6 +159,8 @@ export const MULTI_POSITION_ATTRIBUTE_IDS = Object.freeze([
   ...QB_ATTRIBUTE_IDS,
   ...RB_ATTRIBUTE_IDS,
   ...CB_ATTRIBUTE_IDS,
+  ...LB_ATTRIBUTE_IDS,
+  ...EDGE_ATTRIBUTE_IDS,
 ] as const);
 
 export const PLAYER_ATTRIBUTE_IDS = Object.freeze([
@@ -143,6 +181,8 @@ export type WrArchetypeId = (typeof WR_ARCHETYPE_IDS)[number];
 export type QbArchetypeId = (typeof QB_ARCHETYPE_IDS)[number];
 export type RbArchetypeId = (typeof RB_ARCHETYPE_IDS)[number];
 export type CbArchetypeId = (typeof CB_ARCHETYPE_IDS)[number];
+export type LbArchetypeId = (typeof LB_ARCHETYPE_IDS)[number];
+export type EdgeArchetypeId = (typeof EDGE_ARCHETYPE_IDS)[number];
 export type PlayerArchetypeId = (typeof PLAYER_ARCHETYPE_IDS)[number];
 export type RecruitingBackgroundId = (typeof RECRUITING_BACKGROUND_IDS)[number];
 export type PersonalityTraitId = (typeof PERSONALITY_TRAIT_IDS)[number];
@@ -152,6 +192,8 @@ export type WrAttributeId = (typeof WR_ATTRIBUTE_IDS)[number];
 export type QbAttributeId = (typeof QB_ATTRIBUTE_IDS)[number];
 export type RbAttributeId = (typeof RB_ATTRIBUTE_IDS)[number];
 export type CbAttributeId = (typeof CB_ATTRIBUTE_IDS)[number];
+export type LbAttributeId = (typeof LB_ATTRIBUTE_IDS)[number];
+export type EdgeAttributeId = (typeof EDGE_ATTRIBUTE_IDS)[number];
 export type MultiPositionAttributeId = (typeof MULTI_POSITION_ATTRIBUTE_IDS)[number];
 export type PlayerAttributeId = (typeof PLAYER_ATTRIBUTE_IDS)[number];
 export type CreationStateId = (typeof CREATION_STATE_IDS)[number];
@@ -219,6 +261,14 @@ export function isRbArchetypeId(value: unknown): value is RbArchetypeId {
 
 export function isCbArchetypeId(value: unknown): value is CbArchetypeId {
   return isOneOf(value, CB_ARCHETYPE_IDS);
+}
+
+export function isLbArchetypeId(value: unknown): value is LbArchetypeId {
+  return isOneOf(value, LB_ARCHETYPE_IDS);
+}
+
+export function isEdgeArchetypeId(value: unknown): value is EdgeArchetypeId {
+  return isOneOf(value, EDGE_ARCHETYPE_IDS);
 }
 
 export function isPlayerArchetypeId(value: unknown): value is PlayerArchetypeId {

@@ -1,6 +1,10 @@
 import {
   CB_ARCHETYPE_IDS,
   CB_ATTRIBUTE_IDS,
+  EDGE_ARCHETYPE_IDS,
+  EDGE_ATTRIBUTE_IDS,
+  LB_ARCHETYPE_IDS,
+  LB_ATTRIBUTE_IDS,
   POSITION_IDS,
   QB_ARCHETYPE_IDS,
   QB_ATTRIBUTE_IDS,
@@ -39,12 +43,16 @@ describe('M7 staged position contract', () => {
       ...QB_ARCHETYPE_IDS,
       ...RB_ARCHETYPE_IDS,
       ...CB_ARCHETYPE_IDS,
+      ...LB_ARCHETYPE_IDS,
+      ...EDGE_ARCHETYPE_IDS,
     ]);
     expect(positionAlphaContent.attributes.map(({ id }) => id)).toEqual([
       ...WR_ATTRIBUTE_IDS,
       ...QB_ATTRIBUTE_IDS,
       ...RB_ATTRIBUTE_IDS,
       ...CB_ATTRIBUTE_IDS,
+      ...LB_ATTRIBUTE_IDS,
+      ...EDGE_ATTRIBUTE_IDS,
     ]);
     expect(positionAlphaContent.developmentFamilies.map(({ id }) => id)).toEqual(
       POSITION_DEVELOPMENT_FAMILY_IDS,

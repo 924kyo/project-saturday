@@ -883,12 +883,14 @@ export function projectWorldAlphaPositionMatchup(
     ({ programId }) => programId === opponentProgramId,
   );
   if (player === undefined || opponent === undefined) return undefined;
-  const defensePosition = positionId === 'position_cb';
+  const defensePosition =
+    positionId === 'position_cb' || positionId === 'position_lb' || positionId === 'position_edge';
   const positionRating = player.positionRatings[positionId];
   const supportingUnitRating = defensePosition ? player.defenseRating : player.offenseRating;
   const opponentPrimaryRating = defensePosition ? opponent.offenseRating : opponent.defenseRating;
+  // Each defender's secondary opponent is the skill player they most often meet.
   const opponentSecondaryRating = defensePosition
-    ? opponent.positionRatings.position_qb
+    ? opponent.positionRatings[positionId === 'position_lb' ? 'position_rb' : 'position_qb']
     : opponent.defenseRating;
   const weights = defensePosition ? ([450, 300, 150, 100] as const) : ([450, 300, 250, 0] as const);
   const contributions = [

@@ -20,6 +20,8 @@ import {
   PERSONALITY_TRAIT_INCOMPATIBILITIES,
   arePersonalityTraitsCompatible,
   isCbArchetypeId,
+  isEdgeArchetypeId,
+  isLbArchetypeId,
   isCreationStateId,
   isPersonalityTraitId,
   isPlayerArchetypeId,
@@ -167,7 +169,9 @@ function archetypeMatchesPosition(positionId: unknown, archetypeId: unknown): bo
     (positionId === 'position_wr' && isWrArchetypeId(archetypeId)) ||
     (positionId === 'position_qb' && isQbArchetypeId(archetypeId)) ||
     (positionId === 'position_rb' && isRbArchetypeId(archetypeId)) ||
-    (positionId === 'position_cb' && isCbArchetypeId(archetypeId))
+    (positionId === 'position_cb' && isCbArchetypeId(archetypeId)) ||
+    (positionId === 'position_lb' && isLbArchetypeId(archetypeId)) ||
+    (positionId === 'position_edge' && isEdgeArchetypeId(archetypeId))
   );
 }
 

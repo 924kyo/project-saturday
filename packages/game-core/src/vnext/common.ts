@@ -37,7 +37,9 @@ export function isVNextPositionId(value: unknown): value is VNextPositionId {
     value === 'position_qb' ||
     value === 'position_rb' ||
     value === 'position_wr' ||
-    value === 'position_cb'
+    value === 'position_cb' ||
+    value === 'position_lb' ||
+    value === 'position_edge'
   );
 }
 

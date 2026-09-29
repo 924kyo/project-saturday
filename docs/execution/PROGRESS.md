@@ -18,9 +18,21 @@ R is COMPLETE (2026-09-30). The gate met is:
 - the packaged desktop smoke passes (rebuilt Tauri app, offline, exact save across process exit);
 - `pnpm check` is green.
 
-The plan is archived at `docs/exec-plans/completed/r-product-reconciliation.md`. M8 starts with step 1, the LB/EDGE position foundation.
+The plan is archived at `docs/exec-plans/completed/r-product-reconciliation.md`.
+
+M8 steps 1–2 are complete (2026-09-30): LB and EDGE are playable end to end in Career VNext. Next is step 3, the 64-program world.
 
 ## Last completed task
+
+M8 steps 1–2, LB/EDGE foundation and defender kernel (2026-09-30):
+- foundation: IDs, six attributes and three archetypes each, creation, room/depth, three drills and proficiencies each, focus injury policies, program ratings, lifecycle stats and tactical position lists;
+- one data-driven defender kernel (`games/defender.ts`, `games/defender-events.ts`) with per-position authored families, decisions, patterns, clues and outcome tables; each position has 8 patterns, 12 decisions, 12 cards and 12 events, generated from one authoring table (`scripts/generate-defender-content.py`) with paired copy;
+- VNext wiring: game seam, sideline reps, frames, weekly events, breakthrough offers, world matchup (LB meets the RB rating, EDGE the QB);
+- web: position picker, board formations and 24 technique drawings, play headlines, stat labels, sack/forced-fumble reactions, event and card copy;
+- balance: the harness covers six positions; defender grades are held in the other positions' band;
+- verified: `pnpm check` (835 + 398 + 390 tests), LB and EDGE two-season browser journeys, and a visual review in both locales.
+
+Before that:
 
 R5 closeout (2026-09-30):
 - the release-boundary journey suite (`e2e/career.spec.ts` with `e2e/support/career.ts`, a revision-gated command driver);

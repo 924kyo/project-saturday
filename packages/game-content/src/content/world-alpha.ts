@@ -121,6 +121,8 @@ const programProfiles = WORLD_ALPHA_PROGRAM_IDS.map((id, index) => {
     offenseRating: base - ratingOffset,
     positionRatings: {
       position_cb: base + ((index + 3) % 5) - 2,
+      position_edge: base + (index % 5) - 2,
+      position_lb: base + ((index + 4) % 5) - 2,
       position_qb: qbRating,
       position_rb: base + ((index + 2) % 5) - 2,
       position_wr: base + ((index + 1) % 5) - 2,

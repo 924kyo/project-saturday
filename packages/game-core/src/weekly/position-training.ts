@@ -138,14 +138,15 @@ function clamp(value: number, minimum: number, maximum: number): number {
 function proficiencyIdsForPosition(
   positionId: PositionId,
 ): readonly PositionTrainingProficiencyId[] {
-  const offset =
-    positionId === 'position_qb'
-      ? 0
-      : positionId === 'position_rb'
-        ? 3
-        : positionId === 'position_cb'
-          ? 6
-          : 9;
+  // Canonical proficiency order: QB, RB, CB, WR, LB, EDGE (three each).
+  const offset = {
+    position_qb: 0,
+    position_rb: 3,
+    position_cb: 6,
+    position_wr: 9,
+    position_lb: 12,
+    position_edge: 15,
+  }[positionId];
   return POSITION_TRAINING_PROFICIENCY_IDS.slice(offset, offset + 3);
 }
 

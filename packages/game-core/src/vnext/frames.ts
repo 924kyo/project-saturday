@@ -126,6 +126,14 @@ export function livePlayFrame(positionId: VNextPositionId, play: AnyPlay): LiveP
     yards = num(play, 'yardsDelta');
     touchdown = num(play, 'touchdownDelta') > 0;
     turnover = num(play, 'fumbleDelta') > 0;
+  } else if (positionId === 'position_lb' || positionId === 'position_edge') {
+    // Front-seven success: a stop, a loss, a sack, pressure or a takeaway.
+    yards = num(play, 'yardsAllowed');
+    touchdown = num(play, 'touchdownAllowed') > 0;
+    turnover = ['INTERCEPTION', 'FORCED_FUMBLE'].includes(play.playResult);
+    stop = ['STOP', 'LOSS', 'SACK', 'PRESSURE', 'PASS_DEFENDED', 'NO_PLAY'].includes(
+      play.playResult,
+    );
   } else {
     // Defensive success is a stop or takeaway; allowed yards are the opponent's gain.
     yards = num(play, 'yardsAllowed');
@@ -133,28 +141,29 @@ export function livePlayFrame(positionId: VNextPositionId, play: AnyPlay): LiveP
     turnover = num(play, 'interception') > 0;
     stop = ['COVERED', 'PASS_DEFENDED', 'TACKLE', 'NO_TARGET'].includes(play.playResult);
   }
-  const outcome: PlayOutcomeKindVNext =
-    positionId === 'position_cb'
-      ? turnover
-        ? 'TURNOVER'
-        : touchdown
-          ? 'TOUCHDOWN'
-          : stop
-            ? 'STOP'
-            : yards >= 10
-              ? 'GAIN'
-              : 'NEUTRAL'
+  const defense =
+    positionId === 'position_cb' || positionId === 'position_lb' || positionId === 'position_edge';
+  const outcome: PlayOutcomeKindVNext = defense
+    ? turnover
+      ? 'TURNOVER'
       : touchdown
         ? 'TOUCHDOWN'
-        : turnover
-          ? 'TURNOVER'
-          : yards >= 8
+        : stop
+          ? 'STOP'
+          : yards >= 10
             ? 'GAIN'
-            : yards > 0
-              ? 'SHORT'
-              : play.playResult === 'NOT_TARGETED'
-                ? 'NEUTRAL'
-                : 'STOP';
+            : 'NEUTRAL'
+    : touchdown
+      ? 'TOUCHDOWN'
+      : turnover
+        ? 'TURNOVER'
+        : yards >= 8
+          ? 'GAIN'
+          : yards > 0
+            ? 'SHORT'
+            : play.playResult === 'NOT_TARGETED'
+              ? 'NEUTRAL'
+              : 'STOP';
   return {
     decisionId: play.decisionId,
     playResultId: play.playResult,

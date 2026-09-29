@@ -24,6 +24,12 @@ export const positionFocusInjuryPolicies = Object.freeze({
   action_wr_route_craft: 'TECHNICAL',
   action_wr_separation: 'HIGH_LOAD',
   action_wr_catch_point: 'TECHNICAL',
+  action_lb_run_fits: 'HIGH_LOAD',
+  action_lb_coverage_drops: 'TECHNICAL',
+  action_lb_pressure_package: 'HIGH_LOAD',
+  action_edge_get_off: 'TECHNICAL',
+  action_edge_hand_fighting: 'HIGH_LOAD',
+  action_edge_edge_discipline: 'TECHNICAL',
 } as const satisfies PositionFocusInjuryPolicies);
 
 /** Reuse shipped common mechanics and paired presentation IDs without a second tuning table. */

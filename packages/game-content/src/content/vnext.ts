@@ -9,6 +9,7 @@ import { keySnapFamilyMechanicsDefinitions, keySnapPatternMechanicsDefinitions }
 import { eventMechanicsDefinitions } from './events.js';
 import { buildShippedPositionAlphaSessionCommandMechanics } from './position-alpha-session.js';
 import { skillMechanicsDefinitions } from './skills.js';
+import { defenderCatalog, edgeContent, lbContent } from './defenders.js';
 
 /**
  * The shipped WR card catalog on VNext's WR drills. Skill scopes may only name weekly actions, so a
@@ -102,6 +103,12 @@ function developed<T extends { readonly attributeXp: readonly { readonly baseXp:
   };
 }
 
+/** LB/EDGE game catalogs (M8), mechanics only. */
+export const DEFENDER_CATALOGS = Object.freeze({
+  position_lb: defenderCatalog(lbContent),
+  position_edge: defenderCatalog(edgeContent),
+});
+
 export const wrVNextSkillDefinitions: readonly SkillMechanicsDefinition[] =
   skillMechanicsDefinitions.map((definition) => remapWrScope(definition));
 
@@ -114,7 +121,9 @@ export function buildCareerVNextMechanics(
     positionId !== 'position_qb' &&
     positionId !== 'position_rb' &&
     positionId !== 'position_wr' &&
-    positionId !== 'position_cb'
+    positionId !== 'position_cb' &&
+    positionId !== 'position_lb' &&
+    positionId !== 'position_edge'
   )
     return null;
   // The shared bundle is position-parameterized; WR adds its own key-snap catalogs below.
@@ -148,6 +157,7 @@ export function buildCareerVNextMechanics(
       families: keySnapFamilyMechanicsDefinitions,
       patterns: keySnapPatternMechanicsDefinitions,
     },
+    defenders: DEFENDER_CATALOGS,
   };
 }
 

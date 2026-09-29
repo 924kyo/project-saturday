@@ -11,6 +11,9 @@ import { koKRHubMessages } from './m7-hub.js';
 import { koKRWrTerminalMessages } from './m75-wr-terminal.js';
 import { koKRVNextMessages } from './r-vnext.js';
 import { koKRVNextWeekMessages } from './r-vnext-week.js';
+import { koKRDefenderMessages } from './m8-defenders.js';
+import { koKRDefenderUiMessages } from './m8-defenders-ui.js';
+import { koKRM8PositionMessages } from './m8-positions.js';
 import { m7BuildKo } from './m7-builds.js';
 import { m7DirectKo } from './m7-direct.js';
 import { m7GameDayKo } from './m7-game-day.js';
@@ -25,6 +28,9 @@ export const koKRMessages = {
   ...koKRWrTerminalMessages,
   ...koKRVNextMessages,
   ...koKRVNextWeekMessages,
+  ...koKRM8PositionMessages,
+  ...koKRDefenderMessages,
+  ...koKRDefenderUiMessages,
   ...koKREventBatchMessages,
   ...koKRInjuryBatchMessages,
   ...koKRM6UiMessages,

@@ -45,9 +45,14 @@ export function offerCandidatesVNext(
           skillId: id,
           weight: baseOfferWeight,
         }))
-      : mechanics.skillOffers
-          .filter((offer) => offer.positionId === positionId)
-          .map(({ id, baseOfferWeight }) => ({ skillId: id, weight: baseOfferWeight }));
+      : positionId === 'position_lb' || positionId === 'position_edge'
+        ? mechanics.defenders[positionId].skills.map(({ id, baseOfferWeight }) => ({
+            skillId: id,
+            weight: baseOfferWeight,
+          }))
+        : mechanics.skillOffers
+            .filter((offer) => offer.positionId === positionId)
+            .map(({ id, baseOfferWeight }) => ({ skillId: id, weight: baseOfferWeight }));
   // QB/RB/CB game-only cards have no weekly build definition; their kernels consume them directly.
   return table
     .filter(({ skillId }) => !owned.has(skillId))

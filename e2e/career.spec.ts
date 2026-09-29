@@ -8,7 +8,7 @@ import { primaryAction } from './support/slice';
  * review, offseason transfer, season two, review) for every position. Locales and viewports are
  * assigned orthogonally by default; `E2E_FULL=1` runs the full position × locale × viewport matrix.
  */
-const POSITIONS = ['QB', 'RB', 'WR', 'CB'] as const;
+const POSITIONS = ['QB', 'RB', 'WR', 'CB', 'LB', 'EDGE'] as const;
 const LOCALES = ['ko-KR', 'en-US'] as const;
 const VIEWPORTS = { phone: null, narrow: { width: 320, height: 720 } } as const;
 
@@ -22,6 +22,8 @@ const plan: { position: number; locale: (typeof LOCALES)[number]; narrow: boolea
       { position: 1, locale: 'en-US', narrow: false },
       { position: 2, locale: 'ko-KR', narrow: true },
       { position: 3, locale: 'en-US', narrow: false },
+      { position: 4, locale: 'en-US', narrow: false },
+      { position: 5, locale: 'ko-KR', narrow: false },
     ];
 
 async function createInLocale(page: Page, position: number, locale: string, name: string) {

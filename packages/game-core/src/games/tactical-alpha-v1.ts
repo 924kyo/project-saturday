@@ -28,7 +28,8 @@ interface BackgroundInput {
 }
 interface TacticalAlphaSnapInputV1 extends BackgroundInput {
   readonly gameId: TacticalSnapContextV1['gameId'];
-  readonly positionId: 'position_qb' | 'position_rb' | 'position_wr' | 'position_cb';
+  readonly positionId:
+    'position_qb' | 'position_rb' | 'position_wr' | 'position_cb' | 'position_lb' | 'position_edge';
   readonly snapIndex: number;
   readonly opportunityCount: number;
   readonly decisionIds: TacticalSnapContextV1['decisionIds'];
@@ -102,7 +103,14 @@ export function prepareTacticalAlphaSnapV1(
     !backgroundInputValid(input, 5) ||
     !integer(input.opportunityCount, 1, 5) ||
     !integer(input.snapIndex, 0, input.opportunityCount - 1) ||
-    !['position_qb', 'position_rb', 'position_wr', 'position_cb'].includes(input.positionId)
+    ![
+      'position_qb',
+      'position_rb',
+      'position_wr',
+      'position_cb',
+      'position_lb',
+      'position_edge',
+    ].includes(input.positionId)
   )
     return undefined;
   const elapsedSeconds = Math.floor((3600 * (input.snapIndex + 1)) / (input.opportunityCount + 1));
@@ -122,7 +130,9 @@ export function prepareTacticalAlphaSnapV1(
     snapIndex: input.snapIndex,
     clock: { period, secondsRemaining: 900 - (elapsedSeconds % 900) },
     field: {
-      offense: input.positionId === 'position_cb' ? 'OPPONENT' : 'PLAYER',
+      offense: ['position_cb', 'position_lb', 'position_edge'].includes(input.positionId)
+        ? 'OPPONENT'
+        : 'PLAYER',
       driveIndex: input.snapIndex * 3 + 2,
       down: down.value,
       distanceYards: Math.min(distance.value, 100 - line.value),
@@ -148,6 +158,7 @@ export interface TacticalSnapResultV1 {
       | 'TOUCHDOWN'
       | 'FUMBLE_LOST'
       | 'SACK'
+      | 'LOSS'
       | 'INCOMPLETE'
       | 'INTERCEPTION'
       | 'UNTRACKED';
@@ -160,7 +171,8 @@ export interface TacticalSnapResultV1 {
 
 export interface TacticalFieldRequestV1 {
   readonly decisionId: TacticalSnapContextV1['decisionIds'][number];
-  readonly kind: 'ADVANCE' | 'SACK' | 'INCOMPLETE' | 'INTERCEPTION' | 'UNTRACKED';
+  /** LOSS: a run stopped behind the line; `yards` is the loss (1–10). Added for LB/EDGE. */
+  readonly kind: 'ADVANCE' | 'SACK' | 'LOSS' | 'INCOMPLETE' | 'INTERCEPTION' | 'UNTRACKED';
   readonly yards: number;
   readonly touchdown: boolean;
   readonly fumbleLost: boolean;
@@ -177,9 +189,15 @@ export function resolveTacticalFieldV1(
     !integer(request.yards, 0, 100) ||
     typeof request.touchdown !== 'boolean' ||
     typeof request.fumbleLost !== 'boolean' ||
-    !['ADVANCE', 'SACK', 'INCOMPLETE', 'INTERCEPTION', 'UNTRACKED'].includes(request.kind) ||
+    !['ADVANCE', 'SACK', 'LOSS', 'INCOMPLETE', 'INTERCEPTION', 'UNTRACKED'].includes(
+      request.kind,
+    ) ||
+    (request.kind === 'LOSS' && !integer(request.yards, 1, 10)) ||
     (request.kind !== 'ADVANCE' && request.touchdown) ||
-    (request.kind !== 'ADVANCE' && request.kind !== 'SACK' && request.fumbleLost)
+    (request.kind !== 'ADVANCE' &&
+      request.kind !== 'SACK' &&
+      request.kind !== 'LOSS' &&
+      request.fumbleLost)
   )
     return undefined;
   const field = context.field;
@@ -192,7 +210,9 @@ export function resolveTacticalFieldV1(
         : Math.min(request.yards, 99 - field.lineOfScrimmageYards)
       : request.kind === 'SACK'
         ? -Math.min(TACTICAL_ALPHA_TUNING.sackLossYards, field.lineOfScrimmageYards - 1)
-        : 0;
+        : request.kind === 'LOSS'
+          ? -Math.min(request.yards, field.lineOfScrimmageYards - 1)
+          : 0;
   const untracked = request.kind === 'UNTRACKED';
   const interception = request.kind === 'INTERCEPTION';
   const turnoverOnDowns =

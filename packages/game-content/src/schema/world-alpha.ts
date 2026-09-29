@@ -94,6 +94,8 @@ export const worldAlphaProgramProfileSchema = z
     positionRatings: z
       .object({
         position_cb: z.number().int().min(35).max(95),
+        position_edge: z.number().int().min(35).max(95),
+        position_lb: z.number().int().min(35).max(95),
         position_qb: z.number().int().min(35).max(95),
         position_rb: z.number().int().min(35).max(95),
         position_wr: z.number().int().min(35).max(95),

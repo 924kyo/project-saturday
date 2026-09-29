@@ -1,6 +1,8 @@
 import {
   ATTRIBUTE_XP_PER_RATING,
   CB_ATTRIBUTE_IDS,
+  EDGE_ATTRIBUTE_IDS,
+  LB_ATTRIBUTE_IDS,
   MENTAL_ATTRIBUTE_IDS,
   PHYSICAL_ATTRIBUTE_IDS,
   POSITION_IDS,
@@ -47,6 +49,8 @@ describe('M7 position progression contract', () => {
       QB_ATTRIBUTE_IDS,
       RB_ATTRIBUTE_IDS,
       CB_ATTRIBUTE_IDS,
+      LB_ATTRIBUTE_IDS,
+      EDGE_ATTRIBUTE_IDS,
     ]);
     for (const positionId of POSITION_IDS) {
       expect(getPlayableAttributeIds(positionId)).toHaveLength(16);
@@ -108,7 +112,7 @@ describe('M7 position progression contract', () => {
       { code: 'progression.invalid_attribute', path: 'attributes.attribute_unknown' },
     ]);
     expect(derivePositionOverall('position_qb', attributes).ok).toBe(false);
-    expect(validatePositionAttributeProgress('position_lb', attributes)).toEqual([
+    expect(validatePositionAttributeProgress('position_te' as never, attributes)).toEqual([
       { code: 'progression.invalid_position', path: 'positionId' },
     ]);
   });

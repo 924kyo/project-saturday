@@ -2,6 +2,10 @@ import {
   CB_ARCHETYPE_IDS,
   CB_ATTRIBUTE_IDS,
   CREATION_STATE_IDS,
+  EDGE_ARCHETYPE_IDS,
+  EDGE_ATTRIBUTE_IDS,
+  LB_ARCHETYPE_IDS,
+  LB_ATTRIBUTE_IDS,
   MENTAL_ATTRIBUTE_IDS,
   MULTI_POSITION_ATTRIBUTE_IDS,
   PHYSICAL_ATTRIBUTE_IDS,
@@ -34,6 +38,12 @@ export const POSITION_DEVELOPMENT_FAMILY_IDS = [
   'development_family_cb_man_technique',
   'development_family_cb_zone_eyes',
   'development_family_cb_finish',
+  'development_family_lb_run_fits',
+  'development_family_lb_coverage_drops',
+  'development_family_lb_pressure',
+  'development_family_edge_get_off',
+  'development_family_edge_hand_fighting',
+  'development_family_edge_finish',
 ] as const;
 
 export const STAGED_GAME_DECISION_FAMILY_IDS = [
@@ -49,6 +59,14 @@ export const STAGED_GAME_DECISION_FAMILY_IDS = [
   'key_snap_family_cb_coverage',
   'key_snap_family_cb_ball',
   'key_snap_family_cb_tackle',
+  'key_snap_family_lb_key',
+  'key_snap_family_lb_fit',
+  'key_snap_family_lb_drop',
+  'key_snap_family_lb_blitz',
+  'key_snap_family_edge_rush',
+  'key_snap_family_edge_contain',
+  'key_snap_family_edge_option',
+  'key_snap_family_edge_finish',
 ] as const;
 
 const WR_GAME_FAMILY_IDS = [
@@ -64,13 +82,33 @@ const POSITION_ARCHETYPE_IDS = [
   ...QB_ARCHETYPE_IDS,
   ...RB_ARCHETYPE_IDS,
   ...CB_ARCHETYPE_IDS,
+  ...LB_ARCHETYPE_IDS,
+  ...EDGE_ARCHETYPE_IDS,
 ] as const;
 const POSITION_ATTRIBUTE_IDS = [
   ...WR_ATTRIBUTE_IDS,
   ...QB_ATTRIBUTE_IDS,
   ...RB_ATTRIBUTE_IDS,
   ...CB_ATTRIBUTE_IDS,
+  ...LB_ATTRIBUTE_IDS,
+  ...EDGE_ATTRIBUTE_IDS,
 ] as const;
+/** Positions whose archetypes live in the position catalog (WR keeps its creation catalog). */
+const CATALOG_ARCHETYPE_IDS = [
+  ...QB_ARCHETYPE_IDS,
+  ...RB_ARCHETYPE_IDS,
+  ...CB_ARCHETYPE_IDS,
+  ...LB_ARCHETYPE_IDS,
+  ...EDGE_ARCHETYPE_IDS,
+] as const;
+const CATALOG_POSITION_IDS = [
+  'position_qb',
+  'position_rb',
+  'position_cb',
+  'position_lb',
+  'position_edge',
+] as const;
+const TRAINING_POSITION_IDS = [...CATALOG_POSITION_IDS, 'position_wr'] as const;
 const SHARED_ATTRIBUTE_IDS = [...PHYSICAL_ATTRIBUTE_IDS, ...MENTAL_ATTRIBUTE_IDS] as const;
 
 export const positionIdSchema = z.enum(POSITION_IDS);
@@ -104,8 +142,8 @@ const localizedDefinitionSchema = z
 export const stagedArchetypeDefinitionSchema = z
   .object({
     ...localizedFields,
-    id: z.enum([...QB_ARCHETYPE_IDS, ...RB_ARCHETYPE_IDS, ...CB_ARCHETYPE_IDS]),
-    positionId: z.enum(['position_qb', 'position_rb', 'position_cb']),
+    id: z.enum(CATALOG_ARCHETYPE_IDS),
+    positionId: z.enum(CATALOG_POSITION_IDS),
     priorityAttributeIds: z.tuple([
       positionAttributeIdSchema,
       positionAttributeIdSchema,
@@ -154,7 +192,7 @@ export const positionTrainingProficiencyDefinitionSchema = z
   .object({
     ...localizedFields,
     id: positionTrainingProficiencyIdSchema,
-    positionId: z.enum(['position_qb', 'position_rb', 'position_cb', 'position_wr']),
+    positionId: z.enum(TRAINING_POSITION_IDS),
   })
   .strict();
 
@@ -180,7 +218,7 @@ export const positionTrainingActionDefinitionSchema = z
     confidenceDelta: z.number().int().min(-25).max(25),
     developmentFamilyId: positionDevelopmentFamilyIdSchema,
     id: positionTrainingActionIdSchema,
-    positionId: z.enum(['position_qb', 'position_rb', 'position_cb', 'position_wr']),
+    positionId: z.enum(TRAINING_POSITION_IDS),
     practiceImpact: z.number().int().min(-25).max(25),
     preparationDelta: z.number().int().min(-25).max(25),
     proficiencyId: positionTrainingProficiencyIdSchema,
@@ -213,9 +251,13 @@ export const positionCreationBackgroundProfileSchema = z
 
 export const positionCreationMechanicsContentSchema = z
   .object({
-    archetypeProfiles: z.array(positionCreationArchetypeProfileSchema).length(12),
-    backgroundProfiles: z.array(positionCreationBackgroundProfileSchema).length(20),
-    baselines: z.array(positionCreationBaselineSchema).length(4),
+    archetypeProfiles: z
+      .array(positionCreationArchetypeProfileSchema)
+      .length(POSITION_IDS.length * 3),
+    backgroundProfiles: z
+      .array(positionCreationBackgroundProfileSchema)
+      .length(POSITION_IDS.length * RECRUITING_BACKGROUND_IDS.length),
+    baselines: z.array(positionCreationBaselineSchema).length(POSITION_IDS.length),
   })
   .strict();
 
@@ -319,6 +361,18 @@ const expectedByPosition = {
     developmentFamilyIds: POSITION_DEVELOPMENT_FAMILY_IDS.slice(9, 12),
     gameDecisionFamilyIds: STAGED_GAME_DECISION_FAMILY_IDS.slice(8, 12),
   },
+  position_lb: {
+    archetypeIds: LB_ARCHETYPE_IDS,
+    attributeIds: LB_ATTRIBUTE_IDS,
+    developmentFamilyIds: POSITION_DEVELOPMENT_FAMILY_IDS.slice(12, 15),
+    gameDecisionFamilyIds: STAGED_GAME_DECISION_FAMILY_IDS.slice(12, 16),
+  },
+  position_edge: {
+    archetypeIds: EDGE_ARCHETYPE_IDS,
+    attributeIds: EDGE_ATTRIBUTE_IDS,
+    developmentFamilyIds: POSITION_DEVELOPMENT_FAMILY_IDS.slice(15, 18),
+    gameDecisionFamilyIds: STAGED_GAME_DECISION_FAMILY_IDS.slice(16, 20),
+  },
 } as const;
 
 function hasExactIds(actual: readonly string[], expected: readonly string[]): boolean {
@@ -327,7 +381,7 @@ function hasExactIds(actual: readonly string[], expected: readonly string[]): bo
 
 export const positionAlphaContentSchema = z
   .object({
-    archetypes: z.array(stagedArchetypeDefinitionSchema).length(9),
+    archetypes: z.array(stagedArchetypeDefinitionSchema).length(CATALOG_ARCHETYPE_IDS.length),
     attributes: z.array(localizedDefinitionSchema).length(POSITION_ATTRIBUTE_IDS.length),
     creationMechanics: positionCreationMechanicsContentSchema,
     developmentFamilies: z
@@ -351,11 +405,7 @@ export const positionAlphaContentSchema = z
       [content.developmentFamilies, POSITION_DEVELOPMENT_FAMILY_IDS, 'developmentFamilies'],
       [content.gameDecisionFamilies, STAGED_GAME_DECISION_FAMILY_IDS, 'gameDecisionFamilies'],
       [content.positions, POSITION_IDS, 'positions'],
-      [
-        content.archetypes,
-        [...QB_ARCHETYPE_IDS, ...RB_ARCHETYPE_IDS, ...CB_ARCHETYPE_IDS],
-        'archetypes',
-      ],
+      [content.archetypes, CATALOG_ARCHETYPE_IDS, 'archetypes'],
       [content.trainingActions, POSITION_TRAINING_ACTION_IDS, 'trainingActions'],
       [content.trainingProficiencies, POSITION_TRAINING_PROFICIENCY_IDS, 'trainingProficiencies'],
     ] as const;

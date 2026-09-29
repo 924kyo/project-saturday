@@ -31,12 +31,12 @@ All automated gates pass. The balance harness covers all six positions.
 
 ## Sequence
 
-1. **Position foundation (LB, EDGE):**
+1. **Position foundation (LB, EDGE):** (done 2026-09-30)
    - IDs, six position attributes each, three archetypes each, and creation;
    - room/depth mechanics, three training actions and proficiencies each, and focus injury policies;
    - program position ratings and lifecycle exposure;
    - tactical position lists, plus content schemas and validation.
-2. **Defender kernel and content:**
+2. **Defender kernel and content:** (done 2026-09-30)
    - one data-driven defensive kernel whose families, decisions, clues, patterns and outcome tables are authored per position: LB run key / gap fit / zone drop / blitz; EDGE rush move / contain vs chase / option responsibility / finish;
    - 12 skills and 12 events each;
    - the VNext game seam, frames and sideline reps, board scenes, stat keys, reactions and copy.

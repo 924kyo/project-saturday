@@ -155,11 +155,11 @@ export function runM7_5RosterIdentityReport(): M7_5RosterIdentityReport {
       addedPositionSample(`${seed}-${positionCase[0]}`, seedIndex, positionCase),
     ),
   ]);
+  // The M7.5 artifact covers the four positions that existed then; M8 positions are out of scope.
   const positionCounts = Object.fromEntries(
-    positionAlphaContent.positions.map(({ id }) => [
-      id,
-      samples.filter(({ positionId }) => positionId === id).length,
-    ]),
+    positionAlphaContent.positions
+      .filter(({ id }) => ['position_wr', 'position_qb', 'position_rb', 'position_cb'].includes(id))
+      .map(({ id }) => [id, samples.filter(({ positionId }) => positionId === id).length]),
   ) as Readonly<Record<PositionId, number>>;
   return Object.freeze({
     reportId: 'm7_5_roster_identity_v1',

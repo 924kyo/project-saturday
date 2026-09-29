@@ -28,6 +28,8 @@ const identities = [
   ['position_rb', 'archetype_rb_power_back'],
   ['position_wr', 'archetype_wr_deep_threat'],
   ['position_cb', 'archetype_cb_press_man'],
+  ['position_lb', 'archetype_lb_run_stopper'],
+  ['position_edge', 'archetype_edge_speed_rusher'],
 ] as const;
 
 type Strategy = 'grind' | 'balanced' | 'coach' | 'study';
