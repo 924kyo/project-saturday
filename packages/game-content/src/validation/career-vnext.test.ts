@@ -9,6 +9,8 @@ import {
   continueGameVNext,
   continueSeasonReviewVNext,
   createCareerVNext,
+  createRng,
+  createWorldAlphaSeason,
   equipSkillVNext,
   focusDefinitionsVNext,
   offerCandidatesVNext,
@@ -445,14 +447,10 @@ describe('Career VNext build', () => {
       mechanics,
     );
     if (!committed.ok) throw new Error(committed.reason);
+    // The same practice week for both runs; the cards are equipped only for Saturday, so the
+    // comparison isolates their Game Day effects from practice and depth movement.
     const kickoff = (equipped: readonly (string | null)[]) => {
-      let career: CareerVNext = {
-        ...committed.career,
-        build: {
-          ownedSkillIds: equipped.filter((id): id is string => id !== null) as never,
-          equippedSkillIds: equipped as never,
-        },
-      };
+      let career: CareerVNext = committed.career;
       const focusIds = focusDefinitionsVNext(career, mechanics).map(({ id }) => id);
       const planned = planWeekVNext(career, [focusIds[0]!, focusIds[5]!, focusIds[6]!], mechanics);
       if (!planned.ok) throw new Error(planned.reason);
@@ -468,6 +466,13 @@ describe('Career VNext build', () => {
         if (!step.ok) throw new Error(step.reason);
         career = step.career;
       }
+      career = {
+        ...career,
+        build: {
+          ownedSkillIds: equipped.filter((id): id is string => id !== null) as never,
+          equippedSkillIds: equipped as never,
+        },
+      };
       const started = kickoffVNext(career, mechanics);
       if (!started.ok || started.career.flow.type !== 'GAME') throw new Error('kickoff');
       return started.career.flow.game.engine!;
@@ -661,7 +666,7 @@ describe('Career VNext season arc', () => {
     );
   }, 300_000);
 
-  it('plays the semifinal and final when the program qualifies', () => {
+  it('plays its bracket games when the program qualifies', () => {
     const finishes: string[] = [];
     let found = false;
     for (let attempt = 0; attempt < 16 && !found; attempt += 1) {
@@ -685,12 +690,105 @@ describe('Career VNext season arc', () => {
         continue;
       }
       found = true;
-      expect(rounds[0]).toBe('SEMIFINAL');
-      expect(rounds.length).toBe(review.finish === 'SEMIFINAL' ? 1 : 2);
+      // Seeds 1-4 have a first-round bye; the player's games are consecutive rounds that end
+      // where the season finished.
+      const world = career.season.world!;
+      if (world.model !== 'world_vnext_season_v1' || world.postseason.type !== 'COMPLETE')
+        throw new Error('conference world');
+      const seed = world.postseason.qualifiers.find(
+        ({ programId }) => programId === review.programId,
+      )!.seed;
+      const order = ['FIRST_ROUND', 'QUARTERFINAL', 'SEMIFINAL', 'FINAL'];
+      const last =
+        review.finish === 'CHAMPION' || review.finish === 'RUNNER_UP' ? 'FINAL' : review.finish;
+      expect(rounds).toEqual(order.slice(seed <= 4 ? 1 : 0, order.indexOf(last) + 1));
       if (review.finish === 'CHAMPION') expect(review.championProgramId).toBe(review.programId);
       expect(career.season.world!.postseason.type).toBe('COMPLETE');
       expect(continueSeasonReviewVNext(career, mechanics).ok).toBe(true);
     }
     expect(found, finishes.join(',')).toBe(true);
+  }, 300_000);
+});
+
+describe('Career VNext world compatibility (M8)', () => {
+  it('finishes a pre-M8 season on the 32-program world, then moves to the conference world', () => {
+    const identity = identityFor('position_rb', 'archetype_rb_power_back');
+    const mechanics = buildCareerVNextMechanics(identity)!;
+    const created = createCareerVNext({ seed: 'vnext-legacy-world', identity }, mechanics);
+    if (!created.ok) throw new Error(created.reason);
+    // An alpha-world program, as a pre-M8 save would hold, with that season's alpha world.
+    const programId = mechanics.legacyWorld.programProfiles[5]!.programId;
+    let career: CareerVNext = {
+      ...created.career,
+      recruiting: {
+        ...created.career.recruiting,
+        offers: [{ ...created.career.recruiting.offers[0]!, programId }],
+      },
+    };
+    const committed = commitProgramVNext(career, programId, mechanics);
+    if (!committed.ok) throw new Error(committed.reason);
+    const legacy = createWorldAlphaSeason(
+      mechanics.legacyWorld,
+      createRng('vnext-legacy-world:vnext:world:0'),
+      0,
+      programId,
+    );
+    if (!legacy.ok) throw new Error(legacy.reason);
+    career = { ...committed.career, season: { ...committed.career.season, world: legacy.value } };
+    const json = serializeCareerVNext(career);
+    expect(json).not.toBeNull();
+    career = parseCareerVNext(json!)!;
+    const opponents: string[] = [];
+    for (let guard = 0; guard < 2_000 && career.flow.type !== 'OFFSEASON'; guard += 1) {
+      const flow = career.flow;
+      if (flow.type === 'GAME' && flow.game.stage === 'PREGAME') {
+        const fixture = mechanics.legacyWorld.regularSeasonRounds
+          .find(({ roundNumber }) => roundNumber === career.season.weekIndex + 1)
+          ?.fixtures.find(
+            ({ homeProgramId, awayProgramId }) =>
+              homeProgramId === programId || awayProgramId === programId,
+          );
+        if (fixture !== undefined)
+          opponents.push(
+            fixture.homeProgramId === programId ? fixture.awayProgramId : fixture.homeProgramId,
+          );
+      }
+      const step: CareerVNextResult =
+        flow.type === 'WEEK_PLAN'
+          ? (() => {
+              const open = focusDefinitionsVNext(career, mechanics)
+                .map(({ id }) => id)
+                .filter((id) => isFocusAvailableVNext(career, id, mechanics));
+              return planWeekVNext(career, [open[0]!, open[1]!, open[2]!], mechanics);
+            })()
+          : flow.type === 'BREAKTHROUGH' && flow.offer.chosenSkillId === null
+            ? chooseBreakthroughVNext(career, flow.offer.skillIds[0]!)
+            : flow.type === 'EVENT' && flow.event.chosenChoiceId === null
+              ? chooseEventVNext(career, flow.event.choiceIds[0]!, mechanics)
+              : flow.type === 'INJURY' && flow.report.availability === null
+                ? chooseInjuryVNext(career, 'injury_choice_rest_rehab', mechanics)
+                : flow.type === 'GAME'
+                  ? flow.game.stage === 'PREGAME'
+                    ? kickoffVNext(career, mechanics)
+                    : flow.game.stage === 'SNAP'
+                      ? chooseSnapVNext(career, projectSnapBoardFrame(career)!.decisionIds[0]!)
+                      : continueGameVNext(career, mechanics)
+                  : flow.type === 'POST_GAME'
+                    ? nextWeekVNext(career, mechanics)
+                    : flow.type === 'SEASON_REVIEW'
+                      ? continueSeasonReviewVNext(career, mechanics)
+                      : toGameDayVNext(career, mechanics);
+      if (!step.ok) throw new Error(step.reason);
+      career = step.career;
+    }
+    // The season ran on the alpha schedule and bracket.
+    expect(opponents).toHaveLength(12);
+    expect(career.season.world!.model).toBe('world_alpha_season_v1');
+    expect(['CHAMPION', 'RUNNER_UP', 'SEMIFINAL', 'MISSED']).toContain(career.history[0]!.finish);
+    if (career.flow.type !== 'OFFSEASON') throw new Error('offseason');
+    const next = commitOffseasonVNext(career, career.flow.options[0]!.programId, mechanics);
+    if (!next.ok) throw new Error(next.reason);
+    expect(next.career.season.world!.model).toBe('world_vnext_season_v1');
+    expect(serializeCareerVNext(next.career)).not.toBeNull();
   }, 300_000);
 });

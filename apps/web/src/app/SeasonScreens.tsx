@@ -17,6 +17,7 @@ import {
   ROLE_KEYS,
   STAT_KEYS,
   key,
+  conferenceOf,
   program,
 } from './content';
 import { Nameplate } from './Nameplate';
@@ -27,6 +28,8 @@ const FINISH_KEYS = {
   CHAMPION: 'v2.review.finish.champion',
   RUNNER_UP: 'v2.review.finish.runnerUp',
   SEMIFINAL: 'v2.review.finish.semifinal',
+  QUARTERFINAL: 'v2.review.finish.quarterfinal',
+  FIRST_ROUND: 'v2.review.finish.firstRound',
   MISSED: 'v2.review.finish.missed',
 } as const satisfies Record<SeasonFinishVNext, MessageKey>;
 
@@ -90,6 +93,13 @@ export function SeasonReviewScreen({
             </p>
           </div>
         </div>
+        {review.conferenceChampion === true && (
+          <p className="s2-scene__body">
+            {t('v2.review.conferenceChampion', {
+              conference: t(key(conferenceOf(review.programId)?.nameKey ?? '')),
+            })}
+          </p>
+        )}
         {review.finish !== 'CHAMPION' && (
           <p className="s2-scene__body">
             {t('v2.review.champion', {

@@ -5,6 +5,7 @@ import {
   type CareerVNext,
   type CareerVNextMechanics,
   type VNextPositionId,
+  worldDefinitionVNext,
 } from '@project-saturday/game-core';
 import type { MessageKey } from '@project-saturday/game-content/locales';
 
@@ -26,6 +27,7 @@ import {
   participantName,
   program,
   traits,
+  conferenceOf,
 } from './content';
 import { METER_COLORS, PORTRAIT } from './theme';
 import { Crest, Meter, Panel } from './ui';
@@ -62,7 +64,13 @@ export function TeamPanel({
   const positionId = career.athlete.profile.positionId as VNextPositionId;
   const abbr = t(POSITION_ABBR_KEYS[positionId]);
   const rows = [...room.evaluations].sort((left, right) => left.rank - right.rank);
-  const schedule = mechanics.world.regularSeasonRounds
+  const definition = worldDefinitionVNext(world, mechanics);
+  const conferenceId = definition.programProfiles.find(
+    (entry) => entry.programId === programId,
+  )?.groupId;
+  const conference = conferenceOf(programId);
+  const standings = world.groupStandings.filter((entry) => entry.groupId === conferenceId);
+  const schedule = definition.regularSeasonRounds
     .map((round) => ({
       week: round.roundNumber - 1,
       fixture: round.fixtures.find(
@@ -216,6 +224,38 @@ export function TeamPanel({
                 })}
             </ol>
           </Panel>
+          {conference !== null && standings.length > 0 && (
+            <Panel
+              id="s2-team-conference"
+              title={t('v2.team.conference', { conference: t(key(conference.nameKey)) })}
+            >
+              <ol className="s2-schedule">
+                {standings.map((entry) => {
+                  const identityRow = program(entry.programId);
+                  return (
+                    <li
+                      className={`s2-schedule__row ${entry.programId === programId ? 's2-schedule__row--now' : ''}`}
+                      key={entry.programId}
+                    >
+                      <span className="s2-num">{entry.rank}</span>
+                      <Crest identity={identityRow} size={26} />
+                      <span className="s2-schedule__opp">{t(key(identityRow.shortNameKey))}</span>
+                      <span className="s2-note s2-num">
+                        {t('v2.team.conferenceRecord', {
+                          wins: entry.groupWins,
+                          losses: entry.groupLosses,
+                          ties: entry.groupTies,
+                        })}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ol>
+              <p className="s2-note" style={{ marginTop: 8 }}>
+                {t('v2.team.playoffLine')}
+              </p>
+            </Panel>
+          )}
           <Panel id="s2-team-rankings" title={t('v2.team.rankings')}>
             <ol className="s2-schedule">
               {top.map((entry) => {

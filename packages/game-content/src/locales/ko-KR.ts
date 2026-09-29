@@ -13,6 +13,8 @@ import { koKRVNextMessages } from './r-vnext.js';
 import { koKRVNextWeekMessages } from './r-vnext-week.js';
 import { koKRDefenderMessages } from './m8-defenders.js';
 import { koKRDefenderUiMessages } from './m8-defenders-ui.js';
+import { koKRWorldMessages } from './m8-world.js';
+import { koKRWorldUiMessages } from './m8-world-ui.js';
 import { koKRM8PositionMessages } from './m8-positions.js';
 import { m7BuildKo } from './m7-builds.js';
 import { m7DirectKo } from './m7-direct.js';
@@ -31,6 +33,8 @@ export const koKRMessages = {
   ...koKRM8PositionMessages,
   ...koKRDefenderMessages,
   ...koKRDefenderUiMessages,
+  ...koKRWorldMessages,
+  ...koKRWorldUiMessages,
   ...koKREventBatchMessages,
   ...koKRInjuryBatchMessages,
   ...koKRM6UiMessages,

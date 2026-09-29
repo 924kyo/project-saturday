@@ -12,11 +12,13 @@ import {
 } from '@project-saturday/game-content';
 import {
   buildCareerVNextMechanics,
+  conferenceIdentityVNext,
   edgeContent,
   eventContent,
   lbContent,
   injuryContent,
   programIdentityVNext,
+  worldVNextMechanicsDefinition,
   type ProgramIdentityVNext,
 } from '@project-saturday/game-content/content';
 import type { MessageKey } from '@project-saturday/game-content/locales';
@@ -27,6 +29,7 @@ import {
   type SidelineRepGradeVNext,
   type CareerVNext,
   type PositionRoomContext,
+  type PostseasonRoundVNext,
   type ProgramId,
   type VNextPositionId,
 } from '@project-saturday/game-core';
@@ -251,9 +254,19 @@ export function currentOverall(career: CareerVNext): number {
 }
 
 export const ROUND_KEYS = {
+  FIRST_ROUND: 'v2.round.firstRound',
+  QUARTERFINAL: 'v2.round.quarterfinal',
   SEMIFINAL: 'v2.round.semifinal',
   FINAL: 'v2.round.final',
-} as const satisfies Record<'SEMIFINAL' | 'FINAL', MessageKey>;
+} as const satisfies Record<PostseasonRoundVNext, MessageKey>;
+
+/** The program's conference identity in the conference world (the alpha groups keep their IDs). */
+export function conferenceOf(programId: ProgramId) {
+  const groupId = worldVNextMechanicsDefinition.programProfiles.find(
+    (entry) => entry.programId === programId,
+  )?.groupId;
+  return groupId === undefined ? null : conferenceIdentityVNext(groupId);
+}
 
 export const CLASS_YEAR_KEYS = {
   1: 'v2.classYear.freshman',

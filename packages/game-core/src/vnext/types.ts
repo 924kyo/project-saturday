@@ -14,7 +14,11 @@ import type {
   PositionAlphaGameState,
   PositionAlphaSessionCommandMechanics,
 } from '../season/position-alpha-session.js';
-import type { WorldAlphaSeasonState } from '../season/world-alpha.js';
+import type {
+  WorldAlphaMechanicsDefinition,
+  WorldAlphaSeasonState,
+} from '../season/world-alpha.js';
+import type { WorldVNextSeasonState } from '../season/world-vnext.js';
 import type { GameStakesVNext } from './stakes.js';
 import type { WrAlphaGameState } from '../games/wr-alpha.js';
 import type {
@@ -42,8 +46,8 @@ import type {
 export const CAREER_VNEXT_MODEL = 'career_vnext' as const;
 export const CAREER_VNEXT_VERSION = 3 as const;
 export const CAREER_VNEXT_REGULAR_SEASON_WEEKS = 12 as const;
-/** Semifinal and final follow the regular season for the four qualifiers. */
-export const CAREER_VNEXT_POSTSEASON_WEEKS = 2 as const;
+/** Bracket weeks after the regular season: first round, quarterfinal, semifinal, final. */
+export const CAREER_VNEXT_POSTSEASON_WEEKS = 4 as const;
 /** A college career is four seasons (freshman through senior). */
 export const CAREER_VNEXT_SEASONS = 4 as const;
 /** Every role gets at least this many Saturday decisions; sideline reps fill the gap. */
@@ -64,6 +68,8 @@ export interface DefenderCatalogVNext {
 
 export type CareerVNextMechanics = PositionAlphaSessionCommandMechanics & {
   readonly defenders: Readonly<Record<DefenderPositionId, DefenderCatalogVNext>>;
+  /** The 32-program alpha world, for a season a pre-M8 save started there (M8 seasons use `world`). */
+  readonly legacyWorld: WorldAlphaMechanicsDefinition;
   readonly wr: {
     readonly events: readonly EventMechanicsDefinition[];
     readonly families: readonly KeySnapFamilyMechanicsDefinition[];
@@ -159,7 +165,7 @@ export interface GameDayVNext {
   readonly round?: PostseasonRoundVNext;
 }
 
-export type PostseasonRoundVNext = 'SEMIFINAL' | 'FINAL';
+export type PostseasonRoundVNext = 'FIRST_ROUND' | 'QUARTERFINAL' | 'SEMIFINAL' | 'FINAL';
 
 /** Carried from a weekly event choice into the next kickoff only. */
 export interface GameModifiersVNext {
@@ -248,7 +254,8 @@ export interface GameRecapVNext {
     'injury_availability_full' | 'injury_availability_limited' | 'injury_availability_out';
 }
 
-export type SeasonFinishVNext = 'CHAMPION' | 'RUNNER_UP' | 'SEMIFINAL' | 'MISSED';
+export type SeasonFinishVNext =
+  'CHAMPION' | 'RUNNER_UP' | 'SEMIFINAL' | 'QUARTERFINAL' | 'FIRST_ROUND' | 'MISSED';
 
 export interface StatTotalVNext {
   readonly field: string;
@@ -263,6 +270,8 @@ export interface SeasonReviewVNext {
   readonly finalRank: number | null;
   readonly finish: SeasonFinishVNext;
   readonly championProgramId: ProgramId;
+  /** Conference title (conference-world seasons; absent on pre-M8 seasons). */
+  readonly conferenceChampion?: boolean;
   readonly games: number;
   readonly liveGames: number;
   readonly statTotals: readonly StatTotalVNext[];
@@ -338,7 +347,8 @@ export interface CareerVNext {
   readonly season: {
     readonly index: number;
     readonly weekIndex: number;
-    readonly world: WorldAlphaSeasonState | null;
+    /** The conference world (M8 on) or, for a season begun before M8, the alpha world. */
+    readonly world: WorldAlphaSeasonState | WorldVNextSeasonState | null;
     /** Sideline credit earned last Saturday, consumed by the next practice week. */
     readonly sidelineCredit: number;
     /** Where the season began, for the season review. */

@@ -10,6 +10,7 @@ import { eventMechanicsDefinitions } from './events.js';
 import { buildShippedPositionAlphaSessionCommandMechanics } from './position-alpha-session.js';
 import { skillMechanicsDefinitions } from './skills.js';
 import { defenderCatalog, edgeContent, lbContent } from './defenders.js';
+import { addedProgramsVNext, worldVNextMechanicsDefinition } from './world-vnext.js';
 
 /**
  * The shipped WR card catalog on VNext's WR drills. Skill scopes may only name weekly actions, so a
@@ -158,6 +159,10 @@ export function buildCareerVNextMechanics(
       patterns: keySnapPatternMechanicsDefinitions,
     },
     defenders: DEFENDER_CATALOGS,
+    // M8: new seasons use the 64-program conference world; a season already in progress on the
+    // 32-program alpha world finishes there.
+    world: worldVNextMechanicsDefinition,
+    legacyWorld: shared.world,
   };
 }
 
@@ -220,8 +225,8 @@ const rows: readonly Row[] = [
 
 const crests = ['shield', 'circle', 'diamond', 'pennant'] as const;
 
-export const programIdentitiesVNext: readonly ProgramIdentityVNext[] = Object.freeze(
-  rows.map(([id, key, world, monogram, primary, secondary], index) =>
+export const programIdentitiesVNext: readonly ProgramIdentityVNext[] = Object.freeze([
+  ...rows.map(([id, key, world, monogram, primary, secondary], index) =>
     Object.freeze({
       id: id as ProgramId,
       nameKey: `${world ? 'm7World' : 'programWorld'}.programs.${key}.name`,
@@ -233,7 +238,19 @@ export const programIdentitiesVNext: readonly ProgramIdentityVNext[] = Object.fr
       crest: crests[index % crests.length]!,
     }),
   ),
-);
+  ...addedProgramsVNext.map((entry, index) =>
+    Object.freeze({
+      id: entry.id as ProgramId,
+      nameKey: entry.nameKey,
+      shortNameKey: entry.shortNameKey,
+      descriptionKey: entry.descriptionKey,
+      primary: entry.primary,
+      secondary: entry.secondary,
+      monogram: entry.monogram,
+      crest: crests[(rows.length + index) % crests.length]!,
+    }),
+  ),
+]);
 
 export function programIdentityVNext(programId: ProgramId): ProgramIdentityVNext {
   const identity = programIdentitiesVNext.find(({ id }) => id === programId);

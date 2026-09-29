@@ -1,3 +1,4 @@
+import { projectWorldVNextPositionMatchup } from './world-vnext.js';
 import { createPositionPlayerProfile } from '../player/position-creation.js';
 import { TACTICAL_GAME_RULES_VERSION } from '../games/tactical-alpha-v1.js';
 import type { PositionSkillOfferDefinitionV2 } from './position-alpha-breakthrough-v2.js';
@@ -676,13 +677,22 @@ export function startPositionAlphaGame(
     ? { relationshipInformationScoreModifier: session.relationshipInformationScoreModifier! }
     : {};
   const opponentProgramId = isHome ? fixture.awayProgramId : fixture.homeProgramId;
-  const matchup = projectWorldAlphaPositionMatchup(
-    mechanics.world,
-    session.player.positionId,
-    session.lifecycle.currentProgramId,
-    opponentProgramId,
-    isHome,
-  );
+  // Career VNext (M8) supplies the 64-program conference world; the alpha session its own world.
+  const matchup =
+    projectWorldAlphaPositionMatchup(
+      mechanics.world,
+      session.player.positionId,
+      session.lifecycle.currentProgramId,
+      opponentProgramId,
+      isHome,
+    ) ??
+    projectWorldVNextPositionMatchup(
+      mechanics.world,
+      session.player.positionId,
+      session.lifecycle.currentProgramId,
+      opponentProgramId,
+      isHome,
+    );
   if (matchup === undefined) return null;
   const opportunity = Object.hasOwn(session, 'relationshipOpportunitySnapBonusPermille')
     ? projectPositionAlphaOpportunityV2(

@@ -14,6 +14,8 @@ import { enUSVNextMessages } from './r-vnext.js';
 import { enUSVNextWeekMessages } from './r-vnext-week.js';
 import { enUSDefenderMessages } from './m8-defenders.js';
 import { enUSDefenderUiMessages } from './m8-defenders-ui.js';
+import { enUSWorldMessages } from './m8-world.js';
+import { enUSWorldUiMessages } from './m8-world-ui.js';
 import { enUSM8PositionMessages } from './m8-positions.js';
 import { m7BuildEn } from './m7-builds.js';
 import { m7DirectEn } from './m7-direct.js';
@@ -32,6 +34,8 @@ export const enUSMessages = {
   ...enUSM8PositionMessages,
   ...enUSDefenderMessages,
   ...enUSDefenderUiMessages,
+  ...enUSWorldMessages,
+  ...enUSWorldUiMessages,
   ...enUSEventBatchMessages,
   ...enUSInjuryBatchMessages,
   ...enUSM6UiMessages,

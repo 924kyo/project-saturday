@@ -6,14 +6,9 @@ import {
   type PositionRoomContext,
 } from '../programs/position-room.js';
 import { createRng, nextUint32, type RngState } from '../random/rng.js';
-import {
-  createWorldAlphaSeason,
-  initializeWorldAlphaPostseason,
-  resolveNextWorldAlphaPostseasonRound,
-  resolveNextWorldAlphaRegularRound,
-  type WorldAlphaFixtureMechanics,
-  type WorldAlphaPlayerGameResult,
-  type WorldAlphaSeasonState,
+import type {
+  WorldAlphaFixtureMechanics,
+  WorldAlphaPlayerGameResult,
 } from '../season/world-alpha.js';
 import {
   VNEXT_ROOM_TUNING,
@@ -39,13 +34,33 @@ import {
   type VNextPositionId,
 } from './types.js';
 import { createConditionVNext, VNEXT_CAREER_WEEK_STRIDE } from './weekly.js';
+import {
+  activePostseasonRoundVNext,
+  conferenceChampionVNext,
+  createSeasonWorldVNext,
+  initializePostseasonVNext,
+  postseasonRoundCountVNext,
+  resolvePostseasonRoundVNext,
+  resolveRegularRoundVNext,
+  seasonFinishVNext,
+  worldDefinitionVNext,
+  type WorldStateVNext,
+} from './world.js';
 
 /**
- * The season arc: regular season → four-team postseason (semifinal, final) → season review →
- * offseason (stay or transfer) → the next season, for four seasons, then the Alumni Wall.
+ * The season arc: regular season → the 12-team bracket (first round, quarterfinal, semifinal,
+ * final; a pre-M8 season in progress keeps its four-team bracket) → season review → offseason
+ * (stay or transfer) → the next season, for four seasons, then the Alumni Wall.
  * World results stay in the world kernel; each new season and room draws from a named stream.
  */
-const FINISH_ORDER: readonly SeasonFinishVNext[] = ['CHAMPION', 'RUNNER_UP', 'SEMIFINAL', 'MISSED'];
+const FINISH_ORDER: readonly SeasonFinishVNext[] = [
+  'CHAMPION',
+  'RUNNER_UP',
+  'SEMIFINAL',
+  'QUARTERFINAL',
+  'FIRST_ROUND',
+  'MISSED',
+];
 
 function includesProgram(
   fixture: { readonly homeProgramId: ProgramId; readonly awayProgramId: ProgramId },
@@ -57,13 +72,8 @@ function includesProgram(
 export function postseasonRoundVNext(
   career: Pick<CareerVNext, 'season'>,
 ): PostseasonRoundVNext | null {
-  const world = career.season.world;
-  if (career.season.weekIndex < CAREER_VNEXT_REGULAR_SEASON_WEEKS || world === null) return null;
-  return world.postseason.type === 'ACTIVE'
-    ? world.postseason.currentRoundIndex === 0
-      ? 'SEMIFINAL'
-      : 'FINAL'
-    : null;
+  if (career.season.weekIndex < CAREER_VNEXT_REGULAR_SEASON_WEEKS) return null;
+  return activePostseasonRoundVNext(career.season.world)?.round ?? null;
 }
 
 /** This week's fixture for the player's program: a regular round or the current postseason round. */
@@ -75,14 +85,12 @@ export function scheduledFixtureVNext(
   if (programId === undefined) return null;
   if (career.season.weekIndex < CAREER_VNEXT_REGULAR_SEASON_WEEKS)
     return (
-      mechanics.world.regularSeasonRounds
-        .find(({ roundNumber }) => roundNumber === career.season.weekIndex + 1)
+      worldDefinitionVNext(career.season.world, mechanics)
+        .regularSeasonRounds.find(({ roundNumber }) => roundNumber === career.season.weekIndex + 1)
         ?.fixtures.find((fixture) => includesProgram(fixture, programId)) ?? null
     );
-  const postseason = career.season.world?.postseason;
-  if (postseason?.type !== 'ACTIVE') return null;
   return (
-    postseason.rounds[postseason.currentRoundIndex].fixtures.find((fixture) =>
+    activePostseasonRoundVNext(career.season.world)?.fixtures.find((fixture) =>
       includesProgram(fixture, programId),
     ) ?? null
   );
@@ -90,20 +98,14 @@ export function scheduledFixtureVNext(
 
 /** Resolves the world round the player's game belongs to. */
 export function resolveWorldRoundVNext(
-  world: WorldAlphaSeasonState,
+  world: WorldStateVNext,
   mechanics: CareerVNextMechanics,
   playerResult: WorldAlphaPlayerGameResult | null,
   weekIndex: number,
-) {
+): WorldStateVNext | null {
   return weekIndex < CAREER_VNEXT_REGULAR_SEASON_WEEKS
-    ? (() => {
-        const resolved = resolveNextWorldAlphaRegularRound(world, mechanics.world, playerResult);
-        return resolved.ok ? resolved.value.state : null;
-      })()
-    : (() => {
-        const resolved = resolveNextWorldAlphaPostseasonRound(world, mechanics.world, playerResult);
-        return resolved.ok ? resolved.value : null;
-      })();
+    ? resolveRegularRoundVNext(world, mechanics, playerResult)
+    : resolvePostseasonRoundVNext(world, mechanics, playerResult);
 }
 
 function overallOf(career: CareerVNext, mechanics: CareerVNextMechanics): number {
@@ -127,22 +129,16 @@ function statTotals(career: CareerVNext, seasonIndex: number): readonly StatTota
 
 function seasonReview(
   career: CareerVNext,
-  world: WorldAlphaSeasonState,
+  world: WorldStateVNext,
   mechanics: CareerVNextMechanics,
 ): SeasonReviewVNext | null {
   const programId = career.program?.programId;
-  if (programId === undefined || world.postseason.type !== 'COMPLETE') return null;
+  const finish = programId === undefined ? null : seasonFinishVNext(world, programId);
+  if (programId === undefined || finish === null || world.postseason.type !== 'COMPLETE')
+    return null;
   const postseason = world.postseason;
   const record = world.programRecords.find((entry) => entry.programId === programId);
   const rank = world.rankings.find((entry) => entry.programId === programId)?.rank ?? null;
-  const finish: SeasonFinishVNext =
-    postseason.championProgramId === programId
-      ? 'CHAMPION'
-      : includesProgram(postseason.rounds[1].fixtures[0], programId)
-        ? 'RUNNER_UP'
-        : postseason.qualifierProgramIds.includes(programId)
-          ? 'SEMIFINAL'
-          : 'MISSED';
   const seasonIndex = career.season.index;
   const games = career.log.filter((recap) => (recap.seasonIndex ?? 0) === seasonIndex);
   const weekLow = seasonIndex * VNEXT_CAREER_WEEK_STRIDE;
@@ -153,6 +149,7 @@ function seasonReview(
     finalRank: rank,
     finish,
     championProgramId: postseason.championProgramId,
+    conferenceChampion: conferenceChampionVNext(world, programId),
     games: games.length,
     liveGames: games.filter(({ liveSnapCount }) => liveSnapCount > 0).length,
     statTotals: statTotals(career, seasonIndex),
@@ -179,27 +176,27 @@ export function afterScheduleStep(
   const programId = next.program?.programId;
   if (world === null || programId === undefined) return fail('career_vnext.engine_failed');
   if (world.postseason.type === 'PENDING') {
-    const initialized = initializeWorldAlphaPostseason(world, mechanics.world);
-    if (!initialized.ok) return fail('career_vnext.engine_failed');
-    world = initialized.value;
+    const initialized = initializePostseasonVNext(world, mechanics);
+    if (initialized === null) return fail('career_vnext.engine_failed');
+    world = initialized;
   }
-  for (let guard = 0; guard < 3 && world.postseason.type === 'ACTIVE'; guard += 1) {
-    const active: Extract<WorldAlphaSeasonState['postseason'], { type: 'ACTIVE' }> =
-      world.postseason;
-    const round = active.rounds[active.currentRoundIndex];
-    if (round.fixtures.some((fixture) => includesProgram(fixture, programId)))
+  // A bye or elimination runs the bracket on without the player (no player game, no career RNG).
+  for (let guard = 0; guard <= postseasonRoundCountVNext(world); guard += 1) {
+    const active = activePostseasonRoundVNext(world);
+    if (active === null) break;
+    if (active.fixtures.some((fixture) => includesProgram(fixture, programId)))
       return publish(previous, {
         ...next,
         season: {
           ...next.season,
           world,
-          weekIndex: CAREER_VNEXT_REGULAR_SEASON_WEEKS + active.currentRoundIndex,
+          weekIndex: CAREER_VNEXT_REGULAR_SEASON_WEEKS + active.index,
         },
         flow: { type: 'WEEK_PLAN' },
       });
-    const resolved = resolveNextWorldAlphaPostseasonRound(world, mechanics.world, null);
-    if (!resolved.ok) return fail('career_vnext.engine_failed');
-    world = resolved.value;
+    const resolved: WorldStateVNext | null = resolvePostseasonRoundVNext(world, mechanics, null);
+    if (resolved === null) return fail('career_vnext.engine_failed');
+    world = resolved;
   }
   const withWorld = { ...next, season: { ...next.season, world } } as CareerVNext;
   const review = seasonReview(withWorld, world, mechanics);
@@ -426,13 +423,9 @@ export function commitOffseasonVNext(
   const next = nextSeasonRoomVNext(career, programId, mechanics);
   if (next === null) return fail('career_vnext.engine_failed');
   const seasonIndex = career.season.index + 1;
-  const world = createWorldAlphaSeason(
-    mechanics.world,
-    createRng(`${String(career.seed)}:vnext:world:${seasonIndex}`),
-    seasonIndex,
-    programId,
-  );
-  if (!world.ok) return fail('career_vnext.engine_failed');
+  // Every new season is played in the conference world, including a pre-M8 save's next season.
+  const world = createSeasonWorldVNext(String(career.seed), seasonIndex, programId, mechanics);
+  if (world === null) return fail('career_vnext.engine_failed');
   const profile = career.athlete.profile;
   return publish(career, {
     ...career,
@@ -448,7 +441,7 @@ export function commitOffseasonVNext(
     season: {
       index: seasonIndex,
       weekIndex: 0,
-      world: world.value,
+      world,
       sidelineCredit: 0,
       startOverall: overallOf(career, mechanics),
       startRank: next.room.projection.rank,

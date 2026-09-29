@@ -20,9 +20,18 @@ R is COMPLETE (2026-09-30). The gate met is:
 
 The plan is archived at `docs/exec-plans/completed/r-product-reconciliation.md`.
 
-M8 steps 1–2 are complete (2026-09-30): LB and EDGE are playable end to end in Career VNext. Next is step 3, the 64-program world.
+M8 steps 1–3 are complete (2026-09-30): LB and EDGE are playable end to end, and new seasons are played in the 64-program conference world. Next is step 4, draft stock and declaration.
 
 ## Last completed task
+
+M8 step 3, the 64-program conference world (2026-09-30):
+- 32 new original programs and four new conferences, generated with paired copy from `scripts/generate-world-content.py`; the 32 alpha programs keep their exact profiles, and their groups become the first four conferences;
+- a separate engine `season/world-vnext.ts` that reuses the aggregate simulator, tables and rankings. It adds a 12-round schedule (seven conference rounds, then five non-conference rounds over distinct conference matchings, with five to seven home games each) and a 12-team bracket (eight conference champions plus four at-large, seeded by ranking, top four seeds get byes, four bracket weeks);
+- a VNext world seam (`vnext/world.ts`): a season already in progress on the 32-program world finishes on its own schedule and bracket, and every new season uses the conference world. No save migration is needed;
+- web: conference standings on Team, new round and finish labels, and a conference-champion line in the review;
+- verified: `pnpm check` (841 + 403 + 390 tests), the six default two-season journeys, and a visual review.
+
+Step 1–2 summary:
 
 M8 steps 1–2, LB/EDGE foundation and defender kernel (2026-09-30):
 - foundation: IDs, six attributes and three archetypes each, creation, room/depth, three drills and proficiencies each, focus injury policies, program ratings, lifecycle stats and tactical position lists;

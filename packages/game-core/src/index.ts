@@ -1325,3 +1325,4 @@ export {
 export * from './vnext/index.js';
 export * from './games/defender.js';
 export * from './games/defender-events.js';
+export * from './season/world-vnext.js';

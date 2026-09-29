@@ -449,7 +449,8 @@ function fixtureResultMap(roundStates: readonly WorldAlphaRoundState[]) {
   );
 }
 
-function deriveTables(
+/** Shared by the VNext conference world: records, group standings and rankings from results. */
+export function deriveWorldAlphaTables(
   definition: WorldAlphaMechanicsDefinition,
   roundStates: readonly WorldAlphaRoundState[],
 ): Pick<WorldAlphaSeasonState, 'programRecords' | 'groupStandings' | 'rankings'> {
@@ -620,7 +621,7 @@ function sameSerializable(left: unknown, right: unknown): boolean {
   }
 }
 
-function aggregateResultIsValid(
+export function isValidWorldAlphaAggregateResult(
   result: WorldAlphaAggregateGameResult,
   fixture: WorldAlphaFixtureMechanics,
   home: WorldAlphaProgramMechanics,
@@ -720,12 +721,12 @@ export function validateWorldAlphaSeasonState(
         if (
           state.playerProgramId === null ||
           ![fixture.homeProgramId, fixture.awayProgramId].includes(state.playerProgramId) ||
-          !validPlayerResult(result, fixture)
+          !isValidWorldAlphaPlayerResult(result, fixture)
         )
           issues.push(path);
       } else if (
         result.model !== 'aggregate_alpha_v1' ||
-        !aggregateResultIsValid(
+        !isValidWorldAlphaAggregateResult(
           result,
           fixture,
           profiles.get(fixture.homeProgramId)!,
@@ -747,7 +748,9 @@ export function validateWorldAlphaSeasonState(
     }
   }
   const expectedTables =
-    issues.length === 0 ? deriveTables(definition, state.regularSeasonResults) : undefined;
+    issues.length === 0
+      ? deriveWorldAlphaTables(definition, state.regularSeasonResults)
+      : undefined;
   if (
     expectedTables !== undefined &&
     (!sameSerializable(state.programRecords, expectedTables.programRecords) ||
@@ -779,7 +782,7 @@ export function validateWorldAlphaSeasonState(
         const resultValid =
           fixture !== undefined &&
           (postseasonResult.result.model === 'aggregate_alpha_v1'
-            ? aggregateResultIsValid(
+            ? isValidWorldAlphaAggregateResult(
                 postseasonResult.result,
                 fixture,
                 profiles.get(fixture.homeProgramId)!,
@@ -787,7 +790,7 @@ export function validateWorldAlphaSeasonState(
               )
             : state.playerProgramId !== null &&
               [fixture.homeProgramId, fixture.awayProgramId].includes(state.playerProgramId) &&
-              validPlayerResult(postseasonResult.result, fixture));
+              isValidWorldAlphaPlayerResult(postseasonResult.result, fixture));
         if (
           fixture === undefined ||
           !resultValid ||
@@ -846,7 +849,7 @@ export function createWorldAlphaSeason(
         .sort((left, right) => compareCodeUnits(left.id, right.id))
         .map(() => null),
     }));
-  const tables = deriveTables(definition, regularSeasonResults);
+  const tables = deriveWorldAlphaTables(definition, regularSeasonResults);
   const state: WorldAlphaSeasonState = {
     model: 'world_alpha_season_v1',
     seasonIndex,
@@ -869,8 +872,26 @@ export function projectWorldAlphaPositionMatchup(
   opponentProgramId: unknown,
   atHome: boolean,
 ): WorldAlphaPositionMatchupProjection | undefined {
+  return definitionIsValid(definition)
+    ? projectPositionMatchupFromProfiles(
+        definition,
+        positionId,
+        playerProgramId,
+        opponentProgramId,
+        atHome,
+      )
+    : undefined;
+}
+
+/** The matchup arithmetic over any already-validated world definition's program profiles. */
+export function projectPositionMatchupFromProfiles(
+  definition: WorldAlphaMechanicsDefinition,
+  positionId: unknown,
+  playerProgramId: unknown,
+  opponentProgramId: unknown,
+  atHome: boolean,
+): WorldAlphaPositionMatchupProjection | undefined {
   if (
-    !definitionIsValid(definition) ||
     !isPositionId(positionId) ||
     !isProgramId(playerProgramId) ||
     !isProgramId(opponentProgramId) ||
@@ -926,8 +947,8 @@ export function projectWorldAlphaPositionMatchup(
   });
 }
 
-function simulationTier(
-  state: WorldAlphaSeasonState,
+export function worldAlphaSimulationTier(
+  state: Pick<WorldAlphaSeasonState, 'playerProgramId' | 'rankings'>,
   definition: WorldAlphaMechanicsDefinition,
   fixture: WorldAlphaFixtureMechanics,
 ): WorldAlphaSimulationTier {
@@ -951,7 +972,7 @@ function simulationTier(
     : 'TIER_3_DISTANT';
 }
 
-function simulateAggregate(
+export function simulateWorldAlphaAggregate(
   fixture: WorldAlphaFixtureMechanics,
   home: WorldAlphaProgramMechanics,
   away: WorldAlphaProgramMechanics,
@@ -991,7 +1012,7 @@ function simulateAggregate(
   };
 }
 
-function validPlayerResult(
+export function isValidWorldAlphaPlayerResult(
   result: WorldAlphaPlayerGameResult,
   fixture: WorldAlphaFixtureMechanics,
 ): boolean {
@@ -1035,7 +1056,7 @@ export function resolveNextWorldAlphaRegularRound(
     (playerFixture === undefined) !== (playerResult === null) ||
     (playerFixture !== undefined &&
       playerResult !== null &&
-      !validPlayerResult(playerResult, playerFixture))
+      !isValidWorldAlphaPlayerResult(playerResult, playerFixture))
   )
     return deepFreeze({ ok: false as const, reason: 'world_alpha.invalid_input' as const });
   const profileById = new Map(
@@ -1045,13 +1066,13 @@ export function resolveNextWorldAlphaRegularRound(
   let rng = state.rng;
   const results: WorldAlphaGameResult[] = [];
   for (const fixture of canonicalFixtures) {
-    const tier = simulationTier(state, definition, fixture);
+    const tier = worldAlphaSimulationTier(state, definition, fixture);
     if (tier === 'TIER_1_PLAYER') {
       if (playerResult === null || playerResult.fixtureId !== fixture.id)
         return deepFreeze({ ok: false as const, reason: 'world_alpha.invalid_input' as const });
       results.push(cloneSerializable(playerResult));
     } else {
-      const simulated = simulateAggregate(
+      const simulated = simulateWorldAlphaAggregate(
         fixture,
         profileById.get(fixture.homeProgramId)!,
         profileById.get(fixture.awayProgramId)!,
@@ -1071,7 +1092,7 @@ export function resolveNextWorldAlphaRegularRound(
         }
       : cloneSerializable(entry),
   );
-  const tables = deriveTables(definition, regularSeasonResults);
+  const tables = deriveWorldAlphaTables(definition, regularSeasonResults);
   const nextState: WorldAlphaSeasonState = {
     ...cloneSerializable(state),
     rng,
@@ -1159,7 +1180,7 @@ export function resolveNextWorldAlphaPostseasonRound(
     (playerFixture === undefined) !== (playerResult === null) ||
     (playerFixture !== undefined &&
       playerResult !== null &&
-      !validPlayerResult(playerResult, playerFixture))
+      !isValidWorldAlphaPlayerResult(playerResult, playerFixture))
   )
     return deepFreeze({ ok: false as const, reason: 'world_alpha.invalid_input' as const });
   let rng = state.rng;
@@ -1168,7 +1189,7 @@ export function resolveNextWorldAlphaPostseasonRound(
       playerFixture?.id === fixture.id && playerResult !== null
         ? cloneSerializable(playerResult)
         : (() => {
-            const simulated = simulateAggregate(
+            const simulated = simulateWorldAlphaAggregate(
               fixture,
               profileById.get(fixture.homeProgramId)!,
               profileById.get(fixture.awayProgramId)!,

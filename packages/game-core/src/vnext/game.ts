@@ -1,4 +1,5 @@
 import { TACTICAL_GAME_RULES_VERSION } from '../games/tactical-alpha-v1.js';
+import { matchupVNext } from './world.js';
 import {
   projectWrAlphaWorldResult,
   resolveWrAlphaSnap,
@@ -13,7 +14,6 @@ import {
   type PositionAlphaGameState,
 } from '../season/position-alpha-session.js';
 import {
-  projectWorldAlphaPositionMatchup,
   type WorldAlphaFixtureMechanics,
   type WorldAlphaPlayerGameResult,
 } from '../season/world-alpha.js';
@@ -69,13 +69,7 @@ export function startVNextGame(
   const programId = career.program.programId;
   const isHome = fixture.homeProgramId === programId;
   const opponentProgramId = isHome ? fixture.awayProgramId : fixture.homeProgramId;
-  const matchup = projectWorldAlphaPositionMatchup(
-    mechanics.world,
-    'position_wr',
-    programId,
-    opponentProgramId,
-    isHome,
-  );
+  const matchup = matchupVNext(mechanics, 'position_wr', programId, opponentProgramId, isHome);
   if (matchup === undefined) return null;
   const gameHooks = gameHooksVNext(career, mechanics);
   const maximum = career.program.room.projection.interactiveSnapMaximum;
@@ -133,13 +127,7 @@ function startDefenderVNextGame(
   const program = career.program!;
   const isHome = fixture.homeProgramId === program.programId;
   const opponentProgramId = isHome ? fixture.awayProgramId : fixture.homeProgramId;
-  const matchup = projectWorldAlphaPositionMatchup(
-    mechanics.world,
-    positionId,
-    program.programId,
-    opponentProgramId,
-    isHome,
-  );
+  const matchup = matchupVNext(mechanics, positionId, program.programId, opponentProgramId, isHome);
   if (matchup === undefined) return null;
   const catalog = mechanics.defenders[positionId];
   const equipped = career.build.equippedSkillIds.filter((id) => id !== null);

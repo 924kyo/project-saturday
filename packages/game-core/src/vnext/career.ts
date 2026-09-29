@@ -11,7 +11,6 @@ import {
 import { createRng, nextUint32, type RngSeed, type RngState } from '../random/rng.js';
 import type { SkillId } from '../skills/ids.js';
 import { derivePositionAlphaRolloverV2 } from '../season/position-alpha-focus-v2.js';
-import { createWorldAlphaSeason } from '../season/world-alpha.js';
 import {
   createCommonPositionProficiencyUses,
   type PositionFocusEvidenceV2,
@@ -45,6 +44,7 @@ import {
   scheduledFixtureVNext,
 } from './season.js';
 import { projectVNextWorldResult, resolveVNextSnap, startVNextGame } from './game.js';
+import { createSeasonWorldVNext } from './world.js';
 import { projectGameStakesVNext } from './stakes.js';
 import { createSidelineReps, resolveSidelineRep, sidelineCreditFor } from './sideline.js';
 import {
@@ -182,13 +182,8 @@ export function commitProgramVNext(
     return fail('career_vnext.invalid_choice');
   const room = roomFor(career, programId, mechanics);
   if (!room.ok) return fail('career_vnext.engine_failed');
-  const world = createWorldAlphaSeason(
-    mechanics.world,
-    createRng(`${String(career.seed)}:vnext:world:0`),
-    0,
-    programId,
-  );
-  if (!world.ok) return fail('career_vnext.engine_failed');
+  const world = createSeasonWorldVNext(String(career.seed), 0, programId, mechanics);
+  if (world === null) return fail('career_vnext.engine_failed');
   const context = room.generated.context;
   return publish(career, {
     ...career,
@@ -201,7 +196,7 @@ export function commitProgramVNext(
     },
     recruiting: { ...career.recruiting, committedProgramId: programId },
     program: { programId, room: context },
-    season: { ...career.season, world: world.value, startRank: context.projection.rank },
+    season: { ...career.season, world, startRank: context.projection.rank },
     flow: { type: 'WEEK_PLAN' },
   });
 }

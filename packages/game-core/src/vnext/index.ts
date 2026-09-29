@@ -62,3 +62,11 @@ export {
   parseCareerVNext,
   serializeCareerVNext,
 } from './codec.js';
+export {
+  activePostseasonRoundVNext,
+  conferenceChampionVNext,
+  isConferenceWorldVNext,
+  seasonFinishVNext,
+  worldDefinitionVNext,
+  type WorldStateVNext,
+} from './world.js';

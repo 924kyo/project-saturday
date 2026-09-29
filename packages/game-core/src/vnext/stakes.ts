@@ -1,6 +1,6 @@
 import { deepFreeze } from '../player/immutable.js';
 import type { ProgramId } from '../player/ids.js';
-import { projectWorldAlphaPositionMatchup } from '../season/world-alpha.js';
+import { matchupVNext } from './world.js';
 import type { CareerVNext, CareerVNextMechanics } from './types.js';
 
 /** Public stakes for a scheduled game: only authoritative world facts, no hidden ratings. */
@@ -30,8 +30,8 @@ export function projectGameStakesVNext(
   const programId = career.program?.programId;
   const world = career.season.world;
   if (programId === undefined || world === null) return null;
-  const matchup = projectWorldAlphaPositionMatchup(
-    mechanics.world,
+  const matchup = matchupVNext(
+    mechanics,
     career.athlete.profile.positionId,
     programId,
     opponentProgramId,
