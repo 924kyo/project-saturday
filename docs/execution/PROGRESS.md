@@ -23,7 +23,22 @@ Prototype saves are left untouched on the device, with a one-tap JSON export not
 
 ## Last completed task
 
-Season arc (2026-09-30). A career now runs four seasons, end to end.
+Balance harness and first balance pass (R1.6, 2026-09-30). `career-vnext-balance.test.ts` simulates a season per position × focus strategy (grind, balanced, coach, study), prints the table and asserts the product bands.
+
+| Measure | Before | After |
+|---|---|---|
+| Overall growth per season | +1 | +2 to +5, from the position-weighted overall and focus XP ×3 |
+| Body at kickoff, balanced plan | ~98 (pinned at 100) | 45–95 |
+| Body at kickoff, grinding | — | under 10, and grinding invites injuries |
+| Coach trust at season end | 0–29 | 26–58 |
+| Verdict on low-volume games | harsh | a staff grade weighted by live-snap volume |
+
+What changed:
+- **Trust:** the staff grade drives post-game trust around a neutral 60, and sideline-only Saturdays leave trust alone.
+- **Recovery:** now +20 Body, so Body is a budget.
+- **OVR:** the nameplate, creation card and review now show the position-weighted rating the depth model already evaluates, not a flat mean of 16 attributes.
+
+Before that: the season arc (postseason, review, offseason, four seasons, Alumni Wall).
 
 - **Postseason:** the top four of the final rankings play a semifinal and a final (world kernel, higher seed breaks ties). A qualifying program plays them as weeks 13 and 14 with the full weekly loop; otherwise the world resolves them.
 - **Season review:** finish (champion, runner-up, semifinalist, missed), record, rank, the champion, and the athlete's year (overall and depth start to end, live games, stat totals, cards, injuries).
@@ -84,7 +99,7 @@ V4 continues in the new stack, in priority order:
    - off-field alerts only when actionable: done 2026-09-30 (academics; NIL and relationships are not in VNext yet);
    - Team depth-board and Profile screens: done 2026-09-30.
 3. **Season arc:** done 2026-09-30 (postseason, review, offseason stay/transfer, four seasons, retirement, Alumni Wall with prototype alumni).
-4. **Balance pass:** Body/recovery near-binary (three heavy drills pin Body at 0; the injury curve now punishes that); coach verdict harsh on low-volume games; QB trust erosion; rest credit on a one-week injury is inert.
+4. **Balance pass:** done 2026-09-30 through the harness. Still open: confidence saturates high (80–97) on sensible plans; rest credit on a one-week injury is inert; a fit-program freshman often reaches the top of the depth chart within season one.
 
 ## Active exec plan
 
@@ -114,7 +129,14 @@ V4 continues in the new stack, in priority order:
 - **Save/reload/offline:** save → reload → offline reload (service worker) resumes exactly; a failed write shows a banner and the exact retry succeeds (unit + App test).
 - **Keyboard:** keyboard-only play from creation through a snap result; focus draws the route preview; the board has an aria text equivalent.
 
-## Latest green verification (2026-09-30, season arc)
+## Latest green verification (2026-09-30, balance pass)
+
+- Typecheck, lint, boundary and localized-copy checks.
+- 821 tests in 100 files, including the balance harness.
+- Build/PWA: 19 entries / 1339.34 KiB.
+- Playwright: 4 passed / 2 skips.
+
+## Earlier verification (2026-09-30, season arc)
 
 - Typecheck, lint, boundary and localized-copy checks.
 - 820 tests, including a four-season career with a transfer, a playoff run and the v1/v2 migrations.

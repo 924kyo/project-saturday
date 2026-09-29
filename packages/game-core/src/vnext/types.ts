@@ -214,6 +214,8 @@ export interface GameRecapVNext {
   /** Completed engine game (summary, plays with tactical results, growth). */
   readonly engine: VNextGameState;
   readonly coachTrust: { readonly before: number; readonly after: number };
+  /** The staff's grade: the engine grade weighted toward neutral on few live snaps (absent = none). */
+  readonly coachGrade?: number | null;
   readonly body: { readonly before: number; readonly after: number };
   readonly confidence: { readonly before: number; readonly after: number };
   readonly recordAfter: { readonly wins: number; readonly losses: number; readonly ties: number };

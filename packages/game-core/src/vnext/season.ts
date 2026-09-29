@@ -1,5 +1,4 @@
 import type { ProgramId } from '../player/ids.js';
-import { derivePositionOverall } from '../player/progression.js';
 import {
   buildPositionRoomSeason,
   derivePositionRecruitingProfile,
@@ -20,6 +19,7 @@ import {
   VNEXT_ROOM_TUNING,
   fail,
   offerFromRoom,
+  overallVNext,
   programRating,
   publish,
   roomFor,
@@ -106,10 +106,8 @@ export function resolveWorldRoundVNext(
       })();
 }
 
-function overallOf(career: CareerVNext): number {
-  const profile = career.athlete.profile;
-  const derived = derivePositionOverall(profile.positionId, profile.attributes);
-  return derived.ok ? derived.overall : profile.overall;
+function overallOf(career: CareerVNext, mechanics: CareerVNextMechanics): number {
+  return overallVNext(career.athlete.profile, mechanics);
 }
 
 function statTotals(career: CareerVNext, seasonIndex: number): readonly StatTotalVNext[] {
@@ -127,7 +125,11 @@ function statTotals(career: CareerVNext, seasonIndex: number): readonly StatTota
     .map(([field, value]) => ({ field, value }));
 }
 
-function seasonReview(career: CareerVNext, world: WorldAlphaSeasonState): SeasonReviewVNext | null {
+function seasonReview(
+  career: CareerVNext,
+  world: WorldAlphaSeasonState,
+  mechanics: CareerVNextMechanics,
+): SeasonReviewVNext | null {
   const programId = career.program?.programId;
   if (programId === undefined || world.postseason.type !== 'COMPLETE') return null;
   const postseason = world.postseason;
@@ -154,7 +156,7 @@ function seasonReview(career: CareerVNext, world: WorldAlphaSeasonState): Season
     games: games.length,
     liveGames: games.filter(({ liveSnapCount }) => liveSnapCount > 0).length,
     statTotals: statTotals(career, seasonIndex),
-    overall: { start: career.season.startOverall, end: overallOf(career) },
+    overall: { start: career.season.startOverall, end: overallOf(career, mechanics) },
     depthRank: { start: career.season.startRank, end: career.program!.room.projection.rank },
     cardsOwned: career.build.ownedSkillIds.length,
     injuries: career.condition.injuryHistory.filter(
@@ -200,7 +202,7 @@ export function afterScheduleStep(
     world = resolved.value;
   }
   const withWorld = { ...next, season: { ...next.season, world } } as CareerVNext;
-  const review = seasonReview(withWorld, world);
+  const review = seasonReview(withWorld, world, mechanics);
   if (review === null) return fail('career_vnext.engine_failed');
   return publish(previous, {
     ...withWorld,
@@ -448,7 +450,7 @@ export function commitOffseasonVNext(
       weekIndex: 0,
       world: world.value,
       sidelineCredit: 0,
-      startOverall: overallOf(career),
+      startOverall: overallOf(career, mechanics),
       startRank: next.room.projection.rank,
     },
     condition: {

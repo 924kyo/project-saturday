@@ -58,7 +58,7 @@ export function PostGameScreen({
         Math.abs(b.result.yards) - Math.abs(a.result.yards),
     )
     .slice(0, 3);
-  const verdict = practiceBand(summary.gradeScore);
+  const verdict = practiceBand(recap.coachGrade ?? summary.gradeScore);
   const xp = [...growth.attributeXp]
     .filter(({ awardedXp }) => awardedXp > 0)
     .sort((a, b) => b.awardedXp - a.awardedXp)

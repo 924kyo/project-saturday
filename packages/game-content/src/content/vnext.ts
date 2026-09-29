@@ -75,6 +75,33 @@ const WR_DRILL_TAGS = {
   ],
 } as const;
 
+/**
+ * Career VNext development pacing (balance harness, 2026-09-30). The shipped focus catalog grew an
+ * athlete about one overall point per season and Recovery (+32 Body) pinned Body at 100. VNext
+ * triples focus XP (the base XP bound was widened to 100 for this) and softens Recovery so Body is
+ * a budget.
+ */
+export const VNEXT_DEVELOPMENT_TUNING = Object.freeze({
+  focusXpMultiplier: 3,
+  maximumBaseXp: 100,
+  recoveryBodyDelta: 20,
+});
+
+function developed<T extends { readonly attributeXp: readonly { readonly baseXp: number }[] }>(
+  definition: T,
+): T {
+  return {
+    ...definition,
+    attributeXp: definition.attributeXp.map((entry) => ({
+      ...entry,
+      baseXp: Math.min(
+        VNEXT_DEVELOPMENT_TUNING.maximumBaseXp,
+        entry.baseXp * VNEXT_DEVELOPMENT_TUNING.focusXpMultiplier,
+      ),
+    })),
+  };
+}
+
 export const wrVNextSkillDefinitions: readonly SkillMechanicsDefinition[] =
   skillMechanicsDefinitions.map((definition) => remapWrScope(definition));
 
@@ -99,6 +126,14 @@ export function buildCareerVNextMechanics(
   if (shared === null) return null;
   return {
     ...shared,
+    trainingActions: shared.trainingActions.map(developed),
+    commonFocuses: shared.commonFocuses.map((focus) =>
+      developed(
+        focus.id === 'action_recovery'
+          ? { ...focus, bodyDelta: VNEXT_DEVELOPMENT_TUNING.recoveryBodyDelta }
+          : focus,
+      ),
+    ),
     // WR builds use the shipped WR cards; QB/RB/CB keep their position build catalogs.
     ...(positionId === 'position_wr'
       ? {

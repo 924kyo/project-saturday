@@ -1,6 +1,11 @@
 import { deepFreeze } from '../player/immutable.js';
 import type { ProgramId } from '../player/ids.js';
-import { generatePositionRoom, type PositionRoomContext } from '../programs/position-room.js';
+import type { CreatedPositionPlayerProfile } from '../player/position-creation.js';
+import {
+  derivePositionRecruitingProfile,
+  generatePositionRoom,
+  type PositionRoomContext,
+} from '../programs/position-room.js';
 import { createRng } from '../random/rng.js';
 import type {
   CareerVNext,
@@ -140,4 +145,15 @@ export function offerFromRoom(
       starterClassYear: starter?.classYear ?? 4,
     },
   };
+}
+
+/**
+ * The athlete's overall: the position-weighted rating the coaches' talent evaluation uses (not a
+ * flat mean of every attribute), so training the skills a position values moves it visibly.
+ */
+export function overallVNext(
+  profile: CreatedPositionPlayerProfile,
+  mechanics: Pick<CareerVNextMechanics, 'room'>,
+): number {
+  return derivePositionRecruitingProfile(profile, mechanics.room, 0)?.abilityScore ?? profile.overall;
 }

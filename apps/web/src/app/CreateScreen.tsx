@@ -26,6 +26,7 @@ import {
   backgrounds,
   key,
   traits,
+  positionOverall,
 } from './content';
 
 const LOOK_FIELDS = ['skinToneId', 'faceId', 'hairStyleId', 'hairColorId', 'bodyTypeId'] as const;
@@ -152,7 +153,7 @@ export function CreateScreen({
     <aside aria-label={t('v2.create.cardLabel')} className="s2-playercard s2-cardpreview">
       <div className="s2-playercard__top">
         <div>
-          <p className="s2-display s2-playercard__ovr s2-num">{preview?.overall ?? '—'}</p>
+          <p className="s2-display s2-playercard__ovr s2-num">{preview === null ? '—' : positionOverall(preview)}</p>
           <p className="s2-eyebrow">{t('v2.create.overall')}</p>
         </div>
         <p className="s2-display s2-playercard__pos">{t(POSITION_ABBR_KEYS[draft.positionId])}</p>

@@ -38,6 +38,7 @@ import {
   deriveTrainingProficiencyLevel,
   getTrainingProficiencyUseCap,
   getTrainingProficiencyXpMultiplierPermille,
+  WEEKLY_ACTION_BASE_XP_BOUNDS,
   isDevelopmentWeekConfig,
   type DevelopmentWeekConfig,
   type TrainingProficiencyLevel,
@@ -183,7 +184,7 @@ function validDefinition(
     definition.attributeXp[0].attributeId !== definition.attributeXp[1].attributeId &&
     definition.attributeXp.every(
       ({ attributeId, baseXp }) =>
-        allowed.includes(attributeId) && Number.isInteger(baseXp) && baseXp >= 1 && baseXp <= 50,
+        allowed.includes(attributeId) && Number.isInteger(baseXp) && baseXp >= 1 && baseXp <= WEEKLY_ACTION_BASE_XP_BOUNDS.max,
     )
   );
 }

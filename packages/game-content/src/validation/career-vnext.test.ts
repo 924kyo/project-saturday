@@ -293,8 +293,9 @@ describe('Career VNext weekly lifecycle', () => {
     };
     const balanced = rate('balanced');
     const grind = rate('grind');
-    expect(balanced).toBeLessThan(1);
-    expect(grind).toBeGreaterThan(balanced * 2);
+    // Same band as the balance harness: rest keeps injuries near one a season at most.
+    expect(balanced).toBeLessThanOrEqual(1.5);
+    expect(grind).toBeGreaterThan(balanced * 1.5);
   }, 300_000);
 
   it('migrates v1 and v2 saves to the current version and keeps playing', () => {

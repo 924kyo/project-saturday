@@ -33,6 +33,7 @@ import {
   fail,
   isVNextPositionId,
   offerFromRoom,
+  overallVNext,
   programRating,
   publish,
   roomFor,
@@ -161,7 +162,7 @@ export function createCareerVNext(
       weekIndex: 0,
       world: null,
       sidelineCredit: 0,
-      startOverall: profile.overall,
+      startOverall: overallVNext(profile, mechanics),
       startRank: 1,
     },
     condition: createConditionVNext(),
@@ -687,6 +688,11 @@ function settleGame(
   const rank = worldAfter.rankings.find(({ programId }) => programId === career.program!.programId);
   const profile = career.athlete.profile;
   const stakes = projectGameStakesVNext(career, game.opponentProgramId, game.isHome, mechanics);
+  const coachGrade = coachGradeVNext(summary.gradeScore, summary.opportunityCount);
+  const coachTrustAfter = Math.min(
+    100,
+    Math.max(0, growth.coachTrustBefore + coachTrustDeltaVNext(coachGrade)),
+  );
   const recap: GameRecapVNext = {
     seasonIndex: career.season.index,
     ...(game.round === undefined ? {} : { round: game.round }),
@@ -699,7 +705,8 @@ function settleGame(
     liveSnapCount: summary.opportunityCount,
     sideline: game.sideline,
     engine: completed,
-    coachTrust: { before: growth.coachTrustBefore, after: growth.coachTrustAfter },
+    coachTrust: { before: growth.coachTrustBefore, after: coachTrustAfter },
+    coachGrade,
     body: { before: growth.bodyBefore, after: growth.bodyAfter },
     confidence: { before: growth.confidenceBefore, after: growth.confidenceAfter },
     recordAfter: { wins: record?.wins ?? 0, losses: record?.losses ?? 0, ties: record?.ties ?? 0 },
@@ -719,13 +726,13 @@ function settleGame(
           ...profile.state,
           body: next.state.body,
           confidence: next.state.confidence,
-          coachTrust: next.state.coachTrust,
+          coachTrust: coachTrustAfter,
         },
       },
     },
     program: {
       ...career.program,
-      room: { ...career.program.room, playerCoachTrust: next.state.coachTrust },
+      room: { ...career.program.room, playerCoachTrust: coachTrustAfter },
     },
     season: {
       ...career.season,
@@ -736,6 +743,35 @@ function settleGame(
     flow: { type: 'POST_GAME', recap },
     log: [...career.log, recap],
   });
+}
+
+/**
+ * Career-level Saturday evaluation (balance harness, 2026-09-30). Engine grades swing hard on one or
+ * two snaps and their shipped trust bands punished the typical game, so trust eroded all season.
+ * The staff grade weighs the engine grade toward a neutral 60 by live-snap volume, and trust moves
+ * around that neutral. A Saturday of sideline reps only leaves trust alone (practice owns it).
+ */
+export const VNEXT_COACH_GRADE_TUNING = Object.freeze({ neutral: 60, priorSnaps: 2 });
+
+export function coachGradeVNext(gradeScore: number, liveSnaps: number): number | null {
+  if (liveSnaps <= 0) return null;
+  const { neutral, priorSnaps } = VNEXT_COACH_GRADE_TUNING;
+  return Math.round((gradeScore * liveSnaps + neutral * priorSnaps) / (liveSnaps + priorSnaps));
+}
+
+export function coachTrustDeltaVNext(coachGrade: number | null): number {
+  if (coachGrade === null) return 0;
+  return coachGrade >= 80
+    ? 3
+    : coachGrade >= 68
+      ? 2
+      : coachGrade >= 58
+        ? 1
+        : coachGrade >= 48
+          ? 0
+          : coachGrade >= 38
+            ? -1
+            : -3;
 }
 
 function advanceWeek(career: CareerVNext, mechanics: CareerVNextMechanics): CareerVNextResult {

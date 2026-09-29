@@ -11,6 +11,7 @@ import {
   weeklyActions,
 } from '@project-saturday/game-content';
 import {
+  buildCareerVNextMechanics,
   eventContent,
   injuryContent,
   programIdentityVNext,
@@ -18,7 +19,8 @@ import {
 } from '@project-saturday/game-content/content';
 import type { MessageKey } from '@project-saturday/game-content/locales';
 import {
-  derivePositionOverall,
+  overallVNext,
+  type CreatedPositionPlayerProfile,
   type DepthRoleId,
   type SidelineRepGradeVNext,
   type CareerVNext,
@@ -218,13 +220,22 @@ export const DEPTH_COMPONENT_KEYS = {
   experienceReadiness: 'v2.depth.experience',
 } as const satisfies Record<string, MessageKey>;
 
-/** Current overall from live attribute progress (creation-time overall is a snapshot). */
+/** Mechanics per identity for presentation-only projections (content is static per build). */
+const MECHANICS = new Map<string, ReturnType<typeof buildCareerVNextMechanics>>();
+function mechanicsFor(profile: CreatedPositionPlayerProfile) {
+  const cacheKey = `${profile.positionId}|${profile.archetypeId}`;
+  if (!MECHANICS.has(cacheKey)) MECHANICS.set(cacheKey, buildCareerVNextMechanics(profile));
+  return MECHANICS.get(cacheKey) ?? null;
+}
+
+/** The position-weighted overall the career core uses (see `overallVNext`). */
+export function positionOverall(profile: CreatedPositionPlayerProfile): number {
+  const mechanics = mechanicsFor(profile);
+  return mechanics === null ? profile.overall : overallVNext(profile, mechanics);
+}
+
 export function currentOverall(career: CareerVNext): number {
-  const result = derivePositionOverall(
-    career.athlete.profile.positionId,
-    career.athlete.profile.attributes,
-  );
-  return result.ok ? result.overall : career.athlete.profile.overall;
+  return positionOverall(career.athlete.profile);
 }
 
 export const ROUND_KEYS = {
