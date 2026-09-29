@@ -10,6 +10,8 @@ import {
   continueSeasonReviewVNext,
   createCareerVNext,
   createRng,
+  declareForDraftVNext,
+  runDraftVNext,
   createWorldAlphaSeason,
   equipSkillVNext,
   focusDefinitionsVNext,
@@ -617,6 +619,13 @@ describe('Career VNext season arc', () => {
                             expect(
                               new Set(flow.options.map(({ programId }) => programId)).size,
                             ).toBe(4);
+                            // Declaring opens after the junior season (season index 2).
+                            const declared = declareForDraftVNext(career);
+                            expect(declared.ok).toBe(career.season.index >= 2);
+                            if (declared.ok && declared.career.flow.type === 'CAREER_COMPLETE') {
+                              expect(declared.career.flow.alumni.ending).toBe('DECLARED');
+                              expect(declared.career.flow.alumni.draft).toBeDefined();
+                            }
                             const pick =
                               career.season.index === 1 ? flow.options[1]! : flow.options[0]!;
                             return commitOffseasonVNext(career, pick.programId, mechanics);
@@ -649,6 +658,15 @@ describe('Career VNext season arc', () => {
     if (career.flow.type !== 'CAREER_COMPLETE') throw new Error('career did not complete');
     const alumni = career.flow.alumni;
     expect(career.history).toHaveLength(4);
+    // Every season carries a draft projection; graduating goes through the Pro Draft.
+    for (const review of career.history) {
+      expect(review.draftStock!.score).toBeGreaterThanOrEqual(0);
+      expect(review.draftStock!.score).toBeLessThanOrEqual(100);
+    }
+    expect(alumni.ending).toBe('GRADUATED');
+    expect(alumni.draft!.stockScore).toBe(career.history.at(-1)!.draftStock!.score);
+    expect(alumni.draft!.round === null).toBe(alumni.draft!.pick === null);
+    expect(runDraftVNext(career)).toEqual(alumni.draft);
     expect(alumni.seasons).toBe(4);
     expect(alumni.programIds).toEqual(programs);
     expect(alumni.record.wins + alumni.record.losses + alumni.record.ties).toBe(48);

@@ -23,6 +23,7 @@ export { overallVNext } from './common.js';
 export {
   commitOffseasonVNext,
   continueSeasonReviewVNext,
+  declareForDraftVNext,
   postseasonRoundVNext,
   retireVNext,
   scheduledFixtureVNext,
@@ -70,3 +71,10 @@ export {
   worldDefinitionVNext,
   type WorldStateVNext,
 } from './world.js';
+export {
+  canDeclareVNext,
+  draftBandVNext,
+  draftStockVNext,
+  runDraftVNext,
+  VNEXT_DRAFT_TUNING,
+} from './draft.js';

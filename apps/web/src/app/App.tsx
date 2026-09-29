@@ -14,6 +14,7 @@ import {
   nextWeekVNext,
   planWeekVNext,
   retireVNext,
+  declareForDraftVNext,
   toGameDayVNext,
   type AlumniVNext,
   type CareerVNext,
@@ -346,6 +347,7 @@ export function App({ storage, seedFactory = browserSeed }: AppProps): React.JSX
               career={career}
               onCommit={(id) => run((c, m) => commitOffseasonVNext(c, id, m))}
               onRetire={() => run((c) => retireVNext(c))}
+              onDeclare={() => run((c) => declareForDraftVNext(c))}
             />
           ) : flow === 'CAREER_COMPLETE' ? (
             <CareerCompleteScreen

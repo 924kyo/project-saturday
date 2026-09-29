@@ -93,3 +93,25 @@ for (const entry of plan) {
     expect(errors).toEqual([]);
   });
 }
+
+// M8: a three-season career that declares for the Pro Draft after the junior season. Three
+// seasons take minutes, so it runs with the release-boundary matrix only.
+test('declares for the Pro Draft after the junior season', async ({ page, isMobile }) => {
+  test.skip(!full || isMobile, 'release-boundary matrix only');
+  test.setTimeout(900_000);
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await createInLocale(page, 1, 'en-US', 'Draft Tester');
+  for (let guard = 0; guard < 3_000; guard += 1) {
+    if ((await page.locator('#s2-declare').count()) > 0) break;
+    await step(page);
+  }
+  await expect(page.locator('#s2-declare')).toBeVisible();
+  await page.locator('section:has(#s2-declare) .s2-chipbtn').click();
+  await page.locator('[role=alertdialog] .s2-btn--ghost').last().click();
+  await expect(page.locator('#s2-complete')).toBeVisible();
+  await expect(page.locator('.s2-plaque').first()).toContainText('Draft Tester');
+  await page.reload();
+  await expect(page.locator('.s2-plaque').first()).toContainText('Draft Tester');
+  expect(errors).toEqual([]);
+});

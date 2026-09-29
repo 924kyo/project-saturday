@@ -20,9 +20,16 @@ R is COMPLETE (2026-09-30). The gate met is:
 
 The plan is archived at `docs/exec-plans/completed/r-product-reconciliation.md`.
 
-M8 steps 1–3 are complete (2026-09-30): LB and EDGE are playable end to end, and new seasons are played in the 64-program conference world. Next is step 4, draft stock and declaration.
+M8 steps 1–4 are complete (2026-09-30): LB and EDGE are playable end to end, new seasons are played in the 64-program conference world, and careers end through a declaration or graduation into the Pro Draft. Next is step 5, VNext NIL and relationships.
 
 ## Last completed task
+
+M8 step 4, draft stock and declaration (2026-09-30):
+- `vnext/draft.ts`: each season review carries a Pro Draft stock. It blends ability, production (staff grades), program exposure, starting experience, big games and durability, and the player sees a band, not a pick;
+- a declaration opens in the offseason after the junior season, and graduating also goes through the draft. The draft adds one bounded draw on the `:vnext:draft` stream and returns a round and pick, or undrafted;
+- the alumni record keeps the ending (graduated, declared or retired) and the draft result, shown on plaques and the completion screen. The fields are optional, so no migration is needed;
+- verified: `pnpm check` and a real-browser junior-offseason declaration in both locales (review projection, offseason declare panel, completion).
+
 
 M8 step 3, the 64-program conference world (2026-09-30):
 - 32 new original programs and four new conferences, generated with paired copy from `scripts/generate-world-content.py`; the 32 alpha programs keep their exact profiles, and their groups become the first four conferences;

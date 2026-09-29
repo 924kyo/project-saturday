@@ -6,6 +6,9 @@ import {
   type ProgramId,
   type SeasonFinishVNext,
   type VNextPositionId,
+  canDeclareVNext,
+  type CareerEndingVNext,
+  type DraftStockBandVNext,
 } from '@project-saturday/game-core';
 import type { MessageKey } from '@project-saturday/game-content/locales';
 
@@ -23,6 +26,38 @@ import {
 import { Nameplate } from './Nameplate';
 import type { PrototypeAlumniView } from './prototype';
 import { Crest, Delta, Panel } from './ui';
+
+const DRAFT_BAND_KEYS = {
+  ROUND_1: 'v2.draft.band.round1',
+  ROUNDS_2_3: 'v2.draft.band.rounds2to3',
+  ROUNDS_4_7: 'v2.draft.band.rounds4to7',
+  UNDRAFTED: 'v2.draft.band.undrafted',
+} as const satisfies Record<DraftStockBandVNext, MessageKey>;
+
+const ENDING_KEYS = {
+  GRADUATED: 'v2.draft.ending.graduated',
+  DECLARED: 'v2.draft.ending.declared',
+  RETIRED: 'v2.draft.ending.retired',
+} as const satisfies Record<CareerEndingVNext, MessageKey>;
+
+/** How the college career ended, and the Pro Draft outcome when there was one. */
+function EndingLine({ alumni }: { readonly alumni: AlumniVNext }): React.JSX.Element | null {
+  const { t } = useAppTranslation();
+  if (alumni.ending === undefined) return null;
+  return (
+    <span className="s2-note s2-num">
+      {t(ENDING_KEYS[alumni.ending])}
+      {alumni.draft !== undefined && (
+        <>
+          {' · '}
+          {alumni.draft.round === null || alumni.draft.pick === null
+            ? t('v2.draft.undrafted')
+            : t('v2.draft.drafted', { round: alumni.draft.round, pick: alumni.draft.pick })}
+        </>
+      )}
+    </span>
+  );
+}
 
 const FINISH_KEYS = {
   CHAMPION: 'v2.review.finish.champion',
@@ -132,6 +167,15 @@ export function SeasonReviewScreen({
           </p>
           <StatLine totals={review.statTotals} />
         </Panel>
+        {review.draftStock !== undefined && (
+          <Panel id="s2-review-draft" title={t('v2.draft.stock')}>
+            <p className="s2-display s2-size-h2">{t(DRAFT_BAND_KEYS[review.draftStock.band])}</p>
+            <p className="s2-note s2-num">{t('v2.draft.factors', review.draftStock.factors)}</p>
+            <p className="s2-note" style={{ marginTop: 8 }}>
+              {t('v2.draft.stockHelp')}
+            </p>
+          </Panel>
+        )}
         <Panel id="s2-review-notes" title={t('v2.review.team')}>
           <ul className="s2-bullets">
             <li>
@@ -166,15 +210,19 @@ export function OffseasonScreen({
   blocked,
   onCommit,
   onRetire,
+  onDeclare,
 }: {
   readonly career: CareerVNext;
   readonly blocked: boolean;
   readonly onCommit: (programId: ProgramId) => void;
   readonly onRetire: () => void;
+  readonly onDeclare: () => void;
 }): React.JSX.Element | null {
   const { t } = useAppTranslation();
   const [selected, setSelected] = useState<ProgramId | null>(null);
   const [retiring, setRetiring] = useState(false);
+  const [declaring, setDeclaring] = useState(false);
+  const stock = career.history.at(-1)?.draftStock;
   if (career.flow.type !== 'OFFSEASON') return null;
   const options = career.flow.options;
   const positionId = career.athlete.profile.positionId as VNextPositionId;
@@ -243,6 +291,39 @@ export function OffseasonScreen({
           );
         })}
       </div>
+      {canDeclareVNext(career) && stock !== undefined && (
+        <Panel id="s2-declare" title={t('v2.draft.declare')}>
+          <p className="s2-note">
+            {t('v2.draft.declareHelp', { band: t(DRAFT_BAND_KEYS[stock.band]) })}
+          </p>
+          {declaring ? (
+            <div className="s2-banner" role="alertdialog" aria-labelledby="s2-declare-confirm">
+              <p id="s2-declare-confirm">{t('v2.draft.declareConfirm')}</p>
+              <div className="s2-row">
+                <button
+                  className="s2-btn s2-btn--ghost"
+                  onClick={() => setDeclaring(false)}
+                  type="button"
+                >
+                  {t('v2.common.cancel')}
+                </button>
+                <button
+                  className="s2-btn s2-btn--ghost"
+                  disabled={blocked}
+                  onClick={onDeclare}
+                  type="button"
+                >
+                  {t('v2.draft.declareYes')}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button className="s2-chipbtn" onClick={() => setDeclaring(true)} type="button">
+              {t('v2.draft.declare')}
+            </button>
+          )}
+        </Panel>
+      )}
       {retiring ? (
         <div className="s2-banner" role="alertdialog" aria-labelledby="s2-retire-confirm">
           <p id="s2-retire-confirm">{t('v2.off.retireConfirm')}</p>
@@ -314,6 +395,7 @@ function AlumniPlaque({ alumni }: { readonly alumni: AlumniVNext }): React.JSX.E
             <> · {t('v2.alumni.titles', { count: alumni.championships })}</>
           )}
         </span>
+        <EndingLine alumni={alumni} />
       </span>
     </li>
   );
@@ -394,6 +476,9 @@ export function CareerCompleteScreen({
             position: t(POSITION_ABBR_KEYS[mine.positionId]),
             rank: mine.bestDepthRank,
           })}
+        </p>
+        <p>
+          <EndingLine alumni={mine} />
         </p>
         <StatLine totals={mine.statTotals} />
       </section>

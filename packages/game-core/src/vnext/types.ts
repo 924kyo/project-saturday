@@ -279,7 +279,36 @@ export interface SeasonReviewVNext {
   readonly depthRank: { readonly start: number; readonly end: number };
   readonly cardsOwned: number;
   readonly injuries: number;
+  /** Mean staff grade over live games this season (absent before M8; null with no live games). */
+  readonly averageGrade?: number | null;
+  /** Pro Draft stock after this season (absent before M8). */
+  readonly draftStock?: DraftStockVNext;
 }
+
+export type DraftStockBandVNext = 'ROUND_1' | 'ROUNDS_2_3' | 'ROUNDS_4_7' | 'UNDRAFTED';
+
+/** A transparent stock score over saved facts; the projection shown is the band. */
+export interface DraftStockVNext {
+  readonly score: number;
+  readonly band: DraftStockBandVNext;
+  readonly factors: {
+    readonly ability: number;
+    readonly production: number;
+    readonly exposure: number;
+    readonly experience: number;
+    readonly bigGames: number;
+    readonly durability: number;
+  };
+}
+
+/** Round and overall pick, or undrafted (both null). */
+export interface DraftResultVNext {
+  readonly round: number | null;
+  readonly pick: number | null;
+  readonly stockScore: number;
+}
+
+export type CareerEndingVNext = 'GRADUATED' | 'DECLARED' | 'RETIRED';
 
 export interface OffseasonOptionVNext {
   readonly programId: ProgramId;
@@ -303,6 +332,9 @@ export interface AlumniVNext {
   readonly statTotals: readonly StatTotalVNext[];
   readonly finalOverall: number;
   readonly bestDepthRank: number;
+  /** How the college career ended and the Pro Draft outcome (absent before M8). */
+  readonly ending?: CareerEndingVNext;
+  readonly draft?: DraftResultVNext;
 }
 
 export type FlowVNext =

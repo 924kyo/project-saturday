@@ -44,7 +44,7 @@ All automated gates pass. The balance harness covers all six positions.
    - 32 new fictional programs (names, identities, ratings, rivals);
    - eight conferences, conference standings and an expanded postseason (conference champions plus at-large);
    - VNext world migration.
-4. **Draft stock and declaration:**
+4. **Draft stock and declaration:** (done 2026-09-30)
    - a draft stock projection each season from overall, production, program strength and class;
    - a declare/return offseason decision from year three;
    - a draft ending (round or undrafted) on the Alumni Wall.
