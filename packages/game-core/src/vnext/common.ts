@@ -155,5 +155,7 @@ export function overallVNext(
   profile: CreatedPositionPlayerProfile,
   mechanics: Pick<CareerVNextMechanics, 'room'>,
 ): number {
-  return derivePositionRecruitingProfile(profile, mechanics.room, 0)?.abilityScore ?? profile.overall;
+  return (
+    derivePositionRecruitingProfile(profile, mechanics.room, 0)?.abilityScore ?? profile.overall
+  );
 }

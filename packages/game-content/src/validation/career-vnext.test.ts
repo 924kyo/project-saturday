@@ -310,7 +310,10 @@ describe('Career VNext weekly lifecycle', () => {
     );
     if (!committed.ok) throw new Error(committed.reason);
     // A v2 save is the same JSON without the season arc fields; v1 also lacks the weekly condition.
-    const v2 = JSON.parse(JSON.stringify(committed.career)) as Record<string, Record<string, unknown>>;
+    const v2 = JSON.parse(JSON.stringify(committed.career)) as Record<
+      string,
+      Record<string, unknown>
+    >;
     delete v2['history'];
     delete v2['season']!['startOverall'];
     delete v2['season']!['startRank'];
