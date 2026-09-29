@@ -14,6 +14,8 @@ import {
 import type { MessageKey } from '@project-saturday/game-content/locales';
 import {
   derivePositionOverall,
+  type DepthRoleId,
+  type SidelineRepGradeVNext,
   type CareerVNext,
   type PositionRoomContext,
   type ProgramId,
@@ -32,6 +34,11 @@ export const POSITION_ABBR_KEYS = {
   position_qb: 'v2.position.qb.abbr',
   position_rb: 'v2.position.rb.abbr',
   position_cb: 'v2.position.cb.abbr',
+} as const satisfies Record<VNextPositionId, MessageKey>;
+export const POSITION_PITCH_KEYS = {
+  position_qb: 'v2.position.qb.pitch',
+  position_rb: 'v2.position.rb.pitch',
+  position_cb: 'v2.position.cb.pitch',
 } as const satisfies Record<VNextPositionId, MessageKey>;
 export const POSITION_NAME_KEYS = {
   position_qb: 'v2.position.qb.name',
@@ -175,4 +182,75 @@ export function currentOverall(career: CareerVNext): number {
     career.athlete.profile.attributes,
   );
   return result.ok ? result.overall : career.athlete.profile.overall;
+}
+
+export const CLASS_YEAR_KEYS = {
+  1: 'v2.classYear.freshman',
+  2: 'v2.classYear.sophomore',
+  3: 'v2.classYear.junior',
+  4: 'v2.classYear.senior',
+} as const satisfies Record<1 | 2 | 3 | 4, MessageKey>;
+
+export const ROLE_KEYS = {
+  depth_role_starter: 'v2.role.starter',
+  depth_role_rotation: 'v2.role.rotation',
+  depth_role_reserve: 'v2.role.reserve',
+  depth_role_developmental: 'v2.role.developmental',
+} as const satisfies Record<DepthRoleId, MessageKey>;
+
+export const MOVEMENT_KEYS = {
+  PROMOTED: 'v2.report.movement.promoted',
+  DEMOTED: 'v2.report.movement.demoted',
+  HELD: 'v2.report.movement.held',
+} as const satisfies Record<'PROMOTED' | 'DEMOTED' | 'HELD', MessageKey>;
+
+export const DOWN_KEYS = {
+  1: 'v2.gd.down.first',
+  2: 'v2.gd.down.second',
+  3: 'v2.gd.down.third',
+  4: 'v2.gd.down.fourth',
+} as const satisfies Record<1 | 2 | 3 | 4, MessageKey>;
+
+export const READ_KEYS = {
+  SHARP: { name: 'v2.read.sharp', help: 'v2.read.sharpHelp', sideline: 'v2.sideline.sharp' },
+  SOLID: { name: 'v2.read.solid', help: 'v2.read.solidHelp', sideline: 'v2.sideline.solid' },
+  MISSED: { name: 'v2.read.missed', help: 'v2.read.missedHelp', sideline: 'v2.sideline.missed' },
+} as const satisfies Record<
+  SidelineRepGradeVNext,
+  Record<'name' | 'help' | 'sideline', MessageKey>
+>;
+
+export const VERDICT_KEYS = {
+  A: 'v2.post.verdict.a',
+  B: 'v2.post.verdict.b',
+  C: 'v2.post.verdict.c',
+  D: 'v2.post.verdict.d',
+  F: 'v2.post.verdict.f',
+} as const satisfies Record<'A' | 'B' | 'C' | 'D' | 'F', MessageKey>;
+
+const PLAY_KEYS: Readonly<Record<string, MessageKey>> = {
+  'position_qb:COMPLETION': 'v2.play.qb.completion',
+  'position_qb:INCOMPLETION': 'v2.play.qb.incompletion',
+  'position_qb:INTERCEPTION': 'v2.play.qb.interception',
+  'position_qb:SACK': 'v2.play.qb.sack',
+  'position_qb:SCRAMBLE': 'v2.play.qb.scramble',
+  'position_qb:THROW_AWAY': 'v2.play.qb.throwAway',
+  'position_rb:RUSH': 'v2.play.rb.rush',
+  'position_rb:RECEPTION': 'v2.play.rb.reception',
+  'position_rb:PROTECTION_WIN': 'v2.play.rb.protectionWin',
+  'position_rb:PROTECTION_MISS': 'v2.play.rb.protectionMiss',
+  'position_cb:NO_TARGET': 'v2.play.cb.noTarget',
+  'position_cb:COVERED': 'v2.play.cb.covered',
+  'position_cb:COMPLETION_ALLOWED': 'v2.play.cb.completionAllowed',
+  'position_cb:PASS_DEFENDED': 'v2.play.cb.passDefended',
+  'position_cb:INTERCEPTION': 'v2.play.cb.interception',
+  'position_cb:TACKLE': 'v2.play.cb.tackle',
+  'position_cb:MISSED_TACKLE': 'v2.play.cb.missedTackle',
+};
+
+export function playHeadlineKey(positionId: VNextPositionId, playResultId: string): MessageKey {
+  const found = PLAY_KEYS[`${positionId}:${playResultId}`];
+  if (found === undefined)
+    throw new Error(`Missing play headline for ${positionId}:${playResultId}.`);
+  return found;
 }

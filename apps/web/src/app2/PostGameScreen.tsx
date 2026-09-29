@@ -7,7 +7,15 @@ import {
 import type { MessageKey } from '@project-saturday/game-content/locales';
 
 import { useAppTranslation } from '../i18n/i18n';
-import { attributeNameKey, currentOverall, gameText, key, practiceBand, program } from './content';
+import {
+  VERDICT_KEYS,
+  attributeNameKey,
+  currentOverall,
+  gameText,
+  playHeadlineKey,
+  practiceBand,
+  program,
+} from './content';
 import { Nameplate } from './Nameplate';
 import { Crest, Meter, Panel } from './ui';
 import { METER_COLORS } from './theme';
@@ -146,7 +154,7 @@ export function PostGameScreen({
                     </span>
                     <span>
                       <strong>
-                        {t(key(`v2.play.${positionId.slice(9)}.${play.result.playResultId}`), {
+                        {t(playHeadlineKey(positionId, play.result.playResultId), {
                           name: lastName,
                           yards: Math.abs(play.result.yards),
                         })}
@@ -177,11 +185,7 @@ export function PostGameScreen({
                 {recap.liveSnapCount > 0 ? verdict : '—'}
               </span>
               <p>
-                {t(
-                  recap.liveSnapCount > 0
-                    ? key(`v2.post.verdict.${verdict}`)
-                    : 'v2.post.verdict.sideline',
-                )}
+                {t(recap.liveSnapCount > 0 ? VERDICT_KEYS[verdict] : 'v2.post.verdict.sideline')}
               </p>
             </div>
           </Panel>

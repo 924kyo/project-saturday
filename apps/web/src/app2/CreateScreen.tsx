@@ -16,6 +16,7 @@ import { useAppTranslation, type AppTranslate } from '../i18n/i18n';
 import {
   POSITION_ABBR_KEYS,
   POSITION_NAME_KEYS,
+  POSITION_PITCH_KEYS,
   VNEXT_POSITIONS,
   appearanceCatalog,
   archetypeModifiers,
@@ -214,9 +215,7 @@ export function CreateScreen({
                     type="button"
                   >
                     <span className="s2-tile__name">{t(POSITION_NAME_KEYS[positionId])}</span>
-                    <span className="s2-tile__desc">
-                      {t(key(`v2.position.${positionId.slice(9)}.pitch`))}
-                    </span>
+                    <span className="s2-tile__desc">{t(POSITION_PITCH_KEYS[positionId])}</span>
                   </button>
                 ))}
               </div>

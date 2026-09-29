@@ -3,7 +3,7 @@ import type { CareerVNext, VNextPositionId } from '@project-saturday/game-core';
 import { AthletePortrait } from '../career/AthletePortrait';
 import { PORTRAIT } from './theme';
 import { useAppTranslation } from '../i18n/i18n';
-import { POSITION_ABBR_KEYS, currentOverall, key, program } from './content';
+import { POSITION_ABBR_KEYS, ROLE_KEYS, currentOverall, key, program } from './content';
 import { Crest } from './ui';
 
 /** Locker-room nameplate: who you are, where you play, where you stand. */
@@ -29,7 +29,7 @@ export function Nameplate({ career }: { readonly career: CareerVNext }): React.J
         </p>
         <h1 className="s2-display s2-nameplate__name">{career.athlete.profile.displayName}</h1>
         <p className="s2-nameplate__meta">
-          {t(key(`v2.role.${career.program.room.projection.roleId}`))} ·{' '}
+          {t(ROLE_KEYS[career.program.room.projection.roleId])} ·{' '}
           {t('v2.player.ovr', { ovr: currentOverall(career) })}
         </p>
       </div>

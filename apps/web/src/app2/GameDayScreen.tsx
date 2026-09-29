@@ -10,7 +10,16 @@ import {
 import type { MessageKey } from '@project-saturday/game-content/locales';
 
 import { useAppTranslation, type AppTranslate } from '../i18n/i18n';
-import { POSITION_ABBR_KEYS, gameText, key, program } from './content';
+import {
+  DOWN_KEYS,
+  POSITION_ABBR_KEYS,
+  READ_KEYS,
+  ROLE_KEYS,
+  gameText,
+  key,
+  playHeadlineKey,
+  program,
+} from './content';
 import { TacticalBoard, type PreviewKind } from './TacticalBoard';
 import { Crest, Meter } from './ui';
 import { METER_COLORS } from './theme';
@@ -61,7 +70,7 @@ function outcomeTag(t: AppTranslate, result: LivePlayFrame): string | undefined 
 
 function downText(t: AppTranslate, frame: Extract<SnapBoardFrame, { kind: 'LIVE' }>): string {
   const s = frame.situation;
-  const down = t(key(`v2.gd.down.${s.down}`));
+  const down = t(DOWN_KEYS[s.down]);
   return s.firstDownYards >= 100
     ? t('v2.gd.andGoal', { down })
     : t('v2.gd.downDistance', { down, distance: s.distanceYards });
@@ -122,7 +131,7 @@ export function GameDayScreen({
             <p className="s2-eyebrow">{t('v2.gd.yourRole')}</p>
             <p className="s2-display" style={{ fontSize: 34 }}>
               {abbr}
-              {projection.rank} · {t(key(`v2.role.${projection.roleId}`))}
+              {projection.rank} · {t(ROLE_KEYS[projection.roleId])}
             </p>
             <p className="s2-note">
               {projection.interactiveSnapMaximum >= 2
@@ -303,7 +312,7 @@ export function GameDayScreen({
                   {t(gameText.decision(positionId, result.decisionId).nameKey as MessageKey)}
                 </p>
                 <p className="s2-display s2-lowerthird__headline">
-                  {t(key(`v2.play.${positionId.slice(9)}.${result.playResultId}`), {
+                  {t(playHeadlineKey(positionId, result.playResultId), {
                     name: lastName,
                     yards: Math.abs(result.yards),
                   })}
@@ -312,9 +321,9 @@ export function GameDayScreen({
                   <span
                     className={`s2-effect ${result.readQuality === 'MISSED' ? 's2-effect--down' : 's2-effect--up'}`}
                   >
-                    {t(key(`v2.read.${result.readQuality}`))}
+                    {t(READ_KEYS[result.readQuality].name)}
                   </span>{' '}
-                  <span className="s2-note">{t(key(`v2.read.${result.readQuality}.help`))}</span>
+                  <span className="s2-note">{t(READ_KEYS[result.readQuality].help)}</span>
                 </p>
               </div>
             </div>
@@ -324,7 +333,7 @@ export function GameDayScreen({
               <div className="s2-lowerthird__body">
                 <p className="s2-eyebrow">{t('v2.gd.sideline')}</p>
                 <p className="s2-display s2-lowerthird__headline">
-                  {t(key(`v2.sideline.${sideline.result.grade}`))}
+                  {t(READ_KEYS[sideline.result.grade].sideline)}
                 </p>
                 {sideline.result.grade !== 'SHARP' && (
                   <p className="s2-note">

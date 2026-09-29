@@ -9,7 +9,7 @@ import type {
 import { AthletePortrait } from '../career/AthletePortrait';
 import { PORTRAIT } from './theme';
 import { useAppTranslation } from '../i18n/i18n';
-import { POSITION_ABBR_KEYS, key, program } from './content';
+import { CLASS_YEAR_KEYS, POSITION_ABBR_KEYS, key, program } from './content';
 import { Crest } from './ui';
 
 function pitchKey(offer: RecruitOfferVNext) {
@@ -109,7 +109,7 @@ export function RecruitScreen({
                     <br />
                     <span className="s2-note">
                       {t('v2.recruit.starterClass', {
-                        year: t(key(`v2.classYear.${offer.preview.starterClassYear}`)),
+                        year: t(CLASS_YEAR_KEYS[offer.preview.starterClassYear]),
                       })}
                     </span>
                   </span>

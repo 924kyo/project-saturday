@@ -11,8 +11,11 @@ import {
 
 import { useAppTranslation, type AppTranslate } from '../i18n/i18n';
 import {
+  CLASS_YEAR_KEYS,
   DEPTH_COMPONENT_KEYS,
+  MOVEMENT_KEYS,
   POSITION_ABBR_KEYS,
+  ROLE_KEYS,
   attributeNameKey,
   focusText,
   key,
@@ -119,10 +122,10 @@ function DepthSlice({ career }: { readonly career: CareerVNext }): React.JSX.Ele
                 <br />
                 <span className="s2-depthrow__tag">
                   {competitor === undefined
-                    ? t(key(`v2.role.${row.roleId}`))
+                    ? t(ROLE_KEYS[row.roleId])
                     : t('v2.depth.classRole', {
-                        year: t(key(`v2.classYear.${competitor.classYear}`)),
-                        role: t(key(`v2.role.${row.roleId}`)),
+                        year: t(CLASS_YEAR_KEYS[competitor.classYear]),
+                        role: t(ROLE_KEYS[row.roleId]),
                       })}
                 </span>
               </span>
@@ -198,7 +201,7 @@ function Report({
           </span>
           <div className="s2-stack" style={{ gap: 6 }}>
             <p className="s2-display" style={{ fontSize: 30 }}>
-              {t(key(`v2.report.movement.${moved}`), { position: abbr, rank: depth.rankAfter })}
+              {t(MOVEMENT_KEYS[moved], { position: abbr, rank: depth.rankAfter })}
             </p>
             {moved !== 'HELD' && (
               <div className="s2-movement s2-num" aria-hidden="true">

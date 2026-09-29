@@ -1199,9 +1199,9 @@
   border-left: 4px solid var(--accent, var(--line));
 }
 .s2-play__tag {
-  font-family: var(--display);
+  font-family: var(--text);
   font-weight: 800;
-  font-size: 15px;
+  font-size: 13px;
   text-transform: uppercase;
   color: var(--accent, var(--ink-2));
 }
