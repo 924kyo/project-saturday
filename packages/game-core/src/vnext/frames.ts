@@ -1,12 +1,12 @@
 import { deepFreeze } from '../player/immutable.js';
 import type { TacticalSnapContextV1 } from '../games/tactical-context-v1.js';
 import type { TacticalSnapResultV1 } from '../games/tactical-alpha-v1.js';
-import type { PositionAlphaGameState } from '../season/position-alpha-session.js';
 import type {
   CareerVNext,
   GameDayVNext,
   SidelineRepGradeVNext,
   SidelineRepVNext,
+  VNextGameState,
   VNextPositionId,
 } from './types.js';
 
@@ -59,6 +59,8 @@ export type SnapBoardFrame =
       readonly decisionIds: readonly string[];
       readonly revealedClueIds: readonly string[];
       readonly situation: SnapSituationFrame;
+      /** Authored defensive look when the owning content records it (WR coverage/leverage). */
+      readonly look: { readonly coverageId: string; readonly leverageId: string } | null;
       readonly result: LivePlayFrame | null;
     }
   | {
@@ -114,6 +116,10 @@ export function livePlayFrame(positionId: VNextPositionId, play: AnyPlay): LiveP
     yards = num(play, 'passingYardsDelta') + num(play, 'rushingYardsDelta');
     touchdown = num(play, 'passingTouchdownDelta') + num(play, 'rushingTouchdownDelta') > 0;
     turnover = num(play, 'interceptionDelta') + num(play, 'fumbleDelta') > 0;
+  } else if (positionId === 'position_wr') {
+    yards = num(play, 'receivingYardsDelta');
+    touchdown = num(play, 'receivingTouchdownDelta') > 0;
+    turnover = play.playResult === 'INTERCEPTION';
   } else if (positionId === 'position_rb') {
     yards = num(play, 'yardsDelta');
     touchdown = num(play, 'touchdownDelta') > 0;
@@ -144,7 +150,9 @@ export function livePlayFrame(positionId: VNextPositionId, play: AnyPlay): LiveP
             ? 'GAIN'
             : yards > 0
               ? 'SHORT'
-              : 'STOP';
+              : play.playResult === 'NOT_TARGETED'
+                ? 'NEUTRAL'
+                : 'STOP';
   return {
     decisionId: play.decisionId,
     playResultId: play.playResult,
@@ -158,7 +166,14 @@ export function livePlayFrame(positionId: VNextPositionId, play: AnyPlay): LiveP
   };
 }
 
-function plays(engine: PositionAlphaGameState): readonly AnyPlay[] {
+function lookOf(source: unknown): { coverageId: string; leverageId: string } | null {
+  const record = source as { coverageId?: unknown; leverageId?: unknown };
+  return typeof record.coverageId === 'string' && typeof record.leverageId === 'string'
+    ? { coverageId: record.coverageId, leverageId: record.leverageId }
+    : null;
+}
+
+function plays(engine: VNextGameState): readonly AnyPlay[] {
   return engine.game.keyPlayLog as unknown as readonly AnyPlay[];
 }
 
@@ -224,6 +239,7 @@ export function projectSnapBoardFrame(career: CareerVNext): SnapBoardFrame | nul
       decisionIds: pending.decisionIds,
       revealedClueIds: pending.revealedClueIds,
       situation: situation(pending.tacticalContext),
+      look: lookOf(pending),
       result: null,
     });
   }
@@ -241,6 +257,7 @@ export function projectSnapBoardFrame(career: CareerVNext): SnapBoardFrame | nul
     decisionIds: before.decisionIds,
     revealedClueIds: before.revealedClueIds,
     situation: situation(before),
+    look: lookOf(play),
     result: livePlayFrame(positionId, play),
   });
 }
@@ -248,7 +265,7 @@ export function projectSnapBoardFrame(career: CareerVNext): SnapBoardFrame | nul
 /** Completed live plays in order, for post-game defining plays and replays. */
 export function projectCompletedPlayFrames(
   positionId: VNextPositionId,
-  engine: PositionAlphaGameState,
+  engine: VNextGameState,
 ): readonly {
   readonly situation: SnapSituationFrame;
   readonly result: LivePlayFrame;

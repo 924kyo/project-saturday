@@ -134,7 +134,9 @@ export function isPositionFocusStateV2(
   const training = value['training'];
   if (
     Object.keys(training).sort().join('|') !== 'attributes|positionId|proficiencyUses|state' ||
-    !['position_qb', 'position_rb', 'position_cb'].includes(String(training['positionId'])) ||
+    !['position_qb', 'position_rb', 'position_cb', 'position_wr'].includes(
+      String(training['positionId']),
+    ) ||
     !record(training['proficiencyUses']) ||
     !record(training['state']) ||
     Object.keys(training['state']).sort().join('|') !== 'body|confidence|preparation' ||

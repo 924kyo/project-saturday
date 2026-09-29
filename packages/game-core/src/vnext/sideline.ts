@@ -24,8 +24,12 @@ const CREDIT: Readonly<Record<SidelineRepGradeVNext, number>> = { SHARP: 3, SOLI
 const MAX_CREDIT = 6;
 
 function patternsFor(positionId: VNextPositionId, mechanics: CareerVNextMechanics) {
-  const key = positionId === 'position_qb' ? 'qb' : positionId === 'position_rb' ? 'rb' : 'cb';
-  return [...(mechanics[key].patterns as readonly SidelinePattern[])].sort((left, right) =>
+  const source =
+    positionId === 'position_wr'
+      ? mechanics.wr.patterns
+      : mechanics[positionId === 'position_qb' ? 'qb' : positionId === 'position_rb' ? 'rb' : 'cb']
+          .patterns;
+  return [...(source as readonly SidelinePattern[])].sort((left, right) =>
     left.id.localeCompare(right.id),
   );
 }

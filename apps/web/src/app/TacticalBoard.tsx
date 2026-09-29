@@ -1,85 +1,82 @@
 import type { SnapBoardFrame, VNextPositionId } from '@project-saturday/game-core';
 
-/**
- * Original schematic field. Every drawn fact (line of scrimmage, line to gain, ball spot, result
- * endpoint, outcome) comes from the saved frame; formations are generic schematic alignments, not
- * tracked coordinates. No randomness: identical frames draw identically.
- */
-export type PreviewKind =
-  'PASS_SHORT' | 'PASS_DEEP' | 'RUN' | 'SAFE' | 'PROTECT' | 'COVER' | 'ATTACK';
+import {
+  BOARD_H,
+  MID,
+  YARD,
+  buildScene,
+  pathD,
+  resultMotion,
+  techniquePath,
+  type ResultMotion,
+  type Scene,
+} from './board';
 
-const H = 220;
-const MID = 110;
-const YARD = 10;
+const FONT = "'Barlow Condensed', 'Arial Narrow', sans-serif";
 
-interface Point {
-  readonly x: number;
-  readonly y: number;
-}
-
-function windowStart(los: number, window: number): number {
-  return Math.max(-10, Math.min(110 - window, los - Math.round(window / 3)));
-}
-
-function Stripes({
-  start,
-  window,
-}: {
-  readonly start: number;
-  readonly window: number;
-}): React.JSX.Element {
-  const W = window * YARD;
-  const x = (yard: number) => (yard - start) * YARD;
-  const bands = [];
-  for (let yard = Math.floor(start / 5) * 5; yard < start + window; yard += 5) {
-    bands.push(
+function Field({ scene }: { readonly scene: Scene }): React.JSX.Element {
+  const { start, width, x } = scene;
+  const window = width / YARD;
+  const items: React.JSX.Element[] = [];
+  for (let yard = Math.floor(start / 5) * 5; yard < start + window; yard += 5)
+    items.push(
       <rect
         fill={Math.floor(yard / 5) % 2 === 0 ? '#12492d' : '#0f4128'}
-        height={H}
-        key={`band-${yard}`}
+        height={BOARD_H}
+        key={`b${yard}`}
         width={5 * YARD}
         x={x(yard)}
         y={0}
       />,
     );
-  }
-  const lines = [];
+  if (start < 0)
+    items.push(
+      <rect fill="rgba(0,0,0,0.28)" height={BOARD_H} key="ez0" width={x(0)} x={0} y={0} />,
+    );
+  if (start + window > 100)
+    items.push(
+      <rect
+        fill="rgba(245,197,66,0.16)"
+        height={BOARD_H}
+        key="ez1"
+        width={width - x(100)}
+        x={x(100)}
+        y={0}
+      />,
+    );
   for (let yard = Math.ceil(start / 5) * 5; yard <= start + window; yard += 5) {
     if (yard < 0 || yard > 100) continue;
-    lines.push(
+    items.push(
       <line
-        key={`line-${yard}`}
+        key={`l${yard}`}
         stroke="rgba(255,255,255,0.55)"
         strokeWidth={yard % 10 === 0 ? 1.4 : 0.8}
         x1={x(yard)}
         x2={x(yard)}
         y1={8}
-        y2={H - 8}
+        y2={BOARD_H - 8}
       />,
     );
-    if (yard % 10 === 0 && yard > 0 && yard < 100) {
-      const label = String(yard <= 50 ? yard : 100 - yard);
-      lines.push(
+    if (yard % 10 === 0 && yard > 0 && yard < 100)
+      items.push(
         <text
-          fill="rgba(255,255,255,0.55)"
-          fontFamily="'Barlow Condensed', 'Arial Narrow', sans-serif"
+          fill="rgba(255,255,255,0.5)"
+          fontFamily={FONT}
           fontSize={16}
           fontWeight={700}
-          key={`num-${yard}`}
+          key={`n${yard}`}
           textAnchor="middle"
           x={x(yard)}
-          y={32}
+          y={24}
         >
-          {label}
+          {String(yard <= 50 ? yard : 100 - yard)}
         </text>,
       );
-    }
     for (const hashY of [78, 142])
-      lines.push(
+      items.push(
         <line
-          key={`hash-${yard}-${hashY}`}
+          key={`h${yard}${hashY}`}
           stroke="rgba(255,255,255,0.35)"
-          strokeWidth={1}
           x1={x(yard) - 3}
           x2={x(yard) + 3}
           y1={hashY}
@@ -87,110 +84,43 @@ function Stripes({
         />,
       );
   }
-  const endZones = [];
-  if (start < 0)
-    endZones.push(
-      <rect fill="rgba(0,0,0,0.28)" height={H} key="ez-own" width={x(0)} x={0} y={0} />,
-    );
-  if (start + window > 100)
-    endZones.push(
-      <rect
-        fill="rgba(245,197,66,0.16)"
-        height={H}
-        key="ez-goal"
-        width={W - x(100)}
-        x={x(100)}
-        y={0}
-      />,
-    );
-  return (
-    <g>
-      {bands}
-      {endZones}
-      {lines}
-      <rect
-        fill="none"
-        height={H - 12}
-        stroke="rgba(255,255,255,0.8)"
-        strokeWidth={2}
-        width={W}
-        x={0}
-        y={6}
-      />
-    </g>
+  items.push(
+    <rect
+      fill="none"
+      height={BOARD_H - 12}
+      key="frame"
+      stroke="rgba(255,255,255,0.8)"
+      strokeWidth={2}
+      width={width}
+      x={0}
+      y={6}
+    />,
   );
+  return <g>{items}</g>;
 }
 
-interface Formation {
-  readonly offense: readonly Point[];
-  readonly defense: readonly Point[];
-  readonly qb: Point;
-  readonly rb: Point;
-  readonly cb: Point;
-  readonly oppQb: Point;
-  readonly targets: readonly Point[];
-}
-
-function formation(los: number): Formation {
-  const offense: Point[] = [-24, -12, 0, 12, 24].map((dy) => ({ x: los - 6, y: MID + dy }));
-  const qb = { x: los - 40, y: MID };
-  const rb = { x: los - 62, y: MID + 14 };
-  offense.push(
-    qb,
-    rb,
-    { x: los - 6, y: MID + 40 },
-    { x: los - 8, y: 30 },
-    { x: los - 8, y: 190 },
-    { x: los - 16, y: 58 },
+function Marker({
+  at,
+  color,
+  cross,
+  hidden,
+}: {
+  readonly at: { x: number; y: number };
+  readonly color: string;
+  readonly cross: boolean;
+  readonly hidden: boolean;
+}) {
+  if (hidden) return null;
+  return !cross ? (
+    <circle cx={at.x} cy={at.y} fill={color} r={6.5} stroke="#0b0f14" strokeWidth={1.5} />
+  ) : (
+    <path
+      d={`M${at.x - 5} ${at.y - 5} L${at.x + 5} ${at.y + 5} M${at.x + 5} ${at.y - 5} L${at.x - 5} ${at.y + 5}`}
+      stroke={color}
+      strokeLinecap="round"
+      strokeWidth={3}
+    />
   );
-  const cb = { x: los + 52, y: 32 };
-  const defense: Point[] = [
-    ...[-30, -10, 10, 30].map((dy) => ({ x: los + 8, y: MID + dy })),
-    { x: los + 48, y: 82 },
-    { x: los + 48, y: 110 },
-    { x: los + 48, y: 138 },
-    cb,
-    { x: los + 52, y: 188 },
-    { x: los + 128, y: 72 },
-    { x: los + 128, y: 148 },
-  ];
-  return {
-    offense,
-    defense,
-    qb,
-    rb,
-    cb,
-    oppQb: qb,
-    targets: [
-      { x: los + 70, y: 46 },
-      { x: los + 150, y: 34 },
-      { x: los + 95, y: 150 },
-    ],
-  };
-}
-
-function previewAim(kind: PreviewKind, index: number, f: Formation, athlete: Point): Point {
-  return kind === 'PASS_SHORT'
-    ? f.targets[0]!
-    : kind === 'PASS_DEEP'
-      ? f.targets[1]!
-      : kind === 'SAFE'
-        ? { x: athlete.x + 70, y: 2 }
-        : kind === 'RUN'
-          ? { x: athlete.x + 90, y: MID + [-44, 0, 44][index % 3]! }
-          : kind === 'PROTECT'
-            ? { x: athlete.x + 30, y: MID - 30 + index * 30 }
-            : kind === 'COVER'
-              ? { x: athlete.x + [10, 70, 40][index % 3]!, y: [40, 36, 80][index % 3]! }
-              : { x: athlete.x + 40, y: athlete.y + 20 };
-}
-
-function previewPath(kind: PreviewKind, index: number, f: Formation, athlete: Point): string {
-  const aim = previewAim(kind, index, f, athlete);
-  const control = { x: (athlete.x + aim.x) / 2, y: Math.min(athlete.y, aim.y) - 36 };
-  return kind === 'RUN' || kind === 'PROTECT' || kind === 'COVER' || kind === 'ATTACK'
-    ? `M${athlete.x} ${athlete.y} L${aim.x} ${aim.y}`
-    : `M${athlete.x} ${athlete.y} Q${control.x} ${control.y} ${aim.x} ${aim.y}`;
 }
 
 export interface TacticalBoardProps {
@@ -201,146 +131,187 @@ export interface TacticalBoardProps {
   readonly athleteLabel: string;
   readonly summary: string;
   readonly banner?: string;
-  readonly preview: { readonly kind: PreviewKind; readonly index: number } | null;
-  /** Localized short outcome tag drawn at the result spot (e.g. TD, INT). */
-  readonly outcomeLabel?: string | undefined;
-  /** The chosen decision's route: throws that end without a gain finish at its aim point. */
-  readonly resultAim?: { readonly kind: PreviewKind; readonly index: number } | undefined;
-  /** Kind of motion used to replay the saved result. */
-  readonly resultMotion?: 'THROW' | 'CARRY' | 'DEFEND' | undefined;
+  readonly previewDecisionId: string | null;
+  readonly tagLabels: Readonly<Record<NonNullable<ResultMotion['tag']>, string>>;
+  readonly gapLabels: readonly [string, string, string];
   readonly reducedMotion: boolean;
-  /** Increment to replay the saved animation. */
   readonly replayKey?: number;
-  /** Narrow screens show a tighter 30-yard window so markers stay legible. */
-  readonly compact?: boolean;
+  readonly compact: boolean;
 }
 
+/** Stages: technique 0–0.9 s, ball/carry 0.6–1.6 s, outcome tag at 1.6 s. Skip-free under reduced motion. */
 export function TacticalBoard(props: TacticalBoardProps): React.JSX.Element {
-  const { frame } = props;
-  const situation = frame.kind === 'LIVE' ? frame.situation : null;
-  const losYards = situation?.lineOfScrimmageYards ?? 35;
-  const window = props.compact === true ? 30 : 40;
-  const W = window * YARD;
-  const start = windowStart(losYards, window);
-  const x = (yard: number) => (yard - start) * YARD;
-  const los = x(losYards);
-  const f = formation(los);
-  const playerOnOffense =
-    situation === null ? props.positionId !== 'position_cb' : situation.offense === 'PLAYER';
-  const offenseColor = playerOnOffense ? props.teamColor : props.opponentColor;
-  const defenseColor = playerOnOffense ? props.opponentColor : props.teamColor;
-  const athlete =
-    props.positionId === 'position_qb' ? f.qb : props.positionId === 'position_rb' ? f.rb : f.cb;
-  const firstDown =
-    situation !== null && situation.firstDownYards < 100 ? x(situation.firstDownYards) : null;
+  const { frame, positionId } = props;
+  const scene = buildScene(frame, positionId, props.compact);
+  const offenseColor = scene.playerOnOffense ? props.teamColor : props.opponentColor;
+  const defenseColor = scene.playerOnOffense ? props.opponentColor : props.teamColor;
   const result = frame.kind === 'LIVE' ? frame.result : null;
-  const endYards =
-    result === null
-      ? null
-      : (result.ballEndYards ??
-        Math.max(
-          -5,
-          Math.min(
-            105,
-            losYards + (props.positionId === 'position_cb' ? result.yards : result.yards),
-          ),
-        ));
-  const aim =
-    props.resultAim === undefined
-      ? null
-      : previewAim(props.resultAim.kind, props.resultAim.index, f, athlete);
-  const thrownWithoutGain =
-    props.resultMotion === 'THROW' &&
-    result !== null &&
-    (result.yards <= 0 || result.ballEndYards === null);
-  const end: Point | null =
-    endYards === null
-      ? null
-      : thrownWithoutGain && aim !== null
-        ? { x: Math.max(4, Math.min(W - 4, aim.x)), y: Math.max(12, aim.y) }
-        : {
-            x: Math.max(4, Math.min(W - 4, x(endYards))),
-            y:
-              props.resultMotion === 'THROW'
-                ? (aim?.y ?? 48)
-                : props.resultMotion === 'DEFEND'
-                  ? 40
-                  : MID,
-          };
-  const motionStart =
-    props.resultMotion === 'DEFEND' ? f.oppQb : props.resultMotion === 'THROW' ? f.qb : athlete;
-  const motionPath =
-    end === null
-      ? null
-      : props.resultMotion === 'CARRY'
-        ? `M${motionStart.x} ${motionStart.y} L${end.x} ${end.y}`
-        : `M${motionStart.x} ${motionStart.y} Q${(motionStart.x + end.x) / 2} ${Math.min(motionStart.y, end.y) - 50} ${end.x} ${end.y}`;
-  const turnover = result?.outcome === 'TURNOVER';
+  const motion = frame.kind === 'LIVE' ? resultMotion(scene, frame, positionId) : null;
+  const previewIndex =
+    props.previewDecisionId === null ? -1 : frame.decisionIds.indexOf(props.previewDecisionId);
+  const preview =
+    props.previewDecisionId !== null && result === null
+      ? techniquePath(scene, props.previewDecisionId, previewIndex)
+      : null;
+  const athleteOnDefense = positionId === 'position_cb';
+  const focusDefender =
+    positionId === 'position_wr' ? scene.cb : positionId === 'position_cb' ? scene.wr : null;
+  const animate = !props.reducedMotion && motion !== null;
   return (
     <figure className="s2-board" key={props.replayKey}>
-      <svg aria-label={props.summary} role="img" viewBox={`0 0 ${W} ${H}`}>
-        <Stripes start={start} window={window} />
-        <line stroke="#5aa9ff" strokeWidth={3} x1={los} x2={los} y1={8} y2={H - 8} />
-        {firstDown !== null && (
-          <line stroke="#f5c542" strokeWidth={3} x1={firstDown} x2={firstDown} y1={8} y2={H - 8} />
-        )}
-        {f.defense.map((point, index) => (
-          <g key={`d-${index}`} transform={`translate(${point.x} ${point.y})`}>
-            <path
-              d="M-5 -5 L5 5 M5 -5 L-5 5"
-              stroke={defenseColor}
-              strokeLinecap="round"
-              strokeWidth={3}
-            />
-          </g>
-        ))}
-        {f.offense.map((point, index) => (
-          <circle
-            cx={point.x}
-            cy={point.y}
-            fill={offenseColor}
-            key={`o-${index}`}
-            r={6}
-            stroke="#0b0f14"
-            strokeWidth={1.5}
-          />
-        ))}
-        {props.preview !== null && result === null && (
-          <path
-            d={previewPath(props.preview.kind, props.preview.index, f, athlete)}
-            fill="none"
-            markerEnd="url(#s2-arrow)"
-            stroke="#f5c542"
-            strokeDasharray="6 5"
-            strokeWidth={3}
-          />
-        )}
+      <svg aria-label={props.summary} role="img" viewBox={`0 0 ${scene.width} ${BOARD_H}`}>
         <defs>
           <marker id="s2-arrow" markerHeight={8} markerWidth={8} orient="auto" refX={6} refY={4}>
             <path d="M0 0 L8 4 L0 8 Z" fill="#f5c542" />
           </marker>
         </defs>
-        <g transform={`translate(${athlete.x} ${athlete.y})`}>
-          <circle fill="none" r={12} stroke="#f5c542" strokeWidth={3}>
+        <Field scene={scene} />
+        <line
+          stroke="#5aa9ff"
+          strokeWidth={3}
+          x1={scene.los}
+          x2={scene.los}
+          y1={8}
+          y2={BOARD_H - 8}
+        />
+        {scene.firstDown !== null && (
+          <line
+            stroke="#f5c542"
+            strokeWidth={3}
+            x1={scene.firstDown}
+            x2={scene.firstDown}
+            y1={8}
+            y2={BOARD_H - 8}
+          />
+        )}
+        {positionId === 'position_rb' &&
+          scene.gapLabels.map((point, index) => (
+            <text
+              fill="rgba(255,255,255,0.75)"
+              fontFamily={FONT}
+              fontSize={11}
+              fontWeight={800}
+              key={`g${index}`}
+              x={point.x}
+              y={point.y}
+            >
+              {props.gapLabels[index]}
+            </text>
+          ))}
+        {scene.defense.map((point, index) => (
+          <Marker
+            at={point}
+            color={defenseColor}
+            hidden={athleteOnDefense && point === scene.cb}
+            key={`d${index}`}
+            cross={!athleteOnDefense}
+          />
+        ))}
+        {scene.offense.map((point, index) => (
+          <Marker
+            at={point}
+            color={offenseColor}
+            hidden={!athleteOnDefense && point === scene.athlete}
+            key={`o${index}`}
+            cross={athleteOnDefense}
+          />
+        ))}
+        {focusDefender !== null && (
+          <circle
+            cx={focusDefender.x}
+            cy={focusDefender.y}
+            fill="none"
+            r={11}
+            stroke="#ff5a5f"
+            strokeDasharray="3 3"
+            strokeWidth={2}
+          />
+        )}
+        {preview !== null && (
+          <path
+            d={pathD(preview)}
+            fill="none"
+            markerEnd={preview.kind === 'read' ? undefined : 'url(#s2-arrow)'}
+            stroke="#f5c542"
+            strokeDasharray={preview.kind === 'read' ? '2 5' : '7 5'}
+            strokeLinecap="round"
+            strokeWidth={preview.kind === 'read' ? 2 : 3}
+          />
+        )}
+        {frame.kind === 'SIDELINE' &&
+          frame.result !== null &&
+          [frame.result.bestDecisionId, frame.result.decisionId]
+            .filter((id, index, list) => list.indexOf(id) === index)
+            .map((id) => {
+              const path = techniquePath(scene, id, frame.decisionIds.indexOf(id));
+              const best = id === frame.result!.bestDecisionId;
+              return (
+                <path
+                  d={pathD(path)}
+                  fill="none"
+                  key={`rep-${id}`}
+                  markerEnd={path.kind === 'read' ? undefined : 'url(#s2-arrow)'}
+                  stroke={best ? '#3ecf8e' : '#f5c542'}
+                  strokeDasharray="7 5"
+                  strokeLinecap="round"
+                  strokeWidth={3}
+                />
+              );
+            })}
+        {motion !== null && (
+          <g>
+            {motion.athlete !== null && (
+              <path
+                d={motion.athlete}
+                fill="none"
+                stroke="rgba(245,197,66,0.55)"
+                strokeDasharray="3 4"
+                strokeWidth={2}
+              />
+            )}
+            {motion.ball !== null && (
+              <path
+                d={motion.ball}
+                fill="none"
+                stroke="rgba(255,255,255,0.45)"
+                strokeDasharray="2 4"
+                strokeWidth={1.5}
+              />
+            )}
+          </g>
+        )}
+        {/* The athlete: static before the snap, following the saved technique after it. */}
+        <g
+          transform={
+            animate && motion?.athlete
+              ? undefined
+              : `translate(${(motion?.athlete && props.reducedMotion ? motion.end : scene.athlete).x} ${(motion?.athlete && props.reducedMotion ? motion.end : scene.athlete).y})`
+          }
+        >
+          {animate && motion?.athlete && (
+            <animateMotion dur="1.6s" fill="freeze" path={motion.athlete} />
+          )}
+          <circle fill={props.teamColor} r={8} stroke="#0b0f14" strokeWidth={1.5} />
+          <circle fill="none" r={13} stroke="#f5c542" strokeWidth={3}>
             {!props.reducedMotion && result === null && (
-              <animate attributeName="r" dur="1.4s" repeatCount="indefinite" values="11;14;11" />
+              <animate attributeName="r" dur="1.4s" repeatCount="indefinite" values="12;15;12" />
             )}
           </circle>
-          <rect fill="#f5c542" height={14} rx={2} width={34} x={-17} y={14} />
+          <rect fill="#f5c542" height={14} rx={2} width={30} x={-15} y={15} />
           <text
             fill="#16120a"
-            fontFamily="'Barlow Condensed', 'Arial Narrow', sans-serif"
+            fontFamily={FONT}
             fontSize={12}
             fontWeight={800}
             textAnchor="middle"
-            y={25}
+            y={26}
           >
             {props.athleteLabel}
           </text>
         </g>
-        {situation !== null && result === null && (
+        {frame.kind === 'LIVE' && result === null && (
           <ellipse
-            cx={los - 2}
+            cx={scene.los - 2}
             cy={MID}
             fill="#8b4a22"
             rx={5}
@@ -349,62 +320,59 @@ export function TacticalBoard(props: TacticalBoardProps): React.JSX.Element {
             strokeWidth={0.8}
           />
         )}
-        {motionPath !== null && end !== null && (
-          <g>
-            <path
-              d={motionPath}
-              fill="none"
-              stroke="rgba(245,197,66,0.6)"
-              strokeDasharray="3 4"
-              strokeWidth={2}
-            />
-            <ellipse
-              cx={props.reducedMotion ? end.x : 0}
-              cy={props.reducedMotion ? end.y : 0}
-              fill="#8b4a22"
-              rx={6}
-              ry={3.5}
-              stroke="#fff"
-              strokeWidth={1}
-            >
-              {!props.reducedMotion && (
-                <animateMotion dur="1.6s" fill="freeze" path={motionPath} rotate="auto" />
-              )}
-            </ellipse>
-            {(turnover || props.outcomeLabel !== undefined) && (
-              <g
-                opacity={props.reducedMotion ? 1 : 0}
-                transform={`translate(${end.x} ${Math.max(24, end.y - 22)})`}
-              >
-                {!props.reducedMotion && (
-                  <animate
-                    attributeName="opacity"
-                    begin="1.5s"
-                    dur="0.3s"
-                    fill="freeze"
-                    from="0"
-                    to="1"
-                  />
-                )}
-                <rect
-                  fill={turnover ? '#ff5a5f' : '#f5c542'}
-                  height={22}
-                  rx={3}
-                  width={56}
-                  x={-28}
-                  y={-15}
-                />
-                <text
-                  fill="#0b0f14"
-                  fontFamily="'Barlow Condensed', 'Arial Narrow', sans-serif"
-                  fontSize={15}
-                  fontWeight={800}
-                  textAnchor="middle"
-                >
-                  {props.outcomeLabel}
-                </text>
-              </g>
+        {motion?.ball != null && (
+          <ellipse
+            cx={props.reducedMotion ? motion.end.x : 0}
+            cy={props.reducedMotion ? motion.end.y : 0}
+            fill="#8b4a22"
+            rx={6}
+            ry={3.5}
+            stroke="#fff"
+            strokeWidth={1}
+          >
+            {animate && (
+              <animateMotion begin="0.6s" dur="1s" fill="freeze" path={motion.ball} rotate="auto" />
             )}
+          </ellipse>
+        )}
+        {motion?.tag != null && (
+          <g
+            opacity={props.reducedMotion ? 1 : 0}
+            transform={`translate(${motion.end.x} ${Math.max(24, motion.end.y - 24)})`}
+          >
+            {animate && (
+              <animate
+                attributeName="opacity"
+                begin="1.6s"
+                dur="0.25s"
+                fill="freeze"
+                from="0"
+                to="1"
+              />
+            )}
+            <rect
+              fill={
+                motion.tag === 'int' || motion.tag === 'fumble' || motion.tag === 'sack'
+                  ? '#ff5a5f'
+                  : motion.tag === 'td'
+                    ? '#3ecf8e'
+                    : '#f5c542'
+              }
+              height={22}
+              rx={3}
+              width={62}
+              x={-31}
+              y={-15}
+            />
+            <text
+              fill="#0b0f14"
+              fontFamily={FONT}
+              fontSize={14}
+              fontWeight={800}
+              textAnchor="middle"
+            >
+              {props.tagLabels[motion.tag]}
+            </text>
           </g>
         )}
       </svg>

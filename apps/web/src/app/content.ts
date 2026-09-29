@@ -1,6 +1,7 @@
 import {
   cbAlphaContent,
   creationContent,
+  gameContent,
   positionAlphaContent,
   programContent,
   qbAlphaContent,
@@ -27,22 +28,26 @@ import type { AppTranslate } from '../i18n/i18n';
 export const VNEXT_POSITIONS: readonly VNextPositionId[] = [
   'position_qb',
   'position_rb',
+  'position_wr',
   'position_cb',
 ];
 
 export const POSITION_ABBR_KEYS = {
   position_qb: 'v2.position.qb.abbr',
   position_rb: 'v2.position.rb.abbr',
+  position_wr: 'v2.position.wr.abbr',
   position_cb: 'v2.position.cb.abbr',
 } as const satisfies Record<VNextPositionId, MessageKey>;
 export const POSITION_PITCH_KEYS = {
   position_qb: 'v2.position.qb.pitch',
   position_rb: 'v2.position.rb.pitch',
+  position_wr: 'v2.position.wr.pitch',
   position_cb: 'v2.position.cb.pitch',
 } as const satisfies Record<VNextPositionId, MessageKey>;
 export const POSITION_NAME_KEYS = {
   position_qb: 'v2.position.qb.name',
   position_rb: 'v2.position.rb.name',
+  position_wr: 'v2.position.wr.name',
   position_cb: 'v2.position.cb.name',
 } as const satisfies Record<VNextPositionId, MessageKey>;
 
@@ -60,6 +65,7 @@ interface GameCatalog {
 const CATALOGS: Readonly<Record<VNextPositionId, GameCatalog>> = {
   position_qb: qbAlphaContent as unknown as GameCatalog,
   position_rb: rbAlphaContent as unknown as GameCatalog,
+  position_wr: gameContent as unknown as GameCatalog,
   position_cb: cbAlphaContent as unknown as GameCatalog,
 };
 
@@ -81,7 +87,40 @@ export function program(programId: ProgramId): ProgramIdentityVNext {
 
 export const key = (value: string): MessageKey => value as MessageKey;
 
-export function archetypesFor(positionId: VNextPositionId) {
+export interface ArchetypeView {
+  readonly id: string;
+  readonly nameKey: string;
+  readonly descriptionKey: string;
+  readonly priorityAttributeIds: readonly string[];
+}
+
+const WR_PRIORITY: Readonly<Record<string, readonly string[]>> = {
+  archetype_wr_deep_threat: [
+    'attribute_speed',
+    'attribute_wr_release',
+    'attribute_wr_route_running',
+  ],
+  archetype_wr_route_technician: [
+    'attribute_wr_route_running',
+    'attribute_wr_release',
+    'attribute_wr_hands',
+  ],
+  archetype_wr_possession_receiver: [
+    'attribute_wr_hands',
+    'attribute_wr_catch_in_traffic',
+    'attribute_strength',
+  ],
+};
+
+/** One archetype view for every position (WR archetypes live in the original creation catalog). */
+export function archetypesFor(positionId: VNextPositionId): readonly ArchetypeView[] {
+  if (positionId === 'position_wr')
+    return creationContent.wrArchetypes.map((entry) => ({
+      id: entry.id,
+      nameKey: entry.nameKey,
+      descriptionKey: entry.descriptionKey,
+      priorityAttributeIds: WR_PRIORITY[entry.id] ?? [],
+    }));
   return positionAlphaContent.archetypes.filter((entry) => entry.positionId === positionId);
 }
 
@@ -235,6 +274,11 @@ const PLAY_KEYS: Readonly<Record<string, MessageKey>> = {
   'position_qb:SACK': 'v2.play.qb.sack',
   'position_qb:SCRAMBLE': 'v2.play.qb.scramble',
   'position_qb:THROW_AWAY': 'v2.play.qb.throwAway',
+  'position_wr:NOT_TARGETED': 'v2.play.wr.notTargeted',
+  'position_wr:INCOMPLETE': 'v2.play.wr.incomplete',
+  'position_wr:DROP': 'v2.play.wr.drop',
+  'position_wr:RECEPTION': 'v2.play.wr.reception',
+  'position_wr:INTERCEPTION': 'v2.play.wr.interception',
   'position_rb:RUSH': 'v2.play.rb.rush',
   'position_rb:RECEPTION': 'v2.play.rb.reception',
   'position_rb:PROTECTION_WIN': 'v2.play.rb.protectionWin',

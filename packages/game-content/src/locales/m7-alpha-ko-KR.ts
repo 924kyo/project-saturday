@@ -131,6 +131,21 @@ export const koKRM7AlphaMessages = {
   'm7Alpha.game.cbBall.description': '인터셉트, 패스 차단, 안전한 태클을 선택합니다.',
   'm7Alpha.game.cbTackle.name': '공간 마무리',
   'm7Alpha.game.cbTackle.description': '각도 제어, 도움 유도, 적극적 태클을 선택합니다.',
+  'm7Alpha.training.wrRouteCraft.name': '루트 디테일 훈련',
+  'm7Alpha.training.wrRouteCraft.description':
+    '브레이크 지점과 스텝을 다듬어 수비를 속이는 루트를 만든다.',
+  'm7Alpha.training.wrSeparation.name': '분리 훈련',
+  'm7Alpha.training.wrSeparation.description':
+    '프레스를 벗겨 내고 캐치 후 가속까지 이어 가는 폭발적인 훈련.',
+  'm7Alpha.training.wrCatchPoint.name': '캐치 포인트 훈련',
+  'm7Alpha.training.wrCatchPoint.description':
+    '경합 상황에서 손으로 공을 확실히 잡아내는 반복 훈련.',
+  'm7Alpha.proficiency.wrRouteCraft.name': '루트 디테일',
+  'm7Alpha.proficiency.wrRouteCraft.description': '루트 디테일 훈련을 반복하며 쌓는 숙련.',
+  'm7Alpha.proficiency.wrSeparation.name': '분리',
+  'm7Alpha.proficiency.wrSeparation.description': '분리 훈련을 반복하며 쌓는 숙련.',
+  'm7Alpha.proficiency.wrCatchPoint.name': '캐치 포인트',
+  'm7Alpha.proficiency.wrCatchPoint.description': '캐치 포인트 훈련을 반복하며 쌓는 숙련.',
   'm7Alpha.training.qbDelivery.name': '딜리버리 훈련',
   'm7Alpha.training.qbDelivery.description':
     '몸 상태를 의미 있게 소모해 숏·미들 패스 배치를 다듬습니다.',

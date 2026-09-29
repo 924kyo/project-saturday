@@ -53,7 +53,7 @@ export interface PositionTrainingActionDefinition {
   readonly confidenceDelta: number;
   readonly developmentFamilyId: `development_family_${string}`;
   readonly id: PositionTrainingActionId;
-  readonly positionId: Exclude<PositionId, 'position_wr'>;
+  readonly positionId: PositionId;
   readonly practiceImpact: number;
   readonly preparationDelta: number;
   readonly proficiencyId: PositionTrainingProficiencyId;
@@ -103,7 +103,7 @@ export interface PositionTrainingActionEvidence {
 
 export interface PositionTrainingState {
   readonly attributes: PositionAttributeProgress;
-  readonly positionId: Exclude<PositionId, 'position_wr'>;
+  readonly positionId: PositionId;
   readonly proficiencyUses: PositionTrainingProficiencyUses;
   readonly state: Pick<PlayerState, 'body' | 'confidence' | 'preparation'>;
 }
@@ -135,14 +135,21 @@ function clamp(value: number, minimum: number, maximum: number): number {
 }
 
 function proficiencyIdsForPosition(
-  positionId: Exclude<PositionId, 'position_wr'>,
+  positionId: PositionId,
 ): readonly PositionTrainingProficiencyId[] {
-  const offset = positionId === 'position_qb' ? 0 : positionId === 'position_rb' ? 3 : 6;
+  const offset =
+    positionId === 'position_qb'
+      ? 0
+      : positionId === 'position_rb'
+        ? 3
+        : positionId === 'position_cb'
+          ? 6
+          : 9;
   return POSITION_TRAINING_PROFICIENCY_IDS.slice(offset, offset + 3);
 }
 
 export function createPositionTrainingProficiencyUses(
-  positionId: Exclude<PositionId, 'position_wr'>,
+  positionId: PositionId,
 ): PositionTrainingProficiencyUses {
   return deepFreeze(
     Object.fromEntries(proficiencyIdsForPosition(positionId).map((id) => [id, 0])) as Record<
@@ -154,7 +161,7 @@ export function createPositionTrainingProficiencyUses(
 
 function validDefinition(
   definition: PositionTrainingActionDefinition,
-  positionId: Exclude<PositionId, 'position_wr'>,
+  positionId: PositionId,
 ): boolean {
   if (
     !isPositionTrainingActionId(definition?.id) ||

@@ -2,8 +2,6 @@ import { useState, type CSSProperties } from 'react';
 import {
   projectSnapBoardFrame,
   type CareerVNext,
-  type CareerVNextMechanics,
-  type LivePlayFrame,
   type SnapBoardFrame,
   type VNextPositionId,
 } from '@project-saturday/game-core';
@@ -20,52 +18,12 @@ import {
   playHeadlineKey,
   program,
 } from './content';
-import { TacticalBoard, type PreviewKind } from './TacticalBoard';
+import { TacticalBoard } from './TacticalBoard';
 import { Crest, Meter } from './ui';
 import { METER_COLORS } from './theme';
 
 function clock(seconds: number): string {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
-}
-
-function previewKind(
-  positionId: VNextPositionId,
-  decisionId: string,
-  index: number,
-  mechanics: CareerVNextMechanics,
-): PreviewKind {
-  if (positionId === 'position_qb') {
-    const mode = mechanics.qb.decisions.find(({ id }) => id === decisionId)?.playMode;
-    return mode === 'SCRAMBLE'
-      ? 'RUN'
-      : mode === 'THROW_AWAY'
-        ? 'SAFE'
-        : index === 0
-          ? 'PASS_SHORT'
-          : 'PASS_DEEP';
-  }
-  if (positionId === 'position_rb')
-    return decisionId.includes('protect') ||
-      decisionId.includes('pickup') ||
-      decisionId.includes('block')
-      ? 'PROTECT'
-      : 'RUN';
-  return 'COVER';
-}
-
-function motion(positionId: VNextPositionId, result: LivePlayFrame): 'THROW' | 'CARRY' | 'DEFEND' {
-  if (positionId === 'position_cb') return 'DEFEND';
-  if (positionId === 'position_rb') return 'CARRY';
-  return ['SCRAMBLE', 'SACK'].includes(result.playResultId) ? 'CARRY' : 'THROW';
-}
-
-function outcomeTag(t: AppTranslate, result: LivePlayFrame): string | undefined {
-  if (result.outcome === 'TOUCHDOWN') return t('v2.tag.td');
-  if (result.playResultId === 'INTERCEPTION') return t('v2.tag.int');
-  if (result.outcome === 'TURNOVER') return t('v2.tag.fumble');
-  if (result.playResultId === 'SACK') return t('v2.tag.sack');
-  if (result.playResultId === 'PASS_DEFENDED') return t('v2.tag.pbu');
-  return undefined;
 }
 
 function downText(t: AppTranslate, frame: Extract<SnapBoardFrame, { kind: 'LIVE' }>): string {
@@ -78,7 +36,6 @@ function downText(t: AppTranslate, frame: Extract<SnapBoardFrame, { kind: 'LIVE'
 
 export function GameDayScreen({
   career,
-  mechanics,
   blocked,
   reducedMotion,
   onKickoff,
@@ -86,7 +43,6 @@ export function GameDayScreen({
   onContinue,
 }: {
   readonly career: CareerVNext;
-  readonly mechanics: CareerVNextMechanics;
   readonly blocked: boolean;
   readonly reducedMotion: boolean;
   readonly onKickoff: () => void;
@@ -94,7 +50,7 @@ export function GameDayScreen({
   readonly onContinue: () => void;
 }): React.JSX.Element | null {
   const { t } = useAppTranslation();
-  const [preview, setPreview] = useState<{ kind: PreviewKind; index: number } | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
   const [replay, setReplay] = useState(0);
   const compact = globalThis.matchMedia?.('(max-width: 719px)').matches ?? false;
   if (career.flow.type !== 'GAME' || career.program === null) return null;
@@ -265,30 +221,25 @@ export function GameDayScreen({
         <div className="s2-stack">
           <TacticalBoard
             athleteLabel={abbr}
-            compact={compact}
             banner={sideline !== null ? t('v2.gd.sidelineBanner') : snapCounter}
+            compact={compact}
             frame={frame}
+            gapLabels={[t('v2.board.gapA'), t('v2.board.gapB'), t('v2.board.gapC')]}
             opponentColor={them.primary}
-            outcomeLabel={result !== null ? outcomeTag(t, result) : undefined}
             positionId={positionId}
-            preview={preview}
+            previewDecisionId={preview}
             reducedMotion={reducedMotion}
             replayKey={replay}
-            resultMotion={result !== null ? motion(positionId, result) : undefined}
-            resultAim={
-              result !== null
-                ? {
-                    kind: previewKind(
-                      positionId,
-                      result.decisionId,
-                      frame.decisionIds.indexOf(result.decisionId),
-                      mechanics,
-                    ),
-                    index: frame.decisionIds.indexOf(result.decisionId),
-                  }
-                : undefined
-            }
             summary={summaryText}
+            tagLabels={{
+              td: t('v2.tag.td'),
+              int: t('v2.tag.int'),
+              fumble: t('v2.tag.fumble'),
+              sack: t('v2.tag.sack'),
+              pbu: t('v2.tag.pbu'),
+              drop: t('v2.tag.drop'),
+              incomplete: t('v2.tag.incomplete'),
+            }}
             teamColor={us.primary}
           />
           <p className="s2-sr">{summaryText}</p>
@@ -384,9 +335,8 @@ export function GameDayScreen({
           </div>
           {game.stage === 'SNAP' ? (
             <div aria-label={t('v2.gd.chooseLabel')} className="s2-choices" role="group">
-              {frame.decisionIds.map((decisionId, index) => {
+              {frame.decisionIds.map((decisionId) => {
                 const decision = gameText.decision(positionId, decisionId);
-                const kind = previewKind(positionId, decisionId, index, mechanics);
                 return (
                   <button
                     className="s2-choice"
@@ -397,8 +347,8 @@ export function GameDayScreen({
                       setPreview(null);
                       onChoose(decisionId);
                     }}
-                    onFocus={() => setPreview({ kind, index })}
-                    onMouseEnter={() => setPreview({ kind, index })}
+                    onFocus={() => setPreview(decisionId)}
+                    onMouseEnter={() => setPreview(decisionId)}
                     onMouseLeave={() => setPreview(null)}
                     type="button"
                   >

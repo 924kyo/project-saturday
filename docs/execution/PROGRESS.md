@@ -23,29 +23,29 @@ Prototype saves are left untouched on the device, with a one-tap JSON export not
 
 ## Last completed task
 
-V3 cutover. The following changes landed:
+WR adapter plus the four-position parity checkpoint (2026-09-29).
 
-- `apps/web/src/app/` is the app, with a lazy `App` chunk and budgets retargeted to it.
-- The prototype boundary is `app/prototype.ts`: it detects old records, offers an export, and never reads or deletes them.
-- A new orthogonal browser suite, `e2e/slice.spec.ts`, covers:
-  - the journey on mobile and desktop, with reload resume;
-  - offline resume (mobile only);
-  - true 320 px with no horizontal overflow.
-- The 320 px check found and fixed two overflows (the top bar and the final score).
+- **WR kernel:** a standalone WR kernel on the authored WR content and the shared tactical rules, reached through the VNext game seam.
+- **WR training and creation:** WR position training (3 actions and 3 proficiencies, with paired copy); WR is restored in creation.
+- **Board:** per-position boards (`app/board.ts`) with the authored coverage and leverage, a distinct technique drawing for every decision, and saved-fact result motion. Sideline results show the chosen read against the best read.
+- **Parity:** real-browser parity for QB/RB/WR/CB at 390 px ko-KR and 1440 px en-US. Six findings were fixed. Ledger: `docs/qa/R_FOUR_POSITION_PARITY.md`.
 
 ## Current / next task
 
-V4 expansion in the new stack. Priority order is Flow and Game Day first, then build expression, depth climb and identity:
+V4 continues in the new stack, in priority order:
 
-1. A WR engine adapter behind the VNext game interface; restore WR in creation.
-2. Weekly lifecycle depth:
-   - contextual events and injuries as scene cards, with off-field alerts only when actionable;
-   - breakthrough card offers (Build screen);
-   - a Team depth-board screen and a Profile screen.
-3. Season arc:
-   - postseason, season review, offseason Stay/transfer board, season two, retirement;
-   - Alumni Wall and Career Hub (includes a lightweight import of prototype alumni).
-4. Board overlays per position (RB gaps/protection, CB leverage/ball), a post-game reaction feed, and a balance pass (Body/recovery currently near-binary; QB trust erosion after poor grades).
+1. **Game Day depth:**
+   - pregame keys from preparation and film;
+   - on-board clue markers;
+   - crowd/stakes tone and a drive ticker;
+   - a post-game reaction feed.
+2. **Weekly lifecycle:**
+   - contextual events and injuries as scene cards;
+   - off-field alerts only when actionable;
+   - breakthrough card offers on the Build screen;
+   - Team depth-board and Profile screens.
+3. **Season arc:** postseason, season review, offseason Stay/transfer, season two, retirement, Alumni Wall and Career Hub (with the lightweight import of prototype alumni).
+4. **Balance pass:** Body/recovery near-binary; coach verdict harsh on low-volume games; QB trust erosion.
 
 ## Active exec plan
 
@@ -75,7 +75,15 @@ V4 expansion in the new stack. Priority order is Flow and Game Day first, then b
 - **Save/reload/offline:** save → reload → offline reload (service worker) resumes exactly; a failed write shows a banner and the exact retry succeeds (unit + App test).
 - **Keyboard:** keyboard-only play from creation through a snap result; focus draws the route preview; the board has an aria text equivalent.
 
-## Latest green verification (2026-09-29, post-cutover)
+## Latest green verification (2026-09-29, parity checkpoint)
+
+- Repo typecheck in all 4 packages; lint, boundary and localized-copy checks.
+- 726 tests in 78 files (core, content and web), including 6 VNext season tests and board geometry tests. Testkit 68.
+- Build/PWA: 19 entries / 1167.88 KiB.
+- Playwright: 4 passed / 2 intentional skips.
+- Real-browser four-position review done.
+
+## Previous verification (post-cutover)
 
 - Repo typecheck, lint, boundary and localized-copy checks.
 - Web: 30 tests in 4 files (storage adapter, i18n, portrait, app journey).
@@ -105,7 +113,6 @@ V4 expansion in the new stack. Priority order is Flow and Game Day first, then b
 
 ## Known issues
 
-- WR is temporarily absent from creation until its VNext adapter lands.
 - Balance:
   - Body/recovery tension is near-binary: one recovery restores Body to 100.
   - QB coach trust can erode after weak game grades.

@@ -264,7 +264,6 @@ export function App({ storage, seedFactory = browserSeed }: AppProps): React.JSX
             <GameDayScreen
               blocked={blocked}
               career={career}
-              mechanics={mechanics}
               onChoose={(id) => run((c) => chooseSnapVNext(c, id))}
               onContinue={() => run(continueGameVNext)}
               onKickoff={() => run(kickoffVNext)}

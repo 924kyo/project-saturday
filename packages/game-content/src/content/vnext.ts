@@ -4,21 +4,35 @@ import type {
   ProgramId,
 } from '@project-saturday/game-core';
 
+import { keySnapFamilyMechanicsDefinitions, keySnapPatternMechanicsDefinitions } from './games.js';
 import { buildShippedPositionAlphaSessionCommandMechanics } from './position-alpha-session.js';
 
 /** VNext reuses the shipped catalogs; creation mechanics depend on the chosen identity. */
 export function buildCareerVNextMechanics(
   identity: PositionPlayerCreationIdentity,
 ): CareerVNextMechanics | null {
+  const positionId = identity.positionId;
   if (
-    identity.positionId !== 'position_qb' &&
-    identity.positionId !== 'position_rb' &&
-    identity.positionId !== 'position_cb'
+    positionId !== 'position_qb' &&
+    positionId !== 'position_rb' &&
+    positionId !== 'position_wr' &&
+    positionId !== 'position_cb'
   )
     return null;
-  return buildShippedPositionAlphaSessionCommandMechanics({
-    identity: { ...identity, positionId: identity.positionId },
+  // The shared bundle is position-parameterized; WR adds its own key-snap catalogs below.
+  const shared = buildShippedPositionAlphaSessionCommandMechanics({
+    identity: identity as Parameters<
+      typeof buildShippedPositionAlphaSessionCommandMechanics
+    >[0]['identity'],
   });
+  if (shared === null) return null;
+  return {
+    ...shared,
+    wr: {
+      families: keySnapFamilyMechanicsDefinitions,
+      patterns: keySnapPatternMechanicsDefinitions,
+    },
+  };
 }
 
 export interface ProgramIdentityVNext {

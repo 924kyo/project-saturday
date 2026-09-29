@@ -13,6 +13,11 @@ import type {
   PositionAlphaSessionCommandMechanics,
 } from '../season/position-alpha-session.js';
 import type { WorldAlphaSeasonState } from '../season/world-alpha.js';
+import type { WrAlphaGameState } from '../games/wr-alpha.js';
+import type {
+  KeySnapFamilyMechanicsDefinition,
+  KeySnapPatternMechanicsDefinition,
+} from '../games/types.js';
 import type {
   CommonPositionProficiencyUses,
   PositionFocusEvidenceV2,
@@ -30,10 +35,19 @@ export const CAREER_VNEXT_REGULAR_SEASON_WEEKS = 12 as const;
 export const CAREER_VNEXT_MIN_GAME_DECISIONS = 2 as const;
 
 /** Positions with a VNext game adapter. WR/LB/EDGE join through the same interface. */
-export type VNextPositionId = 'position_qb' | 'position_rb' | 'position_cb';
+export type VNextPositionId = 'position_qb' | 'position_rb' | 'position_wr' | 'position_cb';
 
 /** The shipped content bundle; VNext reuses catalogs, not the old aggregate. */
-export type CareerVNextMechanics = PositionAlphaSessionCommandMechanics;
+export type CareerVNextMechanics = PositionAlphaSessionCommandMechanics & {
+  readonly wr: {
+    readonly families: readonly KeySnapFamilyMechanicsDefinition[];
+    readonly patterns: readonly KeySnapPatternMechanicsDefinition[];
+  };
+};
+
+/** Engine state for any VNext position: shared QB/RB/CB kernels plus the WR kernel. */
+export type VNextGameState =
+  PositionAlphaGameState | { readonly positionId: 'position_wr'; readonly game: WrAlphaGameState };
 
 export interface RecruitOfferVNext {
   readonly programId: ProgramId;
@@ -106,7 +120,7 @@ export interface GameDayVNext {
   readonly opponentProgramId: ProgramId;
   readonly isHome: boolean;
   readonly stage: 'PREGAME' | 'SNAP' | 'RESULT' | 'FINAL';
-  readonly engine: PositionAlphaGameState | null;
+  readonly engine: VNextGameState | null;
   readonly sideline: readonly SidelineRepVNext[];
   /** Ordered Saturday decisions; `cursor` indexes the current or last resolved slot. */
   readonly slots: readonly GameSlotVNext[];
@@ -123,7 +137,7 @@ export interface GameRecapVNext {
   readonly liveSnapCount: number;
   readonly sideline: readonly SidelineRepVNext[];
   /** Completed engine game (summary, plays with tactical results, growth). */
-  readonly engine: PositionAlphaGameState;
+  readonly engine: VNextGameState;
   readonly coachTrust: { readonly before: number; readonly after: number };
   readonly body: { readonly before: number; readonly after: number };
   readonly confidence: { readonly before: number; readonly after: number };

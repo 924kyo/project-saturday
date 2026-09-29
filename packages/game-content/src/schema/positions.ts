@@ -154,7 +154,7 @@ export const positionTrainingProficiencyDefinitionSchema = z
   .object({
     ...localizedFields,
     id: positionTrainingProficiencyIdSchema,
-    positionId: z.enum(['position_qb', 'position_rb', 'position_cb']),
+    positionId: z.enum(['position_qb', 'position_rb', 'position_cb', 'position_wr']),
   })
   .strict();
 
@@ -180,7 +180,7 @@ export const positionTrainingActionDefinitionSchema = z
     confidenceDelta: z.number().int().min(-25).max(25),
     developmentFamilyId: positionDevelopmentFamilyIdSchema,
     id: positionTrainingActionIdSchema,
-    positionId: z.enum(['position_qb', 'position_rb', 'position_cb']),
+    positionId: z.enum(['position_qb', 'position_rb', 'position_cb', 'position_wr']),
     practiceImpact: z.number().int().min(-25).max(25),
     preparationDelta: z.number().int().min(-25).max(25),
     proficiencyId: positionTrainingProficiencyIdSchema,
@@ -337,8 +337,12 @@ export const positionAlphaContentSchema = z
       .array(localizedDefinitionSchema)
       .length(STAGED_GAME_DECISION_FAMILY_IDS.length),
     positions: z.array(positionDefinitionSchema).length(POSITION_IDS.length),
-    trainingActions: z.array(positionTrainingActionDefinitionSchema).length(9),
-    trainingProficiencies: z.array(positionTrainingProficiencyDefinitionSchema).length(9),
+    trainingActions: z
+      .array(positionTrainingActionDefinitionSchema)
+      .length(POSITION_TRAINING_ACTION_IDS.length),
+    trainingProficiencies: z
+      .array(positionTrainingProficiencyDefinitionSchema)
+      .length(POSITION_TRAINING_PROFICIENCY_IDS.length),
   })
   .strict()
   .superRefine((content, context) => {

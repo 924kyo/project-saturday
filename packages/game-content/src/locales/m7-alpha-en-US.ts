@@ -145,6 +145,21 @@ export const enUSM7AlphaMessages = {
   'm7Alpha.game.cbBall.description': 'Choose the interception, breakup, or secure tackle.',
   'm7Alpha.game.cbTackle.name': 'Finish in Space',
   'm7Alpha.game.cbTackle.description': 'Control angle, force help, or attack the tackle.',
+  'm7Alpha.training.wrRouteCraft.name': 'Route Detail Work',
+  'm7Alpha.training.wrRouteCraft.description':
+    'Sharpen break points and footwork until the route lies to the defender.',
+  'm7Alpha.training.wrSeparation.name': 'Separation Work',
+  'm7Alpha.training.wrSeparation.description':
+    'Explosive reps to beat press and carry speed after the catch.',
+  'm7Alpha.training.wrCatchPoint.name': 'Catch-Point Work',
+  'm7Alpha.training.wrCatchPoint.description':
+    'Contested-catch reps that make your hands the last word.',
+  'm7Alpha.proficiency.wrRouteCraft.name': 'Route Detail',
+  'm7Alpha.proficiency.wrRouteCraft.description': 'Built by repeating Route Detail Work.',
+  'm7Alpha.proficiency.wrSeparation.name': 'Separation',
+  'm7Alpha.proficiency.wrSeparation.description': 'Built by repeating Separation Work.',
+  'm7Alpha.proficiency.wrCatchPoint.name': 'Catch Point',
+  'm7Alpha.proficiency.wrCatchPoint.description': 'Built by repeating Catch-Point Work.',
   'm7Alpha.training.qbDelivery.name': 'Delivery Work',
   'm7Alpha.training.qbDelivery.description':
     'Sharpen short and intermediate placement at a meaningful Body cost.',

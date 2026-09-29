@@ -667,6 +667,7 @@
   min-width: 0;
 }
 .s2-scorebug__abbr {
+  white-space: nowrap;
   font-size: 20px;
   letter-spacing: 0.04em;
 }
@@ -713,7 +714,7 @@
 }
 .s2-board__banner {
   position: absolute;
-  top: 8px;
+  bottom: 8px;
   left: 8px;
   padding: 3px 8px;
   background: rgba(7, 9, 13, 0.82);

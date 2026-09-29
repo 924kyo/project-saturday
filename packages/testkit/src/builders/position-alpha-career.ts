@@ -448,7 +448,8 @@ export function executePositionAlphaCareer(
       )[roundIndex % 3]!;
       const trained = resolvePositionTrainingAction(trainingState, action, developmentWeekConfig);
       if (!trained.ok) return fail(input, `training_${seasonIndex}_${roundIndex}`);
-      trainingState = trained.next;
+      // The shared training kernel is position-generic; this builder only feeds added positions.
+      trainingState = trained.next as typeof trainingState;
       currentPlayer = roomPlayer(currentPlayer, trainingState.attributes, {
         ...lifecycle.playerState,
         ...trainingState.state,

@@ -27,6 +27,7 @@ const identities = [
   ['position_qb', 'archetype_qb_field_general'],
   ['position_rb', 'archetype_rb_power_back'],
   ['position_cb', 'archetype_cb_press_man'],
+  ['position_wr', 'archetype_wr_deep_threat'],
 ] as const;
 
 function identityFor(positionId: string, archetypeId: string): PositionPlayerCreationIdentity {

@@ -42,6 +42,8 @@ const STAT_KEYS: Readonly<Record<string, MessageKey>> = {
   touchdownsAllowed: 'v2.stats.tdAllowed',
   passesDefended: 'v2.stats.pbu',
   tackles: 'v2.stats.tackles',
+  drops: 'v2.stats.drops',
+  turnovers: 'v2.stats.turnovers',
 };
 
 export function PostGameScreen({

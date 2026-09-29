@@ -33,6 +33,9 @@ export const POSITION_TRAINING_ACTION_IDS = Object.freeze([
   'action_cb_mirror_press',
   'action_cb_zone_recognition',
   'action_cb_tackle_recovery',
+  'action_wr_route_craft',
+  'action_wr_separation',
+  'action_wr_catch_point',
 ] as const);
 
 export const POSITION_TRAINING_PROFICIENCY_IDS = Object.freeze([
@@ -45,6 +48,9 @@ export const POSITION_TRAINING_PROFICIENCY_IDS = Object.freeze([
   'proficiency_cb_mirror_press',
   'proficiency_cb_zone_recognition',
   'proficiency_cb_tackle_recovery',
+  'proficiency_wr_route_craft',
+  'proficiency_wr_separation',
+  'proficiency_wr_catch_point',
 ] as const);
 
 export const WEEKLY_ACTION_EFFECT_IDS = Object.freeze([

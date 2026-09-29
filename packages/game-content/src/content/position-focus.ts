@@ -21,6 +21,9 @@ export const positionFocusInjuryPolicies = Object.freeze({
   action_cb_mirror_press: 'HIGH_LOAD',
   action_cb_zone_recognition: 'TECHNICAL',
   action_cb_tackle_recovery: 'HIGH_LOAD',
+  action_wr_route_craft: 'TECHNICAL',
+  action_wr_separation: 'HIGH_LOAD',
+  action_wr_catch_point: 'TECHNICAL',
 } as const satisfies PositionFocusInjuryPolicies);
 
 /** Reuse shipped common mechanics and paired presentation IDs without a second tuning table. */

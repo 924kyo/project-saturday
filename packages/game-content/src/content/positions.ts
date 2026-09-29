@@ -865,6 +865,51 @@ export const positionAlphaContent = {
       preparationDelta: 4,
       proficiencyId: 'proficiency_cb_tackle_recovery',
     },
+    {
+      ...localized('action_wr_route_craft', 'training.wrRouteCraft'),
+      attributeXp: [
+        { attributeId: 'attribute_wr_route_running', baseXp: 24 },
+        { attributeId: 'attribute_wr_catch_in_traffic', baseXp: 14 },
+      ],
+      bodyDelta: -8,
+      breakthroughGaugePoints: 9,
+      confidenceDelta: 0,
+      developmentFamilyId: 'development_family_wr_route_craft',
+      positionId: 'position_wr',
+      practiceImpact: 4,
+      preparationDelta: 6,
+      proficiencyId: 'proficiency_wr_route_craft',
+    },
+    {
+      ...localized('action_wr_separation', 'training.wrSeparation'),
+      attributeXp: [
+        { attributeId: 'attribute_wr_release', baseXp: 22 },
+        { attributeId: 'attribute_wr_yac', baseXp: 16 },
+      ],
+      bodyDelta: -14,
+      breakthroughGaugePoints: 10,
+      confidenceDelta: 2,
+      developmentFamilyId: 'development_family_wr_separation',
+      positionId: 'position_wr',
+      practiceImpact: 2,
+      preparationDelta: 2,
+      proficiencyId: 'proficiency_wr_separation',
+    },
+    {
+      ...localized('action_wr_catch_point', 'training.wrCatchPoint'),
+      attributeXp: [
+        { attributeId: 'attribute_wr_hands', baseXp: 23 },
+        { attributeId: 'attribute_wr_blocking', baseXp: 12 },
+      ],
+      bodyDelta: -9,
+      breakthroughGaugePoints: 8,
+      confidenceDelta: 1,
+      developmentFamilyId: 'development_family_wr_catch_point',
+      positionId: 'position_wr',
+      practiceImpact: 3,
+      preparationDelta: 3,
+      proficiencyId: 'proficiency_wr_catch_point',
+    },
   ],
   trainingProficiencies: [
     localized('proficiency_qb_delivery_work', 'proficiency.qbDelivery'),
@@ -876,8 +921,18 @@ export const positionAlphaContent = {
     localized('proficiency_cb_mirror_press', 'proficiency.cbMirrorPress'),
     localized('proficiency_cb_zone_recognition', 'proficiency.cbZoneRecognition'),
     localized('proficiency_cb_tackle_recovery', 'proficiency.cbTackleRecovery'),
+    localized('proficiency_wr_route_craft', 'proficiency.wrRouteCraft'),
+    localized('proficiency_wr_separation', 'proficiency.wrSeparation'),
+    localized('proficiency_wr_catch_point', 'proficiency.wrCatchPoint'),
   ].map((definition, index) => ({
     ...definition,
-    positionId: index < 3 ? 'position_qb' : index < 6 ? 'position_rb' : 'position_cb',
+    positionId:
+      index < 3
+        ? 'position_qb'
+        : index < 6
+          ? 'position_rb'
+          : index < 9
+            ? 'position_cb'
+            : 'position_wr',
   })),
 } as const satisfies PositionAlphaContent;

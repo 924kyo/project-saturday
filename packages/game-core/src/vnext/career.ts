@@ -15,20 +15,11 @@ import { createRng, nextUint32, type RngSeed, type RngState } from '../random/rn
 import type { SkillId } from '../skills/ids.js';
 import { derivePositionAlphaRolloverV2 } from '../season/position-alpha-focus-v2.js';
 import {
-  projectCompletedWorldResult,
-  resolvePositionAlphaSnap,
-  startPositionAlphaGame,
-  type CompletedPositionGame,
-  type PositionAlphaGameContext,
-  type PositionAlphaGameState,
-} from '../season/position-alpha-session.js';
-import {
   createWorldAlphaSeason,
   resolveNextWorldAlphaRegularRound,
   type WorldAlphaFixtureMechanics,
   type WorldAlphaSeasonState,
 } from '../season/world-alpha.js';
-import { TACTICAL_GAME_RULES_VERSION } from '../games/tactical-alpha-v1.js';
 import {
   createCommonPositionProficiencyUses,
   resolvePositionFocus,
@@ -38,6 +29,7 @@ import {
   createPositionTrainingProficiencyUses,
   derivePositionPracticeGrade,
 } from '../weekly/position-training.js';
+import { projectVNextWorldResult, resolveVNextSnap, startVNextGame } from './game.js';
 import { createSidelineReps, resolveSidelineRep, sidelineCreditFor } from './sideline.js';
 import {
   CAREER_VNEXT_MIN_GAME_DECISIONS,
@@ -52,6 +44,7 @@ import {
   type GameRecapVNext,
   type GameSlotVNext,
   type RecruitOfferVNext,
+  type VNextGameState,
   type VNextPositionId,
 } from './types.js';
 
@@ -72,7 +65,12 @@ function publish(
 }
 
 export function isVNextPositionId(value: unknown): value is VNextPositionId {
-  return value === 'position_qb' || value === 'position_rb' || value === 'position_cb';
+  return (
+    value === 'position_qb' ||
+    value === 'position_rb' ||
+    value === 'position_wr' ||
+    value === 'position_cb'
+  );
 }
 
 function programRating(
@@ -434,24 +432,7 @@ export function toGameDayVNext(
   });
 }
 
-function gameContext(career: CareerVNext): PositionAlphaGameContext {
-  // The shared engine entry reads only these fields; VNext supplies them from its own aggregate.
-  return {
-    player: career.athlete.profile,
-    lifecycle: {
-      currentProgramId: career.program!.programId,
-      activeSeasonIndex: career.season.index,
-    },
-    room: career.program!.room,
-    careerRng: career.rng.career,
-    events: {
-      nextGameModifiers: { clueBonus: 0, decisionScoreFlat: 0, exposureReductionPermille: 0 },
-    },
-    skills: { equippedSkillIds: career.build.equippedSkillIds },
-  } as unknown as PositionAlphaGameContext;
-}
-
-function liveSnapIndex(engine: PositionAlphaGameState): number | null {
+function liveSnapIndex(engine: VNextGameState): number | null {
   return engine.game.type === 'ACTIVE' ? engine.game.pendingSnap.snapIndex : null;
 }
 
@@ -470,15 +451,7 @@ export function kickoffVNext(
     .flatMap(({ fixtures }) => fixtures)
     .find(({ id }) => id === game.fixtureId);
   if (fixture === undefined) return fail('career_vnext.engine_failed');
-  const engine = startPositionAlphaGame(
-    gameContext(career),
-    fixture,
-    game.weekIndex,
-    mechanics,
-    null,
-    5,
-    TACTICAL_GAME_RULES_VERSION,
-  );
+  const engine = startVNextGame(career, fixture, game.weekIndex, mechanics);
   if (engine === null) return fail('career_vnext.engine_failed');
   const liveCount = engine.game.type === 'ACTIVE' ? engine.game.input.opportunityCount : 0;
   const repCount = Math.max(0, CAREER_VNEXT_MIN_GAME_DECISIONS - liveCount);
@@ -526,7 +499,7 @@ export function chooseSnapVNext(career: CareerVNext, decisionId: string): Career
   const pending = game.engine.game.type === 'ACTIVE' ? game.engine.game.pendingSnap : null;
   if (pending === null || !(pending.decisionIds as readonly string[]).includes(decisionId))
     return fail('career_vnext.invalid_choice');
-  const engine = resolvePositionAlphaSnap(game.engine, decisionId);
+  const engine = resolveVNextSnap(game.engine, decisionId);
   if (engine === null) return fail('career_vnext.engine_failed');
   return publish(career, {
     ...career,
@@ -557,7 +530,9 @@ function settleGame(
   game: GameDayVNext,
   mechanics: CareerVNextMechanics,
 ): CareerVNextResult {
-  const completed = game.engine as CompletedPositionGame;
+  const completed = game.engine;
+  if (completed === null || completed.game.type !== 'COMPLETE')
+    return fail('career_vnext.engine_failed');
   const summary = completed.game.summary;
   const growth = completed.game.growth;
   const next = completed.game.nextPlayer;
@@ -567,7 +542,7 @@ function settleGame(
   const world = career.season.world;
   if (fixture === undefined || world === null || career.program === null)
     return fail('career_vnext.engine_failed');
-  const playerResult = projectCompletedWorldResult(completed, fixture);
+  const playerResult = projectVNextWorldResult(completed, fixture);
   const resolvedWorld = resolveNextWorldAlphaRegularRound(world, mechanics.world, playerResult);
   if (!resolvedWorld.ok) return fail('career_vnext.engine_failed');
   const worldAfter: WorldAlphaSeasonState = resolvedWorld.value.state;

@@ -28,7 +28,7 @@ interface BackgroundInput {
 }
 interface TacticalAlphaSnapInputV1 extends BackgroundInput {
   readonly gameId: TacticalSnapContextV1['gameId'];
-  readonly positionId: 'position_qb' | 'position_rb' | 'position_cb';
+  readonly positionId: 'position_qb' | 'position_rb' | 'position_wr' | 'position_cb';
   readonly snapIndex: number;
   readonly opportunityCount: number;
   readonly decisionIds: TacticalSnapContextV1['decisionIds'];
@@ -102,7 +102,7 @@ export function prepareTacticalAlphaSnapV1(
     !backgroundInputValid(input, 5) ||
     !integer(input.opportunityCount, 1, 5) ||
     !integer(input.snapIndex, 0, input.opportunityCount - 1) ||
-    !['position_qb', 'position_rb', 'position_cb'].includes(input.positionId)
+    !['position_qb', 'position_rb', 'position_wr', 'position_cb'].includes(input.positionId)
   )
     return undefined;
   const elapsedSeconds = Math.floor((3600 * (input.snapIndex + 1)) / (input.opportunityCount + 1));
