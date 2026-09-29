@@ -8,29 +8,29 @@ M10 — 1.0 Release Candidate (unchanged).
 
 ## Current milestone
 
-M7.5 — Career operations and Game Day experience.
+R — Product Reconciliation & Frontend Rebuild (inserted before M8 on 2026-09-29; absorbs unfinished M7.5 B1c–B6/Phase C).
 
 ## Status
 
-IN PROGRESS. M7 and M7.5 Phase A complete; B1 tactical evidence staged, not live; B1c shared WR presentation verified 2026-09-29 (App still v7). Bounded efficiency/desktop snapshot detour complete. B6 Four-position UX Parity Pass is mandatory after B2–B5, before Phase C and M8. M10 unchanged.
+IN PROGRESS. R0 audit/rebaseline complete: `docs/product-reconciliation/` (CURRENT_PRODUCT_AUDIT, PRODUCT_REBASELINE, FRONTEND_REBUILD_PLAN, GAMEPLAY_RECONCILIATION). M7.5 Phase A complete; staged WR v8 presentation (`3565ae1`) and unselected added-position current-rules selection (`00632f9`) are recoverable history, not continued as compatibility layers. M10 unchanged.
 
 ## Last completed task
 
-Shared read-only WR v7/v8 presentation (2026-09-29, Claude handoff session). Career/Season/Game/Program/Off-field/Skill surfaces accept both saved versions; explicit saved `SNAP_RESOLVED` panel with separate continuation; tagged two-season review (both retained seasons, career totals, explicit retirement) and current two-season completion panel. Off-field projection validates v7 or full-source v8 and reads relationships via new pure `projectRelationshipContextV1`. Paired ko-KR/en-US copy. Shared real v8 auto-player test helper; 11 new presentation cases. No App activation or B6 claim.
+R0 Product Reconciliation audit (2026-09-29): real-app Playwright review of WR/QB journeys at 390/1440, code/doc volume analysis, four reconciliation documents, roadmap phase R and plan `docs/exec-plans/active/r-product-reconciliation.md`. Key decisions: one position-generic career model and save line; single prototype save boundary (export + alumni import); frontend rebuilt from shell on an original "Saturday Broadcast" design system; sideline reps so every role plays Saturday; metric consolidation into Coach's view/rival gap/alerts.
 
 ## Current / next task
 
-B1c: connect App/Hub ports to the staged v8 dispatcher, atomic storage and eight-entry history page alongside equivalent added-position current aggregate retention; then coordinated activation (browser save writer change ⇒ full production browser matrix trigger). Preserve original proofs and bounded per-envelope/command budgets. B1d/B2–B6/Phase C still precede M8.
+R1 step 1: define detached view-model contracts; then unified CareerV1 core (WR engine adapter, recruiting for all positions, tactical rules mandatory, sideline reps) with a balance harness. R2 design system/gallery may start once view-model contracts exist. Tag `pre-rebuild` before structural rewrites.
 
 ## Active exec plan
 
-- Completed bounded detour: `docs/exec-plans/completed/m7-5-desktop-snapshot.md`.
-- Tactical task: `docs/exec-plans/active/m7-5-tactical-evidence.md`.
-- Parent: `docs/exec-plans/active/m7-5-playtest-correction.md`.
-- Queued after B2–B5: `docs/exec-plans/active/m7-5-four-position-ux-parity.md`.
+- Active: `docs/exec-plans/active/r-product-reconciliation.md`.
+- Evidence/decisions: `docs/product-reconciliation/`.
+- Superseded sequencing (reference only): `m7-5-tactical-evidence.md`, `m7-5-playtest-correction.md`, `m7-5-four-position-ux-parity.md`.
 
 ## Current compatibility boundary
 
+- Rebaseline: these prototype save lines stay live and unchanged until R5, when one deliberate boundary (JSON export + alumni import) replaces them with the unified save line. No further compatibility layers are added to them.
 - WR shipping: CareerRunV7 / CareerSessionV7 / envelope 7 / MetaProfileV1. Staged v8 supports neutral migration, source-replayed current games and explicit two-season review/completion; staged WrMetaProfileV2 preserves literal legacy alumni plus archived-source current alumni. No browser alias/writer activation.
 - QB/RB/CB: PositionAlphaSessionV2; current wire/envelope 3 and PositionAlphaPersistenceV3 writer; history pages max four records, 30 snapshots, atomic pruning.
 - Shipping checkpoint: completed M7 four-position game flow, M7.5 Phase A hotfixes and Career Hub. Staged `tactical_game_v1` QB/RB/CB paths have no shipping caller.
@@ -81,7 +81,8 @@ B1c: connect App/Hub ports to the staged v8 dispatcher, atomic storage and eight
 - M0–M3 complete.
 - M3.5 complete.
 - M4–M7 complete.
-- M7.5 in progress; Phase A complete, B1 active, B2–B6 and Phase C pending.
+- M7.5 Phase A complete; remaining B/C work reconciled into R.
+- R active (R0 complete).
 - M8, M9, M10 not started; unchanged roadmap order.
 
 ## Known failures

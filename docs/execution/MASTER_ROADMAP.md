@@ -161,6 +161,8 @@ Current closeout: explicit bilingual phases, three independent focuses, four slo
 
 ## M7.5 — Career operations and Game Day experience
 
+Reconciled 2026-09-29: Phase A is complete. The remaining B1c–B6 and Phase C intent moves into phase R below. Staged v8/v3 work remains in history as reference.
+
 B1b staging verified (2026-09-14): original four-position engines retain historical rules and stage current tactical evidence; WR v8 source-replayed career/session boundaries are tested through real Stay/transfer worlds. Full 1,117 workspace/ten script cases and static/build/PWA pass. B1c command/persistence/profiling and B1d public frames are next; no tactical shipping writer is activated yet.
 
 B1c full-life profiling exposed an existing WR second-season terminal gap. Staged source-validated v8 review/retirement and lossless mixed-legacy/current meta now pass four complete domain paths through fresh creation, with 2,394 exact session reloads and 1,126 workspace/ten script cases plus static/build/PWA green. Browser codec/atomic storage, repeated-career capacity and coordinated UI activation remain before live retirement/B6/M8 acceptance. Historical one-season contracts remain literal; domain profiles are not UI parity evidence.
@@ -183,6 +185,20 @@ Deliver:
 - immediate snap payoff, compact game atmosphere, and a post-game story grounded in actual score, stats, coach, progression, depth, state, gauge, and reaction evidence.
 
 Gate: users can repeatedly manage careers without clearing storage, transferred Team surfaces always follow current membership, generated rosters remain memorable and deterministic, and Game Day is visually legible and emotionally rewarding in both locales without presentation RNG or a second football model.
+
+## R — Product Reconciliation & Frontend Rebuild
+
+Inserted 2026-09-29 by product-owner direction. It precedes M8 and absorbs the unfinished M7.5 Game Day work (B1c–B6, Phase C). Plan: `docs/exec-plans/active/r-product-reconciliation.md`. Evidence and decisions: `docs/product-reconciliation/`.
+
+Deliver:
+
+- one position-generic career model and save line (WR joins the QB/RB/CB aggregate; recruiting for every position; tactical rules for every game);
+- a single deliberate prototype save boundary (export + alumni import) instead of accumulating compatibility layers;
+- a rebuilt frontend on an original "Saturday Broadcast" design system (broadcast, recruiting-graphic, depth-board and locker-room registers);
+- a guided weekly loop, depth board, card-based build, broadcast Game Day with an SVG Tactical Board, sideline reps for every role, and a post-game story;
+- a four-position parity ledger verified in the real app.
+
+Gate: a first-time player completes a full two-season career in any position, in both locales on phone and desktop, with Game Day decisions in every role and no developer/compatibility language on screen. All automated gates pass.
 
 ## M8 — Six-position beta and 64-program world
 
