@@ -13,11 +13,17 @@ export {
   kickoffVNext,
   nextWeekVNext,
   planWeekVNext,
-  scheduledFixtureVNext,
   toGameDayVNext,
   type CreateCareerVNextInput,
 } from './career.js';
 export { sidelineClueCount, sidelineCreditFor } from './sideline.js';
+export {
+  commitOffseasonVNext,
+  continueSeasonReviewVNext,
+  postseasonRoundVNext,
+  retireVNext,
+  scheduledFixtureVNext,
+} from './season.js';
 export {
   offerCandidatesVNext,
   skillDefinitionsVNext,

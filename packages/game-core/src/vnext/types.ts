@@ -32,8 +32,12 @@ import type {
 } from '../weekly/position-training.js';
 
 export const CAREER_VNEXT_MODEL = 'career_vnext' as const;
-export const CAREER_VNEXT_VERSION = 2 as const;
+export const CAREER_VNEXT_VERSION = 3 as const;
 export const CAREER_VNEXT_REGULAR_SEASON_WEEKS = 12 as const;
+/** Semifinal and final follow the regular season for the four qualifiers. */
+export const CAREER_VNEXT_POSTSEASON_WEEKS = 2 as const;
+/** A college career is four seasons (freshman through senior). */
+export const CAREER_VNEXT_SEASONS = 4 as const;
 /** Every role gets at least this many Saturday decisions; sideline reps fill the gap. */
 export const CAREER_VNEXT_MIN_GAME_DECISIONS = 2 as const;
 
@@ -131,7 +135,11 @@ export interface GameDayVNext {
   readonly cursor: number;
   /** Set when an academic checkpoint this week found the player ineligible (absent = eligible). */
   readonly academicHold?: boolean;
+  /** Postseason round for weeks after the regular season (absent = regular season). */
+  readonly round?: PostseasonRoundVNext;
 }
+
+export type PostseasonRoundVNext = 'SEMIFINAL' | 'FINAL';
 
 /** Carried from a weekly event choice into the next kickoff only. */
 export interface GameModifiersVNext {
@@ -192,6 +200,9 @@ export interface ConditionVNext {
 }
 
 export interface GameRecapVNext {
+  /** Season of the game (absent in logs written before v3 = season 0). */
+  readonly seasonIndex?: number;
+  readonly round?: PostseasonRoundVNext;
   readonly weekIndex: number;
   readonly opponentProgramId: ProgramId;
   readonly isHome: boolean;
@@ -215,6 +226,54 @@ export interface GameRecapVNext {
     'injury_availability_full' | 'injury_availability_limited' | 'injury_availability_out';
 }
 
+export type SeasonFinishVNext = 'CHAMPION' | 'RUNNER_UP' | 'SEMIFINAL' | 'MISSED';
+
+export interface StatTotalVNext {
+  readonly field: string;
+  readonly value: number;
+}
+
+/** The season as it ended: team outcome and the athlete's year, all from saved facts. */
+export interface SeasonReviewVNext {
+  readonly seasonIndex: number;
+  readonly programId: ProgramId;
+  readonly record: { readonly wins: number; readonly losses: number; readonly ties: number };
+  readonly finalRank: number | null;
+  readonly finish: SeasonFinishVNext;
+  readonly championProgramId: ProgramId;
+  readonly games: number;
+  readonly liveGames: number;
+  readonly statTotals: readonly StatTotalVNext[];
+  readonly overall: { readonly start: number; readonly end: number };
+  readonly depthRank: { readonly start: number; readonly end: number };
+  readonly cardsOwned: number;
+  readonly injuries: number;
+}
+
+export interface OffseasonOptionVNext {
+  readonly programId: ProgramId;
+  readonly kind: 'STAY' | 'TRANSFER';
+  readonly programRating: number;
+  readonly preview: RecruitOfferVNext['preview'];
+}
+
+/** Permanent record of a finished career, shown on the Alumni Wall. */
+export interface AlumniVNext {
+  readonly careerId: string;
+  readonly displayName: string;
+  readonly positionId: VNextPositionId;
+  readonly archetypeId: string;
+  readonly programIds: readonly ProgramId[];
+  readonly seasons: number;
+  readonly championships: number;
+  readonly bestFinish: SeasonFinishVNext;
+  readonly record: { readonly wins: number; readonly losses: number; readonly ties: number };
+  readonly liveGames: number;
+  readonly statTotals: readonly StatTotalVNext[];
+  readonly finalOverall: number;
+  readonly bestDepthRank: number;
+}
+
 export type FlowVNext =
   | { readonly type: 'RECRUITING' }
   | { readonly type: 'WEEK_PLAN' }
@@ -233,7 +292,11 @@ export type FlowVNext =
   | { readonly type: 'INJURY'; readonly report: InjuryReportVNext }
   | { readonly type: 'GAME'; readonly game: GameDayVNext }
   | { readonly type: 'POST_GAME'; readonly recap: GameRecapVNext }
-  | { readonly type: 'SEASON_END' };
+  /** Legacy v2 end-of-regular-season stop; `nextWeek()` continues into the postseason. */
+  | { readonly type: 'SEASON_END' }
+  | { readonly type: 'SEASON_REVIEW'; readonly review: SeasonReviewVNext }
+  | { readonly type: 'OFFSEASON'; readonly options: readonly OffseasonOptionVNext[] }
+  | { readonly type: 'CAREER_COMPLETE'; readonly alumni: AlumniVNext };
 
 export interface CareerVNext {
   readonly model: typeof CAREER_VNEXT_MODEL;
@@ -256,10 +319,15 @@ export interface CareerVNext {
     readonly world: WorldAlphaSeasonState | null;
     /** Sideline credit earned last Saturday, consumed by the next practice week. */
     readonly sidelineCredit: number;
+    /** Where the season began, for the season review. */
+    readonly startOverall: number;
+    readonly startRank: number;
   };
   readonly condition: ConditionVNext;
   readonly flow: FlowVNext;
   readonly log: readonly GameRecapVNext[];
+  /** One review per completed season. */
+  readonly history: readonly SeasonReviewVNext[];
 }
 
 export type CareerVNextFailure =

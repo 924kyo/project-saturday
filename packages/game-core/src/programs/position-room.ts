@@ -1,5 +1,5 @@
 import { COACH_TRUST_BOUNDS } from '../player/bounds.js';
-import { deepFreeze } from '../player/immutable.js';
+import { cloneSerializable, deepFreeze } from '../player/immutable.js';
 import {
   isPlayerArchetypeId,
   isPlayerId,
@@ -21,6 +21,7 @@ import { isRngState, nextUint32, type RngState } from '../random/rng.js';
 import {
   isRosterFamilyNameId,
   isRosterGivenNameId,
+  isRosterPlayerId,
   type DepthRoleId,
   type RecruitTierId,
   type RosterFamilyNameId,
@@ -615,6 +616,95 @@ export function generatePositionRoom(
       rosterRngDrawCountAfter: rng.drawCount,
     },
   });
+}
+
+export interface PositionRoomSeasonInput {
+  readonly programId: ProgramId;
+  readonly playerId: PlayerId;
+  readonly playerAttributes: PositionAttributeProgress;
+  readonly playerArchetypeId: PlayerArchetypeId;
+  readonly playerCoachTrust: number;
+  readonly playerPracticeForm: number;
+  readonly playerExperienceReadiness: number;
+  readonly competitors: readonly PositionRoomCompetitor[];
+}
+
+/**
+ * A new season's depth competition: the same component model as generation, ranked fresh (no
+ * in-season hysteresis) over the returning and incoming competitors the owning command supplies.
+ */
+export function buildPositionRoomSeason(
+  input: PositionRoomSeasonInput,
+  mechanics: PositionRoomMechanics,
+): PositionRoomContext | undefined {
+  if (
+    !validMechanics(mechanics) ||
+    !isProgramId(input.programId) ||
+    !isPlayerId(input.playerId) ||
+    validatePositionAttributeProgress(mechanics.positionId, input.playerAttributes).length > 0 ||
+    mechanics.schemeFitByArchetype[input.playerArchetypeId] === undefined ||
+    !integerIn(input.playerCoachTrust, 0, 100) ||
+    !integerIn(input.playerPracticeForm, 0, 100) ||
+    !integerIn(input.playerExperienceReadiness, 0, 100) ||
+    input.competitors.length !== POSITION_ROOM_COMPETITOR_COUNT ||
+    new Set(input.competitors.map(({ id }) => id)).size !== POSITION_ROOM_COMPETITOR_COUNT ||
+    input.competitors.some(
+      (competitor) =>
+        competitor.positionId !== mechanics.positionId ||
+        !isRosterPlayerId(competitor.id) ||
+        ![
+          competitor.talentFit,
+          competitor.coachTrust,
+          competitor.practiceForm,
+          competitor.schemeFit,
+          competitor.experienceReadiness,
+        ].every((value) => integerIn(value, 0, 100)),
+    )
+  )
+    return undefined;
+  const evaluations = rankEvaluations([
+    evaluate(
+      input.playerId,
+      {
+        talentFit: playerTalentFit(input.playerAttributes, mechanics),
+        coachTrust: input.playerCoachTrust,
+        practiceForm: input.playerPracticeForm,
+        schemeFit: mechanics.schemeFitByArchetype[input.playerArchetypeId]!,
+        experienceReadiness: input.playerExperienceReadiness,
+      },
+      mechanics,
+    ),
+    ...input.competitors.map((competitor) =>
+      evaluate(
+        competitor.id,
+        {
+          talentFit: competitor.talentFit,
+          coachTrust: competitor.coachTrust,
+          practiceForm: competitor.practiceForm,
+          schemeFit: competitor.schemeFit,
+          experienceReadiness: competitor.experienceReadiness,
+        },
+        mechanics,
+      ),
+    ),
+  ]);
+  const player = evaluations.find(({ participantId }) => participantId === input.playerId)!;
+  const explanation = adjacentExplanation(evaluations, input.playerId);
+  if (explanation === undefined) return undefined;
+  return deepFreeze(
+    cloneSerializable({
+      positionId: mechanics.positionId,
+      programId: input.programId,
+      playerId: input.playerId,
+      playerPracticeForm: input.playerPracticeForm,
+      playerCoachTrust: input.playerCoachTrust,
+      competitors: input.competitors,
+      depthOrderIds: evaluations.map(({ participantId }) => participantId),
+      evaluations,
+      projection: opportunityForRank(player.rank, mechanics),
+      adjacentExplanation: explanation,
+    }),
+  );
 }
 
 export function derivePositionCoachTrustChange(

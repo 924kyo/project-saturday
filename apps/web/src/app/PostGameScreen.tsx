@@ -9,6 +9,7 @@ import type { MessageKey } from '@project-saturday/game-content/locales';
 
 import { useAppTranslation } from '../i18n/i18n';
 import {
+  ROUND_KEYS,
   STAT_KEYS,
   VERDICT_KEYS,
   attributeNameKey,
@@ -70,7 +71,9 @@ export function PostGameScreen({
     <div className="s2-stack">
       <div className="s2-final" style={style}>
         <p className="s2-eyebrow" style={{ color: '#fff' }}>
-          {t('v2.post.eyebrow', { week: recap.weekIndex + 1 })}
+          {recap.round === undefined
+            ? t('v2.post.eyebrow', { week: recap.weekIndex + 1 })
+            : t('v2.post.roundEyebrow', { round: t(ROUND_KEYS[recap.round]) })}
         </p>
         <h1 className={`s2-display ${won ? 's2-result-w' : lost ? 's2-result-l' : ''}`}>
           {t(won ? 'v2.gd.win' : lost ? 'v2.gd.loss' : 'v2.gd.tie')}
@@ -247,12 +250,15 @@ export function PostGameScreen({
   );
 }
 
+/** Legacy v2 saves may rest here after week 12; the next step runs the postseason. */
 export function SeasonEndScreen({
   career,
-  onNewCareer,
+  blocked,
+  onContinue,
 }: {
   readonly career: CareerVNext;
-  readonly onNewCareer: () => void;
+  readonly blocked: boolean;
+  readonly onContinue: () => void;
 }): React.JSX.Element {
   const { t } = useAppTranslation();
   const last = career.log.at(-1);
@@ -264,8 +270,8 @@ export function SeasonEndScreen({
         <h1 className="s2-display s2-next__title">{t('v2.season.title')}</h1>
         {last !== undefined && <p>{t('v2.post.record', { ...last.recordAfter })}</p>}
         <p className="s2-note">{t('v2.season.more')}</p>
-        <button className="s2-btn" onClick={onNewCareer} type="button">
-          {t('v2.hub.new')}
+        <button className="s2-btn" disabled={blocked} onClick={onContinue} type="button">
+          {t('v2.season.continue')}
         </button>
       </div>
     </div>

@@ -20,6 +20,7 @@ import {
   key,
   playHeadlineKey,
   program,
+  ROUND_KEYS,
 } from './content';
 import { TacticalBoard } from './TacticalBoard';
 import { Crest, Meter } from './ui';
@@ -82,8 +83,10 @@ export function GameDayScreen({
       <section aria-labelledby="s2-pregame" className="s2-gd">
         <div className="s2-final" style={style}>
           <p className="s2-eyebrow" style={{ color: '#fff' }}>
-            {t('v2.gd.pregameEyebrow', { week: game.weekIndex + 1 })} ·{' '}
-            {t(game.isHome ? 'v2.gd.home' : 'v2.gd.away')}
+            {game.round === undefined
+              ? t('v2.gd.pregameEyebrow', { week: game.weekIndex + 1 })
+              : t(ROUND_KEYS[game.round])}{' '}
+            · {t(game.isHome ? 'v2.gd.home' : 'v2.gd.away')}
           </p>
           <div className="s2-final__score s2-display">
             <Crest identity={us} size={96} />

@@ -1,6 +1,7 @@
 import {
   parseCareerVNext,
   serializeCareerVNext,
+  type AlumniVNext,
   type CareerVNext,
 } from '@project-saturday/game-core';
 
@@ -71,4 +72,46 @@ export async function saveCareerVNext(
 
 export async function clearCareerVNext(storage: StorageAdapter): Promise<void> {
   await storage.runExclusive(LOCK, () => storage.delete('currentCareer', VNEXT_CAREER_ID));
+}
+
+/** Alumni Wall: finished careers, kept beside (never inside) the live save and prototype records. */
+export const VNEXT_ALUMNI_ID = 'career-vnext-alumni' as const;
+interface AlumniEnvelope {
+  readonly model: 'career_vnext_alumni';
+  readonly version: 1;
+  readonly entries: readonly AlumniVNext[];
+}
+
+function isAlumniEnvelope(value: unknown): value is AlumniEnvelope {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    (value as AlumniEnvelope).model === 'career_vnext_alumni' &&
+    (value as AlumniEnvelope).version === 1 &&
+    Array.isArray((value as AlumniEnvelope).entries)
+  );
+}
+
+export async function loadAlumniVNext(storage: StorageAdapter): Promise<readonly AlumniVNext[]> {
+  const stored = await storage.get<unknown>('profile', VNEXT_ALUMNI_ID);
+  return isAlumniEnvelope(stored)
+    ? stored.entries.filter(
+        (entry) => typeof entry?.careerId === 'string' && typeof entry.displayName === 'string',
+      )
+    : [];
+}
+
+/** Idempotent by career: re-entering the completed career never duplicates its plaque. */
+export async function recordAlumniVNext(
+  storage: StorageAdapter,
+  alumni: AlumniVNext,
+): Promise<readonly AlumniVNext[]> {
+  return storage.runExclusive(LOCK, async () => {
+    const entries = await loadAlumniVNext(storage);
+    if (entries.some(({ careerId }) => careerId === alumni.careerId)) return entries;
+    const next = [...entries, alumni];
+    const envelope: AlumniEnvelope = { model: 'career_vnext_alumni', version: 1, entries: next };
+    await storage.put('profile', VNEXT_ALUMNI_ID, envelope);
+    return next;
+  });
 }

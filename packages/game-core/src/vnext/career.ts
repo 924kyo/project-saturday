@@ -1,5 +1,4 @@
 import { deriveCareerId } from '../player/creation.js';
-import { deepFreeze } from '../player/immutable.js';
 import type { ProgramId } from '../player/ids.js';
 import {
   createPositionPlayerProfile,
@@ -7,19 +6,12 @@ import {
 } from '../player/position-creation.js';
 import {
   derivePositionRecruitingProfile,
-  generatePositionRoom,
   updatePositionRoomAfterPractice,
-  type PositionRoomContext,
 } from '../programs/position-room.js';
 import { createRng, nextUint32, type RngSeed, type RngState } from '../random/rng.js';
 import type { SkillId } from '../skills/ids.js';
 import { derivePositionAlphaRolloverV2 } from '../season/position-alpha-focus-v2.js';
-import {
-  createWorldAlphaSeason,
-  resolveNextWorldAlphaRegularRound,
-  type WorldAlphaFixtureMechanics,
-  type WorldAlphaSeasonState,
-} from '../season/world-alpha.js';
+import { createWorldAlphaSeason } from '../season/world-alpha.js';
 import {
   createCommonPositionProficiencyUses,
   type PositionFocusEvidenceV2,
@@ -37,6 +29,20 @@ import {
   createPositionTrainingProficiencyUses,
   derivePositionPracticeGrade,
 } from '../weekly/position-training.js';
+import {
+  fail,
+  isVNextPositionId,
+  offerFromRoom,
+  programRating,
+  publish,
+  roomFor,
+} from './common.js';
+import {
+  afterScheduleStep,
+  postseasonRoundVNext,
+  resolveWorldRoundVNext,
+  scheduledFixtureVNext,
+} from './season.js';
 import { projectVNextWorldResult, resolveVNextSnap, startVNextGame } from './game.js';
 import { projectGameStakesVNext } from './stakes.js';
 import { createSidelineReps, resolveSidelineRep, sidelineCreditFor } from './sideline.js';
@@ -59,7 +65,6 @@ import {
   CAREER_VNEXT_REGULAR_SEASON_WEEKS,
   CAREER_VNEXT_VERSION,
   type CareerVNext,
-  type CareerVNextFailure,
   type CareerVNextMechanics,
   type CareerVNextResult,
   type GameDayVNext,
@@ -71,126 +76,7 @@ import {
 } from './types.js';
 
 const CONTENT_VERSION = 1;
-
-const fail = (reason: CareerVNextFailure): CareerVNextResult => deepFreeze({ ok: false, reason });
-
-function publish(
-  previous: CareerVNext | null,
-  next: Omit<CareerVNext, 'revision'>,
-): CareerVNextResult {
-  // JSON-canonical publication: saved and in-memory careers are identical by construction
-  // (e.g. engine arithmetic may produce -0, which JSON stores as 0).
-  const career = JSON.parse(
-    JSON.stringify({ ...next, revision: (previous?.revision ?? -1) + 1 }),
-  ) as CareerVNext;
-  return deepFreeze({ ok: true as const, career });
-}
-
-export function isVNextPositionId(value: unknown): value is VNextPositionId {
-  return (
-    value === 'position_qb' ||
-    value === 'position_rb' ||
-    value === 'position_wr' ||
-    value === 'position_cb'
-  );
-}
-
-function programRating(
-  mechanics: CareerVNextMechanics,
-  programId: ProgramId,
-  positionId: VNextPositionId,
-) {
-  return (
-    mechanics.world.programProfiles.find((profile) => profile.programId === programId)
-      ?.positionRatings[positionId] ?? 66
-  );
-}
-
-/**
- * VNext room tuning is relative to the recruit: stronger programs stack more talent ahead of a
- * freshman, weaker ones offer an earlier path. Competitor trust grows with class year from a base
- * a freshman can compete with, so the depth climb is live from week one.
- */
-export const VNEXT_ROOM_TUNING = Object.freeze({
-  neutralProgramRating: 66,
-  premiumPerRatingPointPermille: 600,
-  premiumOffset: -1,
-  talentSpread: 10,
-  competitorTrustBase: 16,
-  practiceFormBase: 52,
-  experienceReadinessBase: 44,
-});
-
-/** Named derived stream: the offer preview and the committed room are the same draw sequence. */
-function roomFor(
-  career: Pick<CareerVNext, 'seed' | 'athlete'>,
-  programId: ProgramId,
-  mechanics: CareerVNextMechanics,
-) {
-  const positionId = career.athlete.profile.positionId as VNextPositionId;
-  const tuning = VNEXT_ROOM_TUNING;
-  const config = (roomTalentMean: number) => ({
-    programId,
-    roomTalentMean,
-    roomTalentSpread: tuning.talentSpread,
-    trustBase: tuning.competitorTrustBase,
-    practiceFormBase: tuning.practiceFormBase,
-    experienceReadinessBase: tuning.experienceReadinessBase,
-    playerCoachTrustBonus: 0,
-    playerPracticeForm: 50,
-    playerExperienceReadiness: 45,
-  });
-  const rng = createRng(`${String(career.seed)}:vnext:room:${programId}`);
-  // Zero-cost probe (discarded) reads the recruit's talent fit exactly as the depth model does.
-  const probe = generatePositionRoom(
-    career.athlete.profile,
-    rng,
-    mechanics.roomNames,
-    mechanics.room,
-    config(60),
-  );
-  if (!probe.ok) return probe;
-  const playerTalent =
-    probe.generated.context.evaluations.find(
-      ({ participantId }) => participantId === probe.generated.context.playerId,
-    )?.components.talentFit ?? 50;
-  const premium =
-    Math.round(
-      ((programRating(mechanics, programId, positionId) - tuning.neutralProgramRating) *
-        tuning.premiumPerRatingPointPermille) /
-        1000,
-    ) + tuning.premiumOffset;
-  return generatePositionRoom(
-    career.athlete.profile,
-    rng,
-    mechanics.roomNames,
-    mechanics.room,
-    config(
-      Math.max(tuning.talentSpread, Math.min(100 - tuning.talentSpread, playerTalent + premium)),
-    ),
-  );
-}
-
-function offerFromRoom(
-  programId: ProgramId,
-  rating: number,
-  room: PositionRoomContext,
-): RecruitOfferVNext {
-  const rank = room.projection.rank;
-  const starterId = room.depthOrderIds[0];
-  const starter = room.competitors.find(({ id }) => id === starterId);
-  return {
-    programId,
-    programRating: rating,
-    preview: {
-      rank,
-      roleId: room.projection.roleId,
-      opportunity: room.projection,
-      playersAhead: rank - 1,
-      starterClassYear: starter?.classYear ?? 4,
-    },
-  };
-}
+export { isVNextPositionId, VNEXT_ROOM_TUNING } from './common.js';
 
 export interface CreateCareerVNextInput {
   readonly seed: RngSeed;
@@ -270,10 +156,18 @@ export function createCareerVNext(
     build: { equippedSkillIds: [null, null, null, null], ownedSkillIds: [] },
     recruiting: { offers, committedProgramId: null },
     program: null,
-    season: { index: 0, weekIndex: 0, world: null, sidelineCredit: 0 },
+    season: {
+      index: 0,
+      weekIndex: 0,
+      world: null,
+      sidelineCredit: 0,
+      startOverall: profile.overall,
+      startRank: 1,
+    },
     condition: createConditionVNext(),
     flow: { type: 'RECRUITING' },
     log: [],
+    history: [],
   });
 }
 
@@ -306,7 +200,7 @@ export function commitProgramVNext(
     },
     recruiting: { ...career.recruiting, committedProgramId: programId },
     program: { programId, room: context },
-    season: { ...career.season, world: world.value },
+    season: { ...career.season, world: world.value, startRank: context.projection.rank },
     flow: { type: 'WEEK_PLAN' },
   });
 }
@@ -429,22 +323,6 @@ export function planWeekVNext(
       },
     },
   });
-}
-
-export function scheduledFixtureVNext(
-  career: Pick<CareerVNext, 'program' | 'season'>,
-  mechanics: CareerVNextMechanics,
-): WorldAlphaFixtureMechanics | null {
-  const programId = career.program?.programId;
-  if (programId === undefined) return null;
-  return (
-    mechanics.world.regularSeasonRounds
-      .find(({ roundNumber }) => roundNumber === career.season.weekIndex + 1)
-      ?.fixtures.find(
-        ({ homeProgramId, awayProgramId }) =>
-          homeProgramId === programId || awayProgramId === programId,
-      ) ?? null
-  );
 }
 
 /**
@@ -657,6 +535,7 @@ function gameStep(career: CareerVNext, mechanics: CareerVNextMechanics): CareerV
   const fixture = scheduledFixtureVNext(career, mechanics);
   if (fixture === null || career.program === null) return fail('career_vnext.engine_failed');
   const isHome = fixture.homeProgramId === career.program.programId;
+  const round = postseasonRoundVNext(career);
   // Academic checkpoint weeks read the GPA after practice and events (the shipped rule).
   const academicHold =
     academicCheckpointWeekVNext(career.season.weekIndex, mechanics) &&
@@ -667,6 +546,7 @@ function gameStep(career: CareerVNext, mechanics: CareerVNextMechanics): CareerV
       type: 'GAME',
       game: {
         ...(academicHold ? { academicHold: true } : {}),
+        ...(round === null ? {} : { round }),
         weekIndex: career.season.weekIndex,
         fixtureId: fixture.id,
         opponentProgramId: isHome ? fixture.awayProgramId : fixture.homeProgramId,
@@ -696,10 +576,8 @@ export function kickoffVNext(
   )
     return fail('career_vnext.invalid_phase');
   const game = career.flow.game;
-  const fixture = mechanics.world.regularSeasonRounds
-    .flatMap(({ fixtures }) => fixtures)
-    .find(({ id }) => id === game.fixtureId);
-  if (fixture === undefined) return fail('career_vnext.engine_failed');
+  const fixture = scheduledFixtureVNext(career, mechanics);
+  if (fixture === null || fixture.id !== game.fixtureId) return fail('career_vnext.engine_failed');
   const engine = startVNextGame(
     career,
     fixture,
@@ -791,16 +669,18 @@ function settleGame(
   const summary = completed.game.summary;
   const growth = completed.game.growth;
   const next = completed.game.nextPlayer;
-  const fixture = mechanics.world.regularSeasonRounds
-    .flatMap(({ fixtures }) => fixtures)
-    .find(({ id }) => id === game.fixtureId);
+  const fixture = scheduledFixtureVNext(career, mechanics);
   const world = career.season.world;
-  if (fixture === undefined || world === null || career.program === null)
+  if (
+    fixture === null ||
+    fixture.id !== game.fixtureId ||
+    world === null ||
+    career.program === null
+  )
     return fail('career_vnext.engine_failed');
   const playerResult = projectVNextWorldResult(completed, fixture);
-  const resolvedWorld = resolveNextWorldAlphaRegularRound(world, mechanics.world, playerResult);
-  if (!resolvedWorld.ok) return fail('career_vnext.engine_failed');
-  const worldAfter: WorldAlphaSeasonState = resolvedWorld.value.state;
+  const worldAfter = resolveWorldRoundVNext(world, mechanics, playerResult, game.weekIndex);
+  if (worldAfter === null) return fail('career_vnext.engine_failed');
   const record = worldAfter.programRecords.find(
     ({ programId }) => programId === career.program!.programId,
   );
@@ -808,6 +688,8 @@ function settleGame(
   const profile = career.athlete.profile;
   const stakes = projectGameStakesVNext(career, game.opponentProgramId, game.isHome, mechanics);
   const recap: GameRecapVNext = {
+    seasonIndex: career.season.index,
+    ...(game.round === undefined ? {} : { round: game.round }),
     weekIndex: game.weekIndex,
     opponentProgramId: game.opponentProgramId,
     isHome: game.isHome,
@@ -867,7 +749,7 @@ function advanceWeek(career: CareerVNext, mechanics: CareerVNextMechanics): Care
   );
   if (rollover === null) return fail('career_vnext.engine_failed');
   const weekIndex = career.season.weekIndex + 1;
-  return publish(career, {
+  const next: CareerVNext = {
     ...career,
     athlete: {
       ...career.athlete,
@@ -882,17 +764,20 @@ function advanceWeek(career: CareerVNext, mechanics: CareerVNextMechanics): Care
     },
     season: { ...career.season, weekIndex },
     condition: recoverConditionVNext(career.condition),
-    flow:
-      weekIndex >= CAREER_VNEXT_REGULAR_SEASON_WEEKS
-        ? { type: 'SEASON_END' }
-        : { type: 'WEEK_PLAN' },
-  });
+    flow: { type: 'WEEK_PLAN' },
+  };
+  // After the regular season (and between postseason rounds) the world decides what comes next.
+  return weekIndex >= CAREER_VNEXT_REGULAR_SEASON_WEEKS
+    ? afterScheduleStep(career, next, mechanics)
+    : publish(career, next);
 }
 
 export function nextWeekVNext(
   career: CareerVNext,
   mechanics: CareerVNextMechanics,
 ): CareerVNextResult {
+  // A v2 save may rest at the old SEASON_END stop; it continues straight into the postseason.
+  if (career.flow.type === 'SEASON_END') return afterScheduleStep(career, career, mechanics);
   if (career.flow.type !== 'POST_GAME') return fail('career_vnext.invalid_phase');
   return advanceWeek(career, mechanics);
 }

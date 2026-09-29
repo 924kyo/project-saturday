@@ -4,14 +4,18 @@ import {
   chooseEventVNext,
   chooseInjuryVNext,
   chooseSnapVNext,
+  commitOffseasonVNext,
   commitProgramVNext,
   continueGameVNext,
+  continueSeasonReviewVNext,
   createCareerVNext,
   equipSkillVNext,
   kickoffVNext,
   nextWeekVNext,
   planWeekVNext,
+  retireVNext,
   toGameDayVNext,
+  type AlumniVNext,
   type CareerVNext,
   type CareerVNextMechanics,
   type CareerVNextResult,
@@ -33,13 +37,22 @@ import './app.css';
 import { program } from './content';
 import { CreateScreen } from './CreateScreen';
 import { GameDayScreen } from './GameDayScreen';
-import { clearCareerVNext, loadCareerVNext, saveCareerVNext } from './persistence';
+import {
+  clearCareerVNext,
+  loadAlumniVNext,
+  loadCareerVNext,
+  recordAlumniVNext,
+  saveCareerVNext,
+} from './persistence';
 import {
   dismissPrototypeNotice,
   downloadJson,
   exportPrototypeData,
+  findPrototypeAlumni,
   hasPrototypeData,
+  type PrototypeAlumniView,
 } from './prototype';
+import { CareerCompleteScreen, OffseasonScreen, SeasonReviewScreen } from './SeasonScreens';
 import { PostGameScreen, SeasonEndScreen } from './PostGameScreen';
 import { RecruitScreen } from './RecruitScreen';
 import { teamStyle } from './theme';
@@ -68,6 +81,8 @@ export function App({ storage, seedFactory = browserSeed }: AppProps): React.JSX
   const [saving, setSaving] = useState(false);
   const [confirmNew, setConfirmNew] = useState(false);
   const [prototype, setPrototype] = useState(false);
+  const [alumni, setAlumni] = useState<readonly AlumniVNext[]>([]);
+  const [prototypeAlumni, setPrototypeAlumni] = useState<readonly PrototypeAlumniView[]>([]);
   const inFlight = useRef(false);
   const reducedMotion = useMemo(
     () => globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false,
@@ -91,10 +106,27 @@ export function App({ storage, seedFactory = browserSeed }: AppProps): React.JSX
         if (active) setPrototype(found);
       })
       .catch(() => undefined);
+    void loadAlumniVNext(storage)
+      .then((entries) => {
+        if (active) setAlumni(entries);
+      })
+      .catch(() => undefined);
+    void findPrototypeAlumni(storage).then((entries) => {
+      if (active) setPrototypeAlumni(entries);
+    });
     return () => {
       active = false;
     };
   }, [storage]);
+
+  // A finished career earns its plaque once, whenever the completed save is on screen.
+  const completed = career?.flow.type === 'CAREER_COMPLETE' ? career.flow.alumni : null;
+  useEffect(() => {
+    if (completed === null) return;
+    void recordAlumniVNext(storage, completed)
+      .then(setAlumni)
+      .catch(() => undefined);
+  }, [completed, storage]);
 
   useEffect(() => {
     document.documentElement.lang = locale;
@@ -302,8 +334,32 @@ export function App({ storage, seedFactory = browserSeed }: AppProps): React.JSX
             />
           ) : flow === 'POST_GAME' ? (
             <PostGameScreen blocked={blocked} career={career} onNext={() => run(nextWeekVNext)} />
+          ) : flow === 'SEASON_REVIEW' ? (
+            <SeasonReviewScreen
+              blocked={blocked}
+              career={career}
+              onContinue={() => run(continueSeasonReviewVNext)}
+            />
+          ) : flow === 'OFFSEASON' ? (
+            <OffseasonScreen
+              blocked={blocked}
+              career={career}
+              onCommit={(id) => run((c, m) => commitOffseasonVNext(c, id, m))}
+              onRetire={() => run((c) => retireVNext(c))}
+            />
+          ) : flow === 'CAREER_COMPLETE' ? (
+            <CareerCompleteScreen
+              alumni={alumni}
+              career={career}
+              onNewCareer={() => void startOver()}
+              prototypes={prototypeAlumni}
+            />
           ) : (
-            <SeasonEndScreen career={career} onNewCareer={() => setConfirmNew(true)} />
+            <SeasonEndScreen
+              blocked={blocked}
+              career={career}
+              onContinue={() => run(nextWeekVNext)}
+            />
           )}
         </main>
       </div>

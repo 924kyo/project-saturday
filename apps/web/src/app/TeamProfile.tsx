@@ -15,6 +15,7 @@ import {
   POSITION_ABBR_KEYS,
   POSITION_NAME_KEYS,
   ROLE_KEYS,
+  ROUND_KEYS,
   STAT_KEYS,
   archetypesFor,
   attributeNameKey,
@@ -145,7 +146,9 @@ export function TeamPanel({
                 const home = fixture.homeProgramId === programId;
                 const opponentId = home ? fixture.awayProgramId : fixture.homeProgramId;
                 const opponent = program(opponentId);
-                const played = career.log.find((recap) => recap.weekIndex === week);
+                const played = career.log.find(
+                  (recap) => recap.weekIndex === week && recap.round === undefined,
+                );
                 const current = played === undefined && week === career.season.weekIndex;
                 return (
                   <li
@@ -187,6 +190,30 @@ export function TeamPanel({
                   </li>
                 );
               })}
+              {career.log
+                .filter((recap) => recap.round !== undefined)
+                .map((recap) => {
+                  const opponent = program(recap.opponentProgramId);
+                  return (
+                    <li className="s2-schedule__row" key={`${recap.round}`}>
+                      <span className="s2-note">{t(ROUND_KEYS[recap.round!])}</span>
+                      <Crest identity={opponent} size={26} />
+                      <span className="s2-schedule__opp">{t(key(opponent.shortNameKey))}</span>
+                      <strong
+                        className={`s2-num ${recap.resultId === 'game_result_win' ? 's2-up' : recap.resultId === 'game_result_loss' ? 's2-down' : ''}`}
+                      >
+                        {t(
+                          recap.resultId === 'game_result_win'
+                            ? 'v2.team.win'
+                            : recap.resultId === 'game_result_loss'
+                              ? 'v2.team.loss'
+                              : 'v2.team.tie',
+                          { us: recap.playerScore, them: recap.opponentScore },
+                        )}
+                      </strong>
+                    </li>
+                  );
+                })}
             </ol>
           </Panel>
           <Panel id="s2-team-rankings" title={t('v2.team.rankings')}>

@@ -1,9 +1,22 @@
-import type { CareerVNext, VNextPositionId } from '@project-saturday/game-core';
+import {
+  CAREER_VNEXT_REGULAR_SEASON_WEEKS,
+  postseasonRoundVNext,
+  type CareerVNext,
+  type VNextPositionId,
+} from '@project-saturday/game-core';
 
 import { AthletePortrait } from '../career/AthletePortrait';
 import { PORTRAIT } from './theme';
 import { useAppTranslation } from '../i18n/i18n';
-import { POSITION_ABBR_KEYS, ROLE_KEYS, currentOverall, key, program } from './content';
+import {
+  CLASS_YEAR_KEYS,
+  POSITION_ABBR_KEYS,
+  ROLE_KEYS,
+  ROUND_KEYS,
+  currentOverall,
+  key,
+  program,
+} from './content';
 import { Crest } from './ui';
 
 /** Locker-room nameplate: who you are, where you play, where you stand. */
@@ -13,6 +26,19 @@ export function Nameplate({ career }: { readonly career: CareerVNext }): React.J
   const identity = program(career.program.programId);
   const positionId = career.athlete.profile.positionId as VNextPositionId;
   const rank = career.program.room.projection.rank;
+  const round = postseasonRoundVNext(career);
+  const flow = career.flow.type;
+  // After the schedule the nameplate names the season stage instead of a week number.
+  const stage =
+    flow === 'OFFSEASON'
+      ? t('v2.off.eyebrow')
+      : flow === 'CAREER_COMPLETE'
+        ? t('v2.alumni.eyebrow')
+        : round !== null
+          ? t(ROUND_KEYS[round])
+          : career.season.weekIndex >= CAREER_VNEXT_REGULAR_SEASON_WEEKS
+            ? t('v2.review.eyebrow', { n: career.season.index + 1 })
+            : t('v2.week.label', { week: career.season.weekIndex + 1 });
   return (
     <header className="s2-nameplate">
       <div className="s2-nameplate__portrait">
@@ -25,7 +51,7 @@ export function Nameplate({ career }: { readonly career: CareerVNext }): React.J
       <div className="s2-nameplate__who">
         <p className="s2-eyebrow" style={{ color: 'rgba(255,255,255,0.8)' }}>
           {t(key(identity.shortNameKey))} ·{' '}
-          {t('v2.week.label', { week: career.season.weekIndex + 1 })}
+          {t(CLASS_YEAR_KEYS[Math.min(4, career.season.index + 1) as 1 | 2 | 3 | 4])} · {stage}
         </p>
         <h1 className="s2-display s2-nameplate__name">{career.athlete.profile.displayName}</h1>
         <p className="s2-nameplate__meta">

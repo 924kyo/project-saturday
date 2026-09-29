@@ -265,8 +265,8 @@ export const koKRVNextMessages = {
   'v2.stats.pbu': '패스 차단',
   'v2.stats.tackles': '태클',
   'v2.season.eyebrow': '정규 시즌 종료',
-  'v2.season.title': '첫 시즌을 마쳤다',
-  'v2.season.more': '포스트시즌, 오프시즌, 이적과 두 번째 시즌은 곧 이어집니다.',
+  'v2.season.title': '정규 시즌을 마쳤다',
+  'v2.season.more': '상위 네 팀이 포스트시즌에 진출합니다. 결과를 확인하세요.',
 } as const;
 
 export const enUSVNextMessages = {
@@ -539,6 +539,6 @@ export const enUSVNextMessages = {
   'v2.stats.pbu': 'PBU',
   'v2.stats.tackles': 'Tackles',
   'v2.season.eyebrow': 'Regular season complete',
-  'v2.season.title': 'Season one is in the books',
-  'v2.season.more': 'Postseason, offseason, transfers and season two are next.',
+  'v2.season.title': 'The regular season is in the books',
+  'v2.season.more': 'The top four programs go to the postseason. See where you landed.',
 } as const satisfies Record<keyof typeof koKRVNextMessages, string>;

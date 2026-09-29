@@ -23,7 +23,21 @@ Prototype saves are left untouched on the device, with a one-tap JSON export not
 
 ## Last completed task
 
-Weekly lifecycle, part 3: Team, Profile and academics (2026-09-30). The weekly lifecycle is complete.
+Season arc (2026-09-30). A career now runs four seasons, end to end.
+
+- **Postseason:** the top four of the final rankings play a semifinal and a final (world kernel, higher seed breaks ties). A qualifying program plays them as weeks 13 and 14 with the full weekly loop; otherwise the world resolves them.
+- **Season review:** finish (champion, runner-up, semifinalist, missed), record, rank, the champion, and the athlete's year (overall and depth start to end, live games, stat totals, cards, injuries).
+- **Offseason:** stay, or one of three transfers (a reach, a fit, a role) on a named stream. Every option previews the exact next-season room. Staying ages the room (seniors graduate, returners gain a year, freshmen arrive through `buildPositionRoomSeason`, a new core kernel). Trust carries over at the shipped stay/transfer retention. Body heals and preparation resets.
+- **Graduation and retirement:** after the senior season, or retiring from an offseason, the career becomes an Alumni Wall plaque (programs, seasons, titles, best finish, record, totals, final overall). The plaque is stored beside the live save.
+- **Prototype alumni:** a best-effort, read-only scan of prototype records shows parseable alumni (name, position, games) on the wall.
+- **Save:** `career_vnext` v3 (history, season start snapshot), with v1 → v2 → v3 migrations tested. The log now holds only the current season, since finished seasons live on as reviews; a four-season career stays well under the 1 MB bound (about 260 KB).
+- **UI:**
+  - season review, offseason and Alumni Wall screens;
+  - round labels on Game Day and the recap;
+  - the nameplate names the class year and the season stage;
+  - postseason games on the Team schedule.
+
+Before that: the weekly lifecycle (Team, Profile and academics completed it).
 
 - **Four destinations while planning:** This week / Build / Team / Profile.
   - Team: program header (rank, record), the full position room, the 12-game schedule with results and the rival, and the top 10 of the rankings.
@@ -69,7 +83,7 @@ V4 continues in the new stack, in priority order:
    - breakthrough card offers on the Build screen: done 2026-09-29;
    - off-field alerts only when actionable: done 2026-09-30 (academics; NIL and relationships are not in VNext yet);
    - Team depth-board and Profile screens: done 2026-09-30.
-3. **Season arc:** postseason, season review, offseason Stay/transfer, season two, retirement, Alumni Wall and Career Hub (with the lightweight import of prototype alumni).
+3. **Season arc:** done 2026-09-30 (postseason, review, offseason stay/transfer, four seasons, retirement, Alumni Wall with prototype alumni).
 4. **Balance pass:** Body/recovery near-binary (three heavy drills pin Body at 0; the injury curve now punishes that); coach verdict harsh on low-volume games; QB trust erosion; rest credit on a one-week injury is inert.
 
 ## Active exec plan
@@ -81,7 +95,7 @@ V4 continues in the new stack, in priority order:
 
 ## Current compatibility boundary
 
-- Live save line: `career_vnext` v2 (v1 migrates on load) in store `currentCareer`, id `career-vnext`. It is a checksummed JSON envelope with lean structural validation and a 1 MB bound, published only after a successful save, with exact retry.
+- Live save line: `career_vnext` v3 (v1 and v2 migrate on load), plus the Alumni Wall record `career-vnext-alumni` in the `profile` store, `currentCareer`, id `career-vnext`. It is a checksummed JSON envelope with lean structural validation and a 1 MB bound, published only after a successful save, with exact retry.
 - Every future schema change needs an explicit version and a migration test.
 - Prototype records (WR CareerRun v1–v8, position aggregate v1–v3, meta/alumni, snapshots) stay on the device, unread. The only obligations are the export and a later lightweight alumni import.
 - Core still contains the old WR and position-alpha aggregates. VNext reuses their kernels (engines, room/depth, focus, practice grade, creation, world). Removing the unused aggregates is an R cleanup task after the WR adapter lands.
@@ -100,7 +114,15 @@ V4 continues in the new stack, in priority order:
 - **Save/reload/offline:** save → reload → offline reload (service worker) resumes exactly; a failed write shows a banner and the exact retry succeeds (unit + App test).
 - **Keyboard:** keyboard-only play from creation through a snap result; focus draws the route preview; the board has an aria text equivalent.
 
-## Latest green verification (2026-09-30, weekly lifecycle part 3)
+## Latest green verification (2026-09-30, season arc)
+
+- Typecheck, lint, boundary and localized-copy checks.
+- 820 tests, including a four-season career with a transfer, a playoff run and the v1/v2 migrations.
+- Build/PWA: 19 entries / 1338.59 KiB.
+- Playwright: 4 passed / 2 skips.
+- Real browser: review, offseason, Alumni Wall and postseason Game Day at ko-KR 390/320 and en-US 1440.
+
+## Earlier verification (2026-09-30, weekly lifecycle part 3)
 
 - Typecheck, lint, boundary and localized-copy checks.
 - 816 tests.

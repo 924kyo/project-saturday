@@ -3,7 +3,9 @@ import { utf8ByteLength } from '../player/utf8.js';
 import { isRngState } from '../random/rng.js';
 import {
   CAREER_VNEXT_MODEL,
+  CAREER_VNEXT_POSTSEASON_WEEKS,
   CAREER_VNEXT_REGULAR_SEASON_WEEKS,
+  CAREER_VNEXT_SEASONS,
   CAREER_VNEXT_VERSION,
   type CareerVNext,
 } from './types.js';
@@ -19,7 +21,11 @@ const FLOW_TYPES = new Set([
   'GAME',
   'POST_GAME',
   'SEASON_END',
+  'SEASON_REVIEW',
+  'OFFSEASON',
+  'CAREER_COMPLETE',
 ]);
+const SEASON_WEEKS = CAREER_VNEXT_REGULAR_SEASON_WEEKS + CAREER_VNEXT_POSTSEASON_WEEKS;
 
 function record(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -37,7 +43,7 @@ function integer(value: unknown, minimum: number, maximum: number): value is num
  */
 export function isCareerVNext(value: unknown): value is CareerVNext {
   if (!record(value)) return false;
-  const { athlete, build, recruiting, season, flow, rng, log, condition } = value;
+  const { athlete, build, recruiting, season, flow, rng, log, condition, history } = value;
   if (
     value['model'] !== CAREER_VNEXT_MODEL ||
     value['version'] !== CAREER_VNEXT_VERSION ||
@@ -57,7 +63,10 @@ export function isCareerVNext(value: unknown): value is CareerVNext {
     !record(recruiting) ||
     !Array.isArray(recruiting['offers']) ||
     !record(season) ||
-    !integer(season['weekIndex'], 0, CAREER_VNEXT_REGULAR_SEASON_WEEKS) ||
+    !integer(season['index'], 0, CAREER_VNEXT_SEASONS - 1) ||
+    !integer(season['weekIndex'], 0, SEASON_WEEKS) ||
+    !integer(season['startOverall'], 0, 100) ||
+    !integer(season['startRank'], 1, 8) ||
     !integer(season['sidelineCredit'], -6, 6) ||
     !record(flow) ||
     !FLOW_TYPES.has(String(flow['type'])) ||
@@ -67,7 +76,9 @@ export function isCareerVNext(value: unknown): value is CareerVNext {
     !Array.isArray(condition['eventHistory']) ||
     !record(condition['nextGameModifiers']) ||
     !Array.isArray(log) ||
-    log.length > CAREER_VNEXT_REGULAR_SEASON_WEEKS * 4
+    log.length > SEASON_WEEKS * CAREER_VNEXT_SEASONS ||
+    !Array.isArray(history) ||
+    history.length > CAREER_VNEXT_SEASONS
   )
     return false;
   const state = athlete['profile']['state'];
@@ -75,14 +86,10 @@ export function isCareerVNext(value: unknown): value is CareerVNext {
     if (!integer(state[key], 0, 100)) return false;
   const committed = recruiting['committedProgramId'];
   const program = value['program'];
-  // Committed career and program membership always agree; recruiting is the only pre-program phase.
+  // Recruiting is the only pre-program phase; afterwards the commitment is origin history and the
+  // current program may differ after a transfer.
   if (flow['type'] === 'RECRUITING') return committed === null && program === null;
-  return (
-    record(program) &&
-    typeof committed === 'string' &&
-    program['programId'] === committed &&
-    record(season['world'])
-  );
+  return record(program) && typeof committed === 'string' && record(season['world']);
 }
 
 export function serializeCareerVNext(career: CareerVNext): string | null {
@@ -122,10 +129,36 @@ function migrateV1(value: unknown): unknown {
   };
 }
 
+/**
+ * v2 -> v3 added the season arc: per-season history (none before v3 could complete a season review)
+ * and the season's starting overall and depth rank (the creation overall and current rank are the
+ * closest saved facts). Logged recaps without a season index belong to season 0.
+ */
+function migrateV2(value: unknown): unknown {
+  if (!record(value) || value['model'] !== CAREER_VNEXT_MODEL || value['version'] !== 2)
+    return value;
+  const season = record(value['season']) ? value['season'] : {};
+  const athlete = record(value['athlete']) ? value['athlete'] : {};
+  const profile = record(athlete['profile']) ? athlete['profile'] : {};
+  const program = record(value['program']) ? value['program'] : null;
+  const room = program !== null && record(program['room']) ? program['room'] : {};
+  const projection = record(room['projection']) ? room['projection'] : {};
+  return {
+    ...value,
+    version: 3,
+    season: {
+      ...season,
+      startOverall: profile['overall'],
+      startRank: typeof projection['rank'] === 'number' ? projection['rank'] : 1,
+    },
+    history: [],
+  };
+}
+
 export function parseCareerVNext(json: string): CareerVNext | null {
   try {
     if (utf8ByteLength(json) >= CAREER_VNEXT_MAX_BYTES) return null;
-    const value: unknown = migrateV1(JSON.parse(json));
+    const value: unknown = migrateV2(migrateV1(JSON.parse(json)));
     return isCareerVNext(value) ? deepFreeze(cloneSerializable(value)) : null;
   } catch {
     return null;

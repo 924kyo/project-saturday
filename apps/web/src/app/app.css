@@ -881,7 +881,7 @@
   gap: 12px;
   padding: 16px;
   border-radius: var(--radius);
-  border: 2px solid transparent;
+  border: 2px solid color-mix(in srgb, var(--c1) 45%, var(--line));
   background:
     linear-gradient(
       140deg,
@@ -1564,4 +1564,33 @@
 }
 .s2-tab {
   white-space: nowrap;
+}
+
+/* Alumni Wall. */
+.s2-plaques {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.s2-plaque {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--gold);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.s2-plaque--prototype {
+  grid-template-columns: minmax(0, 1fr);
+  border-left-color: var(--ink-3);
+}
+.s2-plaque__body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
 }

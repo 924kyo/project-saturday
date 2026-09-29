@@ -4,8 +4,10 @@ import {
   chooseEventVNext,
   chooseInjuryVNext,
   chooseSnapVNext,
+  commitOffseasonVNext,
   commitProgramVNext,
   continueGameVNext,
+  continueSeasonReviewVNext,
   createCareerVNext,
   equipSkillVNext,
   focusDefinitionsVNext,
@@ -57,6 +59,9 @@ function playSeason(
   injuryChoice:
     'injury_choice_rest_rehab' | 'injury_choice_play_limited' = 'injury_choice_play_limited',
   strategy: 'grind' | 'balanced' = 'grind',
+  offerIndex = -1,
+  /** Test-only: commit to this program regardless of offers (e.g. a peak program). */
+  forcedProgramId: string | null = null,
 ) {
   const mechanics = buildCareerVNextMechanics(identity)!;
   const decisionsPerGame: number[] = [];
@@ -76,12 +81,21 @@ function playSeason(
   let career = adopt(createCareerVNext({ seed, identity }, mechanics));
   expect(career.recruiting.offers.length).toBe(4);
   for (const offer of career.recruiting.offers) programIdentityVNext(offer.programId);
-  const offer = career.recruiting.offers.at(-1)!;
+  const offer =
+    forcedProgramId === null
+      ? career.recruiting.offers.at(offerIndex)!
+      : { ...career.recruiting.offers[0]!, programId: forcedProgramId as never };
+  if (forcedProgramId !== null)
+    career = {
+      ...career,
+      recruiting: { ...career.recruiting, offers: [...career.recruiting.offers, offer] },
+    };
   career = adopt(commitProgramVNext(career, offer.programId, mechanics));
   // The previewed room is exactly the committed room.
-  expect(career.program!.room.projection.rank).toBe(offer.preview.rank);
+  if (forcedProgramId === null)
+    expect(career.program!.room.projection.rank).toBe(offer.preview.rank);
   const focusIds = focusDefinitionsVNext(career, mechanics).map(({ id }) => id);
-  while (career.flow.type !== 'SEASON_END') {
+  while (career.flow.type !== 'SEASON_REVIEW') {
     if (career.flow.type === 'WEEK_PLAN') {
       // Injury policy decides which drills are open; the plan uses the first three available.
       const open = focusIds.filter((id) => isFocusAvailableVNext(career, id, mechanics));
@@ -164,8 +178,14 @@ describe('Career VNext vertical slice core', () => {
     (positionId, archetypeId) => {
       const identity = identityFor(positionId, archetypeId);
       const { career, decisionsPerGame, reloads } = playSeason(identity, `vnext-${positionId}`);
-      expect(career.log).toHaveLength(12);
-      expect(decisionsPerGame).toHaveLength(12);
+      // Twelve regular-season games plus up to two postseason games for a top-four finish.
+      expect(career.log.length).toBeGreaterThanOrEqual(12);
+      expect(career.log.length).toBeLessThanOrEqual(14);
+      expect(decisionsPerGame).toHaveLength(career.log.length);
+      expect(career.history).toHaveLength(1);
+      expect(career.flow.type === 'SEASON_REVIEW' && career.flow.review.games).toBe(
+        career.log.length,
+      );
       expect(Math.min(...decisionsPerGame)).toBeGreaterThanOrEqual(2);
       const record = career.log.at(-1)!.recordAfter;
       expect(record.wins + record.losses + record.ties).toBe(12);
@@ -197,7 +217,7 @@ describe('Career VNext vertical slice core', () => {
     expect(commitProgramVNext(created.career, 'program_unknown' as never, mechanics).ok).toBe(
       false,
     );
-    expect(parseCareerVNext('{"model":"career_vnext","version":3}')).toBeNull();
+    expect(parseCareerVNext('{"model":"career_vnext","version":4}')).toBeNull();
   });
 });
 
@@ -277,17 +297,37 @@ describe('Career VNext weekly lifecycle', () => {
     expect(grind).toBeGreaterThan(balanced * 2);
   }, 300_000);
 
-  it('migrates a v1 save to the empty weekly condition', () => {
+  it('migrates v1 and v2 saves to the current version and keeps playing', () => {
     const identity = identityFor('position_rb', 'archetype_rb_power_back');
-    const { career } = playSeason(identity, 'vnext-migrate');
-    // A v1 save is the same JSON without the weekly condition or recap availability.
-    const v1 = JSON.parse(JSON.stringify(career)) as Record<string, unknown>;
+    const mechanics = buildCareerVNextMechanics(identity)!;
+    const created = createCareerVNext({ seed: 'vnext-migrate', identity }, mechanics);
+    if (!created.ok) throw new Error(created.reason);
+    const committed = commitProgramVNext(
+      created.career,
+      created.career.recruiting.offers[0]!.programId,
+      mechanics,
+    );
+    if (!committed.ok) throw new Error(committed.reason);
+    // A v2 save is the same JSON without the season arc fields; v1 also lacks the weekly condition.
+    const v2 = JSON.parse(JSON.stringify(committed.career)) as Record<string, Record<string, unknown>>;
+    delete v2['history'];
+    delete v2['season']!['startOverall'];
+    delete v2['season']!['startRank'];
+    (v2 as Record<string, unknown>)['version'] = 2;
+    const v1 = JSON.parse(JSON.stringify(v2)) as Record<string, unknown>;
     delete v1['condition'];
     v1['version'] = 1;
-    for (const recap of v1['log'] as Record<string, unknown>[]) delete recap['availabilityId'];
+    const fromV2 = parseCareerVNext(JSON.stringify(v2));
+    expect(fromV2?.version).toBe(3);
+    expect(fromV2?.history).toEqual([]);
+    expect(fromV2?.season.startRank).toBe(committed.career.program!.room.projection.rank);
     const migrated = parseCareerVNext(JSON.stringify(v1));
     expect(migrated).not.toBeNull();
-    expect(migrated!.version).toBe(2);
+    expect(migrated!.version).toBe(3);
+    const focusIds = focusDefinitionsVNext(migrated!, mechanics).map(({ id }) => id);
+    expect(planWeekVNext(migrated!, [focusIds[0]!, focusIds[1]!, focusIds[2]!], mechanics).ok).toBe(
+      true,
+    );
     expect(migrated!.condition.injury).toBeNull();
     expect(migrated!.condition.eventHistory).toEqual([]);
     expect(
@@ -505,4 +545,146 @@ describe('Career VNext academics', () => {
       expect(reach(3.2).academicHold).toBeUndefined();
     },
   );
+});
+
+describe('Career VNext season arc', () => {
+  it('plays four seasons through postseason, review, offseason and graduation', () => {
+    const identity = identityFor('position_qb', 'archetype_qb_field_general');
+    const mechanics = buildCareerVNextMechanics(identity)!;
+    const adopt = (result: CareerVNextResult): CareerVNext => {
+      if (!result.ok) throw new Error(result.reason);
+      const json = serializeCareerVNext(result.career);
+      if (json === null) throw new Error('serialize');
+      const parsed = parseCareerVNext(json);
+      expect(parsed).toEqual(result.career);
+      return parsed!;
+    };
+    let career = adopt(createCareerVNext({ seed: 'vnext-arc', identity }, mechanics));
+    career = adopt(commitProgramVNext(career, career.recruiting.offers[1]!.programId, mechanics));
+    const programs: string[] = [career.program!.programId];
+    let postseasonGames = 0;
+    let maxBytes = 0;
+    for (let guard = 0; guard < 2_000 && career.flow.type !== 'CAREER_COMPLETE'; guard += 1) {
+      const flow = career.flow;
+      const step: CareerVNextResult =
+        flow.type === 'WEEK_PLAN'
+          ? (() => {
+              const open = focusDefinitionsVNext(career, mechanics)
+                .map(({ id }) => id)
+                .filter((id) => isFocusAvailableVNext(career, id, mechanics));
+              return planWeekVNext(
+                career,
+                [
+                  open[0]!,
+                  open[1]!,
+                  open.includes('action_recovery') ? 'action_recovery' : open[2]!,
+                ],
+                mechanics,
+              );
+            })()
+          : flow.type === 'BREAKTHROUGH' && flow.offer.chosenSkillId === null
+            ? chooseBreakthroughVNext(career, flow.offer.skillIds[0]!)
+            : flow.type === 'EVENT' && flow.event.chosenChoiceId === null
+              ? chooseEventVNext(career, flow.event.choiceIds[0]!, mechanics)
+              : flow.type === 'INJURY' && flow.report.availability === null
+                ? chooseInjuryVNext(career, 'injury_choice_rest_rehab', mechanics)
+                : flow.type === 'GAME'
+                  ? flow.game.stage === 'PREGAME'
+                    ? kickoffVNext(career, mechanics)
+                    : flow.game.stage === 'SNAP'
+                      ? chooseSnapVNext(career, projectSnapBoardFrame(career)!.decisionIds[0]!)
+                      : continueGameVNext(career, mechanics)
+                  : flow.type === 'POST_GAME'
+                    ? nextWeekVNext(career, mechanics)
+                    : flow.type === 'SEASON_REVIEW'
+                      ? continueSeasonReviewVNext(career, mechanics)
+                      : flow.type === 'OFFSEASON'
+                        ? (() => {
+                            // Stay after season one, then take the first transfer, then stay.
+                            expect(flow.options).toHaveLength(4);
+                            expect(flow.options[0]!.kind).toBe('STAY');
+                            expect(
+                              new Set(flow.options.map(({ programId }) => programId)).size,
+                            ).toBe(4);
+                            const pick =
+                              career.season.index === 1 ? flow.options[1]! : flow.options[0]!;
+                            return commitOffseasonVNext(career, pick.programId, mechanics);
+                          })()
+                        : toGameDayVNext(career, mechanics);
+      if (flow.type === 'POST_GAME' && flow.recap.round !== undefined) postseasonGames += 1;
+      const before = career;
+      career = adopt(step);
+      maxBytes = Math.max(maxBytes, serializeCareerVNext(career)!.length);
+      if (before.flow.type === 'OFFSEASON') {
+        expect(career.season.index).toBe(before.season.index + 1);
+        expect(career.season.weekIndex).toBe(0);
+        expect(career.program!.room.competitors).toHaveLength(7);
+        if (career.program!.programId === before.program!.programId) {
+          // Seniors graduate; everyone returning is a year older.
+          for (const competitor of career.program!.room.competitors) {
+            const earlier = before.program!.room.competitors.find(({ id }) => id === competitor.id);
+            if (earlier !== undefined) expect(competitor.classYear).toBe(earlier.classYear + 1);
+          }
+          expect(
+            career.program!.room.competitors.some(({ id }) =>
+              before.program!.room.competitors.some(
+                (entry) => entry.id === id && entry.classYear === 4,
+              ),
+            ),
+          ).toBe(false);
+        } else programs.push(career.program!.programId);
+      }
+    }
+    if (career.flow.type !== 'CAREER_COMPLETE') throw new Error('career did not complete');
+    const alumni = career.flow.alumni;
+    expect(career.history).toHaveLength(4);
+    expect(alumni.seasons).toBe(4);
+    expect(alumni.programIds).toEqual(programs);
+    expect(alumni.record.wins + alumni.record.losses + alumni.record.ties).toBe(48);
+    expect(career.history.map(({ seasonIndex }) => seasonIndex)).toEqual([0, 1, 2, 3]);
+    // The log holds only the final season; earlier seasons are summarized in history.
+    expect(career.log.every(({ seasonIndex }) => seasonIndex === 3)).toBe(true);
+    expect(postseasonGames).toBeGreaterThanOrEqual(
+      career.log.filter(({ round }) => round !== undefined).length,
+    );
+    expect(maxBytes).toBeLessThan(1_000_000);
+    (
+      globalThis as unknown as { process: { stdout: { write: (text: string) => void } } }
+    ).process.stdout.write(
+      `ARC bytes=${maxBytes} finishes=${career.history.map(({ finish }) => finish).join(',')} ranks=${career.history.map(({ depthRank }) => depthRank.end).join(',')}\n`,
+    );
+  }, 300_000);
+
+  it('plays the semifinal and final when the program qualifies', () => {
+    const finishes: string[] = [];
+    let found = false;
+    for (let attempt = 0; attempt < 16 && !found; attempt += 1) {
+      const identity = identityFor('position_qb', 'archetype_qb_field_general');
+      const mechanics = buildCareerVNextMechanics(identity)!;
+      const { career } = playSeason(
+        identity,
+        `vnext-playoff-${attempt}`,
+        false,
+        'injury_choice_rest_rehab',
+        'balanced',
+        0,
+        ['program_ashgrove_state', 'program_delta_vale', 'program_amber_coast'][attempt % 3]!,
+      );
+      if (career.flow.type !== 'SEASON_REVIEW') throw new Error('review');
+      const review = career.flow.review;
+      finishes.push(review.finish);
+      const rounds = career.log.map(({ round }) => round).filter((round) => round !== undefined);
+      if (review.finish === 'MISSED') {
+        expect(rounds).toEqual([]);
+        continue;
+      }
+      found = true;
+      expect(rounds[0]).toBe('SEMIFINAL');
+      expect(rounds.length).toBe(review.finish === 'SEMIFINAL' ? 1 : 2);
+      if (review.finish === 'CHAMPION') expect(review.championProgramId).toBe(review.programId);
+      expect(career.season.world!.postseason.type).toBe('COMPLETE');
+      expect(continueSeasonReviewVNext(career, mechanics).ok).toBe(true);
+    }
+    expect(found, finishes.join(',')).toBe(true);
+  }, 300_000);
 });

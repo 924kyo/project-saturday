@@ -63,7 +63,14 @@ Build: `equipSkill(slot, skillId | null)` during `WEEK_PLAN` only; a card occupi
 
 Academics use the shipped checkpoint rule on the regular-season calendar. When the GPA after practice and events falls below the warning floor at a checkpoint week, the game is marked `academicHold`: zero live snaps, sideline reps kept. This is an additive optional field, so no version bump.
 
-NIL, season review, offseason, transfer and retirement join as additional phases later. The table and view contracts are designed so they slot in without changing the shape of existing phases.
+Season arc (v3):
+
+- After week 12 the world initializes the four-team postseason. A qualifying program plays the semifinal (week 13) and, if it advances, the final (week 14) through the normal weekly loop.
+- Then comes `SEASON_REVIEW` → `continueSeasonReview()`, which leads to `OFFSEASON` (`commitOffseason(programId)` or `retire()`), or to `CAREER_COMPLETE` after the fourth season.
+- Stay ages the room through `buildPositionRoomSeason`; a transfer builds a fresh room from `:vnext:room:<season>:<program>`. The next world season draws from `:vnext:world:<season>` and the transfer shortlist from `:vnext:transfer:<season>`.
+- `history` keeps one review per season, and `log` holds the current season only.
+
+NIL joins later. The table and view contracts are designed so they slot in without changing the shape of existing phases.
 
 ## Game adapter interface (core)
 

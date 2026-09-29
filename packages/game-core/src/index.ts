@@ -846,6 +846,7 @@ export {
   POSITION_ROOM_RNG_DRAWS,
   derivePositionCoachTrustChange,
   derivePositionRecruitingProfile,
+  buildPositionRoomSeason,
   generatePositionRoom,
   updatePositionRoomAfterPractice,
   type GeneratePositionRoomResult,
@@ -869,6 +870,7 @@ export {
   type PositionRoomMechanics,
   type PositionRoomNamePool,
   type UpdatePositionRoomResult,
+  type PositionRoomSeasonInput,
 } from './programs/position-room.js';
 export {
   WORLD_ALPHA_DETAILED_HISTORY_LIMIT,

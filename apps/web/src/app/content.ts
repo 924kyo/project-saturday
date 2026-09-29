@@ -227,6 +227,11 @@ export function currentOverall(career: CareerVNext): number {
   return result.ok ? result.overall : career.athlete.profile.overall;
 }
 
+export const ROUND_KEYS = {
+  SEMIFINAL: 'v2.round.semifinal',
+  FINAL: 'v2.round.final',
+} as const satisfies Record<'SEMIFINAL' | 'FINAL', MessageKey>;
+
 export const CLASS_YEAR_KEYS = {
   1: 'v2.classYear.freshman',
   2: 'v2.classYear.sophomore',
