@@ -30,6 +30,7 @@ import {
   riskBand,
 } from './content';
 import { BuildPanel } from './BuildView';
+import { AcademicAlert, ProfilePanel, TeamPanel } from './TeamProfile';
 import { Nameplate } from './Nameplate';
 import { Crest, Delta, Meter, Panel } from './ui';
 import { METER_COLORS } from './theme';
@@ -385,7 +386,7 @@ export function WeekScreen({
 }): React.JSX.Element {
   const { t } = useAppTranslation();
   const [picks, setPicks] = useState<readonly string[]>([]);
-  const [tab, setTab] = useState<'week' | 'build'>('week');
+  const [tab, setTab] = useState<'week' | 'build' | 'team' | 'profile'>('week');
   const focuses: readonly FocusView[] = useMemo(
     () =>
       focusDefinitionsVNext(career, mechanics).map((definition) => ({
@@ -440,35 +441,41 @@ export function WeekScreen({
     setPicks(plan.filter((id) => open.some((focus) => focus.id === id)));
   }
   const last = projected?.focuses[2];
+  const tabLabels = {
+    week: t('v2.build.tabWeek'),
+    build: t('v2.build.tabBuild', { count: career.build.ownedSkillIds.length }),
+    team: t('v2.nav.team'),
+    profile: t('v2.nav.profile'),
+  } as const;
   const tabs = (
     <div aria-label={t('v2.build.nav')} className="s2-tabs" role="tablist">
-      <button
-        aria-selected={tab === 'week'}
-        className="s2-tab"
-        onClick={() => setTab('week')}
-        role="tab"
-        type="button"
-      >
-        {t('v2.build.tabWeek')}
-      </button>
-      <button
-        aria-selected={tab === 'build'}
-        className="s2-tab"
-        onClick={() => setTab('build')}
-        role="tab"
-        type="button"
-      >
-        {t('v2.build.tabBuild', { count: career.build.ownedSkillIds.length })}
-      </button>
+      {(Object.keys(tabLabels) as (keyof typeof tabLabels)[]).map((id) => (
+        <button
+          aria-selected={tab === id}
+          className="s2-tab"
+          key={id}
+          onClick={() => setTab(id)}
+          role="tab"
+          type="button"
+        >
+          {tabLabels[id]}
+        </button>
+      ))}
     </div>
   );
 
-  if (tab === 'build')
+  if (tab !== 'week')
     return (
       <div className="s2-stack">
         <Nameplate career={career} />
         {tabs}
-        <BuildPanel blocked={blocked} career={career} onEquip={onEquip} />
+        {tab === 'build' ? (
+          <BuildPanel blocked={blocked} career={career} onEquip={onEquip} />
+        ) : tab === 'team' ? (
+          <TeamPanel career={career} mechanics={mechanics} />
+        ) : (
+          <ProfilePanel career={career} mechanics={mechanics} />
+        )}
       </div>
     );
 
@@ -477,6 +484,7 @@ export function WeekScreen({
       <Nameplate career={career} />
       {tabs}
       <InjuryBanner career={career} />
+      <AcademicAlert career={career} mechanics={mechanics} />
       <div className="s2-next">
         <p className="s2-eyebrow">{t('v2.week.nextUp')}</p>
         <h2 className="s2-display s2-next__title">{t('v2.week.planTitle')}</h2>

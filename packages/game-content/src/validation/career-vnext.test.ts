@@ -442,3 +442,67 @@ describe('Career VNext build', () => {
     );
   }, 60_000);
 });
+
+describe('Career VNext academics', () => {
+  it.each(identities)(
+    '%s sits the checkpoint game when GPA is below the floor, but still gets sideline reps',
+    (positionId, archetypeId) => {
+      const identity = identityFor(positionId, archetypeId);
+      const mechanics = buildCareerVNextMechanics(identity)!;
+      const created = createCareerVNext(
+        { seed: `vnext-academic-${positionId}`, identity },
+        mechanics,
+      );
+      if (!created.ok) throw new Error(created.reason);
+      const committed = commitProgramVNext(
+        created.career,
+        created.career.recruiting.offers[0]!.programId,
+        mechanics,
+      );
+      if (!committed.ok) throw new Error(committed.reason);
+      const checkpoint = mechanics.academics.checkpoints[0]!.weekIndex;
+      const reach = (gpa: number) => {
+        let career: CareerVNext = {
+          ...committed.career,
+          athlete: {
+            ...committed.career.athlete,
+            profile: {
+              ...committed.career.athlete.profile,
+              state: { ...committed.career.athlete.profile.state, gpa },
+            },
+          },
+          season: { ...committed.career.season, weekIndex: checkpoint },
+        };
+        const focusIds = focusDefinitionsVNext(career, mechanics).map(({ id }) => id);
+        const planned = planWeekVNext(
+          career,
+          [focusIds[0]!, focusIds[1]!, focusIds[2]!],
+          mechanics,
+        );
+        if (!planned.ok) throw new Error(planned.reason);
+        career = planned.career;
+        while (career.flow.type !== 'GAME') {
+          const flow = career.flow;
+          const step =
+            flow.type === 'EVENT' && flow.event.chosenChoiceId === null
+              ? chooseEventVNext(career, flow.event.choiceIds[0]!, mechanics)
+              : flow.type === 'INJURY' && flow.report.availability === null
+                ? chooseInjuryVNext(career, 'injury_choice_play_limited', mechanics)
+                : flow.type === 'BREAKTHROUGH' && flow.offer.chosenSkillId === null
+                  ? chooseBreakthroughVNext(career, flow.offer.skillIds[0]!)
+                  : toGameDayVNext(career, mechanics);
+          if (!step.ok) throw new Error(step.reason);
+          career = step.career;
+        }
+        const started = kickoffVNext(career, mechanics);
+        if (!started.ok || started.career.flow.type !== 'GAME') throw new Error('kickoff');
+        return started.career.flow.game;
+      };
+      const held = reach(1.5);
+      expect(held.academicHold).toBe(true);
+      expect(held.slots.filter(({ kind }) => kind === 'LIVE')).toHaveLength(0);
+      expect(held.slots.length).toBeGreaterThanOrEqual(2);
+      expect(reach(3.2).academicHold).toBeUndefined();
+    },
+  );
+});

@@ -1531,3 +1531,37 @@
 .s2 .s2-bt-note {
   margin-top: 12px;
 }
+
+/* Team: schedule and rankings rows. */
+.s2-schedule {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.s2-schedule__row {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: var(--radius);
+}
+.s2-schedule__row--now {
+  background: color-mix(in srgb, var(--gold) 12%, transparent);
+  outline: 1px solid color-mix(in srgb, var(--gold) 50%, transparent);
+}
+.s2-schedule__opp {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.s2-tabs {
+  overflow-x: auto;
+}
+.s2-tab {
+  white-space: nowrap;
+}

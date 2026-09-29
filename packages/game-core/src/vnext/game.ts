@@ -44,6 +44,7 @@ export function startVNextGame(
   fixture: WorldAlphaFixtureMechanics,
   weekIndex: number,
   mechanics: CareerVNextMechanics,
+  academicHold = false,
 ): VNextGameState | null {
   if (career.program === null) return null;
   const profile = career.athlete.profile;
@@ -54,7 +55,7 @@ export function startVNextGame(
       weekIndex,
       mechanics,
       career.condition.availability,
-      5,
+      academicHold ? 0 : 5,
       TACTICAL_GAME_RULES_VERSION,
     );
   const programId = career.program.programId;
@@ -82,6 +83,7 @@ export function startVNextGame(
       5,
       maximum + (maximum > 0 ? packageSnapBonusVNext(gameHooks) : 0),
       career.condition.availability?.opportunityCap ?? 12,
+      academicHold ? 0 : 5,
     ),
     playerTeamRating: matchup.supportingUnitRating,
     opponentDefenseRating: matchup.opponentPrimaryRating,

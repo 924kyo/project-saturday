@@ -23,7 +23,15 @@ Prototype saves are left untouched on the device, with a one-tap JSON export not
 
 ## Last completed task
 
-Weekly lifecycle, part 2: breakthrough cards and the Build screen (2026-09-29).
+Weekly lifecycle, part 3: Team, Profile and academics (2026-09-30). The weekly lifecycle is complete.
+
+- **Four destinations while planning:** This week / Build / Team / Profile.
+  - Team: program header (rank, record), the full position room, the 12-game schedule with results and the rival, and the top 10 of the rankings.
+  - Profile: identity, measurables, every rating, season totals, GPA with academic standing and the next check, health and readiness.
+- **Academics (the shipped rule):** at the week-6 and week-12 checkpoints, a GPA below 2.00 after practice and events sits that game (sideline reps still happen). The planner alert appears only when a check is two weeks or less away and GPA is below 2.30.
+- **Verified:** tests for all four positions, the App journey through all four tabs, and a real-browser review at ko-KR 390/320 and en-US 1440.
+
+Before that: weekly lifecycle part 2 (breakthrough cards and the Build screen).
 
 - **Core (`vnext/build.ts`):** a full gauge (80) opens a `BREAKTHROUGH` scene after the practice report with three weighted, unowned cards on a named stream. The pick joins the collection and fills the first open slot. `equipSkillVNext` edits the four slots while planning.
 - **Rules consume every live card effect:** skill-aware focus resolution, rollover recovery, the injury-risk multiplier, QB/RB/CB kernel card effects, event unlocks. The WR kernel now consumes the shipped WR game hooks with the old WR semantics (clue, reliability, pressure composure, contested catch and tipped risk, YAC and fumble risk, package snaps).
@@ -59,8 +67,8 @@ V4 continues in the new stack, in priority order:
 2. **Weekly lifecycle:**
    - contextual events and injuries as scene cards: done 2026-09-29;
    - breakthrough card offers on the Build screen: done 2026-09-29;
-   - off-field alerts only when actionable (NIL and relationships would make the dormant life cards live);
-   - Team depth-board and Profile screens.
+   - off-field alerts only when actionable: done 2026-09-30 (academics; NIL and relationships are not in VNext yet);
+   - Team depth-board and Profile screens: done 2026-09-30.
 3. **Season arc:** postseason, season review, offseason Stay/transfer, season two, retirement, Alumni Wall and Career Hub (with the lightweight import of prototype alumni).
 4. **Balance pass:** Body/recovery near-binary (three heavy drills pin Body at 0; the injury curve now punishes that); coach verdict harsh on low-volume games; QB trust erosion; rest credit on a one-week injury is inert.
 
@@ -92,7 +100,14 @@ V4 continues in the new stack, in priority order:
 - **Save/reload/offline:** save → reload → offline reload (service worker) resumes exactly; a failed write shows a banner and the exact retry succeeds (unit + App test).
 - **Keyboard:** keyboard-only play from creation through a snap result; focus draws the route preview; the board has an aria text equivalent.
 
-## Latest green verification (2026-09-29, weekly lifecycle part 2)
+## Latest green verification (2026-09-30, weekly lifecycle part 3)
+
+- Typecheck, lint, boundary and localized-copy checks.
+- 816 tests.
+- Build/PWA: 19 entries / 1312.65 KiB.
+- Playwright: 4 passed / 2 skips.
+
+## Earlier verification (2026-09-29, weekly lifecycle part 2)
 
 - Repo typecheck in all 4 packages; lint, boundary and localized-copy checks.
 - 812 tests in 98 files (core, content, web, testkit), including 16 VNext season/lifecycle/build tests and the weekly and card copy coverage tests.

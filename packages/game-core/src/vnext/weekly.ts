@@ -509,3 +509,38 @@ export function recoverConditionVNext(condition: ConditionVNext): ConditionVNext
       : advanceInjuryDuration(condition.injury, condition.availability?.recoveryCreditWeeks ?? 0);
   return { ...condition, injury, availability: null };
 }
+
+export type AcademicStatusVNext = 'ELIGIBLE' | 'WARNING' | 'INELIGIBLE';
+
+/** The shipped academic rule: at a checkpoint week, GPA below the floor sits the next game. */
+export function academicStatusVNext(
+  gpa: number,
+  mechanics: Pick<CareerVNextMechanics, 'academics'>,
+): AcademicStatusVNext {
+  const gpaMilli = Math.round(gpa * 1_000);
+  const tuning = mechanics.academics;
+  return gpaMilli >= tuning.eligibleGpaMilli
+    ? 'ELIGIBLE'
+    : gpaMilli >= tuning.warningGpaMilli
+      ? 'WARNING'
+      : 'INELIGIBLE';
+}
+
+export function academicCheckpointWeekVNext(
+  weekIndex: number,
+  mechanics: Pick<CareerVNextMechanics, 'academics'>,
+): boolean {
+  return mechanics.academics.checkpoints.some((checkpoint) => checkpoint.weekIndex === weekIndex);
+}
+
+/** The next checkpoint at or after this week in the regular season, if any. */
+export function nextAcademicCheckpointVNext(
+  career: Pick<CareerVNext, 'season'>,
+  mechanics: Pick<CareerVNextMechanics, 'academics'>,
+): number | null {
+  const upcoming = mechanics.academics.checkpoints
+    .map(({ weekIndex }) => weekIndex)
+    .filter((weekIndex) => weekIndex >= career.season.weekIndex)
+    .sort((left, right) => left - right);
+  return upcoming[0] ?? null;
+}

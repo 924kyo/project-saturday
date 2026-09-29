@@ -76,6 +76,14 @@ describe('App vertical slice', () => {
     await user.click(screen.getByRole('button', { name: /^Commit to / }));
 
     expect(await screen.findByRole('heading', { name: 'Pick three focuses' })).toBeInTheDocument();
+    // The week's four destinations: Team, Profile and Build read the same save.
+    await user.click(screen.getByRole('tab', { name: 'Team' }));
+    expect(await screen.findByText('Schedule')).toBeInTheDocument();
+    await user.click(screen.getByRole('tab', { name: 'Profile' }));
+    expect(await screen.findByText('Player profile')).toBeInTheDocument();
+    await user.click(screen.getByRole('tab', { name: /^Build/ }));
+    expect(await screen.findByText('Your build')).toBeInTheDocument();
+    await user.click(screen.getByRole('tab', { name: 'This week' }));
     await user.click(screen.getByRole('button', { name: 'Coach’s plan' }));
     // A failed write keeps the plan on screen and offers an exact retry.
     storage.failNextCareerWrite = true;

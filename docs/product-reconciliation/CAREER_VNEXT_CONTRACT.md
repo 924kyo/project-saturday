@@ -61,6 +61,8 @@ CareerVNext
 
 Build: `equipSkill(slot, skillId | null)` during `WEEK_PLAN` only; a card occupies one slot. Equipped cards reach every owning rule: skill-aware focus resolution, weekly rollover (passive recovery), pregame injury risk, the position game kernels (QB/RB/CB card effects; WR game hooks in the WR kernel, including package snaps) and event choices (unlocks, WR option access). Offers draw from `:vnext:breakthrough:<season>:<week>`.
 
+Academics use the shipped checkpoint rule on the regular-season calendar. When the GPA after practice and events falls below the warning floor at a checkpoint week, the game is marked `academicHold`: zero live snaps, sideline reps kept. This is an additive optional field, so no version bump.
+
 NIL, season review, offseason, transfer and retirement join as additional phases later. The table and view contracts are designed so they slot in without changing the shape of existing phases.
 
 ## Game adapter interface (core)

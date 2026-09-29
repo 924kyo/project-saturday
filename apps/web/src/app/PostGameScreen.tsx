@@ -4,10 +4,12 @@ import {
   type CareerVNext,
   type VNextPositionId,
 } from '@project-saturday/game-core';
+
 import type { MessageKey } from '@project-saturday/game-content/locales';
 
 import { useAppTranslation } from '../i18n/i18n';
 import {
+  STAT_KEYS,
   VERDICT_KEYS,
   attributeNameKey,
   currentOverall,
@@ -20,32 +22,6 @@ import { Nameplate } from './Nameplate';
 import { SPEAKER_KEYS, selectReactions } from './reactions';
 import { Crest, Meter, Panel } from './ui';
 import { METER_COLORS } from './theme';
-
-const STAT_KEYS: Readonly<Record<string, MessageKey>> = {
-  completions: 'v2.stats.completions',
-  passAttempts: 'v2.stats.attempts',
-  passingYards: 'v2.stats.passYards',
-  passingTouchdowns: 'v2.stats.passTd',
-  interceptions: 'v2.stats.int',
-  sacksTaken: 'v2.stats.sacked',
-  rushAttempts: 'v2.stats.carries',
-  rushingYards: 'v2.stats.rushYards',
-  rushingTouchdowns: 'v2.stats.rushTd',
-  fumbles: 'v2.stats.fumbles',
-  carries: 'v2.stats.carries',
-  receptions: 'v2.stats.receptions',
-  receivingYards: 'v2.stats.recYards',
-  receivingTouchdowns: 'v2.stats.recTd',
-  protectionWins: 'v2.stats.protectionWins',
-  targets: 'v2.stats.targeted',
-  completionsAllowed: 'v2.stats.allowed',
-  yardsAllowed: 'v2.stats.yardsAllowed',
-  touchdownsAllowed: 'v2.stats.tdAllowed',
-  passesDefended: 'v2.stats.pbu',
-  tackles: 'v2.stats.tackles',
-  drops: 'v2.stats.drops',
-  turnovers: 'v2.stats.turnovers',
-};
 
 export function PostGameScreen({
   career,
@@ -132,6 +108,11 @@ export function PostGameScreen({
             {recap.sideline.length > 0 && (
               <p className="s2-note" style={{ marginTop: 10 }}>
                 {t('v2.post.sideline', { sharp, total: recap.sideline.length })}
+              </p>
+            )}
+            {recap.academicHold === true && (
+              <p className="s2-note" style={{ marginTop: 10 }}>
+                {t('v2.post.academicHold')}
               </p>
             )}
             {recap.availabilityId !== 'injury_availability_full' && (

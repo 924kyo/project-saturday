@@ -103,6 +103,11 @@ export function GameDayScreen({
                   {t('v2.stakes.rivalry')}
                 </span>
               )}
+              {game.academicHold === true && (
+                <span className="s2-stakes__chip s2-stakes__chip--challenge">
+                  {t('v2.gd.academicHold')}
+                </span>
+              )}
               {career.condition.availability !== null && (
                 <span className="s2-stakes__chip s2-stakes__chip--challenge">
                   {t(

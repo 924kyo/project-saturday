@@ -129,6 +129,8 @@ export interface GameDayVNext {
   /** Ordered Saturday decisions; `cursor` indexes the current or last resolved slot. */
   readonly slots: readonly GameSlotVNext[];
   readonly cursor: number;
+  /** Set when an academic checkpoint this week found the player ineligible (absent = eligible). */
+  readonly academicHold?: boolean;
 }
 
 /** Carried from a weekly event choice into the next kickoff only. */
@@ -207,6 +209,8 @@ export interface GameRecapVNext {
   readonly rankAfter: number | null;
   /** Stakes as they stood at kickoff (rivalry and rankings before this result). */
   readonly stakes: GameStakesVNext | null;
+  /** True when the game was missed through academic ineligibility (absent = false). */
+  readonly academicHold?: boolean;
   readonly availabilityId:
     'injury_availability_full' | 'injury_availability_limited' | 'injury_availability_out';
 }

@@ -41,6 +41,8 @@ import { projectVNextWorldResult, resolveVNextSnap, startVNextGame } from './gam
 import { projectGameStakesVNext } from './stakes.js';
 import { createSidelineReps, resolveSidelineRep, sidelineCreditFor } from './sideline.js';
 import {
+  academicCheckpointWeekVNext,
+  academicStatusVNext,
   assessInjuryWeekVNext,
   attemptWeeklyEventVNext,
   createConditionVNext,
@@ -655,11 +657,16 @@ function gameStep(career: CareerVNext, mechanics: CareerVNextMechanics): CareerV
   const fixture = scheduledFixtureVNext(career, mechanics);
   if (fixture === null || career.program === null) return fail('career_vnext.engine_failed');
   const isHome = fixture.homeProgramId === career.program.programId;
+  // Academic checkpoint weeks read the GPA after practice and events (the shipped rule).
+  const academicHold =
+    academicCheckpointWeekVNext(career.season.weekIndex, mechanics) &&
+    academicStatusVNext(career.athlete.profile.state.gpa, mechanics) === 'INELIGIBLE';
   return publish(career, {
     ...career,
     flow: {
       type: 'GAME',
       game: {
+        ...(academicHold ? { academicHold: true } : {}),
         weekIndex: career.season.weekIndex,
         fixtureId: fixture.id,
         opponentProgramId: isHome ? fixture.awayProgramId : fixture.homeProgramId,
@@ -693,7 +700,13 @@ export function kickoffVNext(
     .flatMap(({ fixtures }) => fixtures)
     .find(({ id }) => id === game.fixtureId);
   if (fixture === undefined) return fail('career_vnext.engine_failed');
-  const engine = startVNextGame(career, fixture, game.weekIndex, mechanics);
+  const engine = startVNextGame(
+    career,
+    fixture,
+    game.weekIndex,
+    mechanics,
+    game.academicHold === true,
+  );
   if (engine === null) return fail('career_vnext.engine_failed');
   const liveCount = engine.game.type === 'ACTIVE' ? engine.game.input.opportunityCount : 0;
   const repCount = Math.max(0, CAREER_VNEXT_MIN_GAME_DECISIONS - liveCount);
@@ -811,6 +824,7 @@ function settleGame(
     rankAfter: rank?.rank ?? null,
     stakes,
     availabilityId: career.condition.availability?.availabilityId ?? 'injury_availability_full',
+    ...(game.academicHold === true ? { academicHold: true } : {}),
   };
   return publish(career, {
     ...career,

@@ -25,7 +25,10 @@ export {
   VNEXT_BUILD_SLOTS,
 } from './build.js';
 export {
+  academicStatusVNext,
   careerWeekIndexVNext,
+  nextAcademicCheckpointVNext,
+  type AcademicStatusVNext,
   injuryRiskVNext,
   VNEXT_INJURY_TUNING,
   isFocusAvailableVNext,
