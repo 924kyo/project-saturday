@@ -52,3 +52,17 @@ After enrollment, fall camp establishes the first real depth chart and introduce
 - initial role projection.
 
 The player should feel the jump from high-school reputation to college competition.
+
+## Implemented vertical-slice flow
+
+The M3 web flow presents the exact five persisted offers as one mobile-first radio decision. All mechanically relevant facts are revealed because program familiarity is not yet implemented. The selected program is a one-time authoritative command; its generated room remains hidden until the save succeeds and exact retry preserves the same room and RNG state.
+
+After commitment, the home flow shows the chosen program and compact depth status while keeping the ordered eight-player WR room collapsed. Program names, descriptions, traits, role/depth labels, save states, and movement explanations ship together in natural `ko-KR` and `en-US` copy.
+
+`recruitingState` remains immutable origin evidence if a later offseason transfer occurs; it is not rewritten to pretend that the destination recruited the athlete initially. Current membership is instead represented by the career's program ID/context and ordered program-history stints. Strict save validation permits origin/current divergence only when an explicit saved transfer decision proves the transition.
+
+## M7 multi-position recruiting foundation
+
+Recruiting ability is position-owned rather than a WR formula with renamed labels. Each alpha position declares exact integer weights across its ten shared and six position attributes; the 16 weights total 1,000 permille. Archetype scheme fit is also limited to the selected position's three archetypes. The staged core projection records ability score, background modifier, bounded recruit score/tier, and scheme fit without consuming RNG.
+
+Program choice still needs the broader 32-program profile and shortlist adapter before non-WR recruitment activates. Until that complete boundary lands, the verified WR shortlist remains authoritative and the new position mechanics are pre-career evidence only.

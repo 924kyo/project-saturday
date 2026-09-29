@@ -2,6 +2,7 @@ import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 
 export const STORAGE_DATABASE_NAME = 'project-saturday';
 export const STORAGE_DATABASE_VERSION = 1;
+export const CAREER_STORAGE_LOCK_NAME = 'career-save-v1';
 
 export const STORAGE_STORE_NAMES = [
   'profile',
@@ -27,10 +28,27 @@ export interface StorageEntry<T> {
   readonly value: T;
 }
 
+export interface StorageWrite<T = unknown> {
+  readonly storeName: StorageStoreName;
+  readonly id: string;
+  readonly value: T;
+}
+
+export interface StorageDelete {
+  readonly storeName: StorageStoreName;
+  readonly id: string;
+}
+
 export interface StorageAdapter {
   readonly durability: 'indexed-db' | 'memory';
   get<T>(storeName: StorageStoreName, id: string): Promise<T | undefined>;
   put<T>(storeName: StorageStoreName, id: string, value: T): Promise<void>;
+  /** Clear stores, delete selected records, then write in the same atomic transaction. */
+  putMany(
+    entries: readonly StorageWrite[],
+    clearStores?: readonly StorageStoreName[],
+    deletes?: readonly StorageDelete[],
+  ): Promise<void>;
   list<T>(storeName: StorageStoreName): Promise<readonly StorageEntry<T>[]>;
   delete(storeName: StorageStoreName, id: string): Promise<void>;
   runExclusive<T>(lockName: string, operation: () => Promise<T>): Promise<T>;
@@ -124,6 +142,45 @@ export class IndexedDbStorageAdapter implements StorageAdapter {
     });
   }
 
+  public async putMany(
+    entries: readonly StorageWrite[],
+    clearStores: readonly StorageStoreName[] = [],
+    deletes: readonly StorageDelete[] = [],
+  ): Promise<void> {
+    if (entries.length === 0 && clearStores.length === 0 && deletes.length === 0) return;
+    const snapshots = entries.map((entry) => ({
+      ...entry,
+      value: clonePersistedValue(entry.value),
+    }));
+    const deletions = deletes.map(({ storeName, id }) => ({ storeName, id }));
+    const database = await this.getDatabase();
+    const transaction = database.transaction(STORAGE_STORE_NAMES, 'readwrite');
+    const operations: Promise<unknown>[] = [];
+    try {
+      for (const storeName of new Set(clearStores)) {
+        operations.push(transaction.objectStore(storeName).clear());
+      }
+      for (const { storeName, id } of deletions) {
+        operations.push(transaction.objectStore(storeName).delete(id));
+      }
+      for (const entry of snapshots) {
+        operations.push(
+          transaction.objectStore(entry.storeName).put({ id: entry.id, value: entry.value }),
+        );
+      }
+      await Promise.all([...operations, transaction.done]);
+    } catch (error) {
+      // A synchronous request error must also roll back already queued clears/writes.
+      try {
+        transaction.abort();
+      } catch {
+        // The transaction may already have aborted on an asynchronous request error.
+      }
+      await Promise.allSettled([...operations, transaction.done]);
+      throw error;
+    }
+  }
+
   public async list<T>(storeName: StorageStoreName): Promise<readonly StorageEntry<T>[]> {
     const database = await this.getDatabase();
     const records = await database.getAll(storeName);
@@ -197,6 +254,25 @@ export class MemoryStorageAdapter implements StorageAdapter {
 
   public async put<T>(storeName: StorageStoreName, id: string, value: T): Promise<void> {
     this.getStore(storeName).set(id, clonePersistedValue(value));
+  }
+
+  public async putMany(
+    entries: readonly StorageWrite[],
+    clearStores: readonly StorageStoreName[] = [],
+    deletes: readonly StorageDelete[] = [],
+  ): Promise<void> {
+    const snapshots = entries.map((entry) => ({
+      ...entry,
+      store: this.getStore(entry.storeName),
+      value: clonePersistedValue(entry.value),
+    }));
+    const storesToClear = [...new Set(clearStores)].map((name) => this.getStore(name));
+    const deletions = deletes.map(({ storeName, id }) => ({ store: this.getStore(storeName), id }));
+    for (const store of storesToClear) store.clear();
+    for (const { store, id } of deletions) store.delete(id);
+    for (const entry of snapshots) {
+      entry.store.set(entry.id, entry.value);
+    }
   }
 
   public async list<T>(storeName: StorageStoreName): Promise<readonly StorageEntry<T>[]> {

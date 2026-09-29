@@ -10,6 +10,11 @@
 - `execution/AUTONOMOUS_EXECUTION_PROTOCOL.md` — self-directed Codex loop
 - `execution/TARGET.md` — current durable completion target
 - `execution/PROGRESS.md` — current project checkpoint
+- `execution/EXECUTION_EFFICIENCY_PROTOCOL.md` — routine context and validation discipline
+- `execution/TEST_GATE_TIERS.md` — edit, atomic, integration and milestone gates
+- `execution/PROGRESS_COMPACTION.md` — compact resume and preserved historical evidence
+- `execution/DESKTOP_PACKAGING.md` — Windows snapshot requirements
+- `../apps/desktop/README.md` — desktop commands, real artifact paths and measured verification
 
 ## Product specs
 
@@ -35,6 +40,9 @@
 - `product-specs/LEAGUE_AND_POSTSEASON.md`
 - `product-specs/RECRUITING_AND_PROGRAM_CHOICE.md`
 - `product-specs/POSITION_DESIGN.md`
+- `product-specs/CAREER_MANAGEMENT.md`
+- `product-specs/ROSTER_IDENTITY.md`
+- `product-specs/GAME_DAY_PRESENTATION.md`
 
 ## Engineering
 

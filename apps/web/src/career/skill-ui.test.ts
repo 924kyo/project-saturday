@@ -3,6 +3,7 @@ import type {
   CareerRun,
   PassiveBodyRecoveryEvidence,
   SkillId,
+  WeeklyActionId,
   WeeklyActionResult,
 } from '@project-saturday/game-core';
 import { derivePassiveBodyRecovery } from '@project-saturday/game-core';
@@ -14,6 +15,7 @@ import {
 import {
   advanceCareerWeek,
   commitCareerActionDraft,
+  commitCareerProgramChoice,
   createCareerFromDraft,
   createDefaultCreationDraft,
   resolveCareerNextAction,
@@ -30,6 +32,7 @@ import {
   getWeeklySkillEffectPresentation,
   setCareerEquippedSkillSlot,
 } from './skill-ui';
+import { completeShippedGame } from '../test/game-fixture';
 
 function createCareer(careerSeed = 'skill-ui-test-seed'): CareerRun {
   const result = createCareerFromDraft(
@@ -43,41 +46,72 @@ function createCareer(careerSeed = 'skill-ui-test-seed'): CareerRun {
   if (!result.ok) {
     throw new Error(JSON.stringify(result.issues));
   }
-  return result.career;
+  if (result.career.recruitingState.type !== 'CHOOSING') {
+    throw new Error('Expected recruiting offers after career creation.');
+  }
+  const committed = commitCareerProgramChoice(
+    result.career,
+    result.career.recruitingState.offers[0].programId,
+  );
+  if (!committed.ok) {
+    throw new Error(committed.reason);
+  }
+  return committed.career;
 }
 
 type BreakthroughCareer = CareerRun & {
   readonly phase: Extract<CareerRun['phase'], { readonly type: 'SKILL_BREAKTHROUGH' }>;
 };
 
-function createBreakthroughCareer(careerSeed?: string): BreakthroughCareer {
-  const committed = commitCareerActionDraft(createCareer(careerSeed), [
+function createBreakthroughCareer(
+  careerSeed?: string,
+  plan: readonly [WeeklyActionId, WeeklyActionId, WeeklyActionId] = [
     'action_route_drills',
     'action_recovery',
     'action_study_hall',
-  ]);
-  if (!committed.ok) {
-    throw new Error(committed.reason);
-  }
-  let career = committed.career;
-  for (let index = 0; index < 3; index += 1) {
-    const resolved = resolveCareerNextAction(career);
-    if (!resolved.ok) {
-      throw new Error(resolved.reason);
+  ],
+): BreakthroughCareer {
+  let career = createCareer(careerSeed);
+  for (let week = 0; week < 13; week += 1) {
+    const committed = commitCareerActionDraft(career, plan);
+    if (!committed.ok) {
+      throw new Error(committed.reason);
     }
-    career = resolved.career;
+    career = committed.career;
+    for (let index = 0; index < 3; index += 1) {
+      const resolved = resolveCareerNextAction(career);
+      if (!resolved.ok) {
+        throw new Error(resolved.reason);
+      }
+      career = resolved.career;
+    }
+    career = completeShippedGame(career);
+    const advanced = advanceCareerWeek(career);
+    if (!advanced.ok) {
+      throw new Error(advanced.reason);
+    }
+    if (advanced.career.phase.type === 'SKILL_BREAKTHROUGH') {
+      return advanced.career as BreakthroughCareer;
+    }
+    career = advanced.career;
   }
-  const advanced = advanceCareerWeek(career);
-  if (!advanced.ok) {
-    throw new Error(advanced.reason);
-  }
-  if (advanced.career.phase.type !== 'SKILL_BREAKTHROUGH') {
-    throw new Error('Expected deterministic first-week breakthrough fixture.');
-  }
-  return advanced.career as BreakthroughCareer;
+  throw new Error('Expected a deterministic gauge breakthrough fixture.');
 }
 
-function acquireFirstOffer(): { readonly before: CareerRun; readonly after: CareerRun } {
+function findBreakthroughOffering(
+  skillId: SkillId,
+  plan?: readonly [WeeklyActionId, WeeklyActionId, WeeklyActionId],
+): BreakthroughCareer {
+  for (let seedIndex = 0; seedIndex < 128; seedIndex += 1) {
+    const career = createBreakthroughCareer(`skill-offer-search-${skillId}-${seedIndex}`, plan);
+    if (career.phase.offer.offeredSkillIds.includes(skillId)) {
+      return career;
+    }
+  }
+  throw new Error(`Could not find a deterministic offer for ${skillId}.`);
+}
+
+function acquireFirstOffer(): { readonly before: BreakthroughCareer; readonly after: CareerRun } {
   const before = createBreakthroughCareer();
   const selectedSkillId = before.phase.offer.offeredSkillIds[0];
   const chosen = chooseCareerSkillBreakthrough(before, selectedSkillId);
@@ -160,8 +194,8 @@ describe('pure skill command adapters', () => {
 
 describe('pure skill presentation projections', () => {
   it('provides a complete frozen catalog and fails closed for absent stable IDs', () => {
-    expect(SKILL_CARD_PRESENTATIONS).toHaveLength(18);
-    expect(new Set(SKILL_CARD_PRESENTATIONS.map(({ id }) => id)).size).toBe(18);
+    expect(SKILL_CARD_PRESENTATIONS).toHaveLength(40);
+    expect(new Set(SKILL_CARD_PRESENTATIONS.map(({ id }) => id)).size).toBe(40);
     expect(Object.isFrozen(SKILL_CARD_PRESENTATIONS)).toBe(true);
     const route = getSkillPresentation('skill_route_notebook_c');
     expect(route).toEqual({
@@ -181,14 +215,14 @@ describe('pure skill presentation projections', () => {
   });
 
   it('derives owned inventory from acquisitions and always returns exactly four slots', () => {
-    const { after } = acquireFirstOffer();
+    const { after, before } = acquireFirstOffer();
     const selectedSkillId = after.player.skillState.acquisitions[0]?.selectedSkillId;
     if (selectedSkillId === undefined) {
       throw new Error('Missing acquired skill fixture.');
     }
     expect(getOwnedSkillInventory(after)).toEqual([
       {
-        acquiredWeekIndex: 1,
+        acquiredWeekIndex: before.phase.offer.weekIndex,
         equippedSlotIndex: 0,
         offerIndex: 0,
         presentation: getSkillPresentation(selectedSkillId),
@@ -256,6 +290,7 @@ describe('pure skill presentation projections', () => {
       proficiency: null,
       skillEffectAggregates: aggregates,
       appliedSkillEffects: [trace],
+      practiceImpact: 0,
     };
 
     const projected = getWeeklySkillEffectPresentation(result);
@@ -315,7 +350,11 @@ describe('pure skill presentation projections', () => {
   });
 
   it('projects the core-derived pending passive recovery without duplicating its rules', () => {
-    const breakthrough = createBreakthroughCareer('passive-search-12');
+    const breakthrough = findBreakthroughOffering('skill_compressed_recovery_s', [
+      'action_recovery',
+      'action_weight_room',
+      'action_weight_room',
+    ]);
     expect(breakthrough.phase.offer.offeredSkillIds).toContain('skill_compressed_recovery_s');
     const chosen = chooseCareerSkillBreakthrough(breakthrough, 'skill_compressed_recovery_s');
     if (!chosen.ok) {

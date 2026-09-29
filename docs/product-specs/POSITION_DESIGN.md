@@ -6,6 +6,14 @@ Each playable position uses the same career framework—training, cards, Body, d
 
 Do not solve position differentiation by changing only stat names.
 
+## M7.5 four-position UX parity requirement
+
+After B2–B5 presentation integration, B6 must inspect and repair the actual QB/RB/WR/CB UI from Creation/Recruiting through all five destinations, football and off-field decisions, postseason, Transfer/Stay, second season and Retirement/New Career. Preserve a common shell; foreground QB reads/targets/pressure, RB gaps/cuts/protection, WR release/routes/coverage and CB leverage/coverage/ball/tackle. Core experiences naturally available to WR must be equally complete and understandable in every other position, without importing inappropriate WR terms, stats or mechanics. Blank/stale surfaces, missing controls, overlapping identity, unlabeled consequences and inconsistent mobile hierarchy are product failures even if automation passes. Recorded visual and interaction evidence is mandatory; an obvious material parity defect blocks M7.5 and M8.
+
+## M7 activation boundary
+
+M7 alpha targets QB, RB, WR, and CB. Manifest schema 9 validates stable position IDs, three archetypes and development families per position, four game-decision families, position-owned fixed-point depth weights, and opportunity/feedback floors for starter, rotation, reserve, and developmental roles. The live QB/RB/CB path now uses the explicitly versioned current session and v2 browser codec beside preserved WR CareerSessionV7. Players choose three independent focuses, use four equipped slots, and explicitly resolve preparation, events, injuries, individual football snaps, post-game, offseason and retirement. No automatic weekly strategy selects live player decisions. Literal v1 added-position saves migrate with neutral Game Day state and a fourth empty slot, without changing historical choices or RNG. M7's final browser gate remains open as recorded in PROGRESS.md; M7.5 tactical presentation is a separate mandatory correction before M8.
+
 ## WR — Vertical Slice
 
 Position attributes:

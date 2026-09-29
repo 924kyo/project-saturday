@@ -22,9 +22,36 @@ export const TRAINING_PROFICIENCY_IDS = Object.freeze([
   'proficiency_extra_practice',
 ] as const);
 
+/** Staged M7 position training IDs; current WR save tuples remain unchanged until activation. */
+export const POSITION_TRAINING_ACTION_IDS = Object.freeze([
+  'action_qb_delivery_work',
+  'action_qb_coverage_recognition',
+  'action_qb_pressure_movement',
+  'action_rb_vision_tracks',
+  'action_rb_security_contact',
+  'action_rb_third_down_work',
+  'action_cb_mirror_press',
+  'action_cb_zone_recognition',
+  'action_cb_tackle_recovery',
+] as const);
+
+export const POSITION_TRAINING_PROFICIENCY_IDS = Object.freeze([
+  'proficiency_qb_delivery_work',
+  'proficiency_qb_coverage_recognition',
+  'proficiency_qb_pressure_movement',
+  'proficiency_rb_vision_tracks',
+  'proficiency_rb_security_contact',
+  'proficiency_rb_third_down_work',
+  'proficiency_cb_mirror_press',
+  'proficiency_cb_zone_recognition',
+  'proficiency_cb_tackle_recovery',
+] as const);
+
 export const WEEKLY_ACTION_EFFECT_IDS = Object.freeze([
   'effect_attribute_progress',
   'effect_body_change',
+  'effect_preparation_change',
+  'effect_confidence_change',
   'effect_gpa_change',
   'effect_proficiency_progress',
 ] as const);
@@ -34,15 +61,19 @@ export const WEEKLY_ACTION_TAG_ID_PREFIX = 'action_' as const;
 export const WEEKLY_COMMAND_FAILURE_REASONS = Object.freeze([
   'weekly.invalid_career',
   'weekly.invalid_phase',
+  'weekly.recruiting_required',
   'weekly.invalid_plan_length',
   'weekly.invalid_action_id',
   'weekly.action_unavailable',
+  'weekly.off_field_obligation_required',
   'weekly.invalid_available_actions',
   'weekly.invalid_action_definition',
   'weekly.action_definition_mismatch',
   'weekly.invalid_development_config',
   'weekly.invalid_skill_definitions',
   'weekly.invalid_action_definitions',
+  'weekly.invalid_offense_definitions',
+  'weekly.invalid_rotation_definitions',
   'weekly.invalid_skill_offer_weights',
   'weekly.missing_equipped_skill_definition',
   'weekly.rng_exhausted',
@@ -55,6 +86,8 @@ export type WeeklyActionId = (typeof WEEKLY_ACTION_IDS)[number];
 export type WeeklyActionTagId = `${typeof WEEKLY_ACTION_TAG_ID_PREFIX}${string}`;
 export type TrainingProficiencyId = (typeof TRAINING_PROFICIENCY_IDS)[number];
 export type WeeklyActionEffectId = (typeof WEEKLY_ACTION_EFFECT_IDS)[number];
+export type PositionTrainingActionId = (typeof POSITION_TRAINING_ACTION_IDS)[number];
+export type PositionTrainingProficiencyId = (typeof POSITION_TRAINING_PROFICIENCY_IDS)[number];
 export type WeeklyCommandFailureReason = (typeof WEEKLY_COMMAND_FAILURE_REASONS)[number];
 
 export const WEEKLY_ACTION_PROFICIENCY_IDS = Object.freeze({
@@ -94,4 +127,14 @@ export function isTrainingProficiencyId(value: unknown): value is TrainingProfic
 
 export function isWeeklyActionEffectId(value: unknown): value is WeeklyActionEffectId {
   return isOneOf(value, WEEKLY_ACTION_EFFECT_IDS);
+}
+
+export function isPositionTrainingActionId(value: unknown): value is PositionTrainingActionId {
+  return isOneOf(value, POSITION_TRAINING_ACTION_IDS);
+}
+
+export function isPositionTrainingProficiencyId(
+  value: unknown,
+): value is PositionTrainingProficiencyId {
+  return isOneOf(value, POSITION_TRAINING_PROFICIENCY_IDS);
 }

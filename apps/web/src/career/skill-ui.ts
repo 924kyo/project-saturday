@@ -1,5 +1,6 @@
 import {
   chooseSkillBreakthrough,
+  beginRecruiting,
   derivePassiveBodyRecovery,
   setEquippedSkillSlot,
   type AppliedPassiveBodyRecoverySkillEffect,
@@ -14,13 +15,18 @@ import {
   type WeeklyActionId,
   type WeeklyActionResult,
   type WeeklySkillEffectAggregates,
+  type WeeklySkillEffectAggregatesV2,
 } from '@project-saturday/game-core';
 import {
   developmentWeekConfig,
+  offenseStyleMechanicsDefinitions,
+  programMechanicsDefinitions,
+  recruitingMechanicsConfig,
   skillMechanicsDefinitions,
   skills,
 } from '@project-saturday/game-content/content';
 import type { MessageKey } from '@project-saturday/game-content/locales';
+import type { WrCareerSurface } from './wr-view';
 
 export const SKILL_UI_CATALOG_FAILURE_REASON = 'skill-ui.missing-shipped-skill' as const;
 
@@ -73,7 +79,7 @@ export interface WeeklySkillEffectPresentation {
   readonly requestedGpaDelta: number;
   readonly actualGpaDelta: number;
   /** Authoritative persisted aggregate; presentation must not recalculate it from traces. */
-  readonly aggregates: WeeklySkillEffectAggregates;
+  readonly aggregates: WeeklySkillEffectAggregatesV2 | WeeklySkillEffectAggregates;
   readonly appliedEffects: readonly AppliedActionSkillEffectPresentation[];
 }
 
@@ -131,7 +137,23 @@ export function chooseCareerSkillBreakthrough(
   career: CareerRun,
   selectedSkillId: SkillId,
 ): SkillCommandResult {
-  return chooseSkillBreakthrough(career, selectedSkillId);
+  const chosen = chooseSkillBreakthrough(career, selectedSkillId);
+  if (
+    !chosen.ok ||
+    chosen.career.phase.type !== 'PLAN_ACTIONS' ||
+    chosen.career.recruitingState.type !== 'NOT_STARTED'
+  ) {
+    return chosen;
+  }
+  const recruiting = beginRecruiting(
+    chosen.career,
+    recruitingMechanicsConfig,
+    programMechanicsDefinitions,
+    offenseStyleMechanicsDefinitions,
+  );
+  return recruiting.ok
+    ? { career: recruiting.career, ok: true }
+    : { career, ok: false, reason: 'skill.internal_invariant_failure' };
 }
 
 export function setCareerEquippedSkillSlot(
@@ -142,7 +164,9 @@ export function setCareerEquippedSkillSlot(
   return setEquippedSkillSlot(career, slotIndex, skillId);
 }
 
-export function getOwnedSkillInventory(career: CareerRun): readonly OwnedSkillInventoryEntry[] {
+export function getOwnedSkillInventory(
+  career: WrCareerSurface,
+): readonly OwnedSkillInventoryEntry[] {
   return Object.freeze(
     career.player.skillState.acquisitions.map((acquisition) => {
       const equippedIndex = career.player.skillState.equippedSkillIds.findIndex(
@@ -160,7 +184,7 @@ export function getOwnedSkillInventory(career: CareerRun): readonly OwnedSkillIn
 }
 
 function getEquippedSkillSlot(
-  career: CareerRun,
+  career: WrCareerSurface,
   slotIndex: EquippedSkillSlotIndex,
 ): EquippedSkillSlotPresentation {
   const skillId = career.player.skillState.equippedSkillIds[slotIndex];
@@ -171,7 +195,7 @@ function getEquippedSkillSlot(
   });
 }
 
-export function getEquippedSkillSlots(career: CareerRun): EquippedSkillSlotPresentations {
+export function getEquippedSkillSlots(career: WrCareerSurface): EquippedSkillSlotPresentations {
   return Object.freeze([
     getEquippedSkillSlot(career, 0),
     getEquippedSkillSlot(career, 1),
@@ -228,7 +252,7 @@ export function getPassiveRecoverySkillEffectPresentation(
 
 /** Uses the authoritative core rule to preview the recovery that advancing this career would apply. */
 export function getPendingPassiveRecoveryPresentation(
-  career: CareerRun,
+  career: WrCareerSurface,
 ): PassiveRecoverySkillEffectPresentation {
   const derived = derivePassiveBodyRecovery(
     career.player.state.body,

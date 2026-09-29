@@ -1,20 +1,66 @@
 import { isRngState } from '../random/rng.js';
-import { isSkillId } from '../skills/ids.js';
+import {
+  isCompletedGameSummary,
+  isWrGameStatLine,
+  validateCareerGameState,
+} from '../games/validation.js';
+import { isGameId } from '../games/ids.js';
+import { isEventCareerState, isPendingEventEvidence } from '../events/validation.js';
+import type { AppliedEventBreakthroughGaugeDelta } from '../events/types.js';
+import { isInjuryCareerState, isPendingInjuryChoiceEvidence } from '../injuries/validation.js';
+import {
+  OFF_FIELD_BENEFIT_IDS,
+  RELATIONSHIP_ACTOR_IDS,
+  TRANSFER_PROJECTION_FACTOR_IDS,
+  isAcademicCheckpointId,
+  isNilObligationId,
+  isNilOfferId,
+  isOffFieldBenefitId,
+  isOffseasonCoachChangeId,
+  isRelationshipActorId,
+  isTransferConfidenceTierId,
+  isTransferProjectionFactorId,
+} from '../off-field/ids.js';
+import { PRACTICE_IMPACT_BOUNDS, depthRoleIdForRank } from '../programs/tuning.js';
+import {
+  isDepthRoleId,
+  isProgramOffenseStyleId,
+  isProgramStrengthBandId,
+  isRotationPolicyId,
+} from '../programs/ids.js';
+import { validateProgramState } from '../programs/validation.js';
+import {
+  SKILL_BREAKTHROUGH_SOURCE_IDS,
+  isSkillBreakthroughSourceId,
+  isSkillId,
+} from '../skills/ids.js';
 import { EQUIPPED_SKILL_SLOT_COUNT, SKILL_BREAKTHROUGH_OFFER_SIZE } from '../skills/types.js';
 import {
   SKILL_APPLIED_WEEKLY_EFFECT_MAX,
   SKILL_BODY_COST_MULTIPLIER_AGGREGATE_BOUNDS,
   SKILL_BODY_DELTA_FLAT_AGGREGATE_BOUNDS,
   SKILL_BODY_DELTA_FLAT_BOUNDS,
+  SKILL_BREAKTHROUGH_GAUGE_THRESHOLD,
+  SKILL_BREAKTHROUGH_PROGRESS_PER_WEEK_MAX,
+  SKILL_BREAKTHROUGH_PROGRESS_SOURCE_COUNT_MAX,
+  SKILL_BREAKTHROUGH_PROGRESS_SOURCE_POINTS_MAX,
   SKILL_EFFECT_COUNT_BOUNDS,
   SKILL_EFFECT_MULTIPLIER_PERMILLE_BOUNDS,
   SKILL_EFFECTIVE_BODY_DELTA_BOUNDS,
+  SKILL_EFFECTIVE_CONFIDENCE_DELTA_BOUNDS,
   SKILL_EFFECTIVE_GPA_DELTA_MILLI_BOUNDS,
+  SKILL_EFFECTIVE_PREPARATION_DELTA_BOUNDS,
+  SKILL_CONFIDENCE_DELTA_FLAT_AGGREGATE_BOUNDS,
+  SKILL_CONFIDENCE_DELTA_FLAT_BOUNDS,
   SKILL_GPA_DELTA_MILLI_AGGREGATE_BOUNDS,
   SKILL_GPA_DELTA_MILLI_BOUNDS,
   SKILL_NEUTRAL_MULTIPLIER_PERMILLE,
   SKILL_PASSIVE_BODY_RECOVERY_FLAT_AGGREGATE_BOUNDS,
   SKILL_PASSIVE_BODY_RECOVERY_FLAT_BOUNDS,
+  SKILL_PRACTICE_IMPACT_FLAT_AGGREGATE_BOUNDS,
+  SKILL_PRACTICE_IMPACT_FLAT_BOUNDS,
+  SKILL_PREPARATION_DELTA_FLAT_AGGREGATE_BOUNDS,
+  SKILL_PREPARATION_DELTA_FLAT_BOUNDS,
   SKILL_XP_MULTIPLIER_AGGREGATE_BOUNDS,
   isSkillBreakthroughCadenceWeek,
 } from '../skills/tuning.js';
@@ -27,6 +73,7 @@ import {
   CONFIDENCE_BOUNDS,
   GPA_BOUNDS,
   HEIGHT_CM_BOUNDS,
+  PREPARATION_BOUNDS,
   WEIGHT_KG_BOUNDS,
   isIntegerWithinBounds,
   isWithinBounds,
@@ -45,6 +92,7 @@ import {
   isPlayerAttributeId,
   isPlayerId,
   isPlayerTagId,
+  isProgramId,
   isRecruitingBackgroundId,
   isStableDomainId,
   isWrArchetypeId,
@@ -53,10 +101,20 @@ import { compareCodeUnits } from './order.js';
 import {
   CAREER_SCHEMA_VERSION_V1,
   CAREER_SCHEMA_VERSION_V2,
+  CAREER_SCHEMA_VERSION_V3,
+  CAREER_SCHEMA_VERSION_V4,
+  CAREER_SCHEMA_VERSION_V5,
+  CAREER_SCHEMA_VERSION_V6,
+  CAREER_SCHEMA_VERSION_V7,
   RECENT_WEEKLY_ACTION_ID_LIMIT,
   type CareerRun,
   type CareerRunV1,
   type CareerRunV2,
+  type CareerRunV3,
+  type CareerRunV4,
+  type CareerRunV5,
+  type CareerRunV6,
+  type CareerRunV7,
 } from './types.js';
 import {
   TRAINING_PROFICIENCY_IDS,
@@ -76,9 +134,15 @@ import {
   WEEKLY_ACTION_ATTRIBUTE_TARGET_MAX,
   WEEKLY_ACTION_BASE_XP_BOUNDS,
   WEEKLY_ACTION_BODY_DELTA_BOUNDS,
+  WEEKLY_ACTION_CONFIDENCE_DELTA_BOUNDS,
   WEEKLY_ACTION_GPA_DELTA_BOUNDS,
+  WEEKLY_ACTION_PREPARATION_DELTA_BOUNDS,
   WEEKLY_ACTION_PLAN_SIZE,
 } from '../weekly/tuning.js';
+import {
+  WEEKLY_EXPERIENCE_VERSION_CURRENT,
+  WEEKLY_EXPERIENCE_VERSION_LEGACY,
+} from '../weekly/types.js';
 
 export type CareerInvariantIssueCode =
   | 'invariant.duplicate_value'
@@ -101,6 +165,36 @@ export type CareerInvariantResult =
   | { readonly ok: true; readonly issues: readonly [] }
   | { readonly ok: false; readonly issues: readonly CareerInvariantIssue[] };
 
+type CareerSchemaVersion =
+  | typeof CAREER_SCHEMA_VERSION_V1
+  | typeof CAREER_SCHEMA_VERSION_V2
+  | typeof CAREER_SCHEMA_VERSION_V3
+  | typeof CAREER_SCHEMA_VERSION_V4
+  | typeof CAREER_SCHEMA_VERSION_V5
+  | typeof CAREER_SCHEMA_VERSION_V6
+  | typeof CAREER_SCHEMA_VERSION_V7;
+
+function usesExperienceSchema(schemaVersion: CareerSchemaVersion): boolean {
+  return (
+    schemaVersion === CAREER_SCHEMA_VERSION_V4 ||
+    schemaVersion === CAREER_SCHEMA_VERSION_V5 ||
+    schemaVersion === CAREER_SCHEMA_VERSION_V6 ||
+    schemaVersion === CAREER_SCHEMA_VERSION_V7
+  );
+}
+
+function usesSeasonSchema(schemaVersion: CareerSchemaVersion): boolean {
+  return (
+    schemaVersion === CAREER_SCHEMA_VERSION_V5 ||
+    schemaVersion === CAREER_SCHEMA_VERSION_V6 ||
+    schemaVersion === CAREER_SCHEMA_VERSION_V7
+  );
+}
+
+function usesOffFieldSchema(schemaVersion: CareerSchemaVersion): boolean {
+  return schemaVersion === CAREER_SCHEMA_VERSION_V6 || schemaVersion === CAREER_SCHEMA_VERSION_V7;
+}
+
 const CAREER_KEYS_V1 = [
   'schemaVersion',
   'id',
@@ -117,6 +211,331 @@ const CAREER_KEYS_V2 = [
   'recentWeeklyActionIds',
   'lastPassiveBodyRecovery',
 ] as const;
+const CAREER_KEYS_V3 = [...CAREER_KEYS_V2, 'recruitingState', 'programContext'] as const;
+const CAREER_KEYS_V4 = [...CAREER_KEYS_V3, 'gameCareerState', 'weeklyExperienceVersion'] as const;
+const CAREER_KEYS_V5 = [...CAREER_KEYS_V4, 'seasonCareerState'] as const;
+const CAREER_KEYS_V6 = [...CAREER_KEYS_V5, 'offFieldCareerState'] as const;
+const CAREER_KEYS_V7 = CAREER_KEYS_V6;
+const OFF_FIELD_CAREER_STATE_KEYS = [
+  'model',
+  'academics',
+  'relationships',
+  'nil',
+  'offseason',
+  'programHistory',
+] as const;
+const PENDING_ACADEMIC_STATE_KEYS = [
+  'model',
+  'bootstrapStatus',
+  'termIndex',
+  'eligibilityStatus',
+  'lastCheckpoint',
+  'checkpointHistory',
+] as const;
+const ACTIVE_ACADEMIC_STATE_KEYS = [
+  ...PENDING_ACADEMIC_STATE_KEYS,
+  'nextCheckpointIndex',
+  'restrictionGamesRemaining',
+  'lastGameRestriction',
+  'gameRestrictionHistory',
+] as const;
+const ACADEMIC_CHECKPOINT_EVIDENCE_KEYS = [
+  'model',
+  'checkpointId',
+  'termIndex',
+  'weekIndex',
+  'gpaMilli',
+  'obligationGpaDeltaMilli',
+  'eligibleGpaMilli',
+  'warningGpaMilli',
+  'statusBefore',
+  'statusAfter',
+  'restrictionGamesBefore',
+  'requestedRestrictionGames',
+  'actualRestrictionGames',
+  'restrictionGamesAfter',
+] as const;
+const ACADEMIC_GAME_RESTRICTION_EVIDENCE_KEYS = [
+  'model',
+  'gameId',
+  'weekIndex',
+  'restrictionGamesBefore',
+  'restrictionGamesAfter',
+] as const;
+const PENDING_RELATIONSHIP_STATE_KEYS = ['model', 'bootstrapStatus', 'tracks', 'history'] as const;
+const ACTIVE_RELATIONSHIP_STATE_KEYS = [
+  ...PENDING_RELATIONSHIP_STATE_KEYS,
+  'lastProcessedWeekIndex',
+] as const;
+const RELATIONSHIP_TRACK_KEYS = ['actorId', 'value'] as const;
+const RELATIONSHIP_CHANGE_KEYS = [
+  'actorId',
+  'valueBefore',
+  'baseDelta',
+  'gainMultiplierPermille',
+  'requestedDelta',
+  'actualDelta',
+  'valueAfter',
+] as const;
+const RELATIONSHIP_FOOTBALL_EFFECT_KEYS = [
+  'coachTrustModifier',
+  'informationScoreModifier',
+  'opportunitySnapBonusPermille',
+] as const;
+const RELATIONSHIP_WEEK_EVIDENCE_KEYS = [
+  'model',
+  'sourceId',
+  'weekIndex',
+  'actionIds',
+  'changes',
+  'appliedSkillEffects',
+  'footballEffectsBefore',
+  'footballEffectsAfter',
+  'coachTrustBefore',
+  'requestedCoachTrustDelta',
+  'actualCoachTrustDelta',
+  'coachTrustAfter',
+] as const;
+const COLLECTED_LIFE_HOOK_KEYS = [
+  'skillId',
+  'slotIndex',
+  'effectIndex',
+  'hookId',
+  'valueMilli',
+] as const;
+const PENDING_NIL_STATE_KEYS = [
+  'model',
+  'fictionalFundsUsd',
+  'pendingOffers',
+  'activeObligation',
+  'history',
+] as const;
+const ACTIVE_NIL_STATE_KEYS = [
+  'model',
+  'bootstrapStatus',
+  'fictionalFundsUsd',
+  'benefitStacks',
+  'pendingOffers',
+  'activeObligation',
+  'lastOfferAttempt',
+  'history',
+] as const;
+const NIL_BENEFIT_STACK_KEYS = ['benefitId', 'quantity'] as const;
+const NIL_SELECTION_CONTEXT_KEYS = [
+  'brand',
+  'depthRank',
+  'gpaMilli',
+  'programStrengthBandId',
+  'tagIds',
+] as const;
+const NIL_SELECTION_EVIDENCE_KEYS = [
+  'model',
+  'weekIndex',
+  'context',
+  'eligibleOfferIds',
+  'totalWeight',
+  'roll',
+  'selectedOfferId',
+  'rngDrawCountBefore',
+  'rngDrawCountAfter',
+] as const;
+const NIL_PENDING_OFFER_KEYS = [
+  'offerId',
+  'offeredWeekIndex',
+  'expiresAfterWeekIndex',
+  'selection',
+] as const;
+const NIL_ACTIVE_OBLIGATION_KEYS = [
+  'offerId',
+  'obligationId',
+  'acceptedWeekIndex',
+  'remainingWeeks',
+  'lastResolvedWeekIndex',
+] as const;
+const NIL_EFFECT_APPLICATION_KEYS = [
+  'model',
+  'sourceId',
+  'effectIndex',
+  'effect',
+  'rewardMultiplierPermille',
+  'valueBefore',
+  'baseDelta',
+  'requestedDelta',
+  'actualDelta',
+  'valueAfter',
+] as const;
+const NIL_DECISION_EVIDENCE_KEYS = [
+  'model',
+  'weekIndex',
+  'decisionId',
+  'offer',
+  'appliedSkillEffects',
+  'rewardMultiplierPermille',
+  'appliedEffects',
+] as const;
+const NIL_EXPIRATION_EVIDENCE_KEYS = ['model', 'weekIndex', 'offer'] as const;
+const NIL_OBLIGATION_EVIDENCE_KEYS = [
+  'model',
+  'weekIndex',
+  'resolutionId',
+  'offerId',
+  'obligationId',
+  'focusCost',
+  'remainingWeeksBefore',
+  'remainingWeeksAfter',
+  'appliedEffects',
+] as const;
+const PENDING_OFFSEASON_STATE_KEYS = [
+  'model',
+  'status',
+  'completedDecisionCount',
+  'lastDecision',
+] as const;
+const PROJECTED_OFFSEASON_STATE_KEYS = [
+  ...PENDING_OFFSEASON_STATE_KEYS,
+  'completedSeasonId',
+  'completedSeasonIndex',
+  'nextSeasonIndex',
+  'academicTermIndexBefore',
+  'academicTermIndexAfter',
+  'worldProjection',
+  'transferProjection',
+] as const;
+const OFFSEASON_WORLD_PROJECTION_KEYS = [
+  'model',
+  'programs',
+  'worldRngDrawCountBefore',
+  'worldRngDrawCountAfter',
+] as const;
+const OFFSEASON_PROGRAM_PROJECTION_KEYS = [
+  'programId',
+  'coachChangeId',
+  'offenseStyleIdBefore',
+  'offenseStyleIdAfter',
+  'roomTalentBefore',
+  'departureRelief',
+  'incomingPressure',
+  'roomTalentAfter',
+  'coachChangeTotalWeight',
+  'coachChangeRoll',
+  'pressureMaximumInclusive',
+  'departureRoll',
+  'incomingRoll',
+  'worldRngDrawCountBefore',
+  'worldRngDrawCountAfter',
+] as const;
+const OFFSEASON_TRANSFER_PROJECTION_KEYS = [
+  'model',
+  'stayOption',
+  'transferOptions',
+  'shortlistSelections',
+  'careerRngDrawCountBefore',
+  'careerRngDrawCountAfter',
+] as const;
+const TRANSFER_OPTION_PROJECTION_KEYS = [
+  'kind',
+  'programId',
+  'projectedDepthRank',
+  'projectedRoleId',
+  'projectedSnapMinPermille',
+  'projectedSnapMaxPermille',
+  'informationScore',
+  'confidenceTierId',
+  'uncertaintyPoints',
+  'factors',
+  'projectedScore',
+  'projectedScoreMinimum',
+  'projectedScoreMaximum',
+] as const;
+const TRANSFER_FACTOR_PROJECTION_KEYS = [
+  'factorId',
+  'score',
+  'weightPermille',
+  'contributionMilli',
+] as const;
+const TRANSFER_SHORTLIST_SELECTION_KEYS = [
+  'selectionIndex',
+  'candidateWeights',
+  'totalWeight',
+  'roll',
+  'selectedProgramId',
+  'careerRngDrawCountBefore',
+  'careerRngDrawCountAfter',
+] as const;
+const TRANSFER_SHORTLIST_CANDIDATE_KEYS = ['programId', 'weight'] as const;
+const OFFSEASON_DECISION_KEYS = [
+  'model',
+  'kind',
+  'previousProgramId',
+  'selectedProgramId',
+  'selectedOption',
+  'coachChangeId',
+  'offenseStyleIdBefore',
+  'offenseStyleIdAfter',
+  'rotationPolicyIdAfter',
+  'roomTalentMeanAfter',
+  'coachTrustBefore',
+  'coachTrustRetentionPermille',
+  'coachTrustBaseline',
+  'coachTrustRequestedAfter',
+  'coachTrustAfter',
+  'playerPracticeFormBefore',
+  'playerPracticeFormAfter',
+  'playerExperienceReadiness',
+  'relationshipTransitions',
+  'rosterRngDrawCountBefore',
+  'rosterRngDrawCountAfter',
+  'actualDepthRank',
+  'actualRoleId',
+  'actualSnapMinPermille',
+  'actualSnapMaxPermille',
+] as const;
+const OFFSEASON_RELATIONSHIP_TRANSITION_KEYS = [
+  'actorId',
+  'valueBefore',
+  'resetToNeutral',
+  'resetValue',
+  'valueAfter',
+] as const;
+const PROGRAM_HISTORY_ENTRY_KEYS = ['programId', 'startSeasonIndex', 'endSeasonIndex'] as const;
+const PENDING_SEASON_CAREER_STATE_KEYS = [
+  'model',
+  'bootstrapStatus',
+  'seasonsCompleted',
+  'activeSeasonId',
+  'lastCompletedSeason',
+] as const;
+const ACTIVE_SEASON_CAREER_STATE_KEYS = [
+  ...PENDING_SEASON_CAREER_STATE_KEYS,
+  'eventState',
+  'injuryState',
+  'gameSummaries',
+  'roleHistory',
+] as const;
+const COMPLETED_SEASON_SUMMARY_KEYS = [
+  'seasonId',
+  'outcomeId',
+  'regularSeasonRank',
+  'postseasonSeed',
+  'programWins',
+  'programLosses',
+  'programTies',
+  'gamesPlayed',
+  'playerWins',
+  'playerLosses',
+  'playerTies',
+  'cumulativeStats',
+  'averagePerformanceGrade',
+  'bestGame',
+  'roleHistory',
+  'finalDepthRank',
+  'finalRoleId',
+  'ownedSkillIds',
+  'equippedSkillIds',
+  'injuryCount',
+  'injuryWeeksMissed',
+] as const;
+const SEASON_ROLE_SNAPSHOT_KEYS = ['weekIndex', 'rank', 'roleId'] as const;
 const PLAYER_KEYS_V1 = [
   'id',
   'displayName',
@@ -150,7 +569,8 @@ const APPEARANCE_KEYS = [
 ] as const;
 const ATTRIBUTE_GROUP_KEYS = ['physical', 'mental', 'wr'] as const;
 const ATTRIBUTE_PROGRESS_KEYS = ['rating', 'xp'] as const;
-const PLAYER_STATE_KEYS = ['body', 'confidence', 'coachTrust', 'brand', 'gpa'] as const;
+const PLAYER_STATE_KEYS_V1 = ['body', 'confidence', 'coachTrust', 'brand', 'gpa'] as const;
+const PLAYER_STATE_KEYS_V4 = [...PLAYER_STATE_KEYS_V1, 'preparation'] as const;
 const RNG_STATE_KEYS = ['algorithm', 'state', 'drawCount'] as const;
 const ACTION_RESULT_KEYS_V1 = [
   'actionId',
@@ -176,11 +596,31 @@ const ACTION_RESULT_KEYS_V2 = [
   'skillEffectAggregates',
   'appliedSkillEffects',
 ] as const;
-const SKILL_EFFECT_AGGREGATE_KEYS = [
+const ACTION_RESULT_KEYS_V3 = [...ACTION_RESULT_KEYS_V2, 'practiceImpact'] as const;
+const ACTION_RESULT_KEYS_V4 = [
+  ...ACTION_RESULT_KEYS_V3,
+  'preparationBefore',
+  'basePreparationDelta',
+  'requestedPreparationDelta',
+  'actualPreparationDelta',
+  'preparationAfter',
+  'confidenceBefore',
+  'baseConfidenceDelta',
+  'requestedConfidenceDelta',
+  'actualConfidenceDelta',
+  'confidenceAfter',
+] as const;
+const SKILL_EFFECT_AGGREGATE_KEYS_V2 = [
   'xpMultiplierPermille',
   'bodyCostMultiplierPermille',
   'bodyDeltaFlat',
   'gpaDeltaMilli',
+] as const;
+const SKILL_EFFECT_AGGREGATE_KEYS_V4 = [
+  ...SKILL_EFFECT_AGGREGATE_KEYS_V2,
+  'preparationDeltaFlat',
+  'confidenceDeltaFlat',
+  'practiceImpactFlat',
 ] as const;
 const APPLIED_SKILL_EFFECT_BASE_KEYS = ['skillId', 'slotIndex', 'effectIndex', 'type'] as const;
 const ATTRIBUTE_XP_RESULT_KEYS = [
@@ -201,8 +641,9 @@ const PROFICIENCY_RESULT_KEYS = [
   'levelAfter',
   'xpMultiplierPermille',
 ] as const;
-const PLAYER_SKILL_STATE_KEYS = ['acquisitions', 'equippedSkillIds'] as const;
-const SKILL_ACQUISITION_KEYS = [
+const PLAYER_SKILL_STATE_KEYS_V2 = ['acquisitions', 'equippedSkillIds'] as const;
+const PLAYER_SKILL_STATE_KEYS_V4 = [...PLAYER_SKILL_STATE_KEYS_V2, 'breakthroughGauge'] as const;
+const SKILL_ACQUISITION_KEYS_V2 = [
   'offerIndex',
   'weekIndex',
   'offeredSkillIds',
@@ -210,13 +651,27 @@ const SKILL_ACQUISITION_KEYS = [
   'rngDrawCountBefore',
   'rngDrawCountAfter',
 ] as const;
-const SKILL_BREAKTHROUGH_OFFER_KEYS = [
+const SKILL_ACQUISITION_KEYS_V4 = [...SKILL_ACQUISITION_KEYS_V2, 'trigger'] as const;
+const SKILL_BREAKTHROUGH_OFFER_KEYS_V2 = [
   'offerIndex',
   'weekIndex',
   'offeredSkillIds',
   'rngDrawCountBefore',
   'rngDrawCountAfter',
 ] as const;
+const SKILL_BREAKTHROUGH_OFFER_KEYS_V4 = [...SKILL_BREAKTHROUGH_OFFER_KEYS_V2, 'trigger'] as const;
+const SKILL_BREAKTHROUGH_GAUGE_KEYS = ['model', 'progress', 'threshold', 'lastProgress'] as const;
+const SKILL_BREAKTHROUGH_PROGRESS_KEYS = [
+  'model',
+  'weekIndex',
+  'progressBefore',
+  'pointsEarned',
+  'progressAfter',
+  'threshold',
+  'triggeredOffer',
+  'sources',
+] as const;
+const SKILL_BREAKTHROUGH_PROGRESS_SOURCE_KEYS = ['sourceId', 'points'] as const;
 const PASSIVE_BODY_RECOVERY_EVIDENCE_KEYS = [
   'weekIndex',
   'bodyBefore',
@@ -382,8 +837,17 @@ function validateAttributes(value: unknown, issues: CareerInvariantIssue[]): voi
   validateAttributeGroup(attributes.wr, 'career.player.attributes.wr', WR_ATTRIBUTE_IDS, issues);
 }
 
-function validateState(value: unknown, issues: CareerInvariantIssue[]): void {
-  const state = strictRecord(value, 'career.player.state', PLAYER_STATE_KEYS, issues);
+function validateState(
+  value: unknown,
+  schemaVersion: CareerSchemaVersion,
+  issues: CareerInvariantIssue[],
+): void {
+  const state = strictRecord(
+    value,
+    'career.player.state',
+    usesExperienceSchema(schemaVersion) ? PLAYER_STATE_KEYS_V4 : PLAYER_STATE_KEYS_V1,
+    issues,
+  );
   if (state === undefined) {
     return;
   }
@@ -398,6 +862,12 @@ function validateState(value: unknown, issues: CareerInvariantIssue[]): void {
     if (!isIntegerWithinBounds(state[key], valueBounds)) {
       issue(issues, 'invariant.out_of_bounds', `career.player.state.${key}`);
     }
+  }
+  if (
+    usesExperienceSchema(schemaVersion) &&
+    !isIntegerWithinBounds(state['preparation'], PREPARATION_BOUNDS)
+  ) {
+    issue(issues, 'invariant.out_of_bounds', 'career.player.state.preparation');
   }
   if (!isWithinBounds(state.gpa, GPA_BOUNDS)) {
     issue(issues, 'invariant.out_of_bounds', 'career.player.state.gpa');
@@ -501,10 +971,280 @@ interface SkillValidationSummary {
   readonly lastRngDrawCountAfter: number;
   readonly ownedSkillIds: ReadonlySet<string>;
   readonly equippedSkillIds: readonly unknown[];
+  readonly gaugeLastProgress: UnknownRecord | null;
 }
 
 function nonNegativeSafeInteger(value: unknown): value is number {
   return Number.isSafeInteger(value) && (value as number) >= 0;
+}
+
+function integerIn(value: unknown, minimum: number, maximum: number): value is number {
+  return Number.isInteger(value) && (value as number) >= minimum && (value as number) <= maximum;
+}
+
+function validateReturningCompletedSeasonSummary(
+  value: unknown,
+  completedSeasonProgramIds: readonly unknown[],
+  careerRngDrawCount: number,
+  issues: CareerInvariantIssue[],
+): void {
+  const path = 'career.seasonCareerState.lastCompletedSeason';
+  const summary = strictRecord(value, path, COMPLETED_SEASON_SUMMARY_KEYS, issues);
+  if (summary === undefined) return;
+  if (
+    typeof summary['seasonId'] !== 'string' ||
+    !isStableDomainId(summary['seasonId']) ||
+    !summary['seasonId'].startsWith('season_')
+  ) {
+    issue(issues, 'invariant.invalid_id', `${path}.seasonId`);
+  }
+  if (
+    ![
+      'season_outcome_champion',
+      'season_outcome_runner_up',
+      'season_outcome_semifinal_exit',
+      'season_outcome_regular_season_complete',
+    ].includes(summary['outcomeId'] as string)
+  ) {
+    issue(issues, 'invariant.invalid_id', `${path}.outcomeId`);
+  }
+  for (const key of [
+    'regularSeasonRank',
+    'programWins',
+    'programLosses',
+    'programTies',
+    'gamesPlayed',
+    'playerWins',
+    'playerLosses',
+    'playerTies',
+    'averagePerformanceGrade',
+    'finalDepthRank',
+    'injuryCount',
+    'injuryWeeksMissed',
+  ] as const) {
+    if (!nonNegativeSafeInteger(summary[key])) {
+      issue(issues, 'invariant.out_of_bounds', `${path}.${key}`);
+    }
+  }
+  if (summary['postseasonSeed'] !== null && !integerIn(summary['postseasonSeed'], 1, 4)) {
+    issue(issues, 'invariant.out_of_bounds', `${path}.postseasonSeed`);
+  }
+  if (!isWrGameStatLine(summary['cumulativeStats'])) {
+    issue(issues, 'invariant.invalid_value', `${path}.cumulativeStats`);
+  }
+  if (
+    summary['bestGame'] !== null &&
+    !completedSeasonProgramIds.some((programId) =>
+      isCompletedGameSummary(summary['bestGame'], programId, careerRngDrawCount),
+    )
+  ) {
+    issue(issues, 'invariant.invalid_value', `${path}.bestGame`);
+  }
+  if (!isDepthRoleId(summary['finalRoleId'])) {
+    issue(issues, 'invariant.invalid_id', `${path}.finalRoleId`);
+  }
+  for (const [field, allowNull] of [
+    ['ownedSkillIds', false],
+    ['equippedSkillIds', true],
+  ] as const) {
+    const values = summary[field];
+    if (
+      !Array.isArray(values) ||
+      !values.every((entry) => (allowNull && entry === null) || isSkillId(entry))
+    ) {
+      issue(issues, 'invariant.invalid_value', `${path}.${field}`);
+    }
+  }
+  if (!Array.isArray(summary['roleHistory']) || summary['roleHistory'].length === 0) {
+    issue(issues, 'invariant.invalid_value', `${path}.roleHistory`);
+  }
+}
+
+function validateBreakthroughProgress(
+  value: unknown,
+  path: string,
+  careerWeekIndex: number,
+  issues: CareerInvariantIssue[],
+): UnknownRecord | undefined {
+  const progress = strictRecord(value, path, SKILL_BREAKTHROUGH_PROGRESS_KEYS, issues);
+  if (progress === undefined) {
+    return undefined;
+  }
+  if (progress['model'] !== 'gauge_v1') {
+    issue(issues, 'invariant.invalid_value', `${path}.model`);
+  }
+  if (!nonNegativeSafeInteger(progress['weekIndex']) || progress['weekIndex'] > careerWeekIndex) {
+    issue(issues, 'invariant.out_of_bounds', `${path}.weekIndex`);
+  }
+  if (progress['threshold'] !== SKILL_BREAKTHROUGH_GAUGE_THRESHOLD) {
+    issue(issues, 'invariant.invalid_value', `${path}.threshold`);
+  }
+  for (const key of ['progressBefore', 'progressAfter'] as const) {
+    if (
+      !nonNegativeSafeInteger(progress[key]) ||
+      progress[key] > SKILL_BREAKTHROUGH_GAUGE_THRESHOLD
+    ) {
+      issue(issues, 'invariant.out_of_bounds', `${path}.${key}`);
+    }
+  }
+  if (
+    !nonNegativeSafeInteger(progress['pointsEarned']) ||
+    progress['pointsEarned'] > SKILL_BREAKTHROUGH_PROGRESS_PER_WEEK_MAX
+  ) {
+    issue(issues, 'invariant.out_of_bounds', `${path}.pointsEarned`);
+  }
+  if (typeof progress['triggeredOffer'] !== 'boolean') {
+    issue(issues, 'invariant.invalid_type', `${path}.triggeredOffer`);
+  }
+  const sources = denseArray(progress['sources'], `${path}.sources`, issues);
+  let sourcePointTotal = 0;
+  let previousSourceIndex = -1;
+  const seenSources = new Set<string>();
+  if (sources !== undefined) {
+    if (sources.length > SKILL_BREAKTHROUGH_PROGRESS_SOURCE_COUNT_MAX) {
+      issue(issues, 'invariant.out_of_bounds', `${path}.sources`);
+    }
+    for (const [index, rawSource] of sources.entries()) {
+      const sourcePath = `${path}.sources.${index}`;
+      const source = strictRecord(
+        rawSource,
+        sourcePath,
+        SKILL_BREAKTHROUGH_PROGRESS_SOURCE_KEYS,
+        issues,
+      );
+      if (source === undefined) {
+        continue;
+      }
+      const sourceId = source['sourceId'];
+      if (!isSkillBreakthroughSourceId(sourceId)) {
+        issue(issues, 'invariant.invalid_id', `${sourcePath}.sourceId`);
+      } else {
+        const sourceOrder = SKILL_BREAKTHROUGH_SOURCE_IDS.indexOf(sourceId);
+        if (seenSources.has(sourceId)) {
+          issue(issues, 'invariant.duplicate_value', `${sourcePath}.sourceId`);
+        }
+        if (sourceOrder <= previousSourceIndex) {
+          issue(issues, 'invariant.noncanonical_order', `${sourcePath}.sourceId`);
+        }
+        seenSources.add(sourceId);
+        previousSourceIndex = sourceOrder;
+      }
+      const points = source['points'];
+      if (
+        !Number.isSafeInteger(points) ||
+        (points as number) <= 0 ||
+        (points as number) > SKILL_BREAKTHROUGH_PROGRESS_SOURCE_POINTS_MAX
+      ) {
+        issue(issues, 'invariant.out_of_bounds', `${sourcePath}.points`);
+      } else {
+        sourcePointTotal += points as number;
+      }
+    }
+  }
+  if (sourcePointTotal !== progress['pointsEarned']) {
+    issue(issues, 'invariant.invalid_combination', `${path}.pointsEarned`);
+  }
+  if (
+    nonNegativeSafeInteger(progress['progressBefore']) &&
+    nonNegativeSafeInteger(progress['pointsEarned']) &&
+    nonNegativeSafeInteger(progress['progressAfter']) &&
+    typeof progress['triggeredOffer'] === 'boolean'
+  ) {
+    const total = progress['progressBefore'] + progress['pointsEarned'];
+    const expectedAfter = progress['triggeredOffer']
+      ? total - SKILL_BREAKTHROUGH_GAUGE_THRESHOLD
+      : Math.min(total, SKILL_BREAKTHROUGH_GAUGE_THRESHOLD);
+    if (
+      (progress['triggeredOffer'] && total < SKILL_BREAKTHROUGH_GAUGE_THRESHOLD) ||
+      progress['progressAfter'] !== expectedAfter
+    ) {
+      issue(issues, 'invariant.invalid_combination', `${path}.progressAfter`);
+    }
+  }
+  return progress;
+}
+
+function sameBreakthroughProgress(left: UnknownRecord, right: UnknownRecord): boolean {
+  for (const key of SKILL_BREAKTHROUGH_PROGRESS_KEYS) {
+    if (key === 'sources') {
+      continue;
+    }
+    if (left[key] !== right[key]) {
+      return false;
+    }
+  }
+  const leftSources = left['sources'];
+  const rightSources = right['sources'];
+  return (
+    Array.isArray(leftSources) &&
+    Array.isArray(rightSources) &&
+    leftSources.length === rightSources.length &&
+    leftSources.every((source, index) => {
+      const candidate = rightSources[index];
+      return (
+        isRecord(source) &&
+        isRecord(candidate) &&
+        source['sourceId'] === candidate['sourceId'] &&
+        source['points'] === candidate['points']
+      );
+    })
+  );
+}
+
+function validateBreakthroughGauge(
+  value: unknown,
+  careerWeekIndex: number,
+  currentEventGaugeEffect: AppliedEventBreakthroughGaugeDelta | undefined,
+  issues: CareerInvariantIssue[],
+): UnknownRecord | null {
+  const path = 'career.player.skillState.breakthroughGauge';
+  const gauge = strictRecord(value, path, SKILL_BREAKTHROUGH_GAUGE_KEYS, issues);
+  if (gauge === undefined) {
+    return null;
+  }
+  if (gauge['model'] !== 'gauge_v1') {
+    issue(issues, 'invariant.invalid_value', `${path}.model`);
+  }
+  if (gauge['threshold'] !== SKILL_BREAKTHROUGH_GAUGE_THRESHOLD) {
+    issue(issues, 'invariant.invalid_value', `${path}.threshold`);
+  }
+  if (
+    !nonNegativeSafeInteger(gauge['progress']) ||
+    gauge['progress'] > SKILL_BREAKTHROUGH_GAUGE_THRESHOLD
+  ) {
+    issue(issues, 'invariant.out_of_bounds', `${path}.progress`);
+  }
+  if (gauge['lastProgress'] === null) {
+    if (
+      currentEventGaugeEffect === undefined
+        ? gauge['progress'] !== 0
+        : currentEventGaugeEffect.before !== 0 ||
+          gauge['progress'] !== currentEventGaugeEffect.after
+    ) {
+      issue(issues, 'invariant.invalid_combination', `${path}.progress`);
+    }
+    return null;
+  }
+  const lastProgress = validateBreakthroughProgress(
+    gauge['lastProgress'],
+    `${path}.lastProgress`,
+    careerWeekIndex,
+    issues,
+  );
+  if (lastProgress !== undefined) {
+    const expectedProgress =
+      currentEventGaugeEffect === undefined
+        ? lastProgress['progressAfter']
+        : currentEventGaugeEffect.after;
+    if (
+      gauge['progress'] !== expectedProgress ||
+      (currentEventGaugeEffect !== undefined &&
+        currentEventGaugeEffect.before !== lastProgress['progressAfter'])
+    ) {
+      issue(issues, 'invariant.invalid_combination', `${path}.progress`);
+    }
+  }
+  return lastProgress ?? null;
 }
 
 function validateOfferedSkillIds(
@@ -564,15 +1304,30 @@ function validatePlayerSkillState(
   value: unknown,
   careerWeekIndex: number,
   careerRngDrawCount: number,
+  schemaVersion:
+    | typeof CAREER_SCHEMA_VERSION_V2
+    | typeof CAREER_SCHEMA_VERSION_V3
+    | typeof CAREER_SCHEMA_VERSION_V4
+    | typeof CAREER_SCHEMA_VERSION_V5
+    | typeof CAREER_SCHEMA_VERSION_V6
+    | typeof CAREER_SCHEMA_VERSION_V7,
+  currentEventGaugeEffect: AppliedEventBreakthroughGaugeDelta | undefined,
   issues: CareerInvariantIssue[],
 ): SkillValidationSummary {
   const path = 'career.player.skillState';
-  const state = strictRecord(value, path, PLAYER_SKILL_STATE_KEYS, issues);
+  const currentSkillState = usesExperienceSchema(schemaVersion);
+  const state = strictRecord(
+    value,
+    path,
+    currentSkillState ? PLAYER_SKILL_STATE_KEYS_V4 : PLAYER_SKILL_STATE_KEYS_V2,
+    issues,
+  );
   const ownedSkillIds = new Set<string>();
   let validatedEquippedSkillIds: readonly unknown[] = [null, null, null, null];
   let lastRngDrawCountAfter = 0;
   let lastAcquisitionWeekIndex = 0;
   let acquisitionCount = 0;
+  let gaugeLastProgress: UnknownRecord | null = null;
 
   if (state !== undefined) {
     const acquisitions = denseArray(state['acquisitions'], `${path}.acquisitions`, issues);
@@ -580,10 +1335,11 @@ function validatePlayerSkillState(
       acquisitionCount = acquisitions.length;
       for (const [index, rawAcquisition] of acquisitions.entries()) {
         const acquisitionPath = `${path}.acquisitions.${index}`;
+        const hasTrigger = isRecord(rawAcquisition) && Object.hasOwn(rawAcquisition, 'trigger');
         const acquisition = strictRecord(
           rawAcquisition,
           acquisitionPath,
-          SKILL_ACQUISITION_KEYS,
+          currentSkillState && hasTrigger ? SKILL_ACQUISITION_KEYS_V4 : SKILL_ACQUISITION_KEYS_V2,
           issues,
         );
         if (acquisition === undefined) {
@@ -599,13 +1355,28 @@ function validatePlayerSkillState(
         ) {
           issue(issues, 'invariant.out_of_bounds', `${acquisitionPath}.weekIndex`);
         } else {
-          if (!isSkillBreakthroughCadenceWeek(acquisitionWeekIndex)) {
+          if (!hasTrigger && !isSkillBreakthroughCadenceWeek(acquisitionWeekIndex)) {
             issue(issues, 'invariant.invalid_combination', `${acquisitionPath}.weekIndex`);
           }
           if (index > 0 && acquisitionWeekIndex <= lastAcquisitionWeekIndex) {
             issue(issues, 'invariant.noncanonical_order', `${acquisitionPath}.weekIndex`);
           }
           lastAcquisitionWeekIndex = acquisitionWeekIndex;
+        }
+        if (hasTrigger) {
+          const trigger = validateBreakthroughProgress(
+            acquisition['trigger'],
+            `${acquisitionPath}.trigger`,
+            careerWeekIndex,
+            issues,
+          );
+          if (
+            trigger !== undefined &&
+            (trigger['triggeredOffer'] !== true ||
+              trigger['weekIndex'] !== acquisition['weekIndex'])
+          ) {
+            issue(issues, 'invariant.invalid_combination', `${acquisitionPath}.trigger`);
+          }
         }
         const offeredSkillIds = validateOfferedSkillIds(
           acquisition['offeredSkillIds'],
@@ -671,6 +1442,15 @@ function validatePlayerSkillState(
         equipped.add(skillId);
       }
     }
+
+    if (currentSkillState) {
+      gaugeLastProgress = validateBreakthroughGauge(
+        state['breakthroughGauge'],
+        careerWeekIndex,
+        currentEventGaugeEffect,
+        issues,
+      );
+    }
   }
 
   return {
@@ -679,6 +1459,7 @@ function validatePlayerSkillState(
     lastRngDrawCountAfter,
     ownedSkillIds,
     equippedSkillIds: validatedEquippedSkillIds,
+    gaugeLastProgress,
   };
 }
 
@@ -687,10 +1468,25 @@ function validateSkillBreakthroughOffer(
   careerWeekIndex: number,
   careerRngDrawCount: number,
   skillSummary: SkillValidationSummary,
+  schemaVersion:
+    | typeof CAREER_SCHEMA_VERSION_V2
+    | typeof CAREER_SCHEMA_VERSION_V3
+    | typeof CAREER_SCHEMA_VERSION_V4
+    | typeof CAREER_SCHEMA_VERSION_V5
+    | typeof CAREER_SCHEMA_VERSION_V6
+    | typeof CAREER_SCHEMA_VERSION_V7,
   issues: CareerInvariantIssue[],
 ): void {
   const path = 'career.phase.offer';
-  const offer = strictRecord(value, path, SKILL_BREAKTHROUGH_OFFER_KEYS, issues);
+  const hasTrigger = isRecord(value) && Object.hasOwn(value, 'trigger');
+  const offer = strictRecord(
+    value,
+    path,
+    usesExperienceSchema(schemaVersion) && hasTrigger
+      ? SKILL_BREAKTHROUGH_OFFER_KEYS_V4
+      : SKILL_BREAKTHROUGH_OFFER_KEYS_V2,
+    issues,
+  );
   if (offer === undefined) {
     return;
   }
@@ -699,13 +1495,30 @@ function validateSkillBreakthroughOffer(
   }
   if (offer['weekIndex'] !== careerWeekIndex) {
     issue(issues, 'invariant.invalid_combination', `${path}.weekIndex`);
-  } else if (!isSkillBreakthroughCadenceWeek(careerWeekIndex)) {
+  } else if (!hasTrigger && !isSkillBreakthroughCadenceWeek(careerWeekIndex)) {
     issue(issues, 'invariant.invalid_combination', `${path}.weekIndex`);
   } else if (
     skillSummary.acquisitionCount > 0 &&
     careerWeekIndex <= skillSummary.lastAcquisitionWeekIndex
   ) {
     issue(issues, 'invariant.invalid_combination', `${path}.weekIndex`);
+  }
+  if (hasTrigger) {
+    const trigger = validateBreakthroughProgress(
+      offer['trigger'],
+      `${path}.trigger`,
+      careerWeekIndex,
+      issues,
+    );
+    if (
+      trigger !== undefined &&
+      (trigger['triggeredOffer'] !== true ||
+        trigger['weekIndex'] !== careerWeekIndex ||
+        skillSummary.gaugeLastProgress === null ||
+        !sameBreakthroughProgress(trigger, skillSummary.gaugeLastProgress))
+    ) {
+      issue(issues, 'invariant.invalid_combination', `${path}.trigger`);
+    }
   }
   const offeredSkillIds = validateOfferedSkillIds(
     offer['offeredSkillIds'],
@@ -1156,12 +1969,16 @@ interface ValidatedSkillEffectEvidence {
   readonly bodyCostMultiplierPermille: number;
   readonly bodyDeltaFlat: number;
   readonly gpaDeltaMilli: number;
+  readonly preparationDeltaFlat: number;
+  readonly confidenceDeltaFlat: number;
+  readonly practiceImpactFlat: number;
 }
 
 function validateAppliedSkillEffects(
   value: unknown,
   aggregates: ValidatedSkillEffectEvidence,
   equippedSkillIds: readonly unknown[],
+  currentEffectModel: boolean,
   path: string,
   issues: CareerInvariantIssue[],
 ): void {
@@ -1177,6 +1994,9 @@ function validateAppliedSkillEffects(
   let bodyCostMultiplierPermille = SKILL_NEUTRAL_MULTIPLIER_PERMILLE;
   let bodyDeltaFlat = 0;
   let gpaDeltaMilli = 0;
+  let preparationDeltaFlat = 0;
+  let confidenceDeltaFlat = 0;
+  let practiceImpactFlat = 0;
   let previousSlotIndex = -1;
   let previousEffectIndex = -1;
 
@@ -1190,7 +2010,10 @@ function validateAppliedSkillEffects(
     const valueKey =
       type === 'action_xp_multiplier' || type === 'action_body_cost_multiplier'
         ? 'multiplierPermille'
-        : type === 'action_body_delta_flat'
+        : type === 'action_body_delta_flat' ||
+            type === 'action_preparation_delta_flat' ||
+            type === 'action_confidence_delta_flat' ||
+            type === 'action_practice_impact_flat'
           ? 'delta'
           : type === 'action_gpa_delta_milli'
             ? 'deltaMilli'
@@ -1279,6 +2102,30 @@ function validateAppliedSkillEffects(
           gpaDeltaMilli += trace['deltaMilli'];
         }
         break;
+      case 'action_preparation_delta_flat':
+      case 'action_confidence_delta_flat':
+      case 'action_practice_impact_flat': {
+        if (!currentEffectModel) {
+          issue(issues, 'invariant.invalid_value', `${tracePath}.type`);
+          break;
+        }
+        const bounds =
+          type === 'action_preparation_delta_flat'
+            ? SKILL_PREPARATION_DELTA_FLAT_BOUNDS
+            : type === 'action_confidence_delta_flat'
+              ? SKILL_CONFIDENCE_DELTA_FLAT_BOUNDS
+              : SKILL_PRACTICE_IMPACT_FLAT_BOUNDS;
+        if (!isIntegerWithinBounds(trace['delta'], bounds) || trace['delta'] === 0) {
+          issue(issues, 'invariant.out_of_bounds', `${tracePath}.delta`);
+        } else if (type === 'action_preparation_delta_flat') {
+          preparationDeltaFlat += trace['delta'];
+        } else if (type === 'action_confidence_delta_flat') {
+          confidenceDeltaFlat += trace['delta'];
+        } else {
+          practiceImpactFlat += trace['delta'];
+        }
+        break;
+      }
       default:
         issue(issues, 'invariant.invalid_value', `${tracePath}.type`);
     }
@@ -1305,8 +2152,26 @@ function validateAppliedSkillEffects(
       SKILL_GPA_DELTA_MILLI_AGGREGATE_BOUNDS.min,
       SKILL_GPA_DELTA_MILLI_AGGREGATE_BOUNDS.max,
     ),
+    preparationDeltaFlat: clamp(
+      preparationDeltaFlat,
+      SKILL_PREPARATION_DELTA_FLAT_AGGREGATE_BOUNDS.min,
+      SKILL_PREPARATION_DELTA_FLAT_AGGREGATE_BOUNDS.max,
+    ),
+    confidenceDeltaFlat: clamp(
+      confidenceDeltaFlat,
+      SKILL_CONFIDENCE_DELTA_FLAT_AGGREGATE_BOUNDS.min,
+      SKILL_CONFIDENCE_DELTA_FLAT_AGGREGATE_BOUNDS.max,
+    ),
+    practiceImpactFlat: clamp(
+      practiceImpactFlat,
+      SKILL_PRACTICE_IMPACT_FLAT_AGGREGATE_BOUNDS.min,
+      SKILL_PRACTICE_IMPACT_FLAT_AGGREGATE_BOUNDS.max,
+    ),
   };
-  for (const key of SKILL_EFFECT_AGGREGATE_KEYS) {
+  const aggregateKeys = currentEffectModel
+    ? SKILL_EFFECT_AGGREGATE_KEYS_V4
+    : SKILL_EFFECT_AGGREGATE_KEYS_V2;
+  for (const key of aggregateKeys) {
     if (aggregates[key] !== expected[key]) {
       issue(
         issues,
@@ -1321,6 +2186,7 @@ function validateSkillEffectEvidence(
   result: UnknownRecord,
   path: string,
   equippedSkillIds: readonly unknown[],
+  currentEffectModel: boolean,
   issues: CareerInvariantIssue[],
 ): ValidatedSkillEffectEvidence {
   const neutral: ValidatedSkillEffectEvidence = {
@@ -1328,11 +2194,17 @@ function validateSkillEffectEvidence(
     bodyCostMultiplierPermille: SKILL_NEUTRAL_MULTIPLIER_PERMILLE,
     bodyDeltaFlat: 0,
     gpaDeltaMilli: 0,
+    preparationDeltaFlat: 0,
+    confidenceDeltaFlat: 0,
+    practiceImpactFlat: 0,
   };
+  const aggregateKeys = currentEffectModel
+    ? SKILL_EFFECT_AGGREGATE_KEYS_V4
+    : SKILL_EFFECT_AGGREGATE_KEYS_V2;
   const stored = strictRecord(
     result['skillEffectAggregates'],
     `${path}.skillEffectAggregates`,
-    SKILL_EFFECT_AGGREGATE_KEYS,
+    aggregateKeys,
     issues,
   );
   if (stored === undefined) {
@@ -1340,6 +2212,7 @@ function validateSkillEffectEvidence(
       result['appliedSkillEffects'],
       neutral,
       equippedSkillIds,
+      currentEffectModel,
       `${path}.appliedSkillEffects`,
       issues,
     );
@@ -1351,9 +2224,12 @@ function validateSkillEffectEvidence(
     bodyCostMultiplierPermille: SKILL_BODY_COST_MULTIPLIER_AGGREGATE_BOUNDS,
     bodyDeltaFlat: SKILL_BODY_DELTA_FLAT_AGGREGATE_BOUNDS,
     gpaDeltaMilli: SKILL_GPA_DELTA_MILLI_AGGREGATE_BOUNDS,
+    preparationDeltaFlat: SKILL_PREPARATION_DELTA_FLAT_AGGREGATE_BOUNDS,
+    confidenceDeltaFlat: SKILL_CONFIDENCE_DELTA_FLAT_AGGREGATE_BOUNDS,
+    practiceImpactFlat: SKILL_PRACTICE_IMPACT_FLAT_AGGREGATE_BOUNDS,
   } as const;
   const aggregates = { ...neutral };
-  for (const key of SKILL_EFFECT_AGGREGATE_KEYS) {
+  for (const key of aggregateKeys) {
     if (!isIntegerWithinBounds(stored[key], boundsByKey[key])) {
       issue(issues, 'invariant.out_of_bounds', `${path}.skillEffectAggregates.${key}`);
     } else {
@@ -1364,6 +2240,7 @@ function validateSkillEffectEvidence(
     result['appliedSkillEffects'],
     aggregates,
     equippedSkillIds,
+    currentEffectModel,
     `${path}.appliedSkillEffects`,
     issues,
   );
@@ -1523,18 +2400,44 @@ function validateActionResultV1(
   return result;
 }
 
-function validateActionResultV2(
+function validateActionResultV2OrV3(
   value: unknown,
   path: string,
   expectedActionId: unknown,
   expectedActionIndex: number,
   weekIndex: unknown,
   equippedSkillIds: readonly unknown[],
+  schemaVersion:
+    | typeof CAREER_SCHEMA_VERSION_V2
+    | typeof CAREER_SCHEMA_VERSION_V3
+    | typeof CAREER_SCHEMA_VERSION_V4
+    | typeof CAREER_SCHEMA_VERSION_V5
+    | typeof CAREER_SCHEMA_VERSION_V6
+    | typeof CAREER_SCHEMA_VERSION_V7,
+  weeklyExperienceVersion: unknown,
   issues: CareerInvariantIssue[],
 ): UnknownRecord | undefined {
-  const result = strictRecord(value, path, ACTION_RESULT_KEYS_V2, issues);
+  const useExperienceResult =
+    usesExperienceSchema(schemaVersion) &&
+    weeklyExperienceVersion === WEEKLY_EXPERIENCE_VERSION_CURRENT;
+  const result = strictRecord(
+    value,
+    path,
+    schemaVersion === CAREER_SCHEMA_VERSION_V2
+      ? ACTION_RESULT_KEYS_V2
+      : useExperienceResult
+        ? ACTION_RESULT_KEYS_V4
+        : ACTION_RESULT_KEYS_V3,
+    issues,
+  );
   if (result === undefined) {
     return undefined;
+  }
+  if (
+    schemaVersion !== CAREER_SCHEMA_VERSION_V2 &&
+    !isIntegerWithinBounds(result['practiceImpact'], PRACTICE_IMPACT_BOUNDS)
+  ) {
+    issue(issues, 'invariant.out_of_bounds', `${path}.practiceImpact`);
   }
   if (!isWeeklyActionId(result.actionId)) {
     issue(issues, 'invariant.invalid_id', `${path}.actionId`);
@@ -1548,7 +2451,13 @@ function validateActionResultV2(
     issue(issues, 'invariant.invalid_combination', `${path}.weekIndex`);
   }
 
-  const aggregates = validateSkillEffectEvidence(result, path, equippedSkillIds, issues);
+  const aggregates = validateSkillEffectEvidence(
+    result,
+    path,
+    equippedSkillIds,
+    useExperienceResult,
+    issues,
+  );
   const bodyBeforeValid = isIntegerWithinBounds(result.bodyBefore, BODY_BOUNDS);
   const bodyAfterValid = isIntegerWithinBounds(result.bodyAfter, BODY_BOUNDS);
   const baseBodyDeltaValid = isIntegerWithinBounds(
@@ -1654,6 +2563,72 @@ function validateActionResultV2(
     }
   }
 
+  if (useExperienceResult) {
+    for (const [stateName, bounds, baseDeltaBounds, requestedDeltaBounds, aggregateKey] of [
+      [
+        'preparation',
+        PREPARATION_BOUNDS,
+        WEEKLY_ACTION_PREPARATION_DELTA_BOUNDS,
+        SKILL_EFFECTIVE_PREPARATION_DELTA_BOUNDS,
+        'preparationDeltaFlat',
+      ],
+      [
+        'confidence',
+        CONFIDENCE_BOUNDS,
+        WEEKLY_ACTION_CONFIDENCE_DELTA_BOUNDS,
+        SKILL_EFFECTIVE_CONFIDENCE_DELTA_BOUNDS,
+        'confidenceDeltaFlat',
+      ],
+    ] as const) {
+      const beforeKey = `${stateName}Before`;
+      const baseDeltaKey = `base${stateName[0]?.toUpperCase()}${stateName.slice(1)}Delta`;
+      const requestedDeltaKey = `requested${stateName[0]?.toUpperCase()}${stateName.slice(1)}Delta`;
+      const actualDeltaKey = `actual${stateName[0]?.toUpperCase()}${stateName.slice(1)}Delta`;
+      const afterKey = `${stateName}After`;
+      const before = result[beforeKey];
+      const baseDelta = result[baseDeltaKey];
+      const requestedDelta = result[requestedDeltaKey];
+      const actualDelta = result[actualDeltaKey];
+      const after = result[afterKey];
+      const beforeValid = isIntegerWithinBounds(before, bounds);
+      const afterValid = isIntegerWithinBounds(after, bounds);
+      const baseValid = isIntegerWithinBounds(baseDelta, baseDeltaBounds);
+      const requestedValid = isIntegerWithinBounds(requestedDelta, requestedDeltaBounds);
+      if (!beforeValid) {
+        issue(issues, 'invariant.out_of_bounds', `${path}.${beforeKey}`);
+      }
+      if (!afterValid) {
+        issue(issues, 'invariant.out_of_bounds', `${path}.${afterKey}`);
+      }
+      if (!baseValid) {
+        issue(issues, 'invariant.out_of_bounds', `${path}.${baseDeltaKey}`);
+      }
+      if (!requestedValid) {
+        issue(issues, 'invariant.out_of_bounds', `${path}.${requestedDeltaKey}`);
+      }
+      if (!Number.isInteger(actualDelta)) {
+        issue(issues, 'invariant.invalid_value', `${path}.${actualDeltaKey}`);
+      }
+      if (
+        baseValid &&
+        requestedValid &&
+        requestedDelta !== (baseDelta as number) + aggregates[aggregateKey]
+      ) {
+        issue(issues, 'invariant.invalid_combination', `${path}.${requestedDeltaKey}`);
+      }
+      if (beforeValid && requestedValid && afterValid) {
+        const expectedAfter = clamp(
+          (before as number) + (requestedDelta as number),
+          bounds.min,
+          bounds.max,
+        );
+        if (after !== expectedAfter || actualDelta !== expectedAfter - (before as number)) {
+          issue(issues, 'invariant.invalid_combination', `${path}.${afterKey}`);
+        }
+      }
+    }
+  }
+
   const proficiency = validateProficiencyResult(
     result.proficiency,
     `${path}.proficiency`,
@@ -1720,6 +2695,12 @@ function validateActionResultV2(
   if (result.requestedGpaDelta !== 0) {
     applicableEffectIds.add('effect_gpa_change');
   }
+  if (useExperienceResult && result.requestedPreparationDelta !== 0) {
+    applicableEffectIds.add('effect_preparation_change');
+  }
+  if (useExperienceResult && result.requestedConfidenceDelta !== 0) {
+    applicableEffectIds.add('effect_confidence_change');
+  }
   if (proficiency !== null && proficiency !== undefined) {
     applicableEffectIds.add('effect_proficiency_progress');
   }
@@ -1757,6 +2738,8 @@ function getCurrentAttributeProgress(
 function validateResultSequenceAgainstPlayer(
   results: readonly UnknownRecord[],
   player: unknown,
+  useExperienceResults: boolean,
+  compareFinalPlayerState: boolean,
   issues: CareerInvariantIssue[],
 ): void {
   for (let index = 1; index < results.length; index += 1) {
@@ -1769,18 +2752,38 @@ function validateResultSequenceAgainstPlayer(
       if (current['gpaBefore'] !== previous['gpaAfter']) {
         issue(issues, 'invariant.invalid_combination', `career.phase.results.${index}.gpaBefore`);
       }
+      if (useExperienceResults && current['preparationBefore'] !== previous['preparationAfter']) {
+        issue(
+          issues,
+          'invariant.invalid_combination',
+          `career.phase.results.${index}.preparationBefore`,
+        );
+      }
+      if (useExperienceResults && current['confidenceBefore'] !== previous['confidenceAfter']) {
+        issue(
+          issues,
+          'invariant.invalid_combination',
+          `career.phase.results.${index}.confidenceBefore`,
+        );
+      }
     }
   }
 
   const lastResult = results.at(-1);
   const playerRecord = isRecord(player) ? player : undefined;
   const state = isRecord(playerRecord?.['state']) ? playerRecord['state'] : undefined;
-  if (lastResult !== undefined && state !== undefined) {
+  if (compareFinalPlayerState && lastResult !== undefined && state !== undefined) {
     if (state['body'] !== lastResult['bodyAfter']) {
       issue(issues, 'invariant.invalid_combination', 'career.player.state.body');
     }
     if (state['gpa'] !== lastResult['gpaAfter']) {
       issue(issues, 'invariant.invalid_combination', 'career.player.state.gpa');
+    }
+    if (useExperienceResults && state['preparation'] !== lastResult['preparationAfter']) {
+      issue(issues, 'invariant.invalid_combination', 'career.player.state.preparation');
+    }
+    if (useExperienceResults && state['confidence'] !== lastResult['confidenceAfter']) {
+      issue(issues, 'invariant.invalid_combination', 'career.player.state.confidence');
     }
   }
 
@@ -1821,26 +2824,28 @@ function validateResultSequenceAgainstPlayer(
     }
   }
 
-  for (const [attributeId, xpResult] of latestAttributeResult) {
-    const current = getCurrentAttributeProgress(player, attributeId);
-    if (
-      current === undefined ||
-      current['rating'] !== xpResult['ratingAfter'] ||
-      current['xp'] !== xpResult['xpAfter']
-    ) {
-      issue(issues, 'invariant.invalid_combination', `career.player.attributes.${attributeId}`);
+  if (compareFinalPlayerState) {
+    for (const [attributeId, xpResult] of latestAttributeResult) {
+      const current = getCurrentAttributeProgress(player, attributeId);
+      if (
+        current === undefined ||
+        current['rating'] !== xpResult['ratingAfter'] ||
+        current['xp'] !== xpResult['xpAfter']
+      ) {
+        issue(issues, 'invariant.invalid_combination', `career.player.attributes.${attributeId}`);
+      }
     }
-  }
-  const currentUses = isRecord(playerRecord?.['trainingProficiencyUses'])
-    ? playerRecord['trainingProficiencyUses']
-    : undefined;
-  for (const [proficiencyId, proficiencyResult] of latestProficiencyResult) {
-    if (currentUses?.[proficiencyId] !== proficiencyResult['usesAfter']) {
-      issue(
-        issues,
-        'invariant.invalid_combination',
-        `career.player.trainingProficiencyUses.${proficiencyId}`,
-      );
+    const currentUses = isRecord(playerRecord?.['trainingProficiencyUses'])
+      ? playerRecord['trainingProficiencyUses']
+      : undefined;
+    for (const [proficiencyId, proficiencyResult] of latestProficiencyResult) {
+      if (currentUses?.[proficiencyId] !== proficiencyResult['usesAfter']) {
+        issue(
+          issues,
+          'invariant.invalid_combination',
+          `career.player.trainingProficiencyUses.${proficiencyId}`,
+        );
+      }
     }
   }
 }
@@ -1849,9 +2854,11 @@ function validateCareerPhase(
   value: unknown,
   weekIndex: unknown,
   player: unknown,
-  schemaVersion: typeof CAREER_SCHEMA_VERSION_V1 | typeof CAREER_SCHEMA_VERSION_V2,
+  schemaVersion: CareerSchemaVersion,
   rngDrawCount: number,
   skillSummary: SkillValidationSummary,
+  weeklyExperienceVersion: unknown,
+  embeddedCompletedWeek: boolean,
   issues: CareerInvariantIssue[],
 ): void {
   const phaseRecord = isRecord(value) ? value : undefined;
@@ -1864,6 +2871,78 @@ function validateCareerPhase(
     strictRecord(value, 'career.phase', ['type'] as const, issues);
     return;
   }
+  if (type === 'SEASON_REVIEW') {
+    if (!usesSeasonSchema(schemaVersion)) {
+      strictRecord(value, 'career.phase', ['type'] as const, issues);
+      issue(issues, 'invariant.invalid_value', 'career.phase.type');
+      return;
+    }
+    const phase = strictRecord(
+      value,
+      'career.phase',
+      ['type', 'seasonId', 'outcomeId'] as const,
+      issues,
+    );
+    if (
+      phase !== undefined &&
+      (typeof phase['seasonId'] !== 'string' ||
+        !isStableDomainId(phase['seasonId']) ||
+        !phase['seasonId'].startsWith('season_'))
+    ) {
+      issue(issues, 'invariant.invalid_id', 'career.phase.seasonId');
+    }
+    if (
+      phase !== undefined &&
+      ![
+        'season_outcome_champion',
+        'season_outcome_runner_up',
+        'season_outcome_semifinal_exit',
+        'season_outcome_regular_season_complete',
+      ].includes(phase['outcomeId'] as string)
+    ) {
+      issue(issues, 'invariant.invalid_id', 'career.phase.outcomeId');
+    }
+    return;
+  }
+  if (type === 'CAREER_COMPLETE') {
+    if (!usesSeasonSchema(schemaVersion)) {
+      strictRecord(value, 'career.phase', ['type'] as const, issues);
+      issue(issues, 'invariant.invalid_value', 'career.phase.type');
+      return;
+    }
+    const phase = strictRecord(
+      value,
+      'career.phase',
+      ['type', 'seasonId', 'outcomeId', 'alumniId'] as const,
+      issues,
+    );
+    if (phase === undefined) return;
+    if (
+      typeof phase['seasonId'] !== 'string' ||
+      !isStableDomainId(phase['seasonId']) ||
+      !phase['seasonId'].startsWith('season_')
+    ) {
+      issue(issues, 'invariant.invalid_id', 'career.phase.seasonId');
+    }
+    if (
+      ![
+        'season_outcome_champion',
+        'season_outcome_runner_up',
+        'season_outcome_semifinal_exit',
+        'season_outcome_regular_season_complete',
+      ].includes(phase['outcomeId'] as string)
+    ) {
+      issue(issues, 'invariant.invalid_id', 'career.phase.outcomeId');
+    }
+    if (
+      typeof phase['alumniId'] !== 'string' ||
+      !isStableDomainId(phase['alumniId']) ||
+      !phase['alumniId'].startsWith('alumni_')
+    ) {
+      issue(issues, 'invariant.invalid_id', 'career.phase.alumniId');
+    }
+    return;
+  }
   if (type === 'SKILL_BREAKTHROUGH') {
     if (schemaVersion === CAREER_SCHEMA_VERSION_V1) {
       strictRecord(value, 'career.phase', ['type'] as const, issues);
@@ -1872,7 +2951,167 @@ function validateCareerPhase(
     }
     const phase = strictRecord(value, 'career.phase', ['type', 'offer'] as const, issues);
     if (phase !== undefined && nonNegativeSafeInteger(weekIndex)) {
-      validateSkillBreakthroughOffer(phase['offer'], weekIndex, rngDrawCount, skillSummary, issues);
+      validateSkillBreakthroughOffer(
+        phase['offer'],
+        weekIndex,
+        rngDrawCount,
+        skillSummary,
+        schemaVersion,
+        issues,
+      );
+    }
+    return;
+  }
+  if (type === 'EVENT_CHOICE') {
+    if (!usesSeasonSchema(schemaVersion)) {
+      strictRecord(value, 'career.phase', ['type'] as const, issues);
+      issue(issues, 'invariant.invalid_value', 'career.phase.type');
+      return;
+    }
+    const phase = strictRecord(
+      value,
+      'career.phase',
+      ['type', 'pendingEvent', 'completedWeek'] as const,
+      issues,
+    );
+    if (phase === undefined) return;
+    if (!isPendingEventEvidence(phase['pendingEvent'])) {
+      issue(issues, 'invariant.invalid_value', 'career.phase.pendingEvent');
+    } else if (
+      !nonNegativeSafeInteger(weekIndex) ||
+      phase['pendingEvent'].selection.weekIndex !== weekIndex ||
+      phase['pendingEvent'].selection.rngDrawCountAfter !== rngDrawCount
+    ) {
+      issue(issues, 'invariant.invalid_combination', 'career.phase.pendingEvent.selection');
+    }
+    const completedWeek = isRecord(phase['completedWeek']) ? phase['completedWeek'] : undefined;
+    if (completedWeek === undefined) {
+      issue(issues, 'invariant.invalid_type', 'career.phase.completedWeek');
+      return;
+    }
+    const completedWeekIssues: CareerInvariantIssue[] = [];
+    validateCareerPhase(
+      completedWeek,
+      weekIndex,
+      player,
+      schemaVersion,
+      rngDrawCount,
+      skillSummary,
+      weeklyExperienceVersion,
+      true,
+      completedWeekIssues,
+    );
+    for (const completedWeekIssue of completedWeekIssues) {
+      issues.push({
+        ...completedWeekIssue,
+        path: completedWeekIssue.path.replace(/^career\.phase/u, 'career.phase.completedWeek'),
+      });
+    }
+    return;
+  }
+  if (type === 'INJURY_CHOICE') {
+    if (!usesSeasonSchema(schemaVersion)) {
+      strictRecord(value, 'career.phase', ['type'] as const, issues);
+      issue(issues, 'invariant.invalid_value', 'career.phase.type');
+      return;
+    }
+    const phase = strictRecord(
+      value,
+      'career.phase',
+      ['type', 'pendingInjury', 'completedWeek'] as const,
+      issues,
+    );
+    if (phase === undefined) return;
+    if (!isPendingInjuryChoiceEvidence(phase['pendingInjury'])) {
+      issue(issues, 'invariant.invalid_value', 'career.phase.pendingInjury');
+    } else if (
+      !nonNegativeSafeInteger(weekIndex) ||
+      phase['pendingInjury'].assessment.weekIndex !== weekIndex ||
+      phase['pendingInjury'].assessment.rngDrawCountAfter !== rngDrawCount
+    ) {
+      issue(issues, 'invariant.invalid_combination', 'career.phase.pendingInjury.assessment');
+    }
+    const completedWeek = isRecord(phase['completedWeek']) ? phase['completedWeek'] : undefined;
+    if (completedWeek === undefined) {
+      issue(issues, 'invariant.invalid_type', 'career.phase.completedWeek');
+      return;
+    }
+    const completedWeekIssues: CareerInvariantIssue[] = [];
+    validateCareerPhase(
+      completedWeek,
+      weekIndex,
+      player,
+      schemaVersion,
+      rngDrawCount,
+      skillSummary,
+      weeklyExperienceVersion,
+      true,
+      completedWeekIssues,
+    );
+    for (const completedWeekIssue of completedWeekIssues) {
+      issues.push({
+        ...completedWeekIssue,
+        path: completedWeekIssue.path.replace(/^career\.phase/u, 'career.phase.completedWeek'),
+      });
+    }
+    return;
+  }
+  if (type === 'GAME_PREVIEW' || type === 'KEY_SNAP' || type === 'POST_GAME') {
+    if (!usesExperienceSchema(schemaVersion)) {
+      strictRecord(value, 'career.phase', ['type'] as const, issues);
+      issue(issues, 'invariant.invalid_value', 'career.phase.type');
+      return;
+    }
+
+    let evidencePath: string | undefined;
+    let completedWeek: UnknownRecord | undefined;
+    if (type === 'GAME_PREVIEW' && isRecord(phaseRecord['matchup'])) {
+      evidencePath = 'career.phase.matchup.completedWeek';
+      completedWeek = isRecord(phaseRecord['matchup']['completedWeek'])
+        ? phaseRecord['matchup']['completedWeek']
+        : undefined;
+    } else if (
+      type === 'KEY_SNAP' &&
+      isRecord(phaseRecord['game']) &&
+      isRecord(phaseRecord['game']['matchup'])
+    ) {
+      evidencePath = 'career.phase.game.matchup.completedWeek';
+      completedWeek = isRecord(phaseRecord['game']['matchup']['completedWeek'])
+        ? phaseRecord['game']['matchup']['completedWeek']
+        : undefined;
+    } else if (type === 'POST_GAME') {
+      evidencePath = 'career.phase.completedWeek';
+      completedWeek = isRecord(phaseRecord['completedWeek'])
+        ? phaseRecord['completedWeek']
+        : undefined;
+    }
+
+    if (completedWeek !== undefined && evidencePath !== undefined) {
+      if (completedWeek['version'] !== weeklyExperienceVersion) {
+        issue(issues, 'invariant.invalid_combination', `${evidencePath}.version`);
+      }
+      const completedWeekIssues: CareerInvariantIssue[] = [];
+      validateCareerPhase(
+        {
+          type: 'WEEK_END',
+          results: completedWeek['results'],
+          depthUpdate: completedWeek['depthUpdate'],
+        },
+        weekIndex,
+        player,
+        schemaVersion,
+        rngDrawCount,
+        skillSummary,
+        weeklyExperienceVersion,
+        true,
+        completedWeekIssues,
+      );
+      for (const completedWeekIssue of completedWeekIssues) {
+        issues.push({
+          ...completedWeekIssue,
+          path: completedWeekIssue.path.replace(/^career\.phase/u, evidencePath),
+        });
+      }
     }
     return;
   }
@@ -1885,7 +3124,12 @@ function validateCareerPhase(
   const expectedKeys =
     type === 'RESOLVE_ACTIONS'
       ? (['type', 'actionIds', 'nextActionIndex', 'results'] as const)
-      : (['type', 'results'] as const);
+      : schemaVersion === CAREER_SCHEMA_VERSION_V3 ||
+          schemaVersion === CAREER_SCHEMA_VERSION_V4 ||
+          schemaVersion === CAREER_SCHEMA_VERSION_V5 ||
+          usesOffFieldSchema(schemaVersion)
+        ? (['type', 'results', 'depthUpdate'] as const)
+        : (['type', 'results'] as const);
   const phase = strictRecord(value, 'career.phase', expectedKeys, issues);
   if (phase === undefined) {
     return;
@@ -1934,13 +3178,15 @@ function validateCareerPhase(
             weekIndex,
             issues,
           )
-        : validateActionResultV2(
+        : validateActionResultV2OrV3(
             rawResult,
             `career.phase.results.${index}`,
             actionIds?.[index],
             index,
             weekIndex,
             skillSummary.equippedSkillIds,
+            schemaVersion,
+            weeklyExperienceVersion,
             issues,
           );
     if (validated !== undefined) {
@@ -1948,15 +3194,61 @@ function validateCareerPhase(
     }
   }
   if (validatedResults.length === rawResults.length) {
-    validateResultSequenceAgainstPlayer(validatedResults, player, issues);
+    validateResultSequenceAgainstPlayer(
+      validatedResults,
+      player,
+      usesExperienceSchema(schemaVersion) &&
+        weeklyExperienceVersion === WEEKLY_EXPERIENCE_VERSION_CURRENT,
+      !embeddedCompletedWeek,
+      issues,
+    );
+    if (
+      type === 'WEEK_END' &&
+      usesExperienceSchema(schemaVersion) &&
+      weeklyExperienceVersion === WEEKLY_EXPERIENCE_VERSION_CURRENT &&
+      isRecord(phase['depthUpdate']) &&
+      isRecord(phase['depthUpdate']['practiceGrade'])
+    ) {
+      const lastResult = validatedResults.at(-1);
+      const grade = phase['depthUpdate']['practiceGrade'];
+      if (lastResult !== undefined) {
+        for (const [gradeField, resultField] of [
+          ['bodyAfterFocus', 'bodyAfter'],
+          ['preparationAfterFocus', 'preparationAfter'],
+          ['confidenceAfterFocus', 'confidenceAfter'],
+        ] as const) {
+          if (grade[gradeField] !== lastResult[resultField]) {
+            issue(
+              issues,
+              'invariant.invalid_combination',
+              `career.phase.depthUpdate.practiceGrade.${gradeField}`,
+            );
+          }
+        }
+      }
+      const focusImpact = validatedResults.reduce(
+        (total, result) =>
+          total +
+          (Number.isInteger(result['practiceImpact']) ? (result['practiceImpact'] as number) : 0),
+        0,
+      );
+      if (grade['focusImpact'] !== focusImpact) {
+        issue(
+          issues,
+          'invariant.invalid_combination',
+          'career.phase.depthUpdate.practiceGrade.focusImpact',
+        );
+      }
+    }
   }
 }
 
 function validatePlayer(
   value: unknown,
-  schemaVersion: typeof CAREER_SCHEMA_VERSION_V1 | typeof CAREER_SCHEMA_VERSION_V2,
+  schemaVersion: CareerSchemaVersion,
   careerWeekIndex: number,
   careerRngDrawCount: number,
+  currentEventGaugeEffect: AppliedEventBreakthroughGaugeDelta | undefined,
   issues: CareerInvariantIssue[],
 ): SkillValidationSummary {
   const player = strictRecord(
@@ -1972,6 +3264,7 @@ function validatePlayer(
       lastRngDrawCountAfter: 0,
       ownedSkillIds: new Set(),
       equippedSkillIds: [null, null, null, null],
+      gaugeLastProgress: null,
     };
   }
 
@@ -2010,29 +3303,1972 @@ function validatePlayer(
     issue(issues, 'invariant.out_of_bounds', 'career.player.weightKg');
   }
   validateAttributes(player.attributes, issues);
-  validateState(player.state, issues);
+  validateState(player.state, schemaVersion, issues);
   validateTagIds(player.tagIds, issues);
   validateTrainingProficiencyUses(player.trainingProficiencyUses, issues);
-  return schemaVersion === CAREER_SCHEMA_VERSION_V2
-    ? validatePlayerSkillState(player['skillState'], careerWeekIndex, careerRngDrawCount, issues)
+  return schemaVersion !== CAREER_SCHEMA_VERSION_V1
+    ? validatePlayerSkillState(
+        player['skillState'],
+        careerWeekIndex,
+        careerRngDrawCount,
+        schemaVersion,
+        currentEventGaugeEffect,
+        issues,
+      )
     : {
         acquisitionCount: 0,
         lastAcquisitionWeekIndex: 0,
         lastRngDrawCountAfter: 0,
         ownedSkillIds: new Set(),
         equippedSkillIds: [null, null, null, null],
+        gaugeLastProgress: null,
       };
+}
+
+function validatePendingEmptyArray(
+  value: unknown,
+  path: string,
+  issues: CareerInvariantIssue[],
+): void {
+  if (!Array.isArray(value)) {
+    issue(issues, 'invariant.invalid_type', path);
+  } else if (value.length !== 0) {
+    issue(issues, 'invariant.invalid_value', path);
+  }
+}
+
+function isActiveAcademicStatus(value: unknown): value is 'ELIGIBLE' | 'WARNING' | 'INELIGIBLE' {
+  return value === 'ELIGIBLE' || value === 'WARNING' || value === 'INELIGIBLE';
+}
+
+function validateAcademicCheckpointEvidence(
+  value: unknown,
+  path: string,
+  issues: CareerInvariantIssue[],
+): boolean {
+  const evidence = strictRecord(value, path, ACADEMIC_CHECKPOINT_EVIDENCE_KEYS, issues);
+  if (evidence === undefined) return false;
+  let valid = true;
+  const invalid = (field: string, code = 'invariant.invalid_value') => {
+    issue(issues, code as CareerInvariantIssue['code'], `${path}.${field}`);
+    valid = false;
+  };
+  if (evidence['model'] !== 'academic_checkpoint_v1') invalid('model');
+  if (!isAcademicCheckpointId(evidence['checkpointId']))
+    invalid('checkpointId', 'invariant.invalid_id');
+  if (!nonNegativeSafeInteger(evidence['termIndex']) || evidence['termIndex'] < 1) {
+    invalid('termIndex', 'invariant.out_of_bounds');
+  }
+  if (!nonNegativeSafeInteger(evidence['weekIndex']))
+    invalid('weekIndex', 'invariant.out_of_bounds');
+  for (const field of ['gpaMilli', 'eligibleGpaMilli', 'warningGpaMilli'] as const) {
+    if (!nonNegativeSafeInteger(evidence[field]) || evidence[field] > 4_000) {
+      invalid(field, 'invariant.out_of_bounds');
+    }
+  }
+  if (
+    !Number.isSafeInteger(evidence['obligationGpaDeltaMilli']) ||
+    Math.abs(evidence['obligationGpaDeltaMilli'] as number) > 1_000
+  ) {
+    invalid('obligationGpaDeltaMilli', 'invariant.out_of_bounds');
+  }
+  if (
+    typeof evidence['warningGpaMilli'] === 'number' &&
+    typeof evidence['eligibleGpaMilli'] === 'number' &&
+    evidence['warningGpaMilli'] >= evidence['eligibleGpaMilli']
+  ) {
+    invalid('warningGpaMilli', 'invariant.invalid_combination');
+  }
+  if (!isActiveAcademicStatus(evidence['statusBefore'])) invalid('statusBefore');
+  if (!isActiveAcademicStatus(evidence['statusAfter'])) invalid('statusAfter');
+  for (const field of [
+    'restrictionGamesBefore',
+    'requestedRestrictionGames',
+    'actualRestrictionGames',
+    'restrictionGamesAfter',
+  ] as const) {
+    if (!Number.isSafeInteger(evidence[field]) || Math.abs(evidence[field] as number) > 3) {
+      invalid(field, 'invariant.out_of_bounds');
+    }
+  }
+  if (
+    typeof evidence['restrictionGamesBefore'] === 'number' &&
+    typeof evidence['restrictionGamesAfter'] === 'number' &&
+    evidence['actualRestrictionGames'] !==
+      evidence['restrictionGamesAfter'] - evidence['restrictionGamesBefore']
+  ) {
+    invalid('actualRestrictionGames', 'invariant.invalid_combination');
+  }
+  if (
+    isActiveAcademicStatus(evidence['statusAfter']) &&
+    ((evidence['statusAfter'] === 'INELIGIBLE' && evidence['requestedRestrictionGames'] === 0) ||
+      (evidence['statusAfter'] !== 'INELIGIBLE' && evidence['requestedRestrictionGames'] !== 0))
+  ) {
+    invalid('requestedRestrictionGames', 'invariant.invalid_combination');
+  }
+  return valid;
+}
+
+function validateAcademicGameRestrictionEvidence(
+  value: unknown,
+  path: string,
+  issues: CareerInvariantIssue[],
+): value is Readonly<Record<string, unknown>> {
+  const evidence = strictRecord(value, path, ACADEMIC_GAME_RESTRICTION_EVIDENCE_KEYS, issues);
+  if (evidence === undefined) return false;
+  let valid = true;
+  if (evidence['model'] !== 'academic_game_restriction_v1') {
+    issue(issues, 'invariant.invalid_value', `${path}.model`);
+    valid = false;
+  }
+  if (!isGameId(evidence['gameId'])) {
+    issue(issues, 'invariant.invalid_id', `${path}.gameId`);
+    valid = false;
+  }
+  if (!nonNegativeSafeInteger(evidence['weekIndex'])) {
+    issue(issues, 'invariant.out_of_bounds', `${path}.weekIndex`);
+    valid = false;
+  }
+  if (
+    !nonNegativeSafeInteger(evidence['restrictionGamesBefore']) ||
+    evidence['restrictionGamesBefore'] < 1 ||
+    evidence['restrictionGamesBefore'] > 3
+  ) {
+    issue(issues, 'invariant.out_of_bounds', `${path}.restrictionGamesBefore`);
+    valid = false;
+  }
+  if (
+    !nonNegativeSafeInteger(evidence['restrictionGamesAfter']) ||
+    evidence['restrictionGamesAfter'] > 2
+  ) {
+    issue(issues, 'invariant.out_of_bounds', `${path}.restrictionGamesAfter`);
+    valid = false;
+  }
+  if (
+    typeof evidence['restrictionGamesBefore'] === 'number' &&
+    evidence['restrictionGamesAfter'] !== evidence['restrictionGamesBefore'] - 1
+  ) {
+    issue(issues, 'invariant.invalid_combination', `${path}.restrictionGamesAfter`);
+    valid = false;
+  }
+  return valid;
+}
+
+function validateRelationshipFootballEffects(
+  value: unknown,
+  path: string,
+  issues: CareerInvariantIssue[],
+): void {
+  const effects = strictRecord(value, path, RELATIONSHIP_FOOTBALL_EFFECT_KEYS, issues);
+  if (effects === undefined) return;
+  for (const [field, minimum, maximum] of [
+    ['coachTrustModifier', -10, 10],
+    ['informationScoreModifier', -12, 12],
+    ['opportunitySnapBonusPermille', -100, 100],
+  ] as const) {
+    const effectValue = effects[field];
+    if (
+      typeof effectValue !== 'number' ||
+      !Number.isSafeInteger(effectValue) ||
+      effectValue < minimum ||
+      effectValue > maximum
+    ) {
+      issue(issues, 'invariant.out_of_bounds', `${path}.${field}`);
+    }
+  }
+}
+
+function validateRelationshipWeekEvidence(
+  value: unknown,
+  path: string,
+  issues: CareerInvariantIssue[],
+): { readonly weekIndex: number; readonly afterValues: readonly number[] } | null {
+  const evidence = strictRecord(value, path, RELATIONSHIP_WEEK_EVIDENCE_KEYS, issues);
+  if (evidence === undefined) return null;
+  if (evidence['model'] !== 'relationship_week_v1') {
+    issue(issues, 'invariant.invalid_value', `${path}.model`);
+  }
+  if (evidence['sourceId'] !== 'relationship_source_weekly_action') {
+    issue(issues, 'invariant.invalid_id', `${path}.sourceId`);
+  }
+  if (!nonNegativeSafeInteger(evidence['weekIndex'])) {
+    issue(issues, 'invariant.out_of_bounds', `${path}.weekIndex`);
+  }
+  if (
+    !Array.isArray(evidence['actionIds']) ||
+    evidence['actionIds'].length !== 3 ||
+    !evidence['actionIds'].every(isWeeklyActionId)
+  ) {
+    issue(issues, 'invariant.invalid_value', `${path}.actionIds`);
+  }
+  const afterValues: number[] = [];
+  if (
+    !Array.isArray(evidence['changes']) ||
+    evidence['changes'].length !== RELATIONSHIP_ACTOR_IDS.length
+  ) {
+    issue(issues, 'invariant.invalid_value', `${path}.changes`);
+  } else {
+    for (const [index, value] of evidence['changes'].entries()) {
+      const changePath = `${path}.changes.${index}`;
+      const change = strictRecord(value, changePath, RELATIONSHIP_CHANGE_KEYS, issues);
+      if (change === undefined) continue;
+      if (change['actorId'] !== RELATIONSHIP_ACTOR_IDS[index]) {
+        issue(issues, 'invariant.noncanonical_order', `${changePath}.actorId`);
+      }
+      for (const field of ['valueBefore', 'valueAfter'] as const) {
+        if (!nonNegativeSafeInteger(change[field]) || change[field] > 100) {
+          issue(issues, 'invariant.out_of_bounds', `${changePath}.${field}`);
+        }
+      }
+      for (const field of ['baseDelta', 'requestedDelta', 'actualDelta'] as const) {
+        if (!Number.isSafeInteger(change[field]) || Math.abs(change[field] as number) > 20) {
+          issue(issues, 'invariant.out_of_bounds', `${changePath}.${field}`);
+        }
+      }
+      const gainMultiplierPermille = change['gainMultiplierPermille'];
+      if (
+        typeof gainMultiplierPermille !== 'number' ||
+        !Number.isSafeInteger(gainMultiplierPermille) ||
+        gainMultiplierPermille < 1_000 ||
+        gainMultiplierPermille > 1_500
+      ) {
+        issue(issues, 'invariant.out_of_bounds', `${changePath}.gainMultiplierPermille`);
+      }
+      if (
+        typeof change['valueBefore'] === 'number' &&
+        typeof change['valueAfter'] === 'number' &&
+        change['actualDelta'] !== change['valueAfter'] - change['valueBefore']
+      ) {
+        issue(issues, 'invariant.invalid_combination', `${changePath}.actualDelta`);
+      }
+      if (
+        typeof change['baseDelta'] === 'number' &&
+        change['baseDelta'] <= 0 &&
+        change['gainMultiplierPermille'] !== 1_000
+      ) {
+        issue(issues, 'invariant.invalid_combination', `${changePath}.gainMultiplierPermille`);
+      }
+      if (typeof change['valueAfter'] === 'number') afterValues.push(change['valueAfter']);
+    }
+  }
+  if (!Array.isArray(evidence['appliedSkillEffects'])) {
+    issue(issues, 'invariant.invalid_type', `${path}.appliedSkillEffects`);
+  } else {
+    for (const [index, value] of evidence['appliedSkillEffects'].entries()) {
+      const hookPath = `${path}.appliedSkillEffects.${index}`;
+      const hook = strictRecord(value, hookPath, COLLECTED_LIFE_HOOK_KEYS, issues);
+      if (hook === undefined) continue;
+      if (!isSkillId(hook['skillId'])) issue(issues, 'invariant.invalid_id', `${hookPath}.skillId`);
+      if (
+        !nonNegativeSafeInteger(hook['slotIndex']) ||
+        hook['slotIndex'] >= EQUIPPED_SKILL_SLOT_COUNT
+      ) {
+        issue(issues, 'invariant.out_of_bounds', `${hookPath}.slotIndex`);
+      }
+      if (!nonNegativeSafeInteger(hook['effectIndex']) || hook['effectIndex'] > 11) {
+        issue(issues, 'invariant.out_of_bounds', `${hookPath}.effectIndex`);
+      }
+      if (hook['hookId'] !== 'life_hook_relationship_gain_multiplier') {
+        issue(issues, 'invariant.invalid_id', `${hookPath}.hookId`);
+      }
+      const valueMilli = hook['valueMilli'];
+      if (
+        typeof valueMilli !== 'number' ||
+        !Number.isSafeInteger(valueMilli) ||
+        valueMilli < 1_001 ||
+        valueMilli > 1_500
+      ) {
+        issue(issues, 'invariant.out_of_bounds', `${hookPath}.valueMilli`);
+      }
+    }
+  }
+  validateRelationshipFootballEffects(
+    evidence['footballEffectsBefore'],
+    `${path}.footballEffectsBefore`,
+    issues,
+  );
+  validateRelationshipFootballEffects(
+    evidence['footballEffectsAfter'],
+    `${path}.footballEffectsAfter`,
+    issues,
+  );
+  for (const field of ['coachTrustBefore', 'coachTrustAfter'] as const) {
+    if (!nonNegativeSafeInteger(evidence[field]) || evidence[field] > 100) {
+      issue(issues, 'invariant.out_of_bounds', `${path}.${field}`);
+    }
+  }
+  for (const field of ['requestedCoachTrustDelta', 'actualCoachTrustDelta'] as const) {
+    if (!Number.isSafeInteger(evidence[field]) || Math.abs(evidence[field] as number) > 4) {
+      issue(issues, 'invariant.out_of_bounds', `${path}.${field}`);
+    }
+  }
+  if (
+    typeof evidence['coachTrustBefore'] === 'number' &&
+    typeof evidence['coachTrustAfter'] === 'number' &&
+    evidence['actualCoachTrustDelta'] !== evidence['coachTrustAfter'] - evidence['coachTrustBefore']
+  ) {
+    issue(issues, 'invariant.invalid_combination', `${path}.actualCoachTrustDelta`);
+  }
+  return nonNegativeSafeInteger(evidence['weekIndex'])
+    ? { weekIndex: evidence['weekIndex'], afterValues }
+    : null;
+}
+
+function validateNilSelectionEvidence(
+  value: unknown,
+  path: string,
+  issues: CareerInvariantIssue[],
+): { readonly weekIndex: number; readonly selectedOfferId: string | null } | null {
+  const evidence = strictRecord(value, path, NIL_SELECTION_EVIDENCE_KEYS, issues);
+  if (evidence === undefined) return null;
+  if (evidence['model'] !== 'nil_offer_selection_v1') {
+    issue(issues, 'invariant.invalid_value', `${path}.model`);
+  }
+  if (!nonNegativeSafeInteger(evidence['weekIndex'])) {
+    issue(issues, 'invariant.out_of_bounds', `${path}.weekIndex`);
+  }
+  const context = strictRecord(
+    evidence['context'],
+    `${path}.context`,
+    NIL_SELECTION_CONTEXT_KEYS,
+    issues,
+  );
+  if (context !== undefined) {
+    if (!nonNegativeSafeInteger(context['brand']) || context['brand'] > 100) {
+      issue(issues, 'invariant.out_of_bounds', `${path}.context.brand`);
+    }
+    if (
+      !nonNegativeSafeInteger(context['depthRank']) ||
+      context['depthRank'] < 1 ||
+      context['depthRank'] > 8
+    ) {
+      issue(issues, 'invariant.out_of_bounds', `${path}.context.depthRank`);
+    }
+    if (!nonNegativeSafeInteger(context['gpaMilli']) || context['gpaMilli'] > 4_000) {
+      issue(issues, 'invariant.out_of_bounds', `${path}.context.gpaMilli`);
+    }
+    if (!isProgramStrengthBandId(context['programStrengthBandId'])) {
+      issue(issues, 'invariant.invalid_id', `${path}.context.programStrengthBandId`);
+    }
+    const tagIds = context['tagIds'];
+    if (!Array.isArray(tagIds) || tagIds.length > 64) {
+      issue(issues, 'invariant.invalid_value', `${path}.context.tagIds`);
+    } else {
+      for (const [index, tagId] of tagIds.entries()) {
+        if (!isPlayerTagId(tagId))
+          issue(issues, 'invariant.invalid_id', `${path}.context.tagIds.${index}`);
+        if (index > 0 && compareCodeUnits(String(tagIds[index - 1]), String(tagId)) >= 0) {
+          issue(issues, 'invariant.noncanonical_order', `${path}.context.tagIds.${index}`);
+        }
+      }
+    }
+  }
+  const eligibleOfferIds = evidence['eligibleOfferIds'];
+  if (!Array.isArray(eligibleOfferIds) || eligibleOfferIds.length > 10) {
+    issue(issues, 'invariant.invalid_value', `${path}.eligibleOfferIds`);
+  } else {
+    for (const [index, offerId] of eligibleOfferIds.entries()) {
+      if (!isNilOfferId(offerId))
+        issue(issues, 'invariant.invalid_id', `${path}.eligibleOfferIds.${index}`);
+      if (
+        index > 0 &&
+        compareCodeUnits(String(eligibleOfferIds[index - 1]), String(offerId)) >= 0
+      ) {
+        issue(issues, 'invariant.noncanonical_order', `${path}.eligibleOfferIds.${index}`);
+      }
+    }
+  }
+  const totalWeight = evidence['totalWeight'];
+  if (!nonNegativeSafeInteger(totalWeight) || totalWeight > 10_000) {
+    issue(issues, 'invariant.out_of_bounds', `${path}.totalWeight`);
+  }
+  const selectedOfferId = evidence['selectedOfferId'];
+  if (selectedOfferId !== null && !isNilOfferId(selectedOfferId)) {
+    issue(issues, 'invariant.invalid_id', `${path}.selectedOfferId`);
+  }
+  for (const field of ['rngDrawCountBefore', 'rngDrawCountAfter'] as const) {
+    if (!nonNegativeSafeInteger(evidence[field])) {
+      issue(issues, 'invariant.out_of_bounds', `${path}.${field}`);
+    }
+  }
+  const noSelection = selectedOfferId === null;
+  if (noSelection) {
+    if (
+      evidence['roll'] !== null ||
+      totalWeight !== 0 ||
+      (Array.isArray(eligibleOfferIds) && eligibleOfferIds.length !== 0) ||
+      evidence['rngDrawCountAfter'] !== evidence['rngDrawCountBefore']
+    ) {
+      issue(issues, 'invariant.invalid_combination', `${path}.selectedOfferId`);
+    }
+  } else {
+    if (
+      !nonNegativeSafeInteger(evidence['roll']) ||
+      !nonNegativeSafeInteger(totalWeight) ||
+      (evidence['roll'] as number) >= totalWeight
+    ) {
+      issue(issues, 'invariant.out_of_bounds', `${path}.roll`);
+    }
+    if (!Array.isArray(eligibleOfferIds) || !eligibleOfferIds.includes(selectedOfferId)) {
+      issue(issues, 'invariant.invalid_combination', `${path}.selectedOfferId`);
+    }
+    if (
+      !nonNegativeSafeInteger(evidence['rngDrawCountBefore']) ||
+      !nonNegativeSafeInteger(evidence['rngDrawCountAfter']) ||
+      evidence['rngDrawCountAfter'] <= evidence['rngDrawCountBefore']
+    ) {
+      issue(issues, 'invariant.invalid_combination', `${path}.rngDrawCountAfter`);
+    }
+  }
+  return nonNegativeSafeInteger(evidence['weekIndex'])
+    ? {
+        weekIndex: evidence['weekIndex'],
+        selectedOfferId: isNilOfferId(selectedOfferId) ? selectedOfferId : null,
+      }
+    : null;
+}
+
+function validatePendingNilOffer(
+  value: unknown,
+  path: string,
+  issues: CareerInvariantIssue[],
+): { readonly offerId: string; readonly offeredWeekIndex: number } | null {
+  const offer = strictRecord(value, path, NIL_PENDING_OFFER_KEYS, issues);
+  if (offer === undefined) return null;
+  if (!isNilOfferId(offer['offerId'])) issue(issues, 'invariant.invalid_id', `${path}.offerId`);
+  if (!nonNegativeSafeInteger(offer['offeredWeekIndex'])) {
+    issue(issues, 'invariant.out_of_bounds', `${path}.offeredWeekIndex`);
+  }
+  if (
+    !nonNegativeSafeInteger(offer['expiresAfterWeekIndex']) ||
+    !nonNegativeSafeInteger(offer['offeredWeekIndex']) ||
+    offer['expiresAfterWeekIndex'] <= offer['offeredWeekIndex'] ||
+    offer['expiresAfterWeekIndex'] > offer['offeredWeekIndex'] + 4
+  ) {
+    issue(issues, 'invariant.out_of_bounds', `${path}.expiresAfterWeekIndex`);
+  }
+  const selection = validateNilSelectionEvidence(offer['selection'], `${path}.selection`, issues);
+  if (
+    selection !== null &&
+    (selection.weekIndex !== offer['offeredWeekIndex'] ||
+      selection.selectedOfferId !== offer['offerId'])
+  ) {
+    issue(issues, 'invariant.invalid_combination', `${path}.selection`);
+  }
+  return isNilOfferId(offer['offerId']) && nonNegativeSafeInteger(offer['offeredWeekIndex'])
+    ? { offerId: offer['offerId'], offeredWeekIndex: offer['offeredWeekIndex'] }
+    : null;
+}
+
+function validateNilLifeHooks(
+  value: unknown,
+  path: string,
+  issues: CareerInvariantIssue[],
+): number {
+  if (!Array.isArray(value) || value.length > EQUIPPED_SKILL_SLOT_COUNT) {
+    issue(issues, 'invariant.invalid_value', path);
+    return 1_000;
+  }
+  let additive = 0;
+  let priorSlot = -1;
+  for (const [index, hookValue] of value.entries()) {
+    const hookPath = `${path}.${index}`;
+    const hook = strictRecord(hookValue, hookPath, COLLECTED_LIFE_HOOK_KEYS, issues);
+    if (hook === undefined) continue;
+    if (!isSkillId(hook['skillId'])) issue(issues, 'invariant.invalid_id', `${hookPath}.skillId`);
+    if (
+      !nonNegativeSafeInteger(hook['slotIndex']) ||
+      hook['slotIndex'] >= EQUIPPED_SKILL_SLOT_COUNT
+    ) {
+      issue(issues, 'invariant.out_of_bounds', `${hookPath}.slotIndex`);
+    } else if (hook['slotIndex'] <= priorSlot) {
+      issue(issues, 'invariant.noncanonical_order', `${hookPath}.slotIndex`);
+    } else priorSlot = hook['slotIndex'];
+    if (!nonNegativeSafeInteger(hook['effectIndex']) || hook['effectIndex'] > 11) {
+      issue(issues, 'invariant.out_of_bounds', `${hookPath}.effectIndex`);
+    }
+    if (hook['hookId'] !== 'life_hook_nil_reward_multiplier') {
+      issue(issues, 'invariant.invalid_id', `${hookPath}.hookId`);
+    }
+    const valueMilli = hook['valueMilli'];
+    if (
+      typeof valueMilli !== 'number' ||
+      !Number.isSafeInteger(valueMilli) ||
+      valueMilli < 1_001 ||
+      valueMilli > 1_500
+    ) {
+      issue(issues, 'invariant.out_of_bounds', `${hookPath}.valueMilli`);
+    } else additive += valueMilli - 1_000;
+  }
+  return Math.min(1_500, 1_000 + additive);
+}
+
+function validateNilEffectApplication(
+  value: unknown,
+  path: string,
+  expectedSourceId: string,
+  expectedEffectIndex: number,
+  issues: CareerInvariantIssue[],
+): void {
+  const application = strictRecord(value, path, NIL_EFFECT_APPLICATION_KEYS, issues);
+  if (application === undefined) return;
+  if (application['model'] !== 'nil_effect_application_v1') {
+    issue(issues, 'invariant.invalid_value', `${path}.model`);
+  }
+  if (application['sourceId'] !== expectedSourceId) {
+    issue(issues, 'invariant.invalid_value', `${path}.sourceId`);
+  }
+  if (application['effectIndex'] !== expectedEffectIndex) {
+    issue(issues, 'invariant.noncanonical_order', `${path}.effectIndex`);
+  }
+  const effect = application['effect'];
+  let baseDelta: number | null = null;
+  let maximum = 100;
+  if (!isRecord(effect) || typeof effect['type'] !== 'string') {
+    issue(issues, 'invariant.invalid_type', `${path}.effect`);
+  } else if (effect['type'] === 'nil_integer_state_delta') {
+    const recordValue = strictRecord(
+      effect,
+      `${path}.effect`,
+      ['type', 'stateId', 'delta'],
+      issues,
+    );
+    if (recordValue !== undefined) {
+      if (
+        ![
+          'nil_state_body',
+          'nil_state_preparation',
+          'nil_state_confidence',
+          'nil_state_coach_trust',
+          'nil_state_brand',
+        ].includes(String(recordValue['stateId']))
+      ) {
+        issue(issues, 'invariant.invalid_id', `${path}.effect.stateId`);
+      }
+      if (
+        !Number.isSafeInteger(recordValue['delta']) ||
+        Math.abs(recordValue['delta'] as number) > 12 ||
+        recordValue['delta'] === 0
+      ) {
+        issue(issues, 'invariant.out_of_bounds', `${path}.effect.delta`);
+      } else baseDelta = recordValue['delta'] as number;
+    }
+  } else if (effect['type'] === 'nil_gpa_delta_milli') {
+    const recordValue = strictRecord(effect, `${path}.effect`, ['type', 'deltaMilli'], issues);
+    maximum = 4_000;
+    if (
+      recordValue !== undefined &&
+      Number.isSafeInteger(recordValue['deltaMilli']) &&
+      Math.abs(recordValue['deltaMilli'] as number) <= 250 &&
+      recordValue['deltaMilli'] !== 0
+    )
+      baseDelta = recordValue['deltaMilli'] as number;
+    else issue(issues, 'invariant.out_of_bounds', `${path}.effect.deltaMilli`);
+  } else if (effect['type'] === 'nil_funds_delta_usd') {
+    const recordValue = strictRecord(effect, `${path}.effect`, ['type', 'deltaUsd'], issues);
+    maximum = 1_000_000;
+    if (
+      recordValue !== undefined &&
+      Number.isSafeInteger(recordValue['deltaUsd']) &&
+      (recordValue['deltaUsd'] as number) >= -500 &&
+      (recordValue['deltaUsd'] as number) <= 2_500 &&
+      recordValue['deltaUsd'] !== 0
+    )
+      baseDelta = recordValue['deltaUsd'] as number;
+    else issue(issues, 'invariant.out_of_bounds', `${path}.effect.deltaUsd`);
+  } else if (effect['type'] === 'nil_relationship_delta') {
+    const recordValue = strictRecord(
+      effect,
+      `${path}.effect`,
+      ['type', 'actorId', 'delta'],
+      issues,
+    );
+    if (recordValue !== undefined) {
+      if (!isRelationshipActorId(recordValue['actorId']))
+        issue(issues, 'invariant.invalid_id', `${path}.effect.actorId`);
+      if (
+        !Number.isSafeInteger(recordValue['delta']) ||
+        Math.abs(recordValue['delta'] as number) > 12 ||
+        recordValue['delta'] === 0
+      )
+        issue(issues, 'invariant.out_of_bounds', `${path}.effect.delta`);
+      else baseDelta = recordValue['delta'] as number;
+    }
+  } else if (effect['type'] === 'nil_benefit_grant') {
+    const recordValue = strictRecord(
+      effect,
+      `${path}.effect`,
+      ['type', 'benefitId', 'quantity'],
+      issues,
+    );
+    maximum = 9;
+    if (recordValue !== undefined) {
+      if (!isOffFieldBenefitId(recordValue['benefitId']))
+        issue(issues, 'invariant.invalid_id', `${path}.effect.benefitId`);
+      if (
+        !nonNegativeSafeInteger(recordValue['quantity']) ||
+        recordValue['quantity'] < 1 ||
+        recordValue['quantity'] > 3
+      )
+        issue(issues, 'invariant.out_of_bounds', `${path}.effect.quantity`);
+      else baseDelta = recordValue['quantity'];
+    }
+  } else {
+    issue(issues, 'invariant.invalid_value', `${path}.effect.type`);
+  }
+  for (const field of ['valueBefore', 'valueAfter'] as const) {
+    if (!nonNegativeSafeInteger(application[field]) || application[field] > maximum) {
+      issue(issues, 'invariant.out_of_bounds', `${path}.${field}`);
+    }
+  }
+  const rawMultiplier = application['rewardMultiplierPermille'];
+  const multiplier = typeof rawMultiplier === 'number' ? rawMultiplier : Number.NaN;
+  if (!Number.isSafeInteger(multiplier) || multiplier < 1_000 || multiplier > 1_500) {
+    issue(issues, 'invariant.out_of_bounds', `${path}.rewardMultiplierPermille`);
+  }
+  if (baseDelta !== null) {
+    if (application['baseDelta'] !== baseDelta)
+      issue(issues, 'invariant.invalid_combination', `${path}.baseDelta`);
+    const canMultiply =
+      expectedSourceId === 'nil_effect_source_offer_reward' &&
+      baseDelta > 0 &&
+      (!isRecord(effect) || effect['type'] !== 'nil_benefit_grant');
+    const expectedMultiplier = canMultiply ? multiplier : 1_000;
+    if (multiplier !== expectedMultiplier)
+      issue(issues, 'invariant.invalid_combination', `${path}.rewardMultiplierPermille`);
+    const requested =
+      expectedMultiplier === 1_000
+        ? baseDelta
+        : Math.round((baseDelta * expectedMultiplier) / 1_000);
+    if (application['requestedDelta'] !== requested)
+      issue(issues, 'invariant.invalid_combination', `${path}.requestedDelta`);
+  }
+  if (
+    typeof application['valueBefore'] === 'number' &&
+    typeof application['valueAfter'] === 'number' &&
+    application['actualDelta'] !== application['valueAfter'] - application['valueBefore']
+  ) {
+    issue(issues, 'invariant.invalid_combination', `${path}.actualDelta`);
+  }
+}
+
+function validateNilHistoryEvidence(
+  value: unknown,
+  path: string,
+  issues: CareerInvariantIssue[],
+): number | null {
+  if (!isRecord(value) || typeof value['model'] !== 'string') {
+    issue(issues, 'invariant.invalid_type', path);
+    return null;
+  }
+  if (value['model'] === 'nil_offer_decision_v1') {
+    const evidence = strictRecord(value, path, NIL_DECISION_EVIDENCE_KEYS, issues);
+    if (evidence === undefined) return null;
+    if (!nonNegativeSafeInteger(evidence['weekIndex']))
+      issue(issues, 'invariant.out_of_bounds', `${path}.weekIndex`);
+    if (evidence['decisionId'] !== 'ACCEPT' && evidence['decisionId'] !== 'DECLINE')
+      issue(issues, 'invariant.invalid_value', `${path}.decisionId`);
+    const offerSummary = validatePendingNilOffer(evidence['offer'], `${path}.offer`, issues);
+    const offerValue = evidence['offer'];
+    const expiresAfterWeekIndex = isRecord(offerValue) ? offerValue['expiresAfterWeekIndex'] : null;
+    if (
+      offerSummary !== null &&
+      nonNegativeSafeInteger(evidence['weekIndex']) &&
+      (evidence['weekIndex'] < offerSummary.offeredWeekIndex ||
+        !nonNegativeSafeInteger(expiresAfterWeekIndex) ||
+        evidence['weekIndex'] > expiresAfterWeekIndex)
+    ) {
+      issue(issues, 'invariant.invalid_combination', `${path}.weekIndex`);
+    }
+    const hookMultiplier = validateNilLifeHooks(
+      evidence['appliedSkillEffects'],
+      `${path}.appliedSkillEffects`,
+      issues,
+    );
+    const rewardMultiplier = evidence['rewardMultiplierPermille'];
+    if (
+      typeof rewardMultiplier !== 'number' ||
+      !Number.isSafeInteger(rewardMultiplier) ||
+      rewardMultiplier < 1_000 ||
+      rewardMultiplier > 1_500
+    )
+      issue(issues, 'invariant.out_of_bounds', `${path}.rewardMultiplierPermille`);
+    if (!Array.isArray(evidence['appliedEffects']) || evidence['appliedEffects'].length > 4)
+      issue(issues, 'invariant.invalid_value', `${path}.appliedEffects`);
+    else
+      evidence['appliedEffects'].forEach((effect, index) =>
+        validateNilEffectApplication(
+          effect,
+          `${path}.appliedEffects.${index}`,
+          'nil_effect_source_offer_reward',
+          index,
+          issues,
+        ),
+      );
+    if (evidence['decisionId'] === 'DECLINE') {
+      if (
+        (Array.isArray(evidence['appliedSkillEffects']) &&
+          evidence['appliedSkillEffects'].length > 0) ||
+        (Array.isArray(evidence['appliedEffects']) && evidence['appliedEffects'].length > 0) ||
+        evidence['rewardMultiplierPermille'] !== 1_000
+      )
+        issue(issues, 'invariant.invalid_combination', `${path}.decisionId`);
+    } else if (evidence['rewardMultiplierPermille'] !== hookMultiplier) {
+      issue(issues, 'invariant.invalid_combination', `${path}.rewardMultiplierPermille`);
+    }
+    return nonNegativeSafeInteger(evidence['weekIndex']) ? evidence['weekIndex'] : null;
+  }
+  if (value['model'] === 'nil_offer_expiration_v1') {
+    const evidence = strictRecord(value, path, NIL_EXPIRATION_EVIDENCE_KEYS, issues);
+    if (evidence === undefined) return null;
+    if (!nonNegativeSafeInteger(evidence['weekIndex']))
+      issue(issues, 'invariant.out_of_bounds', `${path}.weekIndex`);
+    const offer = validatePendingNilOffer(evidence['offer'], `${path}.offer`, issues);
+    const rawOffer = evidence['offer'];
+    const expiresAfterWeekIndex = isRecord(rawOffer) ? rawOffer['expiresAfterWeekIndex'] : null;
+    if (
+      offer !== null &&
+      nonNegativeSafeInteger(evidence['weekIndex']) &&
+      nonNegativeSafeInteger(expiresAfterWeekIndex) &&
+      evidence['weekIndex'] <= expiresAfterWeekIndex
+    )
+      issue(issues, 'invariant.invalid_combination', `${path}.weekIndex`);
+    return nonNegativeSafeInteger(evidence['weekIndex']) ? evidence['weekIndex'] : null;
+  }
+  if (value['model'] === 'nil_obligation_resolution_v1') {
+    const evidence = strictRecord(value, path, NIL_OBLIGATION_EVIDENCE_KEYS, issues);
+    if (evidence === undefined) return null;
+    if (!nonNegativeSafeInteger(evidence['weekIndex']))
+      issue(issues, 'invariant.out_of_bounds', `${path}.weekIndex`);
+    if (evidence['resolutionId'] !== 'FULFILL' && evidence['resolutionId'] !== 'DEFAULT')
+      issue(issues, 'invariant.invalid_value', `${path}.resolutionId`);
+    if (!isNilOfferId(evidence['offerId']))
+      issue(issues, 'invariant.invalid_id', `${path}.offerId`);
+    if (!isNilObligationId(evidence['obligationId']))
+      issue(issues, 'invariant.invalid_id', `${path}.obligationId`);
+    if (
+      !nonNegativeSafeInteger(evidence['focusCost']) ||
+      evidence['focusCost'] < 1 ||
+      evidence['focusCost'] > 2
+    )
+      issue(issues, 'invariant.out_of_bounds', `${path}.focusCost`);
+    if (
+      !nonNegativeSafeInteger(evidence['remainingWeeksBefore']) ||
+      evidence['remainingWeeksBefore'] < 1 ||
+      evidence['remainingWeeksBefore'] > 3
+    )
+      issue(issues, 'invariant.out_of_bounds', `${path}.remainingWeeksBefore`);
+    if (
+      !nonNegativeSafeInteger(evidence['remainingWeeksAfter']) ||
+      evidence['remainingWeeksAfter'] > 2
+    )
+      issue(issues, 'invariant.out_of_bounds', `${path}.remainingWeeksAfter`);
+    if (
+      evidence['resolutionId'] === 'FULFILL' &&
+      evidence['remainingWeeksAfter'] !== (evidence['remainingWeeksBefore'] as number) - 1
+    )
+      issue(issues, 'invariant.invalid_combination', `${path}.remainingWeeksAfter`);
+    if (evidence['resolutionId'] === 'DEFAULT' && evidence['remainingWeeksAfter'] !== 0)
+      issue(issues, 'invariant.invalid_combination', `${path}.remainingWeeksAfter`);
+    const sourceId =
+      evidence['resolutionId'] === 'FULFILL'
+        ? 'nil_effect_source_obligation_weekly'
+        : 'nil_effect_source_obligation_default';
+    if (
+      !Array.isArray(evidence['appliedEffects']) ||
+      evidence['appliedEffects'].length < 1 ||
+      evidence['appliedEffects'].length > 3
+    )
+      issue(issues, 'invariant.invalid_value', `${path}.appliedEffects`);
+    else
+      evidence['appliedEffects'].forEach((effect, index) =>
+        validateNilEffectApplication(
+          effect,
+          `${path}.appliedEffects.${index}`,
+          sourceId,
+          index,
+          issues,
+        ),
+      );
+    return nonNegativeSafeInteger(evidence['weekIndex']) ? evidence['weekIndex'] : null;
+  }
+  issue(issues, 'invariant.invalid_value', `${path}.model`);
+  return null;
+}
+
+function validateTransferOptionProjection(
+  value: unknown,
+  path: string,
+  expectedKind: 'STAY' | 'TRANSFER',
+  issues: CareerInvariantIssue[],
+): string | null {
+  const option = strictRecord(value, path, TRANSFER_OPTION_PROJECTION_KEYS, issues);
+  if (option === undefined) return null;
+  if (option['kind'] !== expectedKind) issue(issues, 'invariant.invalid_value', `${path}.kind`);
+  const programId = isProgramId(option['programId']) ? option['programId'] : null;
+  if (programId === null) issue(issues, 'invariant.invalid_id', `${path}.programId`);
+  if (
+    !nonNegativeSafeInteger(option['projectedDepthRank']) ||
+    option['projectedDepthRank'] < 1 ||
+    option['projectedDepthRank'] > 8
+  ) {
+    issue(issues, 'invariant.out_of_bounds', `${path}.projectedDepthRank`);
+  } else if (option['projectedRoleId'] !== depthRoleIdForRank(option['projectedDepthRank'])) {
+    issue(issues, 'invariant.invalid_combination', `${path}.projectedRoleId`);
+  } else if (!isDepthRoleId(option['projectedRoleId'])) {
+    issue(issues, 'invariant.invalid_id', `${path}.projectedRoleId`);
+  }
+  for (const key of [
+    'projectedSnapMinPermille',
+    'projectedSnapMaxPermille',
+    'informationScore',
+    'uncertaintyPoints',
+    'projectedScore',
+    'projectedScoreMinimum',
+    'projectedScoreMaximum',
+  ] as const) {
+    const maximum = key.includes('Snap') ? 1_000 : 100;
+    if (!nonNegativeSafeInteger(option[key]) || option[key] > maximum) {
+      issue(issues, 'invariant.out_of_bounds', `${path}.${key}`);
+    }
+  }
+  if (
+    typeof option['projectedSnapMinPermille'] === 'number' &&
+    typeof option['projectedSnapMaxPermille'] === 'number' &&
+    option['projectedSnapMinPermille'] > option['projectedSnapMaxPermille']
+  ) {
+    issue(issues, 'invariant.invalid_combination', `${path}.projectedSnapMinPermille`);
+  }
+  if (!isTransferConfidenceTierId(option['confidenceTierId'])) {
+    issue(issues, 'invariant.invalid_id', `${path}.confidenceTierId`);
+  }
+  const factors = option['factors'];
+  let contributionTotal = 0;
+  let factorWeights = 0;
+  if (!Array.isArray(factors) || factors.length !== TRANSFER_PROJECTION_FACTOR_IDS.length) {
+    issue(issues, 'invariant.invalid_value', `${path}.factors`);
+  } else {
+    for (const [index, factorValue] of factors.entries()) {
+      const factorPath = `${path}.factors.${index}`;
+      const factor = strictRecord(factorValue, factorPath, TRANSFER_FACTOR_PROJECTION_KEYS, issues);
+      if (factor === undefined) continue;
+      if (
+        !isTransferProjectionFactorId(factor['factorId']) ||
+        factor['factorId'] !== TRANSFER_PROJECTION_FACTOR_IDS[index]
+      ) {
+        issue(issues, 'invariant.noncanonical_order', `${factorPath}.factorId`);
+      }
+      if (!nonNegativeSafeInteger(factor['score']) || factor['score'] > 100) {
+        issue(issues, 'invariant.out_of_bounds', `${factorPath}.score`);
+      }
+      if (
+        !nonNegativeSafeInteger(factor['weightPermille']) ||
+        factor['weightPermille'] < 1 ||
+        factor['weightPermille'] > 1_000
+      ) {
+        issue(issues, 'invariant.out_of_bounds', `${factorPath}.weightPermille`);
+      }
+      if (
+        !nonNegativeSafeInteger(factor['contributionMilli']) ||
+        (typeof factor['score'] === 'number' &&
+          typeof factor['weightPermille'] === 'number' &&
+          factor['contributionMilli'] !== factor['score'] * factor['weightPermille'])
+      ) {
+        issue(issues, 'invariant.invalid_combination', `${factorPath}.contributionMilli`);
+      }
+      if (typeof factor['contributionMilli'] === 'number')
+        contributionTotal += factor['contributionMilli'];
+      if (typeof factor['weightPermille'] === 'number') factorWeights += factor['weightPermille'];
+    }
+    if (factorWeights !== 1_000) issue(issues, 'invariant.invalid_combination', `${path}.factors`);
+  }
+  if (
+    typeof option['projectedScore'] === 'number' &&
+    option['projectedScore'] !== Math.round(contributionTotal / 1_000)
+  ) {
+    issue(issues, 'invariant.invalid_combination', `${path}.projectedScore`);
+  }
+  if (
+    typeof option['projectedScore'] === 'number' &&
+    typeof option['uncertaintyPoints'] === 'number' &&
+    (option['projectedScoreMinimum'] !==
+      Math.max(0, option['projectedScore'] - option['uncertaintyPoints']) ||
+      option['projectedScoreMaximum'] !==
+        Math.min(100, option['projectedScore'] + option['uncertaintyPoints']))
+  ) {
+    issue(issues, 'invariant.invalid_combination', `${path}.projectedScoreMinimum`);
+  }
+  return programId;
+}
+
+function validateOffseasonWorldProjection(
+  value: unknown,
+  path: string,
+  issues: CareerInvariantIssue[],
+): Set<string> | null {
+  const world = strictRecord(value, path, OFFSEASON_WORLD_PROJECTION_KEYS, issues);
+  if (world === undefined) return null;
+  if (world['model'] !== 'offseason_world_projection_v1') {
+    issue(issues, 'invariant.invalid_value', `${path}.model`);
+  }
+  const programs = world['programs'];
+  const ids = new Set<string>();
+  if (!Array.isArray(programs) || programs.length < 4 || programs.length > 128) {
+    issue(issues, 'invariant.invalid_value', `${path}.programs`);
+    return null;
+  }
+  let previousProgramId = '';
+  let expectedDrawCount = world['worldRngDrawCountBefore'];
+  if (!nonNegativeSafeInteger(expectedDrawCount)) {
+    issue(issues, 'invariant.out_of_bounds', `${path}.worldRngDrawCountBefore`);
+  }
+  for (const [index, programValue] of programs.entries()) {
+    const programPath = `${path}.programs.${index}`;
+    const program = strictRecord(
+      programValue,
+      programPath,
+      OFFSEASON_PROGRAM_PROJECTION_KEYS,
+      issues,
+    );
+    if (program === undefined) continue;
+    if (!isProgramId(program['programId'])) {
+      issue(issues, 'invariant.invalid_id', `${programPath}.programId`);
+    } else {
+      if (compareCodeUnits(previousProgramId, program['programId']) >= 0) {
+        issue(issues, 'invariant.noncanonical_order', `${programPath}.programId`);
+      }
+      previousProgramId = program['programId'];
+      ids.add(program['programId']);
+    }
+    if (!isOffseasonCoachChangeId(program['coachChangeId'])) {
+      issue(issues, 'invariant.invalid_id', `${programPath}.coachChangeId`);
+    }
+    if (!isProgramOffenseStyleId(program['offenseStyleIdBefore'])) {
+      issue(issues, 'invariant.invalid_id', `${programPath}.offenseStyleIdBefore`);
+    }
+    if (!isProgramOffenseStyleId(program['offenseStyleIdAfter'])) {
+      issue(issues, 'invariant.invalid_id', `${programPath}.offenseStyleIdAfter`);
+    }
+    const shouldChangeScheme = program['coachChangeId'] === 'offseason_coach_change_scheme_shift';
+    if (
+      typeof program['offenseStyleIdBefore'] === 'string' &&
+      typeof program['offenseStyleIdAfter'] === 'string' &&
+      (shouldChangeScheme
+        ? program['offenseStyleIdBefore'] === program['offenseStyleIdAfter']
+        : program['offenseStyleIdBefore'] !== program['offenseStyleIdAfter'])
+    ) {
+      issue(issues, 'invariant.invalid_combination', `${programPath}.offenseStyleIdAfter`);
+    }
+    for (const key of ['roomTalentBefore', 'roomTalentAfter'] as const) {
+      if (!nonNegativeSafeInteger(program[key]) || program[key] < 35 || program[key] > 90) {
+        issue(issues, 'invariant.out_of_bounds', `${programPath}.${key}`);
+      }
+    }
+    if (
+      !nonNegativeSafeInteger(program['pressureMaximumInclusive']) ||
+      program['pressureMaximumInclusive'] < 1 ||
+      program['pressureMaximumInclusive'] > 30
+    ) {
+      issue(issues, 'invariant.out_of_bounds', `${programPath}.pressureMaximumInclusive`);
+    }
+    for (const key of [
+      'departureRelief',
+      'incomingPressure',
+      'departureRoll',
+      'incomingRoll',
+    ] as const) {
+      if (
+        !nonNegativeSafeInteger(program[key]) ||
+        (typeof program['pressureMaximumInclusive'] === 'number' &&
+          program[key] > program['pressureMaximumInclusive'])
+      ) {
+        issue(issues, 'invariant.out_of_bounds', `${programPath}.${key}`);
+      }
+    }
+    if (
+      program['departureRelief'] !== program['departureRoll'] ||
+      program['incomingPressure'] !== program['incomingRoll']
+    ) {
+      issue(issues, 'invariant.invalid_combination', `${programPath}.departureRoll`);
+    }
+    if (
+      typeof program['roomTalentBefore'] === 'number' &&
+      typeof program['departureRelief'] === 'number' &&
+      typeof program['incomingPressure'] === 'number' &&
+      program['roomTalentAfter'] !==
+        Math.min(
+          90,
+          Math.max(
+            35,
+            program['roomTalentBefore'] - program['departureRelief'] + program['incomingPressure'],
+          ),
+        )
+    ) {
+      issue(issues, 'invariant.invalid_combination', `${programPath}.roomTalentAfter`);
+    }
+    if (
+      program['coachChangeTotalWeight'] !== 1_000 ||
+      !nonNegativeSafeInteger(program['coachChangeRoll']) ||
+      program['coachChangeRoll'] >= 1_000
+    ) {
+      issue(issues, 'invariant.out_of_bounds', `${programPath}.coachChangeRoll`);
+    }
+    if (
+      program['worldRngDrawCountBefore'] !== expectedDrawCount ||
+      !nonNegativeSafeInteger(program['worldRngDrawCountAfter']) ||
+      !nonNegativeSafeInteger(program['worldRngDrawCountBefore']) ||
+      program['worldRngDrawCountAfter'] !== (program['worldRngDrawCountBefore'] as number) + 3
+    ) {
+      issue(issues, 'invariant.invalid_combination', `${programPath}.worldRngDrawCountAfter`);
+    }
+    expectedDrawCount = program['worldRngDrawCountAfter'];
+  }
+  if (world['worldRngDrawCountAfter'] !== expectedDrawCount) {
+    issue(issues, 'invariant.invalid_combination', `${path}.worldRngDrawCountAfter`);
+  }
+  return ids;
+}
+
+function validateOffseasonTransferProjection(
+  value: unknown,
+  path: string,
+  worldProgramIds: Set<string> | null,
+  issues: CareerInvariantIssue[],
+): number | null {
+  const transfer = strictRecord(value, path, OFFSEASON_TRANSFER_PROJECTION_KEYS, issues);
+  if (transfer === undefined) return null;
+  if (transfer['model'] !== 'offseason_transfer_projection_v1') {
+    issue(issues, 'invariant.invalid_value', `${path}.model`);
+  }
+  const stayProgramId = validateTransferOptionProjection(
+    transfer['stayOption'],
+    `${path}.stayOption`,
+    'STAY',
+    issues,
+  );
+  const transferOptions = transfer['transferOptions'];
+  const optionProgramIds: (string | null)[] = [];
+  if (!Array.isArray(transferOptions) || transferOptions.length !== 3) {
+    issue(issues, 'invariant.invalid_value', `${path}.transferOptions`);
+  } else {
+    for (const [index, option] of transferOptions.entries()) {
+      optionProgramIds.push(
+        validateTransferOptionProjection(
+          option,
+          `${path}.transferOptions.${index}`,
+          'TRANSFER',
+          issues,
+        ),
+      );
+    }
+  }
+  if (
+    stayProgramId !== null &&
+    (optionProgramIds.includes(stayProgramId) ||
+      new Set(optionProgramIds).size !== optionProgramIds.length)
+  ) {
+    issue(issues, 'invariant.duplicate_value', `${path}.transferOptions`);
+  }
+  if (
+    worldProgramIds !== null &&
+    [stayProgramId, ...optionProgramIds].some(
+      (programId) => programId !== null && !worldProgramIds.has(programId),
+    )
+  ) {
+    issue(issues, 'invariant.invalid_combination', `${path}.transferOptions`);
+  }
+
+  const selections = transfer['shortlistSelections'];
+  let expectedDrawCount = transfer['careerRngDrawCountBefore'];
+  let previousCandidates: string[] | null = null;
+  if (!nonNegativeSafeInteger(expectedDrawCount)) {
+    issue(issues, 'invariant.out_of_bounds', `${path}.careerRngDrawCountBefore`);
+  }
+  if (!Array.isArray(selections) || selections.length !== 3) {
+    issue(issues, 'invariant.invalid_value', `${path}.shortlistSelections`);
+  } else {
+    for (const [index, selectionValue] of selections.entries()) {
+      const selectionPath = `${path}.shortlistSelections.${index}`;
+      const selection = strictRecord(
+        selectionValue,
+        selectionPath,
+        TRANSFER_SHORTLIST_SELECTION_KEYS,
+        issues,
+      );
+      if (selection === undefined) continue;
+      if (selection['selectionIndex'] !== index) {
+        issue(issues, 'invariant.noncanonical_order', `${selectionPath}.selectionIndex`);
+      }
+      const candidates = selection['candidateWeights'];
+      const candidateIds: string[] = [];
+      let totalWeight = 0;
+      let selectedByRoll: string | null = null;
+      if (!Array.isArray(candidates) || candidates.length < 1 || candidates.length > 127) {
+        issue(issues, 'invariant.invalid_value', `${selectionPath}.candidateWeights`);
+      } else {
+        let previousProgramId = '';
+        let cursor = 0;
+        for (const [candidateIndex, candidateValue] of candidates.entries()) {
+          const candidatePath = `${selectionPath}.candidateWeights.${candidateIndex}`;
+          const candidate = strictRecord(
+            candidateValue,
+            candidatePath,
+            TRANSFER_SHORTLIST_CANDIDATE_KEYS,
+            issues,
+          );
+          if (candidate === undefined) continue;
+          if (!isProgramId(candidate['programId'])) {
+            issue(issues, 'invariant.invalid_id', `${candidatePath}.programId`);
+          } else {
+            if (compareCodeUnits(previousProgramId, candidate['programId']) >= 0) {
+              issue(issues, 'invariant.noncanonical_order', `${candidatePath}.programId`);
+            }
+            previousProgramId = candidate['programId'];
+            candidateIds.push(candidate['programId']);
+          }
+          if (
+            !nonNegativeSafeInteger(candidate['weight']) ||
+            candidate['weight'] < 1 ||
+            candidate['weight'] > 400
+          ) {
+            issue(issues, 'invariant.out_of_bounds', `${candidatePath}.weight`);
+          }
+          if (typeof candidate['weight'] === 'number') {
+            cursor += candidate['weight'];
+            totalWeight += candidate['weight'];
+            if (
+              selectedByRoll === null &&
+              typeof selection['roll'] === 'number' &&
+              selection['roll'] < cursor
+            ) {
+              selectedByRoll = isProgramId(candidate['programId']) ? candidate['programId'] : null;
+            }
+          }
+        }
+      }
+      if (previousCandidates !== null) {
+        const priorSelected = selections[index - 1];
+        const priorSelectedId = isRecord(priorSelected) ? priorSelected['selectedProgramId'] : null;
+        const expectedCandidates = previousCandidates.filter(
+          (programId) => programId !== priorSelectedId,
+        );
+        if (JSON.stringify(candidateIds) !== JSON.stringify(expectedCandidates)) {
+          issue(issues, 'invariant.invalid_combination', `${selectionPath}.candidateWeights`);
+        }
+      }
+      previousCandidates = candidateIds;
+      if (selection['totalWeight'] !== totalWeight) {
+        issue(issues, 'invariant.invalid_combination', `${selectionPath}.totalWeight`);
+      }
+      if (
+        !nonNegativeSafeInteger(selection['roll']) ||
+        selection['roll'] >= totalWeight ||
+        selection['selectedProgramId'] !== selectedByRoll ||
+        selection['selectedProgramId'] !== optionProgramIds[index]
+      ) {
+        issue(issues, 'invariant.invalid_combination', `${selectionPath}.selectedProgramId`);
+      }
+      if (
+        selection['careerRngDrawCountBefore'] !== expectedDrawCount ||
+        !nonNegativeSafeInteger(selection['careerRngDrawCountBefore']) ||
+        selection['careerRngDrawCountAfter'] !==
+          (selection['careerRngDrawCountBefore'] as number) + 1
+      ) {
+        issue(issues, 'invariant.invalid_combination', `${selectionPath}.careerRngDrawCountAfter`);
+      }
+      expectedDrawCount = selection['careerRngDrawCountAfter'];
+    }
+  }
+  if (transfer['careerRngDrawCountAfter'] !== expectedDrawCount) {
+    issue(issues, 'invariant.invalid_combination', `${path}.careerRngDrawCountAfter`);
+  }
+  if (!nonNegativeSafeInteger(transfer['careerRngDrawCountAfter'])) return null;
+  return transfer['careerRngDrawCountAfter'];
+}
+
+interface ValidatedOffseasonDecisionSummary {
+  readonly kind: 'STAY' | 'TRANSFER';
+  readonly previousProgramId: string;
+  readonly selectedProgramId: string;
+  readonly relationshipValuesAfter: ReadonlyMap<string, number>;
+}
+
+function validateOffseasonDecision(
+  value: unknown,
+  path: string,
+  transferProjection: unknown,
+  worldProjection: unknown,
+  transferProjectionRngDrawCountAfter: number | null,
+  careerRngDrawCount: number,
+  enforceDecisionRngTail: boolean,
+  issues: CareerInvariantIssue[],
+): ValidatedOffseasonDecisionSummary | null {
+  const decision = strictRecord(value, path, OFFSEASON_DECISION_KEYS, issues);
+  if (decision === undefined) return null;
+  if (decision['model'] !== 'offseason_decision_v1') {
+    issue(issues, 'invariant.invalid_value', `${path}.model`);
+  }
+  const kind = decision['kind'];
+  if (kind !== 'STAY' && kind !== 'TRANSFER') {
+    issue(issues, 'invariant.invalid_value', `${path}.kind`);
+    return null;
+  }
+  if (!isProgramId(decision['previousProgramId'])) {
+    issue(issues, 'invariant.invalid_id', `${path}.previousProgramId`);
+  }
+  if (!isProgramId(decision['selectedProgramId'])) {
+    issue(issues, 'invariant.invalid_id', `${path}.selectedProgramId`);
+  }
+  const transfer = isRecord(transferProjection) ? transferProjection : undefined;
+  const expectedOption =
+    kind === 'STAY'
+      ? transfer?.['stayOption']
+      : Array.isArray(transfer?.['transferOptions'])
+        ? transfer['transferOptions'].find(
+            (option) => isRecord(option) && option['programId'] === decision['selectedProgramId'],
+          )
+        : undefined;
+  validateTransferOptionProjection(
+    decision['selectedOption'],
+    `${path}.selectedOption`,
+    kind,
+    issues,
+  );
+  if (
+    expectedOption === undefined ||
+    JSON.stringify(decision['selectedOption']) !== JSON.stringify(expectedOption)
+  ) {
+    issue(issues, 'invariant.invalid_combination', `${path}.selectedOption`);
+  }
+  if (
+    isRecord(decision['selectedOption']) &&
+    decision['selectedOption']['programId'] !== decision['selectedProgramId']
+  ) {
+    issue(issues, 'invariant.invalid_combination', `${path}.selectedProgramId`);
+  }
+  if (
+    (kind === 'STAY' && decision['selectedProgramId'] !== decision['previousProgramId']) ||
+    (kind === 'TRANSFER' && decision['selectedProgramId'] === decision['previousProgramId'])
+  ) {
+    issue(issues, 'invariant.invalid_combination', `${path}.kind`);
+  }
+
+  const worldProgram =
+    isRecord(worldProjection) && Array.isArray(worldProjection['programs'])
+      ? worldProjection['programs'].find(
+          (program) => isRecord(program) && program['programId'] === decision['selectedProgramId'],
+        )
+      : undefined;
+  if (!isRecord(worldProgram)) {
+    issue(issues, 'invariant.invalid_combination', `${path}.selectedProgramId`);
+  } else {
+    for (const [decisionKey, worldKey] of [
+      ['coachChangeId', 'coachChangeId'],
+      ['offenseStyleIdBefore', 'offenseStyleIdBefore'],
+      ['offenseStyleIdAfter', 'offenseStyleIdAfter'],
+      ['roomTalentMeanAfter', 'roomTalentAfter'],
+    ] as const) {
+      if (decision[decisionKey] !== worldProgram[worldKey]) {
+        issue(issues, 'invariant.invalid_combination', `${path}.${decisionKey}`);
+      }
+    }
+  }
+  if (!isOffseasonCoachChangeId(decision['coachChangeId'])) {
+    issue(issues, 'invariant.invalid_id', `${path}.coachChangeId`);
+  }
+  for (const key of ['offenseStyleIdBefore', 'offenseStyleIdAfter'] as const) {
+    if (!isProgramOffenseStyleId(decision[key])) {
+      issue(issues, 'invariant.invalid_id', `${path}.${key}`);
+    }
+  }
+  if (!isRotationPolicyId(decision['rotationPolicyIdAfter'])) {
+    issue(issues, 'invariant.invalid_id', `${path}.rotationPolicyIdAfter`);
+  }
+  if (!integerIn(decision['roomTalentMeanAfter'], 35, 90)) {
+    issue(issues, 'invariant.out_of_bounds', `${path}.roomTalentMeanAfter`);
+  }
+  for (const key of ['coachTrustBefore', 'coachTrustAfter'] as const) {
+    if (!integerIn(decision[key], COACH_TRUST_BOUNDS.min, COACH_TRUST_BOUNDS.max)) {
+      issue(issues, 'invariant.out_of_bounds', `${path}.${key}`);
+    }
+  }
+  if (!integerIn(decision['coachTrustRetentionPermille'], 0, 1_000)) {
+    issue(issues, 'invariant.out_of_bounds', `${path}.coachTrustRetentionPermille`);
+  }
+  if (!integerIn(decision['coachTrustBaseline'], 0, 100)) {
+    issue(issues, 'invariant.out_of_bounds', `${path}.coachTrustBaseline`);
+  }
+  if (!integerIn(decision['coachTrustRequestedAfter'], 0, 200)) {
+    issue(issues, 'invariant.out_of_bounds', `${path}.coachTrustRequestedAfter`);
+  }
+  if (
+    Number.isInteger(decision['coachTrustBefore']) &&
+    Number.isInteger(decision['coachTrustRetentionPermille']) &&
+    Number.isInteger(decision['coachTrustBaseline'])
+  ) {
+    const requested =
+      (decision['coachTrustBaseline'] as number) +
+      Math.round(
+        ((decision['coachTrustBefore'] as number) *
+          (decision['coachTrustRetentionPermille'] as number)) /
+          1_000,
+      );
+    if (decision['coachTrustRequestedAfter'] !== requested) {
+      issue(issues, 'invariant.invalid_combination', `${path}.coachTrustRequestedAfter`);
+    }
+    if (
+      decision['coachTrustAfter'] !==
+      clamp(requested, COACH_TRUST_BOUNDS.min, COACH_TRUST_BOUNDS.max)
+    ) {
+      issue(issues, 'invariant.invalid_combination', `${path}.coachTrustAfter`);
+    }
+  }
+  for (const key of [
+    'playerPracticeFormBefore',
+    'playerPracticeFormAfter',
+    'playerExperienceReadiness',
+  ] as const) {
+    if (!integerIn(decision[key], 0, 100)) {
+      issue(issues, 'invariant.out_of_bounds', `${path}.${key}`);
+    }
+  }
+
+  const relationshipValuesAfter = new Map<string, number>();
+  const transitions = decision['relationshipTransitions'];
+  if (!Array.isArray(transitions) || transitions.length !== RELATIONSHIP_ACTOR_IDS.length) {
+    issue(issues, 'invariant.invalid_value', `${path}.relationshipTransitions`);
+  } else {
+    for (const [index, transitionValue] of transitions.entries()) {
+      const transitionPath = `${path}.relationshipTransitions.${index}`;
+      const transition = strictRecord(
+        transitionValue,
+        transitionPath,
+        OFFSEASON_RELATIONSHIP_TRANSITION_KEYS,
+        issues,
+      );
+      if (transition === undefined) continue;
+      if (
+        !isRelationshipActorId(transition['actorId']) ||
+        transition['actorId'] !== RELATIONSHIP_ACTOR_IDS[index]
+      ) {
+        issue(issues, 'invariant.noncanonical_order', `${transitionPath}.actorId`);
+      }
+      for (const key of ['valueBefore', 'valueAfter'] as const) {
+        if (!integerIn(transition[key], 0, 100)) {
+          issue(issues, 'invariant.out_of_bounds', `${transitionPath}.${key}`);
+        }
+      }
+      if (typeof transition['resetToNeutral'] !== 'boolean') {
+        issue(issues, 'invariant.invalid_type', `${transitionPath}.resetToNeutral`);
+      } else if (transition['resetToNeutral']) {
+        if (
+          !integerIn(transition['resetValue'], 0, 100) ||
+          transition['valueAfter'] !== transition['resetValue']
+        ) {
+          issue(issues, 'invariant.invalid_combination', `${transitionPath}.resetValue`);
+        }
+      } else if (
+        transition['resetValue'] !== null ||
+        transition['valueAfter'] !== transition['valueBefore']
+      ) {
+        issue(issues, 'invariant.invalid_combination', `${transitionPath}.valueAfter`);
+      }
+      if (
+        typeof transition['actorId'] === 'string' &&
+        typeof transition['valueAfter'] === 'number'
+      ) {
+        relationshipValuesAfter.set(transition['actorId'], transition['valueAfter']);
+      }
+    }
+  }
+
+  if (
+    transferProjectionRngDrawCountAfter === null ||
+    decision['rosterRngDrawCountBefore'] !== transferProjectionRngDrawCountAfter ||
+    !nonNegativeSafeInteger(decision['rosterRngDrawCountBefore']) ||
+    decision['rosterRngDrawCountAfter'] !== (decision['rosterRngDrawCountBefore'] as number) + 35 ||
+    !nonNegativeSafeInteger(decision['rosterRngDrawCountAfter']) ||
+    (decision['rosterRngDrawCountAfter'] as number) > careerRngDrawCount ||
+    (enforceDecisionRngTail && decision['rosterRngDrawCountAfter'] !== careerRngDrawCount)
+  ) {
+    issue(issues, 'invariant.invalid_combination', `${path}.rosterRngDrawCountAfter`);
+  }
+  if (!integerIn(decision['actualDepthRank'], 1, 8)) {
+    issue(issues, 'invariant.out_of_bounds', `${path}.actualDepthRank`);
+  }
+  if (!isDepthRoleId(decision['actualRoleId'])) {
+    issue(issues, 'invariant.invalid_id', `${path}.actualRoleId`);
+  } else if (
+    Number.isInteger(decision['actualDepthRank']) &&
+    decision['actualRoleId'] !== depthRoleIdForRank(decision['actualDepthRank'] as number)
+  ) {
+    issue(issues, 'invariant.invalid_combination', `${path}.actualRoleId`);
+  }
+  for (const key of ['actualSnapMinPermille', 'actualSnapMaxPermille'] as const) {
+    if (!integerIn(decision[key], 0, 1_000)) {
+      issue(issues, 'invariant.out_of_bounds', `${path}.${key}`);
+    }
+  }
+  if (
+    integerIn(decision['actualSnapMinPermille'], 0, 1_000) &&
+    integerIn(decision['actualSnapMaxPermille'], 0, 1_000) &&
+    decision['actualSnapMinPermille'] > decision['actualSnapMaxPermille']
+  ) {
+    issue(issues, 'invariant.invalid_combination', `${path}.actualSnapMaxPermille`);
+  }
+
+  return isProgramId(decision['previousProgramId']) && isProgramId(decision['selectedProgramId'])
+    ? {
+        kind,
+        previousProgramId: decision['previousProgramId'],
+        selectedProgramId: decision['selectedProgramId'],
+        relationshipValuesAfter,
+      }
+    : null;
+}
+
+function validateOffFieldCareerState(
+  value: unknown,
+  careerRngDrawCount: number,
+  enforceDecisionSnapshot: boolean,
+  issues: CareerInvariantIssue[],
+): void {
+  const path = 'career.offFieldCareerState';
+  const state = strictRecord(value, path, OFF_FIELD_CAREER_STATE_KEYS, issues);
+  if (state === undefined) return;
+  if (state['model'] !== 'off_field_v1') {
+    issue(issues, 'invariant.invalid_value', `${path}.model`);
+  }
+
+  const academicsValue = state['academics'];
+  const academics = strictRecord(
+    academicsValue,
+    `${path}.academics`,
+    isRecord(academicsValue) && academicsValue['bootstrapStatus'] === 'ACTIVE'
+      ? ACTIVE_ACADEMIC_STATE_KEYS
+      : PENDING_ACADEMIC_STATE_KEYS,
+    issues,
+  );
+  if (academics !== undefined) {
+    if (academics['model'] !== 'academic_v1') {
+      issue(issues, 'invariant.invalid_value', `${path}.academics.model`);
+    }
+    if (academics['bootstrapStatus'] === 'PENDING') {
+      for (const [key, expected] of [
+        ['termIndex', 0],
+        ['eligibilityStatus', 'PENDING'],
+        ['lastCheckpoint', null],
+      ] as const) {
+        if (academics[key] !== expected) {
+          issue(issues, 'invariant.invalid_value', `${path}.academics.${key}`);
+        }
+      }
+      validatePendingEmptyArray(
+        academics['checkpointHistory'],
+        `${path}.academics.checkpointHistory`,
+        issues,
+      );
+    } else if (academics['bootstrapStatus'] === 'ACTIVE') {
+      if (!nonNegativeSafeInteger(academics['termIndex']) || academics['termIndex'] < 1) {
+        issue(issues, 'invariant.out_of_bounds', `${path}.academics.termIndex`);
+      }
+      if (!isActiveAcademicStatus(academics['eligibilityStatus'])) {
+        issue(issues, 'invariant.invalid_value', `${path}.academics.eligibilityStatus`);
+      }
+      if (
+        !nonNegativeSafeInteger(academics['nextCheckpointIndex']) ||
+        academics['nextCheckpointIndex'] > 2
+      ) {
+        issue(issues, 'invariant.out_of_bounds', `${path}.academics.nextCheckpointIndex`);
+      }
+      if (
+        !nonNegativeSafeInteger(academics['restrictionGamesRemaining']) ||
+        academics['restrictionGamesRemaining'] > 3
+      ) {
+        issue(issues, 'invariant.out_of_bounds', `${path}.academics.restrictionGamesRemaining`);
+      }
+      const history = academics['checkpointHistory'];
+      if (!Array.isArray(history) || history.length > 2) {
+        issue(issues, 'invariant.invalid_value', `${path}.academics.checkpointHistory`);
+      } else {
+        let priorWeekIndex = -1;
+        for (const [index, evidence] of history.entries()) {
+          const evidencePath = `${path}.academics.checkpointHistory.${index}`;
+          if (validateAcademicCheckpointEvidence(evidence, evidencePath, issues)) {
+            const weekIndex = (evidence as Readonly<Record<string, unknown>>)[
+              'weekIndex'
+            ] as number;
+            if (weekIndex <= priorWeekIndex) {
+              issue(issues, 'invariant.noncanonical_order', `${evidencePath}.weekIndex`);
+            }
+            priorWeekIndex = weekIndex;
+          }
+        }
+        if (academics['nextCheckpointIndex'] !== history.length) {
+          issue(issues, 'invariant.invalid_combination', `${path}.academics.nextCheckpointIndex`);
+        }
+        const last = history.at(-1) ?? null;
+        if (JSON.stringify(academics['lastCheckpoint']) !== JSON.stringify(last)) {
+          issue(issues, 'invariant.invalid_combination', `${path}.academics.lastCheckpoint`);
+        }
+        if (
+          last !== null &&
+          isRecord(last) &&
+          academics['eligibilityStatus'] !== last['statusAfter']
+        ) {
+          issue(issues, 'invariant.invalid_combination', `${path}.academics.eligibilityStatus`);
+        }
+      }
+      const gameRestrictionHistory = academics['gameRestrictionHistory'];
+      if (!Array.isArray(gameRestrictionHistory) || gameRestrictionHistory.length > 1_000) {
+        issue(issues, 'invariant.invalid_value', `${path}.academics.gameRestrictionHistory`);
+      } else {
+        let priorWeekIndex = -1;
+        for (const [index, evidence] of gameRestrictionHistory.entries()) {
+          const evidencePath = `${path}.academics.gameRestrictionHistory.${index}`;
+          if (!validateAcademicGameRestrictionEvidence(evidence, evidencePath, issues)) continue;
+          const weekIndex = evidence['weekIndex'] as number;
+          if (weekIndex <= priorWeekIndex) {
+            issue(issues, 'invariant.noncanonical_order', `${evidencePath}.weekIndex`);
+          }
+          priorWeekIndex = weekIndex;
+        }
+        const lastRestriction = gameRestrictionHistory.at(-1) ?? null;
+        if (JSON.stringify(academics['lastGameRestriction']) !== JSON.stringify(lastRestriction)) {
+          issue(issues, 'invariant.invalid_combination', `${path}.academics.lastGameRestriction`);
+        }
+
+        if (Array.isArray(history)) {
+          const mutations = [
+            ...history.filter(isRecord).map((evidence) => ({
+              weekIndex: evidence['weekIndex'] as number,
+              order: 0,
+              before: evidence['restrictionGamesBefore'] as number,
+              after: evidence['restrictionGamesAfter'] as number,
+            })),
+            ...gameRestrictionHistory.filter(isRecord).map((evidence) => ({
+              weekIndex: evidence['weekIndex'] as number,
+              order: 1,
+              before: evidence['restrictionGamesBefore'] as number,
+              after: evidence['restrictionGamesAfter'] as number,
+            })),
+          ].sort((left, right) => left.weekIndex - right.weekIndex || left.order - right.order);
+          let expectedRestrictionGames = 0;
+          for (const mutation of mutations) {
+            if (mutation.before !== expectedRestrictionGames) {
+              issue(
+                issues,
+                'invariant.invalid_combination',
+                `${path}.academics.restrictionGamesRemaining`,
+              );
+              break;
+            }
+            expectedRestrictionGames = mutation.after;
+          }
+          if (academics['restrictionGamesRemaining'] !== expectedRestrictionGames) {
+            issue(
+              issues,
+              'invariant.invalid_combination',
+              `${path}.academics.restrictionGamesRemaining`,
+            );
+          }
+        }
+      }
+    } else {
+      issue(issues, 'invariant.invalid_value', `${path}.academics.bootstrapStatus`);
+    }
+  }
+
+  const relationshipsValue = state['relationships'];
+  const relationships = strictRecord(
+    relationshipsValue,
+    `${path}.relationships`,
+    isRecord(relationshipsValue) && relationshipsValue['bootstrapStatus'] === 'ACTIVE'
+      ? ACTIVE_RELATIONSHIP_STATE_KEYS
+      : PENDING_RELATIONSHIP_STATE_KEYS,
+    issues,
+  );
+  if (relationships !== undefined) {
+    if (relationships['model'] !== 'relationships_v1') {
+      issue(issues, 'invariant.invalid_value', `${path}.relationships.model`);
+    }
+    if (relationships['bootstrapStatus'] === 'PENDING') {
+      validatePendingEmptyArray(relationships['tracks'], `${path}.relationships.tracks`, issues);
+      validatePendingEmptyArray(relationships['history'], `${path}.relationships.history`, issues);
+    } else if (relationships['bootstrapStatus'] === 'ACTIVE') {
+      const tracks = relationships['tracks'];
+      if (!Array.isArray(tracks) || tracks.length !== RELATIONSHIP_ACTOR_IDS.length) {
+        issue(issues, 'invariant.invalid_value', `${path}.relationships.tracks`);
+      } else {
+        for (const [index, value] of tracks.entries()) {
+          const trackPath = `${path}.relationships.tracks.${index}`;
+          const track = strictRecord(value, trackPath, RELATIONSHIP_TRACK_KEYS, issues);
+          if (track === undefined) continue;
+          if (!isRelationshipActorId(track['actorId'])) {
+            issue(issues, 'invariant.invalid_id', `${trackPath}.actorId`);
+          } else if (track['actorId'] !== RELATIONSHIP_ACTOR_IDS[index]) {
+            issue(issues, 'invariant.noncanonical_order', `${trackPath}.actorId`);
+          }
+          if (!nonNegativeSafeInteger(track['value']) || track['value'] > 100) {
+            issue(issues, 'invariant.out_of_bounds', `${trackPath}.value`);
+          }
+        }
+      }
+      const history = relationships['history'];
+      if (!Array.isArray(history) || history.length > 1_000) {
+        issue(issues, 'invariant.invalid_value', `${path}.relationships.history`);
+      } else {
+        let priorWeekIndex = -1;
+        let lastAfterValues: readonly number[] | null = null;
+        for (const [index, evidence] of history.entries()) {
+          const evidencePath = `${path}.relationships.history.${index}`;
+          const summary = validateRelationshipWeekEvidence(evidence, evidencePath, issues);
+          if (summary === null) continue;
+          if (summary.weekIndex <= priorWeekIndex) {
+            issue(issues, 'invariant.noncanonical_order', `${evidencePath}.weekIndex`);
+          }
+          priorWeekIndex = summary.weekIndex;
+          lastAfterValues = summary.afterValues;
+        }
+        const expectedLastWeek = history.length === 0 ? null : priorWeekIndex;
+        if (relationships['lastProcessedWeekIndex'] !== expectedLastWeek) {
+          issue(
+            issues,
+            'invariant.invalid_combination',
+            `${path}.relationships.lastProcessedWeekIndex`,
+          );
+        }
+        // NIL, events, games, and offseason commands may change a relationship
+        // after the latest weekly relationship evidence. Their own evidence
+        // validates the bounded transition, so only the weekly cursor is tied
+        // to this weekly-only history.
+        void lastAfterValues;
+      }
+    } else {
+      issue(issues, 'invariant.invalid_value', `${path}.relationships.bootstrapStatus`);
+    }
+  }
+
+  const nilValue = state['nil'];
+  const nil = strictRecord(
+    nilValue,
+    `${path}.nil`,
+    isRecord(nilValue) && nilValue['bootstrapStatus'] === 'ACTIVE'
+      ? ACTIVE_NIL_STATE_KEYS
+      : PENDING_NIL_STATE_KEYS,
+    issues,
+  );
+  if (nil !== undefined) {
+    if (nil['model'] !== 'nil_v1') {
+      issue(issues, 'invariant.invalid_value', `${path}.nil.model`);
+    }
+    if (!Object.hasOwn(nil, 'bootstrapStatus')) {
+      if (nil['fictionalFundsUsd'] !== 0) {
+        issue(issues, 'invariant.invalid_value', `${path}.nil.fictionalFundsUsd`);
+      }
+      if (nil['activeObligation'] !== null) {
+        issue(issues, 'invariant.invalid_value', `${path}.nil.activeObligation`);
+      }
+      validatePendingEmptyArray(nil['pendingOffers'], `${path}.nil.pendingOffers`, issues);
+      validatePendingEmptyArray(nil['history'], `${path}.nil.history`, issues);
+    } else if (nil['bootstrapStatus'] === 'ACTIVE') {
+      if (
+        !nonNegativeSafeInteger(nil['fictionalFundsUsd']) ||
+        nil['fictionalFundsUsd'] > 1_000_000
+      ) {
+        issue(issues, 'invariant.out_of_bounds', `${path}.nil.fictionalFundsUsd`);
+      }
+      const benefitStacks = nil['benefitStacks'];
+      if (!Array.isArray(benefitStacks) || benefitStacks.length > OFF_FIELD_BENEFIT_IDS.length) {
+        issue(issues, 'invariant.invalid_value', `${path}.nil.benefitStacks`);
+      } else {
+        let priorBenefitId = '';
+        for (const [index, stackValue] of benefitStacks.entries()) {
+          const stackPath = `${path}.nil.benefitStacks.${index}`;
+          const stack = strictRecord(stackValue, stackPath, NIL_BENEFIT_STACK_KEYS, issues);
+          if (stack === undefined) continue;
+          if (!isOffFieldBenefitId(stack['benefitId'])) {
+            issue(issues, 'invariant.invalid_id', `${stackPath}.benefitId`);
+          } else if (index > 0 && compareCodeUnits(priorBenefitId, stack['benefitId']) >= 0) {
+            issue(issues, 'invariant.noncanonical_order', `${stackPath}.benefitId`);
+          } else priorBenefitId = stack['benefitId'];
+          if (
+            !nonNegativeSafeInteger(stack['quantity']) ||
+            stack['quantity'] < 1 ||
+            stack['quantity'] > 9
+          ) {
+            issue(issues, 'invariant.out_of_bounds', `${stackPath}.quantity`);
+          }
+        }
+      }
+      const pendingOffers = nil['pendingOffers'];
+      if (!Array.isArray(pendingOffers) || pendingOffers.length > 1) {
+        issue(issues, 'invariant.invalid_value', `${path}.nil.pendingOffers`);
+      } else {
+        pendingOffers.forEach((offer, index) =>
+          validatePendingNilOffer(offer, `${path}.nil.pendingOffers.${index}`, issues),
+        );
+        if (
+          pendingOffers.length === 1 &&
+          nil['lastOfferAttempt'] !== null &&
+          isRecord(pendingOffers[0]) &&
+          JSON.stringify(pendingOffers[0]['selection']) !== JSON.stringify(nil['lastOfferAttempt'])
+        ) {
+          issue(issues, 'invariant.invalid_combination', `${path}.nil.pendingOffers.0.selection`);
+        }
+      }
+      if (nil['lastOfferAttempt'] !== null) {
+        validateNilSelectionEvidence(
+          nil['lastOfferAttempt'],
+          `${path}.nil.lastOfferAttempt`,
+          issues,
+        );
+      }
+      const activeObligationValue = nil['activeObligation'];
+      if (activeObligationValue !== null) {
+        const obligation = strictRecord(
+          activeObligationValue,
+          `${path}.nil.activeObligation`,
+          NIL_ACTIVE_OBLIGATION_KEYS,
+          issues,
+        );
+        if (obligation !== undefined) {
+          if (!isNilOfferId(obligation['offerId']))
+            issue(issues, 'invariant.invalid_id', `${path}.nil.activeObligation.offerId`);
+          if (!isNilObligationId(obligation['obligationId']))
+            issue(issues, 'invariant.invalid_id', `${path}.nil.activeObligation.obligationId`);
+          if (!nonNegativeSafeInteger(obligation['acceptedWeekIndex']))
+            issue(
+              issues,
+              'invariant.out_of_bounds',
+              `${path}.nil.activeObligation.acceptedWeekIndex`,
+            );
+          if (
+            !nonNegativeSafeInteger(obligation['remainingWeeks']) ||
+            obligation['remainingWeeks'] < 1 ||
+            obligation['remainingWeeks'] > 3
+          )
+            issue(issues, 'invariant.out_of_bounds', `${path}.nil.activeObligation.remainingWeeks`);
+          if (
+            obligation['lastResolvedWeekIndex'] !== null &&
+            (!nonNegativeSafeInteger(obligation['lastResolvedWeekIndex']) ||
+              (nonNegativeSafeInteger(obligation['acceptedWeekIndex']) &&
+                obligation['lastResolvedWeekIndex'] < obligation['acceptedWeekIndex']))
+          )
+            issue(
+              issues,
+              'invariant.out_of_bounds',
+              `${path}.nil.activeObligation.lastResolvedWeekIndex`,
+            );
+        }
+      }
+      const history = nil['history'];
+      if (!Array.isArray(history) || history.length > 2_000) {
+        issue(issues, 'invariant.invalid_value', `${path}.nil.history`);
+      } else {
+        let priorWeekIndex = -1;
+        for (const [index, entry] of history.entries()) {
+          const entryPath = `${path}.nil.history.${index}`;
+          const weekIndex = validateNilHistoryEvidence(entry, entryPath, issues);
+          if (weekIndex !== null) {
+            if (weekIndex < priorWeekIndex)
+              issue(issues, 'invariant.noncanonical_order', `${entryPath}.weekIndex`);
+            priorWeekIndex = weekIndex;
+          }
+        }
+      }
+    } else {
+      issue(issues, 'invariant.invalid_value', `${path}.nil.bootstrapStatus`);
+    }
+  }
+
+  let offseasonDecisionSummary: ValidatedOffseasonDecisionSummary | null = null;
+  const offseason = strictRecord(
+    state['offseason'],
+    `${path}.offseason`,
+    isRecord(state['offseason']) &&
+      (state['offseason']['status'] === 'PROJECTED' || state['offseason']['status'] === 'DECIDED')
+      ? PROJECTED_OFFSEASON_STATE_KEYS
+      : PENDING_OFFSEASON_STATE_KEYS,
+    issues,
+  );
+  if (offseason !== undefined) {
+    if (offseason['model'] !== 'offseason_v1') {
+      issue(issues, 'invariant.invalid_value', `${path}.offseason.model`);
+    }
+    if (offseason['status'] === 'NOT_STARTED') {
+      if (offseason['completedDecisionCount'] !== 0) {
+        issue(issues, 'invariant.invalid_value', `${path}.offseason.completedDecisionCount`);
+      }
+      if (offseason['lastDecision'] !== null) {
+        issue(issues, 'invariant.invalid_value', `${path}.offseason.lastDecision`);
+      }
+      // The strict key set above fully defines the neutral migration state.
+    } else if (offseason['status'] === 'PROJECTED' || offseason['status'] === 'DECIDED') {
+      const decided = offseason['status'] === 'DECIDED';
+      if (offseason['completedDecisionCount'] !== (decided ? 1 : 0)) {
+        issue(issues, 'invariant.invalid_value', `${path}.offseason.completedDecisionCount`);
+      }
+      if (!decided && offseason['lastDecision'] !== null) {
+        issue(issues, 'invariant.invalid_value', `${path}.offseason.lastDecision`);
+      }
+      if (
+        typeof offseason['completedSeasonId'] !== 'string' ||
+        !isStableDomainId(offseason['completedSeasonId']) ||
+        !offseason['completedSeasonId'].startsWith('season_')
+      ) {
+        issue(issues, 'invariant.invalid_id', `${path}.offseason.completedSeasonId`);
+      }
+      if (
+        !nonNegativeSafeInteger(offseason['completedSeasonIndex']) ||
+        offseason['completedSeasonIndex'] < 1 ||
+        offseason['nextSeasonIndex'] !== offseason['completedSeasonIndex'] + 1
+      ) {
+        issue(issues, 'invariant.invalid_combination', `${path}.offseason.nextSeasonIndex`);
+      }
+      if (
+        !nonNegativeSafeInteger(offseason['academicTermIndexBefore']) ||
+        offseason['academicTermIndexBefore'] < 1 ||
+        offseason['academicTermIndexAfter'] !== offseason['academicTermIndexBefore'] + 1
+      ) {
+        issue(issues, 'invariant.invalid_combination', `${path}.offseason.academicTermIndexAfter`);
+      }
+      const worldProgramIds = validateOffseasonWorldProjection(
+        offseason['worldProjection'],
+        `${path}.offseason.worldProjection`,
+        issues,
+      );
+      const transferProjectionRngDrawCountAfter = validateOffseasonTransferProjection(
+        offseason['transferProjection'],
+        `${path}.offseason.transferProjection`,
+        worldProgramIds,
+        issues,
+      );
+      if (decided) {
+        offseasonDecisionSummary = validateOffseasonDecision(
+          offseason['lastDecision'],
+          `${path}.offseason.lastDecision`,
+          offseason['transferProjection'],
+          offseason['worldProjection'],
+          transferProjectionRngDrawCountAfter,
+          careerRngDrawCount,
+          enforceDecisionSnapshot,
+          issues,
+        );
+      } else if (transferProjectionRngDrawCountAfter !== careerRngDrawCount) {
+        issue(
+          issues,
+          'invariant.invalid_combination',
+          `${path}.offseason.transferProjection.careerRngDrawCountAfter`,
+        );
+      }
+    } else {
+      issue(issues, 'invariant.invalid_value', `${path}.offseason.status`);
+    }
+  }
+
+  const programHistory = state['programHistory'];
+  if (!Array.isArray(programHistory)) {
+    issue(issues, 'invariant.invalid_type', `${path}.programHistory`);
+    return;
+  }
+  let priorEndSeasonIndex = -1;
+  for (const [index, entryValue] of programHistory.entries()) {
+    const entryPath = `${path}.programHistory.${index}`;
+    const entry = strictRecord(entryValue, entryPath, PROGRAM_HISTORY_ENTRY_KEYS, issues);
+    if (entry === undefined) continue;
+    if (!isProgramId(entry['programId'])) {
+      issue(issues, 'invariant.invalid_id', `${entryPath}.programId`);
+    }
+    if (!nonNegativeSafeInteger(entry['startSeasonIndex'])) {
+      issue(issues, 'invariant.out_of_bounds', `${entryPath}.startSeasonIndex`);
+      continue;
+    }
+    if (entry['startSeasonIndex'] <= priorEndSeasonIndex) {
+      issue(issues, 'invariant.noncanonical_order', `${entryPath}.startSeasonIndex`);
+    }
+    if (
+      entry['endSeasonIndex'] !== null &&
+      (!nonNegativeSafeInteger(entry['endSeasonIndex']) ||
+        entry['endSeasonIndex'] < entry['startSeasonIndex'])
+    ) {
+      issue(issues, 'invariant.out_of_bounds', `${entryPath}.endSeasonIndex`);
+    }
+    if (index < programHistory.length - 1 && entry['endSeasonIndex'] === null) {
+      issue(issues, 'invariant.invalid_combination', `${entryPath}.endSeasonIndex`);
+    }
+    priorEndSeasonIndex =
+      typeof entry['endSeasonIndex'] === 'number'
+        ? entry['endSeasonIndex']
+        : (entry['startSeasonIndex'] as number);
+  }
+  if (offseasonDecisionSummary !== null && offseason !== undefined) {
+    if (enforceDecisionSnapshot) {
+      const relationshipTracks = isRecord(state['relationships'])
+        ? state['relationships']['tracks']
+        : undefined;
+      if (Array.isArray(relationshipTracks)) {
+        for (const [index, trackValue] of relationshipTracks.entries()) {
+          if (!isRecord(trackValue) || typeof trackValue['actorId'] !== 'string') continue;
+          if (
+            trackValue['value'] !==
+            offseasonDecisionSummary.relationshipValuesAfter.get(trackValue['actorId'])
+          ) {
+            issue(
+              issues,
+              'invariant.invalid_combination',
+              `${path}.relationships.tracks.${index}.value`,
+            );
+          }
+        }
+      }
+    }
+    const firstHistory = isRecord(programHistory[0]) ? programHistory[0] : undefined;
+    const lastHistory = isRecord(programHistory.at(-1)) ? programHistory.at(-1) : undefined;
+    if (
+      firstHistory?.['programId'] !== offseasonDecisionSummary.previousProgramId ||
+      lastHistory?.['programId'] !== offseasonDecisionSummary.selectedProgramId ||
+      lastHistory?.['endSeasonIndex'] !== null
+    ) {
+      issue(issues, 'invariant.invalid_combination', `${path}.programHistory`);
+    }
+    if (offseasonDecisionSummary.kind === 'STAY') {
+      if (programHistory.length !== 1 || firstHistory?.['endSeasonIndex'] !== null) {
+        issue(issues, 'invariant.invalid_combination', `${path}.programHistory`);
+      }
+    } else {
+      if (
+        programHistory.length !== 2 ||
+        firstHistory?.['endSeasonIndex'] !== (offseason['completedSeasonIndex'] as number) - 1 ||
+        lastHistory?.['startSeasonIndex'] !== (offseason['nextSeasonIndex'] as number) - 1
+      ) {
+        issue(issues, 'invariant.invalid_combination', `${path}.programHistory`);
+      }
+    }
+  }
 }
 
 function validateCareerRunVersion(
   value: unknown,
-  schemaVersion: typeof CAREER_SCHEMA_VERSION_V1 | typeof CAREER_SCHEMA_VERSION_V2,
+  schemaVersion: CareerSchemaVersion,
 ): CareerInvariantResult {
   const issues: CareerInvariantIssue[] = [];
   const career = strictRecord(
     value,
     'career',
-    schemaVersion === CAREER_SCHEMA_VERSION_V1 ? CAREER_KEYS_V1 : CAREER_KEYS_V2,
+    schemaVersion === CAREER_SCHEMA_VERSION_V1
+      ? CAREER_KEYS_V1
+      : schemaVersion === CAREER_SCHEMA_VERSION_V2
+        ? CAREER_KEYS_V2
+        : schemaVersion === CAREER_SCHEMA_VERSION_V3
+          ? CAREER_KEYS_V3
+          : schemaVersion === CAREER_SCHEMA_VERSION_V4
+            ? CAREER_KEYS_V4
+            : schemaVersion === CAREER_SCHEMA_VERSION_V5
+              ? CAREER_KEYS_V5
+              : schemaVersion === CAREER_SCHEMA_VERSION_V6
+                ? CAREER_KEYS_V6
+                : CAREER_KEYS_V7,
     issues,
   );
   if (career !== undefined) {
@@ -2052,28 +5288,137 @@ function validateCareerRunVersion(
     if (!Number.isSafeInteger(career.revision) || (career.revision as number) < 0) {
       issue(issues, 'invariant.out_of_bounds', 'career.revision');
     }
-    if (career.programId !== null) {
+    if (
+      schemaVersion !== CAREER_SCHEMA_VERSION_V3 &&
+      schemaVersion !== CAREER_SCHEMA_VERSION_V4 &&
+      schemaVersion !== CAREER_SCHEMA_VERSION_V5 &&
+      schemaVersion !== CAREER_SCHEMA_VERSION_V6 &&
+      schemaVersion !== CAREER_SCHEMA_VERSION_V7 &&
+      career.programId !== null
+    ) {
       issue(issues, 'invariant.invalid_value', 'career.programId');
     }
     if (!Number.isSafeInteger(career.weekIndex) || (career.weekIndex as number) < 0) {
       issue(issues, 'invariant.out_of_bounds', 'career.weekIndex');
     }
+    const weeklyExperienceVersion = usesExperienceSchema(schemaVersion)
+      ? career['weeklyExperienceVersion']
+      : undefined;
+    if (
+      usesExperienceSchema(schemaVersion) &&
+      weeklyExperienceVersion !== WEEKLY_EXPERIENCE_VERSION_LEGACY &&
+      weeklyExperienceVersion !== WEEKLY_EXPERIENCE_VERSION_CURRENT
+    ) {
+      issue(issues, 'invariant.invalid_value', 'career.weeklyExperienceVersion');
+    }
+    if (
+      usesExperienceSchema(schemaVersion) &&
+      weeklyExperienceVersion === WEEKLY_EXPERIENCE_VERSION_LEGACY &&
+      (!isRecord(career.phase) ||
+        !['RESOLVE_ACTIONS', 'WEEK_END', 'GAME_PREVIEW', 'KEY_SNAP', 'POST_GAME'].includes(
+          career.phase['type'] as string,
+        ))
+    ) {
+      issue(issues, 'invariant.invalid_combination', 'career.weeklyExperienceVersion');
+    }
     const careerWeekIndex = nonNegativeSafeInteger(career.weekIndex) ? career.weekIndex : 0;
     const careerRngDrawCount = isRngState(career.rng) ? career.rng.drawCount : 0;
+    const rawOffFieldState =
+      usesOffFieldSchema(schemaVersion) && isRecord(career['offFieldCareerState'])
+        ? career['offFieldCareerState']
+        : undefined;
+    const rawOffseason =
+      rawOffFieldState !== undefined && isRecord(rawOffFieldState['offseason'])
+        ? rawOffFieldState['offseason']
+        : undefined;
+    const rawOffseasonDecision =
+      rawOffseason?.['status'] === 'DECIDED' && isRecord(rawOffseason['lastDecision'])
+        ? rawOffseason['lastDecision']
+        : undefined;
+    const transferredProgramId =
+      rawOffseasonDecision?.['kind'] === 'TRANSFER' &&
+      isProgramId(rawOffseasonDecision['selectedProgramId'])
+        ? rawOffseasonDecision['selectedProgramId']
+        : undefined;
+    const rawHistoricalCareerProgramIds =
+      rawOffFieldState !== undefined && Array.isArray(rawOffFieldState['programHistory'])
+        ? rawOffFieldState['programHistory']
+            .map((entry) => (isRecord(entry) ? entry['programId'] : undefined))
+            .filter(isProgramId)
+        : [];
+    const historicalCareerProgramIds =
+      rawHistoricalCareerProgramIds.length === 0 ? undefined : rawHistoricalCareerProgramIds;
+    const completedSeasonProgramIds =
+      rawOffseasonDecision !== undefined && isProgramId(rawOffseasonDecision['previousProgramId'])
+        ? [rawOffseasonDecision['previousProgramId']]
+        : [career['programId']];
+    const rawEventState =
+      usesSeasonSchema(schemaVersion) &&
+      isRecord(career['seasonCareerState']) &&
+      career['seasonCareerState']['bootstrapStatus'] === 'ACTIVE'
+        ? career['seasonCareerState']['eventState']
+        : undefined;
+    const validatedEventState = isEventCareerState(
+      rawEventState,
+      careerWeekIndex,
+      careerRngDrawCount,
+    )
+      ? rawEventState
+      : undefined;
+    const rawInjuryState =
+      usesSeasonSchema(schemaVersion) &&
+      isRecord(career['seasonCareerState']) &&
+      career['seasonCareerState']['bootstrapStatus'] === 'ACTIVE'
+        ? career['seasonCareerState']['injuryState']
+        : undefined;
+    const validatedInjuryState = isInjuryCareerState(
+      rawInjuryState,
+      careerWeekIndex,
+      careerRngDrawCount,
+    )
+      ? rawInjuryState
+      : undefined;
+    const resolvedEventRecord = validatedEventState?.history.find(
+      (record) =>
+        record.weekIndex === careerWeekIndex &&
+        record.eventId === validatedEventState.lastSelection?.selectedEventId &&
+        record.selectionRngDrawCountAfter === validatedEventState.lastSelection?.rngDrawCountAfter,
+    );
+    const currentEventGaugeEffect = resolvedEventRecord?.appliedEffects.find(
+      (effect): effect is AppliedEventBreakthroughGaugeDelta =>
+        effect.type === 'event_breakthrough_gauge_delta',
+    );
     const skillSummary = validatePlayer(
       career.player,
       schemaVersion,
       careerWeekIndex,
       careerRngDrawCount,
+      currentEventGaugeEffect,
       issues,
     );
     const recentWeeklyActionIds =
-      schemaVersion === CAREER_SCHEMA_VERSION_V2
+      schemaVersion !== CAREER_SCHEMA_VERSION_V1
         ? validateRecentWeeklyActionIds(career['recentWeeklyActionIds'], issues)
         : undefined;
-    if (schemaVersion === CAREER_SCHEMA_VERSION_V2) {
+    if (schemaVersion !== CAREER_SCHEMA_VERSION_V1) {
       validateLastPassiveBodyRecovery(career['lastPassiveBodyRecovery'], careerWeekIndex, issues);
     }
+    const hasResolvedEventThisWeek =
+      validatedEventState !== undefined &&
+      validatedEventState.lastSelection?.outcome === 'EVENT' &&
+      validatedEventState.lastSelection.weekIndex === careerWeekIndex &&
+      validatedEventState.history.some(
+        (record) =>
+          record.eventId === validatedEventState.lastSelection?.selectedEventId &&
+          record.weekIndex === careerWeekIndex &&
+          record.selectionRngDrawCountBefore ===
+            validatedEventState.lastSelection?.rngDrawCountBefore &&
+          record.selectionRngDrawCountAfter ===
+            validatedEventState.lastSelection?.rngDrawCountAfter,
+      );
+    const hasResolvedInjuryChoiceThisWeek =
+      validatedInjuryState?.lastAvailability?.weekIndex === careerWeekIndex &&
+      validatedInjuryState.lastAvailability.choiceId !== null;
     validateCareerPhase(
       career.phase,
       career.weekIndex,
@@ -2081,10 +5426,494 @@ function validateCareerRunVersion(
       schemaVersion,
       careerRngDrawCount,
       skillSummary,
+      weeklyExperienceVersion,
+      hasResolvedEventThisWeek || hasResolvedInjuryChoiceThisWeek,
       issues,
     );
-    if (schemaVersion === CAREER_SCHEMA_VERSION_V2) {
+    if (schemaVersion !== CAREER_SCHEMA_VERSION_V1) {
       validateCurrentResultsInRecentHistory(career.phase, recentWeeklyActionIds, issues);
+    }
+    if (
+      schemaVersion === CAREER_SCHEMA_VERSION_V3 ||
+      schemaVersion === CAREER_SCHEMA_VERSION_V4 ||
+      schemaVersion === CAREER_SCHEMA_VERSION_V5 ||
+      usesOffFieldSchema(schemaVersion)
+    ) {
+      const phaseDepthUpdate =
+        isRecord(career.phase) && career.phase['type'] === 'WEEK_END'
+          ? career.phase['depthUpdate']
+          : undefined;
+      const currentPlayerCoachTrust =
+        isRecord(career.player) && isRecord(career.player['state'])
+          ? career.player['state']['coachTrust']
+          : undefined;
+      const playerEvaluation =
+        isRecord(career['programContext']) && Array.isArray(career['programContext']['evaluations'])
+          ? career['programContext']['evaluations'].find(
+              (evaluation) =>
+                isRecord(evaluation) &&
+                isRecord(career.player) &&
+                evaluation['participantId'] === career.player['id'],
+            )
+          : undefined;
+      const evaluatedComponents =
+        isRecord(playerEvaluation) && isRecord(playerEvaluation['components'])
+          ? playerEvaluation['components']
+          : undefined;
+      const playerCoachTrust = evaluatedComponents?.['coachTrust'] ?? currentPlayerCoachTrust;
+      issues.push(
+        ...validateProgramState({
+          programId: career.programId,
+          recruitingState: career['recruitingState'],
+          programContext: career['programContext'],
+          playerId: isRecord(career.player) ? career.player['id'] : undefined,
+          playerCoachTrust,
+          careerWeekIndex,
+          careerRngDrawCount,
+          phaseDepthUpdate,
+          weeklyExperienceVersion,
+          currentProgramIdOverride: transferredProgramId,
+        }),
+      );
+    }
+    if (usesExperienceSchema(schemaVersion)) {
+      issues.push(
+        ...validateCareerGameState({
+          gameCareerState: career['gameCareerState'],
+          phase: career.phase,
+          careerWeekIndex: career.weekIndex,
+          careerProgramId: career.programId,
+          careerRngDrawCount,
+          player: career.player,
+          ...(historicalCareerProgramIds === undefined ? {} : { historicalCareerProgramIds }),
+        }),
+      );
+    }
+    if (usesSeasonSchema(schemaVersion)) {
+      const rawSeasonCareerState = career['seasonCareerState'];
+      const seasonStateKeys =
+        isRecord(rawSeasonCareerState) && rawSeasonCareerState['bootstrapStatus'] === 'ACTIVE'
+          ? ACTIVE_SEASON_CAREER_STATE_KEYS
+          : PENDING_SEASON_CAREER_STATE_KEYS;
+      const seasonCareerState = strictRecord(
+        rawSeasonCareerState,
+        'career.seasonCareerState',
+        seasonStateKeys,
+        issues,
+      );
+      if (seasonCareerState !== undefined) {
+        if (seasonCareerState['model'] !== 'season_v1') {
+          issue(issues, 'invariant.invalid_value', 'career.seasonCareerState.model');
+        }
+        if (
+          seasonCareerState['bootstrapStatus'] !== 'PENDING' &&
+          seasonCareerState['bootstrapStatus'] !== 'ACTIVE' &&
+          seasonCareerState['bootstrapStatus'] !== 'COMPLETE'
+        ) {
+          issue(issues, 'invariant.invalid_value', 'career.seasonCareerState.bootstrapStatus');
+        }
+        if (seasonCareerState['bootstrapStatus'] === 'COMPLETE') {
+          if (seasonCareerState['seasonsCompleted'] !== 1) {
+            issue(issues, 'invariant.invalid_value', 'career.seasonCareerState.seasonsCompleted');
+          }
+          if (seasonCareerState['activeSeasonId'] !== null) {
+            issue(issues, 'invariant.invalid_value', 'career.seasonCareerState.activeSeasonId');
+          }
+          const summary = strictRecord(
+            seasonCareerState['lastCompletedSeason'],
+            'career.seasonCareerState.lastCompletedSeason',
+            COMPLETED_SEASON_SUMMARY_KEYS,
+            issues,
+          );
+          if (summary !== undefined) {
+            if (
+              typeof summary['seasonId'] !== 'string' ||
+              !isStableDomainId(summary['seasonId']) ||
+              !summary['seasonId'].startsWith('season_')
+            ) {
+              issue(
+                issues,
+                'invariant.invalid_id',
+                'career.seasonCareerState.lastCompletedSeason.seasonId',
+              );
+            }
+            if (
+              ![
+                'season_outcome_champion',
+                'season_outcome_runner_up',
+                'season_outcome_semifinal_exit',
+                'season_outcome_regular_season_complete',
+              ].includes(summary['outcomeId'] as string)
+            ) {
+              issue(
+                issues,
+                'invariant.invalid_id',
+                'career.seasonCareerState.lastCompletedSeason.outcomeId',
+              );
+            }
+            for (const key of [
+              'regularSeasonRank',
+              'programWins',
+              'programLosses',
+              'programTies',
+              'gamesPlayed',
+              'playerWins',
+              'playerLosses',
+              'playerTies',
+              'averagePerformanceGrade',
+              'finalDepthRank',
+              'injuryCount',
+              'injuryWeeksMissed',
+            ] as const) {
+              if (!nonNegativeSafeInteger(summary[key])) {
+                issue(
+                  issues,
+                  'invariant.out_of_bounds',
+                  `career.seasonCareerState.lastCompletedSeason.${key}`,
+                );
+              }
+            }
+            if (
+              summary['postseasonSeed'] !== null &&
+              (!nonNegativeSafeInteger(summary['postseasonSeed']) ||
+                summary['postseasonSeed'] < 1 ||
+                summary['postseasonSeed'] > 4)
+            ) {
+              issue(
+                issues,
+                'invariant.out_of_bounds',
+                'career.seasonCareerState.lastCompletedSeason.postseasonSeed',
+              );
+            }
+            if (!isWrGameStatLine(summary['cumulativeStats'])) {
+              issue(
+                issues,
+                'invariant.invalid_value',
+                'career.seasonCareerState.lastCompletedSeason.cumulativeStats',
+              );
+            }
+            if (
+              summary['bestGame'] !== null &&
+              !completedSeasonProgramIds.some((programId) =>
+                isCompletedGameSummary(summary['bestGame'], programId, careerRngDrawCount),
+              )
+            ) {
+              issue(
+                issues,
+                'invariant.invalid_value',
+                'career.seasonCareerState.lastCompletedSeason.bestGame',
+              );
+            }
+            if (!isDepthRoleId(summary['finalRoleId'])) {
+              issue(
+                issues,
+                'invariant.invalid_id',
+                'career.seasonCareerState.lastCompletedSeason.finalRoleId',
+              );
+            }
+            for (const [field, allowNull] of [
+              ['ownedSkillIds', false],
+              ['equippedSkillIds', true],
+            ] as const) {
+              const values = summary[field];
+              if (
+                !Array.isArray(values) ||
+                !values.every((value) => (allowNull && value === null) || isSkillId(value))
+              ) {
+                issue(
+                  issues,
+                  'invariant.invalid_value',
+                  `career.seasonCareerState.lastCompletedSeason.${field}`,
+                );
+              }
+            }
+            const roleHistory = summary['roleHistory'];
+            if (!Array.isArray(roleHistory) || roleHistory.length === 0) {
+              issue(
+                issues,
+                'invariant.invalid_value',
+                'career.seasonCareerState.lastCompletedSeason.roleHistory',
+              );
+            }
+          }
+        } else {
+          const returningActiveSeason =
+            usesOffFieldSchema(schemaVersion) &&
+            seasonCareerState['bootstrapStatus'] === 'ACTIVE' &&
+            seasonCareerState['seasonsCompleted'] === 1;
+          if (returningActiveSeason) {
+            validateReturningCompletedSeasonSummary(
+              seasonCareerState['lastCompletedSeason'],
+              completedSeasonProgramIds,
+              careerRngDrawCount,
+              issues,
+            );
+          } else {
+            if (seasonCareerState['seasonsCompleted'] !== 0) {
+              issue(issues, 'invariant.invalid_value', 'career.seasonCareerState.seasonsCompleted');
+            }
+            if (seasonCareerState['lastCompletedSeason'] !== null) {
+              issue(
+                issues,
+                'invariant.invalid_value',
+                'career.seasonCareerState.lastCompletedSeason',
+              );
+            }
+          }
+          if (seasonCareerState['bootstrapStatus'] === 'PENDING') {
+            if (seasonCareerState['activeSeasonId'] !== null) {
+              issue(issues, 'invariant.invalid_value', 'career.seasonCareerState.activeSeasonId');
+            }
+          }
+          if (seasonCareerState['bootstrapStatus'] === 'ACTIVE') {
+            if (
+              typeof seasonCareerState['activeSeasonId'] !== 'string' ||
+              !isStableDomainId(seasonCareerState['activeSeasonId']) ||
+              !seasonCareerState['activeSeasonId'].startsWith('season_')
+            ) {
+              issue(issues, 'invariant.invalid_id', 'career.seasonCareerState.activeSeasonId');
+            }
+            const gameSummaries = seasonCareerState['gameSummaries'];
+            if (!Array.isArray(gameSummaries)) {
+              issue(issues, 'invariant.invalid_type', 'career.seasonCareerState.gameSummaries');
+            } else {
+              for (const [index, summary] of gameSummaries.entries()) {
+                if (!isCompletedGameSummary(summary, career['programId'], careerRngDrawCount)) {
+                  issue(
+                    issues,
+                    'invariant.invalid_value',
+                    `career.seasonCareerState.gameSummaries.${index}`,
+                  );
+                }
+              }
+            }
+            const roleHistory = seasonCareerState['roleHistory'];
+            if (!Array.isArray(roleHistory) || roleHistory.length === 0) {
+              issue(issues, 'invariant.invalid_value', 'career.seasonCareerState.roleHistory');
+            } else {
+              let previousWeekIndex = -1;
+              for (const [index, snapshotValue] of roleHistory.entries()) {
+                const snapshot = strictRecord(
+                  snapshotValue,
+                  `career.seasonCareerState.roleHistory.${index}`,
+                  SEASON_ROLE_SNAPSHOT_KEYS,
+                  issues,
+                );
+                if (snapshot === undefined) continue;
+                if (
+                  !nonNegativeSafeInteger(snapshot['weekIndex']) ||
+                  snapshot['weekIndex'] < previousWeekIndex
+                ) {
+                  issue(
+                    issues,
+                    'invariant.noncanonical_order',
+                    `career.seasonCareerState.roleHistory.${index}.weekIndex`,
+                  );
+                } else {
+                  previousWeekIndex = snapshot['weekIndex'];
+                }
+                if (
+                  !nonNegativeSafeInteger(snapshot['rank']) ||
+                  snapshot['rank'] < 1 ||
+                  snapshot['rank'] > 8
+                ) {
+                  issue(
+                    issues,
+                    'invariant.out_of_bounds',
+                    `career.seasonCareerState.roleHistory.${index}.rank`,
+                  );
+                }
+                if (!isDepthRoleId(snapshot['roleId'])) {
+                  issue(
+                    issues,
+                    'invariant.invalid_id',
+                    `career.seasonCareerState.roleHistory.${index}.roleId`,
+                  );
+                }
+              }
+            }
+            const eventState = seasonCareerState['eventState'];
+            if (!isEventCareerState(eventState, careerWeekIndex, careerRngDrawCount)) {
+              issue(issues, 'invariant.invalid_value', 'career.seasonCareerState.eventState');
+            } else if (isRecord(career.phase) && career.phase['type'] === 'EVENT_CHOICE') {
+              const pendingEvent = career.phase['pendingEvent'];
+              if (
+                !isPendingEventEvidence(pendingEvent) ||
+                JSON.stringify(eventState.lastSelection) !== JSON.stringify(pendingEvent.selection)
+              ) {
+                issue(
+                  issues,
+                  'invariant.invalid_combination',
+                  'career.seasonCareerState.eventState.lastSelection',
+                );
+              }
+            } else if (
+              eventState.lastSelection?.outcome === 'EVENT' &&
+              !eventState.history.some(
+                (record) =>
+                  record.eventId === eventState.lastSelection?.selectedEventId &&
+                  record.weekIndex === eventState.lastSelection.weekIndex &&
+                  record.selectionRngDrawCountBefore ===
+                    eventState.lastSelection.rngDrawCountBefore &&
+                  record.selectionRngDrawCountAfter === eventState.lastSelection.rngDrawCountAfter,
+              )
+            ) {
+              issue(
+                issues,
+                'invariant.invalid_combination',
+                'career.seasonCareerState.eventState.lastSelection',
+              );
+            }
+            const injuryState = seasonCareerState['injuryState'];
+            if (!isInjuryCareerState(injuryState, careerWeekIndex, careerRngDrawCount)) {
+              issue(issues, 'invariant.invalid_value', 'career.seasonCareerState.injuryState');
+            } else if (isRecord(career.phase) && career.phase['type'] === 'INJURY_CHOICE') {
+              const pendingInjury = career.phase['pendingInjury'];
+              if (
+                !isPendingInjuryChoiceEvidence(pendingInjury) ||
+                JSON.stringify(injuryState.lastAssessment) !==
+                  JSON.stringify(pendingInjury.assessment) ||
+                injuryState.currentInjury?.outcomeId !== pendingInjury.outcomeId ||
+                injuryState.lastAvailability?.weekIndex === careerWeekIndex
+              ) {
+                issue(
+                  issues,
+                  'invariant.invalid_combination',
+                  'career.seasonCareerState.injuryState.lastAssessment',
+                );
+              }
+            } else if (
+              injuryState.lastAssessment?.weekIndex === careerWeekIndex &&
+              injuryState.lastAvailability?.weekIndex !== careerWeekIndex
+            ) {
+              issue(
+                issues,
+                'invariant.invalid_combination',
+                'career.seasonCareerState.injuryState.lastAvailability',
+              );
+            }
+          }
+        }
+      }
+    }
+    if (usesOffFieldSchema(schemaVersion)) {
+      validateOffFieldCareerState(
+        career['offFieldCareerState'],
+        careerRngDrawCount,
+        isRecord(career['seasonCareerState']) &&
+          career['seasonCareerState']['bootstrapStatus'] === 'COMPLETE' &&
+          isRecord(career['phase']) &&
+          career['phase']['type'] === 'SEASON_REVIEW',
+        issues,
+      );
+      const offseason = isRecord(career['offFieldCareerState'])
+        ? career['offFieldCareerState']['offseason']
+        : undefined;
+      if (
+        isRecord(offseason) &&
+        (offseason['status'] === 'PROJECTED' || offseason['status'] === 'DECIDED')
+      ) {
+        const completedSeason = isRecord(career['seasonCareerState'])
+          ? career['seasonCareerState']['lastCompletedSeason']
+          : undefined;
+        const seasonState = isRecord(career['seasonCareerState'])
+          ? career['seasonCareerState']
+          : undefined;
+        const phase = isRecord(career['phase']) ? career['phase'] : undefined;
+        const awaitingDecision =
+          phase?.['type'] === 'SEASON_REVIEW' && seasonState?.['bootstrapStatus'] === 'COMPLETE';
+        const playingNextSeason =
+          offseason['status'] === 'DECIDED' &&
+          seasonState?.['bootstrapStatus'] === 'ACTIVE' &&
+          seasonState['seasonsCompleted'] === 1 &&
+          phase?.['type'] !== 'SEASON_REVIEW';
+        const academics = isRecord(career['offFieldCareerState'])
+          ? career['offFieldCareerState']['academics']
+          : undefined;
+        if (
+          (!awaitingDecision && !playingNextSeason) ||
+          !isRecord(completedSeason) ||
+          offseason['completedSeasonId'] !== completedSeason['seasonId']
+        ) {
+          issue(
+            issues,
+            'invariant.invalid_combination',
+            'career.offFieldCareerState.offseason.completedSeasonId',
+          );
+        }
+        if (
+          !isRecord(academics) ||
+          academics['termIndex'] !==
+            (playingNextSeason
+              ? offseason['academicTermIndexAfter']
+              : offseason['academicTermIndexBefore'])
+        ) {
+          issue(
+            issues,
+            'invariant.invalid_combination',
+            'career.offFieldCareerState.academics.termIndex',
+          );
+        }
+        if (offseason['status'] === 'DECIDED' && isRecord(offseason['lastDecision'])) {
+          const decision = offseason['lastDecision'];
+          const programContext = isRecord(career['programContext'])
+            ? career['programContext']
+            : undefined;
+          const playerState =
+            isRecord(career['player']) && isRecord(career['player']['state'])
+              ? career['player']['state']
+              : undefined;
+          const playerEvaluation =
+            programContext !== undefined && Array.isArray(programContext['evaluations'])
+              ? programContext['evaluations'].find(
+                  (entry) =>
+                    isRecord(entry) &&
+                    isRecord(career['player']) &&
+                    entry['participantId'] === career['player']['id'],
+                )
+              : undefined;
+          const evaluationComponents =
+            isRecord(playerEvaluation) && isRecord(playerEvaluation['components'])
+              ? playerEvaluation['components']
+              : undefined;
+          const projection =
+            programContext !== undefined && isRecord(programContext['projection'])
+              ? programContext['projection']
+              : undefined;
+          const recruitingState = isRecord(career['recruitingState'])
+            ? career['recruitingState']
+            : undefined;
+          const atDecisionBoundary =
+            isRecord(career['seasonCareerState']) &&
+            career['seasonCareerState']['bootstrapStatus'] === 'COMPLETE' &&
+            isRecord(career['phase']) &&
+            career['phase']['type'] === 'SEASON_REVIEW';
+          if (
+            career['programId'] !== decision['selectedProgramId'] ||
+            programContext?.['programId'] !== decision['selectedProgramId'] ||
+            programContext?.['offenseStyleId'] !== decision['offenseStyleIdAfter'] ||
+            programContext?.['rotationPolicyId'] !== decision['rotationPolicyIdAfter'] ||
+            recruitingState?.['selectedProgramId'] !== decision['previousProgramId'] ||
+            (atDecisionBoundary &&
+              (programContext?.['playerPracticeForm'] !== decision['playerPracticeFormAfter'] ||
+                playerState?.['coachTrust'] !== decision['coachTrustAfter'] ||
+                evaluationComponents?.['coachTrust'] !== decision['coachTrustAfter'] ||
+                evaluationComponents?.['practiceForm'] !== decision['playerPracticeFormAfter'] ||
+                evaluationComponents?.['experienceReadiness'] !==
+                  decision['playerExperienceReadiness'] ||
+                projection?.['rank'] !== decision['actualDepthRank'] ||
+                projection?.['roleId'] !== decision['actualRoleId'] ||
+                projection?.['minSnapPermille'] !== decision['actualSnapMinPermille'] ||
+                projection?.['maxSnapPermille'] !== decision['actualSnapMaxPermille']))
+          ) {
+            issue(
+              issues,
+              'invariant.invalid_combination',
+              'career.offFieldCareerState.offseason.lastDecision',
+            );
+          }
+        }
+      }
     }
   }
 
@@ -2105,8 +5934,28 @@ export function validateCareerRunV2(value: unknown): CareerInvariantResult {
   return validateCareerRunVersion(value, CAREER_SCHEMA_VERSION_V2);
 }
 
+export function validateCareerRunV3(value: unknown): CareerInvariantResult {
+  return validateCareerRunVersion(value, CAREER_SCHEMA_VERSION_V3);
+}
+
+export function validateCareerRunV4(value: unknown): CareerInvariantResult {
+  return validateCareerRunVersion(value, CAREER_SCHEMA_VERSION_V4);
+}
+
+export function validateCareerRunV5(value: unknown): CareerInvariantResult {
+  return validateCareerRunVersion(value, CAREER_SCHEMA_VERSION_V5);
+}
+
+export function validateCareerRunV6(value: unknown): CareerInvariantResult {
+  return validateCareerRunVersion(value, CAREER_SCHEMA_VERSION_V6);
+}
+
+export function validateCareerRunV7(value: unknown): CareerInvariantResult {
+  return validateCareerRunVersion(value, CAREER_SCHEMA_VERSION_V7);
+}
+
 export function validateCareerRun(value: unknown): CareerInvariantResult {
-  return validateCareerRunV2(value);
+  return validateCareerRunV7(value);
 }
 
 export function isCareerRunV1(value: unknown): value is CareerRunV1 {
@@ -2115,6 +5964,26 @@ export function isCareerRunV1(value: unknown): value is CareerRunV1 {
 
 export function isCareerRunV2(value: unknown): value is CareerRunV2 {
   return validateCareerRunV2(value).ok;
+}
+
+export function isCareerRunV3(value: unknown): value is CareerRunV3 {
+  return validateCareerRunV3(value).ok;
+}
+
+export function isCareerRunV4(value: unknown): value is CareerRunV4 {
+  return validateCareerRunV4(value).ok;
+}
+
+export function isCareerRunV5(value: unknown): value is CareerRunV5 {
+  return validateCareerRunV5(value).ok;
+}
+
+export function isCareerRunV6(value: unknown): value is CareerRunV6 {
+  return validateCareerRunV6(value).ok;
+}
+
+export function isCareerRunV7(value: unknown): value is CareerRunV7 {
+  return validateCareerRunV7(value).ok;
 }
 
 export function isCareerRun(value: unknown): value is CareerRun {

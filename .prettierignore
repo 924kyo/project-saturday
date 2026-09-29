@@ -11,3 +11,6 @@ docs
 *.md
 *.png
 pnpm-lock.yaml
+.desktop-tools
+apps/desktop/src-tauri/target
+apps/desktop/src-tauri/gen

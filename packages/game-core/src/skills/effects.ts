@@ -1,6 +1,6 @@
 import { BODY_BOUNDS, isIntegerWithinBounds } from '../player/bounds.js';
 import { deepFreeze } from '../player/immutable.js';
-import type { WeeklyActionId } from '../weekly/ids.js';
+import type { WeeklyActionId, PositionTrainingActionId } from '../weekly/ids.js';
 import { PASSIVE_BODY_RECOVERY_BOUNDS } from '../weekly/tuning.js';
 import type { WeeklyActionDefinition } from '../weekly/types.js';
 import { isSkillMechanicsDefinitionCatalog } from './definition.js';
@@ -8,31 +8,48 @@ import { isSkillId, type SkillId } from './ids.js';
 import {
   SKILL_BODY_COST_MULTIPLIER_AGGREGATE_BOUNDS,
   SKILL_BODY_DELTA_FLAT_AGGREGATE_BOUNDS,
+  SKILL_CONFIDENCE_DELTA_FLAT_AGGREGATE_BOUNDS,
   SKILL_GPA_DELTA_MILLI_AGGREGATE_BOUNDS,
+  SKILL_INJURY_RISK_MULTIPLIER_AGGREGATE_BOUNDS,
   SKILL_NEUTRAL_MULTIPLIER_PERMILLE,
   SKILL_PASSIVE_BODY_RECOVERY_FLAT_AGGREGATE_BOUNDS,
+  SKILL_PRACTICE_IMPACT_FLAT_AGGREGATE_BOUNDS,
+  SKILL_PREPARATION_DELTA_FLAT_AGGREGATE_BOUNDS,
   SKILL_XP_MULTIPLIER_AGGREGATE_BOUNDS,
 } from './tuning.js';
 import type {
   AppliedWeeklySkillEffect,
   AppliedPassiveBodyRecoverySkillEffect,
+  AppliedInjuryRiskMultiplierSkillEffect,
   CollectedGameHook,
   CollectEquippedGameHooksResult,
+  CollectEquippedLifeHooksResult,
+  DeriveInjuryRiskSkillEffectsResult,
   EquippedSkillSlotIndex,
   PlayerSkillState,
+  PlayerSkillStateV2,
   PassiveBodyRecoveryEvidence,
   SkillActionScope,
   SkillEffectCondition,
   SkillMechanicsDefinition,
   SkillRegistryFailureReason,
   WeeklySkillEffectAggregates,
+  WeeklySkillEffectAggregatesV2,
+  CollectedLifeHook,
 } from './types.js';
 
-export const NEUTRAL_WEEKLY_SKILL_EFFECT_AGGREGATES = deepFreeze({
+export const NEUTRAL_WEEKLY_SKILL_EFFECT_AGGREGATES_V2 = deepFreeze({
   xpMultiplierPermille: SKILL_NEUTRAL_MULTIPLIER_PERMILLE,
   bodyCostMultiplierPermille: SKILL_NEUTRAL_MULTIPLIER_PERMILLE,
   bodyDeltaFlat: 0,
   gpaDeltaMilli: 0,
+} satisfies WeeklySkillEffectAggregatesV2);
+
+export const NEUTRAL_WEEKLY_SKILL_EFFECT_AGGREGATES = deepFreeze({
+  ...NEUTRAL_WEEKLY_SKILL_EFFECT_AGGREGATES_V2,
+  preparationDeltaFlat: 0,
+  confidenceDeltaFlat: 0,
+  practiceImpactFlat: 0,
 } satisfies WeeklySkillEffectAggregates);
 
 interface EquippedSkillDefinitionEntry {
@@ -45,12 +62,26 @@ type EquippedSkillDefinitionResult =
   | { readonly ok: true; readonly entries: readonly EquippedSkillDefinitionEntry[] }
   | { readonly ok: false; readonly reason: SkillRegistryFailureReason };
 
+/** Explicit effect input. Owning commands validate acquisition/ownership separately. */
+export interface SkillEffectLoadout {
+  readonly model: 'skill_effect_loadout_v1';
+  readonly equippedSkillIds: readonly (SkillId | null)[];
+}
+type SkillEffectSelection = PlayerSkillState | PlayerSkillStateV2 | SkillEffectLoadout;
+type SkillFocusId = WeeklyActionId | PositionTrainingActionId;
+export interface SkillActionTarget {
+  readonly id: SkillFocusId;
+  readonly tagIds: WeeklyActionDefinition['tagIds'];
+  readonly attributeXp: readonly { readonly attributeId: string; readonly baseXp: number }[];
+  readonly bodyDelta: number;
+}
+
 export interface WeeklySkillEffectContext {
   readonly body: number;
-  readonly actionId: WeeklyActionId;
+  readonly actionId: SkillFocusId;
   readonly actionIndex: 0 | 1 | 2;
-  readonly planActionIds: readonly WeeklyActionId[];
-  readonly previousActionId: WeeklyActionId | null;
+  readonly planActionIds: readonly SkillFocusId[];
+  readonly previousActionId: SkillFocusId | null;
 }
 
 export type CollectWeeklySkillEffectsResult =
@@ -76,11 +107,12 @@ function registryFailure(reason: SkillRegistryFailureReason): {
   return deepFreeze({ ok: false as const, reason });
 }
 
-function isUsablePlayerSkillState(value: unknown): value is PlayerSkillState {
+function isUsablePlayerSkillState(value: unknown): value is PlayerSkillState | PlayerSkillStateV2 {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     return false;
   }
   const state = value as Readonly<Record<string, unknown>>;
+  if (Object.hasOwn(state, 'model') && state['model'] === 'skill_effect_loadout_v1') return false;
   if (!Array.isArray(state['acquisitions']) || !Array.isArray(state['equippedSkillIds'])) {
     return false;
   }
@@ -121,11 +153,30 @@ function isUsablePlayerSkillState(value: unknown): value is PlayerSkillState {
   return true;
 }
 
+function isUsableEffectLoadout(value: unknown): value is SkillEffectLoadout {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
+  const state = value as Readonly<Record<string, unknown>>;
+  if (
+    Object.keys(state).sort().join('|') !== 'equippedSkillIds|model' ||
+    state['model'] !== 'skill_effect_loadout_v1' ||
+    !Array.isArray(state['equippedSkillIds']) ||
+    state['equippedSkillIds'].length !== 4
+  )
+    return false;
+  const equipped = new Set<string>();
+  for (const id of state['equippedSkillIds']) {
+    if (id === null) continue;
+    if (!isSkillId(id) || equipped.has(id)) return false;
+    equipped.add(id);
+  }
+  return true;
+}
+
 function resolveEquippedSkillDefinitions(
-  skillState: PlayerSkillState,
+  skillState: SkillEffectSelection,
   definitions: readonly SkillMechanicsDefinition[],
 ): EquippedSkillDefinitionResult {
-  if (!isUsablePlayerSkillState(skillState)) {
+  if (!isUsablePlayerSkillState(skillState) && !isUsableEffectLoadout(skillState)) {
     return registryFailure('skill_registry.invalid_context');
   }
   if (!isSkillMechanicsDefinitionCatalog(definitions)) {
@@ -147,12 +198,14 @@ function resolveEquippedSkillDefinitions(
       definition,
     });
   }
-  return deepFreeze({ ok: true, entries });
+  // Internal borrowed readonly definitions never escape into published evidence.
+  // Freezing this lookup would freeze a caller-owned content catalog.
+  return { ok: true, entries };
 }
 
 export function doesSkillActionScopeApply(
   scope: SkillActionScope,
-  action: WeeklyActionDefinition,
+  action: Pick<SkillActionTarget, 'id' | 'tagIds'>,
 ): boolean {
   return scope.type === 'action_ids'
     ? scope.actionIds.some((actionId) => actionId === action.id)
@@ -184,9 +237,9 @@ export function doesSkillEffectConditionApply(
 }
 
 export function collectWeeklySkillEffects(
-  skillState: PlayerSkillState,
+  skillState: SkillEffectSelection,
   definitions: readonly SkillMechanicsDefinition[],
-  action: WeeklyActionDefinition,
+  action: SkillActionTarget,
   context: WeeklySkillEffectContext,
 ): CollectWeeklySkillEffectsResult {
   const equipped = resolveEquippedSkillDefinitions(skillState, definitions);
@@ -199,7 +252,9 @@ export function collectWeeklySkillEffects(
     for (const [effectIndex, effect] of definition.effects.entries()) {
       if (
         effect.type === 'passive_body_recovery_flat' ||
+        effect.type === 'injury_risk_multiplier' ||
         effect.type === 'game_hook' ||
+        effect.type === 'life_hook' ||
         !doesSkillActionScopeApply(effect.scope, action) ||
         !doesSkillEffectConditionApply(effect.condition, context)
       ) {
@@ -222,6 +277,9 @@ export function collectWeeklySkillEffects(
           });
           break;
         case 'action_body_delta_flat':
+        case 'action_preparation_delta_flat':
+        case 'action_confidence_delta_flat':
+        case 'action_practice_impact_flat':
           appliedSkillEffects.push({ ...traceBase, type: effect.type, delta: effect.delta });
           break;
         case 'action_gpa_delta_milli':
@@ -239,6 +297,9 @@ export function collectWeeklySkillEffects(
   let bodyCostMultiplierPermille = SKILL_NEUTRAL_MULTIPLIER_PERMILLE;
   let bodyDeltaFlat = 0;
   let gpaDeltaMilli = 0;
+  let preparationDeltaFlat = 0;
+  let confidenceDeltaFlat = 0;
+  let practiceImpactFlat = 0;
   for (const effect of appliedSkillEffects) {
     switch (effect.type) {
       case 'action_xp_multiplier':
@@ -252,6 +313,15 @@ export function collectWeeklySkillEffects(
         break;
       case 'action_gpa_delta_milli':
         gpaDeltaMilli += effect.deltaMilli;
+        break;
+      case 'action_preparation_delta_flat':
+        preparationDeltaFlat += effect.delta;
+        break;
+      case 'action_confidence_delta_flat':
+        confidenceDeltaFlat += effect.delta;
+        break;
+      case 'action_practice_impact_flat':
+        practiceImpactFlat += effect.delta;
         break;
     }
   }
@@ -275,6 +345,21 @@ export function collectWeeklySkillEffects(
       gpaDeltaMilli,
       SKILL_GPA_DELTA_MILLI_AGGREGATE_BOUNDS.min,
       SKILL_GPA_DELTA_MILLI_AGGREGATE_BOUNDS.max,
+    ),
+    preparationDeltaFlat: clamp(
+      preparationDeltaFlat,
+      SKILL_PREPARATION_DELTA_FLAT_AGGREGATE_BOUNDS.min,
+      SKILL_PREPARATION_DELTA_FLAT_AGGREGATE_BOUNDS.max,
+    ),
+    confidenceDeltaFlat: clamp(
+      confidenceDeltaFlat,
+      SKILL_CONFIDENCE_DELTA_FLAT_AGGREGATE_BOUNDS.min,
+      SKILL_CONFIDENCE_DELTA_FLAT_AGGREGATE_BOUNDS.max,
+    ),
+    practiceImpactFlat: clamp(
+      practiceImpactFlat,
+      SKILL_PRACTICE_IMPACT_FLAT_AGGREGATE_BOUNDS.min,
+      SKILL_PRACTICE_IMPACT_FLAT_AGGREGATE_BOUNDS.max,
     ),
   };
   return deepFreeze({ ok: true, aggregates, appliedSkillEffects });
@@ -304,7 +389,7 @@ export function deriveSkillModifiedGpaDelta(
 export function derivePassiveBodyRecovery(
   bodyBefore: number,
   basePassiveBodyRecovery: number,
-  skillState: PlayerSkillState,
+  skillState: SkillEffectSelection,
   definitions: readonly SkillMechanicsDefinition[],
   weekIndex: number,
 ): DerivePassiveBodyRecoveryResult {
@@ -361,8 +446,40 @@ export function derivePassiveBodyRecovery(
   });
 }
 
+export function deriveInjuryRiskSkillEffects(
+  skillState: SkillEffectSelection,
+  definitions: readonly SkillMechanicsDefinition[],
+): DeriveInjuryRiskSkillEffectsResult {
+  const equipped = resolveEquippedSkillDefinitions(skillState, definitions);
+  if (!equipped.ok) return equipped;
+  let multiplierPermille = SKILL_NEUTRAL_MULTIPLIER_PERMILLE;
+  const appliedSkillEffects: AppliedInjuryRiskMultiplierSkillEffect[] = [];
+  for (const { definition, skillId, slotIndex } of equipped.entries) {
+    for (const [effectIndex, effect] of definition.effects.entries()) {
+      if (effect.type !== 'injury_risk_multiplier') continue;
+      multiplierPermille += effect.multiplierPermille - SKILL_NEUTRAL_MULTIPLIER_PERMILLE;
+      appliedSkillEffects.push({
+        type: effect.type,
+        skillId,
+        slotIndex,
+        effectIndex,
+        multiplierPermille: effect.multiplierPermille,
+      });
+    }
+  }
+  return deepFreeze({
+    ok: true,
+    multiplierPermille: clamp(
+      multiplierPermille,
+      SKILL_INJURY_RISK_MULTIPLIER_AGGREGATE_BOUNDS.min,
+      SKILL_INJURY_RISK_MULTIPLIER_AGGREGATE_BOUNDS.max,
+    ),
+    appliedSkillEffects,
+  });
+}
+
 export function collectEquippedGameHooks(
-  skillState: PlayerSkillState,
+  skillState: SkillEffectSelection,
   definitions: readonly SkillMechanicsDefinition[],
 ): CollectEquippedGameHooksResult {
   const equipped = resolveEquippedSkillDefinitions(skillState, definitions);
@@ -373,6 +490,31 @@ export function collectEquippedGameHooks(
   for (const { definition, skillId, slotIndex } of equipped.entries) {
     for (const [effectIndex, effect] of definition.effects.entries()) {
       if (effect.type === 'game_hook') {
+        hooks.push({
+          skillId,
+          slotIndex,
+          effectIndex,
+          hookId: effect.hookId,
+          valueMilli: effect.valueMilli,
+        });
+      }
+    }
+  }
+  return deepFreeze({ ok: true, hooks });
+}
+
+export function collectEquippedLifeHooks(
+  skillState: SkillEffectSelection,
+  definitions: readonly SkillMechanicsDefinition[],
+): CollectEquippedLifeHooksResult {
+  const equipped = resolveEquippedSkillDefinitions(skillState, definitions);
+  if (!equipped.ok) {
+    return equipped;
+  }
+  const hooks: CollectedLifeHook[] = [];
+  for (const { definition, skillId, slotIndex } of equipped.entries) {
+    for (const [effectIndex, effect] of definition.effects.entries()) {
+      if (effect.type === 'life_hook') {
         hooks.push({
           skillId,
           slotIndex,

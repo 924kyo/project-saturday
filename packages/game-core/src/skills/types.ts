@@ -6,6 +6,8 @@ import type {
   SkillGameHookId,
   SkillGradeId,
   SkillId,
+  SkillBreakthroughSourceId,
+  SkillLifeHookId,
 } from './ids.js';
 
 export const EQUIPPED_SKILL_SLOT_COUNT = 4 as const;
@@ -22,7 +24,7 @@ export type EquippedSkillIds = readonly [
 
 export type OfferedSkillIds = readonly [SkillId, SkillId, SkillId];
 
-export interface SkillBreakthroughOffer {
+export interface SkillBreakthroughOfferV2 {
   readonly offerIndex: number;
   readonly weekIndex: number;
   readonly offeredSkillIds: OfferedSkillIds;
@@ -30,13 +32,53 @@ export interface SkillBreakthroughOffer {
   readonly rngDrawCountAfter: number;
 }
 
-export interface SkillAcquisitionRecord extends SkillBreakthroughOffer {
+export interface SkillBreakthroughProgressSource {
+  readonly sourceId: SkillBreakthroughSourceId;
+  readonly points: number;
+}
+
+export interface SkillBreakthroughProgressEvidence {
+  readonly model: 'gauge_v1';
+  readonly weekIndex: number;
+  readonly progressBefore: number;
+  readonly pointsEarned: number;
+  readonly progressAfter: number;
+  readonly threshold: number;
+  readonly triggeredOffer: boolean;
+  readonly sources: readonly SkillBreakthroughProgressSource[];
+}
+
+export interface SkillBreakthroughGaugeState {
+  readonly model: 'gauge_v1';
+  readonly progress: number;
+  readonly threshold: number;
+  readonly lastProgress: SkillBreakthroughProgressEvidence | null;
+}
+
+export interface SkillBreakthroughOfferV4 extends SkillBreakthroughOfferV2 {
+  readonly trigger: SkillBreakthroughProgressEvidence;
+}
+
+export type SkillBreakthroughOffer = SkillBreakthroughOfferV2 | SkillBreakthroughOfferV4;
+
+export interface SkillAcquisitionRecordV2 extends SkillBreakthroughOfferV2 {
   readonly selectedSkillId: SkillId;
 }
 
-export interface PlayerSkillState {
-  readonly acquisitions: readonly SkillAcquisitionRecord[];
+export interface SkillAcquisitionRecordV4 extends SkillBreakthroughOfferV4 {
+  readonly selectedSkillId: SkillId;
+}
+
+export type SkillAcquisitionRecord = SkillAcquisitionRecordV2 | SkillAcquisitionRecordV4;
+
+export interface PlayerSkillStateV2 {
+  readonly acquisitions: readonly SkillAcquisitionRecordV2[];
   readonly equippedSkillIds: EquippedSkillIds;
+}
+
+export interface PlayerSkillState extends Omit<PlayerSkillStateV2, 'acquisitions'> {
+  readonly acquisitions: readonly SkillAcquisitionRecord[];
+  readonly breakthroughGauge: SkillBreakthroughGaugeState;
 }
 
 export type SkillActionScope =
@@ -88,9 +130,29 @@ export interface ActionGpaDeltaMilliSkillEffect extends ScopedConditionalSkillEf
   readonly deltaMilli: number;
 }
 
+export interface ActionPreparationDeltaFlatSkillEffect extends ScopedConditionalSkillEffect {
+  readonly type: 'action_preparation_delta_flat';
+  readonly delta: number;
+}
+
+export interface ActionConfidenceDeltaFlatSkillEffect extends ScopedConditionalSkillEffect {
+  readonly type: 'action_confidence_delta_flat';
+  readonly delta: number;
+}
+
+export interface ActionPracticeImpactFlatSkillEffect extends ScopedConditionalSkillEffect {
+  readonly type: 'action_practice_impact_flat';
+  readonly delta: number;
+}
+
 export interface PassiveBodyRecoveryFlatSkillEffect {
   readonly type: 'passive_body_recovery_flat';
   readonly delta: number;
+}
+
+export interface InjuryRiskMultiplierSkillEffect {
+  readonly type: 'injury_risk_multiplier';
+  readonly multiplierPermille: number;
 }
 
 export interface GameHookSkillEffect {
@@ -99,14 +161,27 @@ export interface GameHookSkillEffect {
   readonly valueMilli: number;
 }
 
+export interface LifeHookSkillEffect {
+  readonly type: 'life_hook';
+  readonly hookId: SkillLifeHookId;
+  readonly valueMilli: number;
+}
+
 export type ActionSkillEffect =
   | ActionXpMultiplierSkillEffect
   | ActionBodyCostMultiplierSkillEffect
   | ActionBodyDeltaFlatSkillEffect
-  | ActionGpaDeltaMilliSkillEffect;
+  | ActionGpaDeltaMilliSkillEffect
+  | ActionPreparationDeltaFlatSkillEffect
+  | ActionConfidenceDeltaFlatSkillEffect
+  | ActionPracticeImpactFlatSkillEffect;
 
 export type SkillEffect =
-  ActionSkillEffect | PassiveBodyRecoveryFlatSkillEffect | GameHookSkillEffect;
+  | ActionSkillEffect
+  | PassiveBodyRecoveryFlatSkillEffect
+  | InjuryRiskMultiplierSkillEffect
+  | GameHookSkillEffect
+  | LifeHookSkillEffect;
 
 export interface SkillEligibility {
   /** Empty means common to every supported position; otherwise the list is restrictive. */
@@ -117,7 +192,8 @@ export interface SkillEligibility {
   readonly minWeekIndex: number;
 }
 
-export type SkillBehaviorAffinityTagId = WeeklyActionTagId | SkillBehaviorTagId;
+export type SkillBehaviorAffinityTagId =
+  WeeklyActionTagId | SkillBehaviorTagId | SkillBreakthroughSourceId;
 
 export interface SkillBehaviorWeightRule {
   readonly affinityTagId: SkillBehaviorAffinityTagId;
@@ -160,17 +236,44 @@ export interface AppliedActionGpaDeltaMilliSkillEffect extends AppliedWeeklySkil
   readonly deltaMilli: number;
 }
 
-export type AppliedWeeklySkillEffect =
+export interface AppliedActionPreparationDeltaFlatSkillEffect extends AppliedWeeklySkillEffectBase {
+  readonly type: 'action_preparation_delta_flat';
+  readonly delta: number;
+}
+
+export interface AppliedActionConfidenceDeltaFlatSkillEffect extends AppliedWeeklySkillEffectBase {
+  readonly type: 'action_confidence_delta_flat';
+  readonly delta: number;
+}
+
+export interface AppliedActionPracticeImpactFlatSkillEffect extends AppliedWeeklySkillEffectBase {
+  readonly type: 'action_practice_impact_flat';
+  readonly delta: number;
+}
+
+export type AppliedWeeklySkillEffectV2 =
   | AppliedActionXpMultiplierSkillEffect
   | AppliedActionBodyCostMultiplierSkillEffect
   | AppliedActionBodyDeltaFlatSkillEffect
   | AppliedActionGpaDeltaMilliSkillEffect;
 
-export interface WeeklySkillEffectAggregates {
+export type AppliedWeeklySkillEffect =
+  | AppliedWeeklySkillEffectV2
+  | AppliedActionPreparationDeltaFlatSkillEffect
+  | AppliedActionConfidenceDeltaFlatSkillEffect
+  | AppliedActionPracticeImpactFlatSkillEffect;
+
+export interface WeeklySkillEffectAggregatesV2 {
   readonly xpMultiplierPermille: number;
   readonly bodyCostMultiplierPermille: number;
   readonly bodyDeltaFlat: number;
   readonly gpaDeltaMilli: number;
+}
+
+export interface WeeklySkillEffectAggregates extends WeeklySkillEffectAggregatesV2 {
+  readonly preparationDeltaFlat: number;
+  readonly confidenceDeltaFlat: number;
+  readonly practiceImpactFlat: number;
 }
 
 export interface CollectedGameHook {
@@ -181,6 +284,18 @@ export interface CollectedGameHook {
   readonly valueMilli: number;
 }
 
+export interface CollectedLifeHook {
+  readonly skillId: SkillId;
+  readonly slotIndex: EquippedSkillSlotIndex;
+  readonly effectIndex: number;
+  readonly hookId: SkillLifeHookId;
+  readonly valueMilli: number;
+}
+
+export type CollectEquippedLifeHooksResult =
+  | { readonly ok: true; readonly hooks: readonly CollectedLifeHook[] }
+  | { readonly ok: false; readonly reason: SkillRegistryFailureReason };
+
 export interface AppliedPassiveBodyRecoverySkillEffect {
   readonly type: 'passive_body_recovery_flat';
   readonly skillId: SkillId;
@@ -188,6 +303,25 @@ export interface AppliedPassiveBodyRecoverySkillEffect {
   readonly effectIndex: number;
   readonly delta: number;
 }
+
+export interface AppliedInjuryRiskMultiplierSkillEffect {
+  readonly type: 'injury_risk_multiplier';
+  readonly skillId: SkillId;
+  readonly slotIndex: EquippedSkillSlotIndex;
+  readonly effectIndex: number;
+  readonly multiplierPermille: number;
+}
+
+export type AppliedInjuryRiskSkillEffect =
+  AppliedPassiveBodyRecoverySkillEffect | AppliedInjuryRiskMultiplierSkillEffect;
+
+export type DeriveInjuryRiskSkillEffectsResult =
+  | {
+      readonly ok: true;
+      readonly multiplierPermille: number;
+      readonly appliedSkillEffects: readonly AppliedInjuryRiskMultiplierSkillEffect[];
+    }
+  | { readonly ok: false; readonly reason: SkillRegistryFailureReason };
 
 export interface PassiveBodyRecoveryEvidence {
   readonly weekIndex: number;

@@ -1,22 +1,30 @@
 import {
   NEUTRAL_WEEKLY_SKILL_EFFECT_AGGREGATES,
+  NEUTRAL_WEEKLY_SKILL_EFFECT_AGGREGATES_V2,
   SKILL_BODY_COST_MULTIPLIER_AGGREGATE_BOUNDS,
   SKILL_BODY_DELTA_FLAT_AGGREGATE_BOUNDS,
   SKILL_GPA_DELTA_MILLI_AGGREGATE_BOUNDS,
   SKILL_XP_MULTIPLIER_AGGREGATE_BOUNDS,
   WEEKLY_ACTION_IDS,
-  advanceDevelopmentWeek,
+  advanceHistoricalDevelopmentWeek as advanceDevelopmentWeek,
   collectEquippedGameHooks,
+  collectEquippedLifeHooks,
   commitWeeklyActionPlan,
   derivePassiveBodyRecovery,
+  deriveInjuryRiskSkillEffects,
   isSkillActionScope,
   isSkillEffect,
   isSkillEffectCondition,
   isSkillMechanicsDefinition,
   isSkillMechanicsDefinitionCatalog,
   migrateCareerRunV1ToV2,
+  migrateCareerRunV2ToV3,
+  migrateCareerRunV3ToV4,
+  migrateCareerRunV4ToV5,
+  migrateCareerRunV5ToV6,
+  migrateCareerRunV6ToV7,
   nextUint32,
-  parseCareerRunV2,
+  parseCareerRun,
   resolveNextWeeklyAction,
   validateCareerRun,
   validateCareerRunV1,
@@ -31,7 +39,8 @@ import {
   type SkillMechanicsDefinition,
   type WeeklyActionDefinition,
   type WeeklyActionId,
-  type WeeklyActionResultV2,
+  type WeeklyActionResult,
+  type WeeklyActionResultV4,
   type WeeklyCommandResult,
 } from '../src/index.js';
 import {
@@ -42,6 +51,11 @@ import {
 import { describe, expect, it } from 'vitest';
 
 import { CAREER_RUN_V1_PHASE_FIXTURES } from './fixtures/career-run-v1.js';
+import {
+  TEST_OFFENSE_STYLE_DEFINITIONS,
+  TEST_ROTATION_POLICY_DEFINITIONS,
+  enrollTestCareer,
+} from './helpers/enrolled-career.js';
 
 const DEVELOPMENT_CONFIG = {
   bodyXpEfficiencyMinPermille: 600,
@@ -57,6 +71,9 @@ const ROUTE_DRILLS = {
   attributeXp: [{ attributeId: 'attribute_wr_route_running', baseXp: 26 }],
   bodyDelta: -8,
   gpaDelta: 0,
+  practiceImpact: 0,
+  preparationDelta: 0,
+  confidenceDelta: 0,
   proficiencyId: 'proficiency_route_drills',
 } as const satisfies WeeklyActionDefinition;
 
@@ -72,6 +89,9 @@ const RECOVERY = {
   attributeXp: [],
   bodyDelta: 32,
   gpaDelta: 0,
+  practiceImpact: 0,
+  preparationDelta: 0,
+  confidenceDelta: 0,
   proficiencyId: null,
 } as const satisfies WeeklyActionDefinition;
 
@@ -130,7 +150,15 @@ function careerWithSkills(
   equippedSkillIds?: EquippedSkillIds,
   state: { readonly body?: number; readonly gpa?: number } = {},
 ): CareerRun {
-  const base = migrateCareerRunV1ToV2(CAREER_RUN_V1_PHASE_FIXTURES.plan);
+  const base = migrateCareerRunV6ToV7(
+    migrateCareerRunV5ToV6(
+      migrateCareerRunV4ToV5(
+        migrateCareerRunV3ToV4(
+          migrateCareerRunV2ToV3(migrateCareerRunV1ToV2(CAREER_RUN_V1_PHASE_FIXTURES.plan)),
+        ),
+      ),
+    ),
+  );
   let rng = base.rng;
   const acquisitions = definitions.map((definition, index) => {
     const rngDrawCountBefore = rng.drawCount;
@@ -169,13 +197,14 @@ function careerWithSkills(
         gpa: state.gpa ?? base.player.state.gpa,
       },
       skillState: {
+        ...base.player.skillState,
         acquisitions,
         equippedSkillIds: equippedSkillIds ?? defaultSlots,
       },
     },
   };
   expect(validateCareerRun(career)).toEqual({ ok: true, issues: [] });
-  return career;
+  return enrollTestCareer(career);
 }
 
 function commandCareer(result: WeeklyCommandResult): CareerRun {
@@ -199,12 +228,19 @@ function resolve(
   skillDefinitions: readonly SkillMechanicsDefinition[] = [],
 ): CareerRun {
   return commandCareer(
-    resolveNextWeeklyAction(career, definition, DEVELOPMENT_CONFIG, skillDefinitions),
+    resolveNextWeeklyAction(
+      career,
+      definition,
+      DEVELOPMENT_CONFIG,
+      skillDefinitions,
+      TEST_OFFENSE_STYLE_DEFINITIONS,
+      TEST_ROTATION_POLICY_DEFINITIONS,
+    ),
   );
 }
 
-function actionResults(career: CareerRun): readonly WeeklyActionResultV2[] {
-  if (career.phase.type === 'PLAN_ACTIONS' || career.phase.type === 'SKILL_BREAKTHROUGH') {
+function actionResults(career: CareerRun): readonly WeeklyActionResult[] {
+  if (career.phase.type !== 'RESOLVE_ACTIONS' && career.phase.type !== 'WEEK_END') {
     throw new Error('Expected a phase with weekly results.');
   }
   return career.phase.results;
@@ -325,6 +361,7 @@ describe('closed skill mechanics definitions', () => {
         deltaMilli: 100,
       },
       { type: 'passive_body_recovery_flat', delta: 2 },
+      { type: 'injury_risk_multiplier', multiplierPermille: 800 },
       {
         type: 'game_hook',
         hookId: 'game_hook_contested_catch_success_bonus',
@@ -360,6 +397,9 @@ describe('closed skill mechanics definitions', () => {
         deltaMilli: 0,
       },
       { type: 'passive_body_recovery_flat', delta: 0 },
+      { type: 'injury_risk_multiplier', multiplierPermille: 1000 },
+      { type: 'injury_risk_multiplier', multiplierPermille: 499 },
+      { type: 'injury_risk_multiplier', multiplierPermille: 800, extra: true },
       {
         type: 'passive_body_recovery_flat',
         delta: 2,
@@ -649,6 +689,9 @@ describe('weekly skill aggregation and formulas', () => {
       bodyCostMultiplierPermille: 500,
       bodyDeltaFlat: 1,
       gpaDeltaMilli: 150,
+      preparationDeltaFlat: 0,
+      confidenceDeltaFlat: 0,
+      practiceImpactFlat: 0,
     });
     expect(result).toEqual(
       expect.objectContaining({
@@ -693,6 +736,9 @@ describe('weekly skill aggregation and formulas', () => {
         bodyCostMultiplierPermille: SKILL_BODY_COST_MULTIPLIER_AGGREGATE_BOUNDS.max,
         bodyDeltaFlat: SKILL_BODY_DELTA_FLAT_AGGREGATE_BOUNDS.max,
         gpaDeltaMilli: SKILL_GPA_DELTA_MILLI_AGGREGATE_BOUNDS.max,
+        preparationDeltaFlat: 0,
+        confidenceDeltaFlat: 0,
+        practiceImpactFlat: 0,
       },
       expectedAwardedXp: 40,
       expectedRequestedBodyDelta: 26,
@@ -705,6 +751,9 @@ describe('weekly skill aggregation and formulas', () => {
         bodyCostMultiplierPermille: SKILL_BODY_COST_MULTIPLIER_AGGREGATE_BOUNDS.min,
         bodyDeltaFlat: SKILL_BODY_DELTA_FLAT_AGGREGATE_BOUNDS.min,
         gpaDeltaMilli: SKILL_GPA_DELTA_MILLI_AGGREGATE_BOUNDS.min,
+        preparationDeltaFlat: 0,
+        confidenceDeltaFlat: 0,
+        practiceImpactFlat: 0,
       },
       expectedAwardedXp: 5,
       expectedRequestedBodyDelta: -42,
@@ -807,8 +856,8 @@ describe('weekly skill aggregation and formulas', () => {
         delta: 20,
       })),
     });
-    expect(validateCareerRunV2(advanced)).toEqual({ ok: true, issues: [] });
-    const roundTrip = parseCareerRunV2(JSON.stringify(advanced));
+    expect(validateCareerRun(advanced)).toEqual({ ok: true, issues: [] });
+    const roundTrip = parseCareerRun(JSON.stringify(advanced));
     expect(roundTrip).toEqual({ ok: true, career: advanced });
     expectDeepFrozen(roundTrip);
 
@@ -856,6 +905,42 @@ describe('weekly skill aggregation and formulas', () => {
     ).toEqual({ ok: false, reason: 'skill_registry.invalid_context' });
   });
 
+  it('stacks injury-risk multipliers by equipped slot and clamps the aggregate', () => {
+    const multipliers = [800, 900, 1200, 700] as const;
+    const definitions = multipliers.map((multiplierPermille, index) =>
+      skillDefinition(`skill_injury_risk_${index}`, [
+        { type: 'injury_risk_multiplier', multiplierPermille },
+      ]),
+    );
+    const career = careerWithSkills(definitions);
+    const derived = deriveInjuryRiskSkillEffects(
+      career.player.skillState,
+      [...definitions].reverse(),
+    );
+    expect(derived).toEqual({
+      ok: true,
+      multiplierPermille: 600,
+      appliedSkillEffects: definitions.map((definition, slotIndex) => ({
+        type: 'injury_risk_multiplier',
+        skillId: definition.id,
+        slotIndex,
+        effectIndex: 0,
+        multiplierPermille: multipliers[slotIndex],
+      })),
+    });
+    expectDeepFrozen(derived);
+
+    const cappedDefinitions = [0, 1, 2, 3].map((index) =>
+      skillDefinition(`skill_injury_risk_cap_${index}`, [
+        { type: 'injury_risk_multiplier', multiplierPermille: 800 },
+      ]),
+    );
+    const cappedCareer = careerWithSkills(cappedDefinitions);
+    expect(deriveInjuryRiskSkillEffects(cappedCareer.player.skillState, cappedDefinitions)).toEqual(
+      expect.objectContaining({ ok: true, multiplierPermille: 500 }),
+    );
+  });
+
   it('validates persisted passive evidence independently of the current loadout and rejects tampering', () => {
     const definitions = ([0, 1, 2, 3] as const).map((index) =>
       skillDefinition(`skill_passive_history_${index}`, [
@@ -877,7 +962,7 @@ describe('weekly skill aggregation and formulas', () => {
 
     const changedLoadout = jsonClone(advanced);
     changedLoadout.player.skillState.equippedSkillIds = [null, null, null, null];
-    expect(validateCareerRunV2(changedLoadout)).toEqual({ ok: true, issues: [] });
+    expect(validateCareerRun(changedLoadout)).toEqual({ ok: true, issues: [] });
 
     const tamperCases = [
       {
@@ -958,7 +1043,7 @@ describe('weekly skill aggregation and formulas', () => {
         throw new Error('Expected passive recovery evidence.');
       }
       mutate(evidence);
-      const validation = validateCareerRunV2(tampered);
+      const validation = validateCareerRun(tampered);
       expect(validation.ok, name).toBe(false);
       if (!validation.ok) {
         expect(
@@ -966,12 +1051,116 @@ describe('weekly skill aggregation and formulas', () => {
           name,
         ).toContain(expectedPath);
       }
-      expect(parseCareerRunV2(tampered).ok, name).toBe(false);
+      expect(parseCareerRun(tampered).ok, name).toBe(false);
+    }
+  });
+  it('applies current Preparation, Confidence, and Practice effects with persisted traces', () => {
+    const definition = skillDefinition('skill_current_experience', [
+      {
+        type: 'action_preparation_delta_flat',
+        scope: ACTION_ROUTE_SCOPE,
+        condition: ALWAYS,
+        delta: 4,
+      },
+      {
+        type: 'action_confidence_delta_flat',
+        scope: ACTION_ROUTE_SCOPE,
+        condition: ALWAYS,
+        delta: 5,
+      },
+      {
+        type: 'action_practice_impact_flat',
+        scope: ACTION_ROUTE_SCOPE,
+        condition: ALWAYS,
+        delta: 3,
+      },
+    ]);
+    const resolved = resolve(
+      commit(careerWithSkills([definition]), [
+        'action_route_drills',
+        'action_route_drills',
+        'action_route_drills',
+      ]),
+      ROUTE_DRILLS,
+      [definition],
+    );
+    const result = actionResults(resolved)[0];
+    expect(result).toEqual(
+      expect.objectContaining({
+        basePreparationDelta: 0,
+        requestedPreparationDelta: 4,
+        actualPreparationDelta: 4,
+        baseConfidenceDelta: 0,
+        requestedConfidenceDelta: 5,
+        actualConfidenceDelta: 5,
+        practiceImpact: 3,
+        skillEffectAggregates: {
+          xpMultiplierPermille: 1000,
+          bodyCostMultiplierPermille: 1000,
+          bodyDeltaFlat: 0,
+          gpaDeltaMilli: 0,
+          preparationDeltaFlat: 4,
+          confidenceDeltaFlat: 5,
+          practiceImpactFlat: 3,
+        },
+        appliedSkillEffects: [
+          expect.objectContaining({ type: 'action_preparation_delta_flat', delta: 4 }),
+          expect.objectContaining({ type: 'action_confidence_delta_flat', delta: 5 }),
+          expect.objectContaining({ type: 'action_practice_impact_flat', delta: 3 }),
+        ],
+      }),
+    );
+    expect(validateCareerRun(resolved)).toEqual({ ok: true, issues: [] });
+
+    const tampered = jsonClone(resolved);
+    if (
+      tampered.phase.type !== 'RESOLVE_ACTIONS' ||
+      tampered.phase.results[0] === undefined ||
+      !('requestedPreparationDelta' in tampered.phase.results[0])
+    ) {
+      throw new Error('Expected current result.');
+    }
+    tampered.phase.results[0].requestedPreparationDelta += 1;
+    const validation = validateCareerRun(tampered);
+    expect(validation.ok).toBe(false);
+    if (!validation.ok) {
+      expect(validation.issues.map(({ path }) => path)).toContain(
+        'career.phase.results.0.requestedPreparationDelta',
+      );
     }
   });
 });
 
 describe('future game hooks and registry failures', () => {
+  it('collects life hooks in stable equipped/effect order', () => {
+    const definition = skillDefinition('skill_life_hooks', [
+      { type: 'life_hook', hookId: 'life_hook_nil_reward_multiplier', valueMilli: 1100 },
+      { type: 'life_hook', hookId: 'life_hook_event_option_access', valueMilli: 1000 },
+    ]);
+    const career = careerWithSkills([definition]);
+    const result = collectEquippedLifeHooks(career.player.skillState, [definition]);
+    expect(result).toEqual({
+      ok: true,
+      hooks: [
+        {
+          skillId: definition.id,
+          slotIndex: 0,
+          effectIndex: 0,
+          hookId: 'life_hook_nil_reward_multiplier',
+          valueMilli: 1100,
+        },
+        {
+          skillId: definition.id,
+          slotIndex: 0,
+          effectIndex: 1,
+          hookId: 'life_hook_event_option_access',
+          valueMilli: 1000,
+        },
+      ],
+    });
+    expectDeepFrozen(result);
+  });
+
   it('collects hooks in equipped-slot then effect order, independent of catalog order', () => {
     const laterSlot = skillDefinition('skill_hook_later_slot', [
       {
@@ -1101,7 +1290,17 @@ describe('future game hooks and registry failures', () => {
 
 describe('compatibility, immutability, and persisted evidence', () => {
   it('keeps an empty loadout mechanically identical to the M1 route result and consumes no RNG', () => {
-    const plan = migrateCareerRunV1ToV2(CAREER_RUN_V1_PHASE_FIXTURES.plan);
+    const plan = enrollTestCareer(
+      migrateCareerRunV6ToV7(
+        migrateCareerRunV5ToV6(
+          migrateCareerRunV4ToV5(
+            migrateCareerRunV3ToV4(
+              migrateCareerRunV2ToV3(migrateCareerRunV1ToV2(CAREER_RUN_V1_PHASE_FIXTURES.plan)),
+            ),
+          ),
+        ),
+      ),
+    );
     const committed = commit(plan, ['action_route_drills', 'action_recovery', 'action_study_hall']);
     const implicitEmpty = resolve(committed, ROUTE_DRILLS);
     const explicitEmpty = resolve(committed, ROUTE_DRILLS, []);
@@ -1125,6 +1324,17 @@ describe('compatibility, immutability, and persisted evidence', () => {
       requestedGpaDelta: 0,
       actualGpaDelta: 0,
       gpaAfter: 3,
+      practiceImpact: 0,
+      preparationBefore: 50,
+      basePreparationDelta: 0,
+      requestedPreparationDelta: 0,
+      actualPreparationDelta: 0,
+      preparationAfter: 50,
+      confidenceBefore: 50,
+      baseConfidenceDelta: 0,
+      requestedConfidenceDelta: 0,
+      actualConfidenceDelta: 0,
+      confidenceAfter: 50,
       attributeXp: [
         {
           attributeId: 'attribute_wr_route_running',
@@ -1210,12 +1420,12 @@ describe('compatibility, immutability, and persisted evidence', () => {
       ROUTE_DRILLS,
       [second, first],
     );
-    expect(validateCareerRunV2(valid)).toEqual({ ok: true, issues: [] });
+    expect(validateCareerRun(valid)).toEqual({ ok: true, issues: [] });
 
     interface TamperCase {
       readonly name: string;
       readonly expectedPath: string;
-      readonly mutate: (result: DeepMutable<WeeklyActionResultV2>) => void;
+      readonly mutate: (result: DeepMutable<WeeklyActionResultV4>) => void;
     }
     const cases: readonly TamperCase[] = [
       {
@@ -1308,8 +1518,8 @@ describe('compatibility, immutability, and persisted evidence', () => {
       if (result === undefined) {
         throw new Error('Expected a persisted result.');
       }
-      mutate(result);
-      const validation = validateCareerRunV2(tampered);
+      mutate(result as DeepMutable<WeeklyActionResultV4>);
+      const validation = validateCareerRun(tampered);
       expect(validation.ok, name).toBe(false);
       if (!validation.ok) {
         expect(
@@ -1317,7 +1527,7 @@ describe('compatibility, immutability, and persisted evidence', () => {
           name,
         ).toContain(expectedPath);
       }
-      expect(parseCareerRunV2(tampered).ok, name).toBe(false);
+      expect(parseCareerRun(tampered).ok, name).toBe(false);
     }
   });
 
@@ -1350,7 +1560,7 @@ describe('compatibility, immutability, and persisted evidence', () => {
       ...legacyResult,
       baseBodyDelta: legacyResult.requestedBodyDelta,
       baseGpaDelta: 0.123,
-      skillEffectAggregates: NEUTRAL_WEEKLY_SKILL_EFFECT_AGGREGATES,
+      skillEffectAggregates: NEUTRAL_WEEKLY_SKILL_EFFECT_AGGREGATES_V2,
       appliedSkillEffects: [],
     });
     expectDeepFrozen(migrated);

@@ -1,7 +1,7 @@
 import {
   WEEKLY_ACTION_IDS,
-  advanceDevelopmentWeek,
-  commitWeeklyActionPlan,
+  advanceHistoricalDevelopmentWeek as advanceDevelopmentWeek,
+  commitHistoricalPreProgramWeeklyActionPlan,
   isCareerRun,
   resolveNextWeeklyAction,
   validateCareerRun,
@@ -219,7 +219,11 @@ export function simulateDevelopmentWeeks(
     const gpaBeforeActions = career.player.state.gpa;
     career = afterTransition(
       requireSuccess(
-        commitWeeklyActionPlan(career, input.repeatedActionPlan, input.availableActionIds),
+        commitHistoricalPreProgramWeeklyActionPlan(
+          career,
+          input.repeatedActionPlan,
+          input.availableActionIds,
+        ),
         reproduction,
         'commit_plan',
         weekIndex,

@@ -7,6 +7,41 @@ import { VitePWA } from 'vite-plugin-pwa';
 const applicationName = localeMessages[DEFAULT_LOCALE]['app.title'];
 
 export default defineConfig({
+  build: {
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            {
+              name: 'football-engines',
+              test: /[\\/]packages[\\/]game-core[\\/]src[\\/]games[\\/]/,
+              priority: 50,
+            },
+            {
+              name: 'game-core',
+              test: /[\\/]packages[\\/]game-core[\\/]src[\\/]/,
+              priority: 40,
+            },
+            {
+              name: 'locales',
+              test: /[\\/]packages[\\/]game-content[\\/]src[\\/]locales[\\/]/,
+              priority: 50,
+            },
+            {
+              name: 'game-content',
+              test: /[\\/]packages[\\/]game-content[\\/]src[\\/]/,
+              priority: 30,
+            },
+            {
+              name: 'vendor-runtime',
+              test: /[\\/]node_modules[\\/]/,
+              priority: 10,
+            },
+          ],
+        },
+      },
+    },
+  },
   resolve: {
     conditions: ['source', ...defaultClientConditions],
   },

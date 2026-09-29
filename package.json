@@ -8,13 +8,16 @@
     "node": "^22.22.2 || ^24.15.0 || >=26.0.0"
   },
   "scripts": {
+    "desktop:dev": "node scripts/desktop.mjs dev",
+    "desktop:build": "node scripts/desktop.mjs build",
+    "desktop:smoke": "node scripts/desktop-smoke.mjs",
     "dev": "corepack pnpm --filter @project-saturday/game-content build && corepack pnpm --filter @project-saturday/web dev",
     "build": "corepack pnpm -r --if-present build && node scripts/verify-build.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.tools.json && corepack pnpm -r --if-present typecheck",
     "lint": "eslint . --max-warnings 0 && node scripts/check-boundaries.mjs && node scripts/check-localized-copy.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "node --test scripts/check-localized-copy.test.mjs && vitest run",
+    "test": "node --test scripts/check-localized-copy.test.mjs scripts/build-budgets.test.mjs scripts/desktop-config.test.mjs && vitest run",
     "test:content": "vitest run --project game-content",
     "test:sim": "vitest run --project game-core --project testkit",
     "e2e": "corepack pnpm e2e:prepare && cross-env PLAYWRIGHT_BROWSERS_PATH=.playwright-browsers playwright test",

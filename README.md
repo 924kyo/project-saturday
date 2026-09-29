@@ -25,7 +25,9 @@ corepack pnpm install
 corepack pnpm dev
 ```
 
-The development server prints its local URL. The first screen is a mobile-first PWA shell with simultaneous Korean and English localization.
+The development server prints its local URL. Choose Korean or English and create a QB, RB, WR, or CB. The current alpha has player-controlled weekly/Game Day decisions, training and skill progression, program/depth views, off-field choices, transfers, and a save-aware Career Hub. Use the Hub to start another run without clearing browser storage; Reset All Data is a separate, explicitly confirmed action.
+
+M7 is fully verified. The mandatory M7.5 Game Day experience correction is now in progress before M8; this is not the completed M10 release candidate. See [current progress](docs/execution/PROGRESS.md) for verified scope and remaining work.
 
 ## Verify the workspace
 
@@ -41,6 +43,8 @@ corepack pnpm build
 ```
 
 `corepack pnpm check` runs the complete gate after the Chromium test browser has been installed. If pnpm is already activated globally, the shorter `pnpm ...` forms are equivalent.
+
+For staged M7.5 WR v8 two-season domain/reload/budget coverage, run `pnpm --filter @project-saturday/testkit profile:wr-v8`. This does not activate the browser writer or replace actual four-position UI acceptance; see [terminal profile evidence](docs/qa/M7_5_WR_V8_TERMINAL_PROFILE.md).
 
 ## First-time Codex use
 
@@ -73,4 +77,4 @@ When documents conflict, use this priority:
 - IndexedDB save system with migrations and snapshots
 - Vitest + Playwright + deterministic simulation tests
 
-The repository now contains the M0 implementation harness. Delivery continues milestone-by-milestone according to the roadmap and durable execution ledgers.
+Delivery continues milestone-by-milestone according to the roadmap and durable execution ledgers. Historical saves and reports remain compatibility contracts; new added-position saves use paged envelope v3 without changing deterministic gameplay domain v2.

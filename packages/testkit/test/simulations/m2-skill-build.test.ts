@@ -1,17 +1,14 @@
 import { readFileSync } from 'node:fs';
 
-import {
-  CONTENT_COMPATIBILITY_VERSION,
-  SKILL_FAMILY_IDS,
-  SKILL_GRADE_IDS,
-  SKILL_IDS,
-} from '@project-saturday/game-content';
+import { CONTENT_COMPATIBILITY_VERSION, SKILL_GRADE_IDS } from '@project-saturday/game-content';
 import { contentManifest } from '@project-saturday/game-content/content';
 import { describe, expect, it } from 'vitest';
 
 import {
   M2_CONTROLLED_BUILD_SEED,
   M2_SKILL_OFFER_SEEDS,
+  M2_SKILL_FAMILY_IDS,
+  M2_SKILL_IDS,
   formatM2SkillBuildReport,
   runM2SkillBuildReport,
 } from '../../src/index.js';
@@ -25,9 +22,9 @@ describe('M2 behavior-shaped skill report', () => {
     const report = runM2SkillBuildReport();
 
     expect(report.contentCompatibilityVersion).toBe(CONTENT_COMPATIBILITY_VERSION);
-    expect(report.contentManifestSchemaVersion).toBe(contentManifest.schemaVersion);
+    expect(contentManifest.schemaVersion).toBe(9);
     expect(report.contentManifestSchemaVersion).toBe(2);
-    expect(report.skillCatalogIds).toEqual(SKILL_IDS);
+    expect(report.skillCatalogIds).toEqual(M2_SKILL_IDS);
     expect(report.skillCatalogCardinality).toBe(18);
     expect(report.offerSeeds).toEqual(M2_SKILL_OFFER_SEEDS);
     expect(report.offerSeedCount).toBe(64);
@@ -43,10 +40,10 @@ describe('M2 behavior-shaped skill report', () => {
       expect(sumCounts(strategy.picksByFamily)).toBe(strategy.pickCount);
       expect(sumCounts(strategy.offersByGrade)).toBe(strategy.offerSlotCount);
       expect(sumCounts(strategy.picksByGrade)).toBe(strategy.pickCount);
-      expect(Object.keys(strategy.offersBySkill)).toEqual(SKILL_IDS);
-      expect(Object.keys(strategy.offersByFamily)).toEqual(SKILL_FAMILY_IDS);
+      expect(Object.keys(strategy.offersBySkill)).toEqual(M2_SKILL_IDS);
+      expect(Object.keys(strategy.offersByFamily)).toEqual(M2_SKILL_FAMILY_IDS);
       expect(Object.keys(strategy.offersByGrade)).toEqual(SKILL_GRADE_IDS);
-      for (const skillId of SKILL_IDS) {
+      for (const skillId of M2_SKILL_IDS) {
         expect(strategy.picksBySkill[skillId].count).toBeLessThanOrEqual(
           strategy.offersBySkill[skillId].count,
         );

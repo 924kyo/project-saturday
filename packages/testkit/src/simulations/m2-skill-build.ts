@@ -1,8 +1,8 @@
 import {
   CONTENT_COMPATIBILITY_VERSION,
-  SKILL_FAMILY_IDS,
   SKILL_GRADE_IDS,
-  SKILL_IDS,
+  type SKILL_FAMILY_IDS,
+  type SKILL_IDS,
 } from '@project-saturday/game-content';
 import {
   contentManifest,
@@ -12,7 +12,7 @@ import {
 } from '@project-saturday/game-content/content';
 import {
   deriveOwnedSkillIds,
-  parseCareerRunV2,
+  parseCareerRun,
   setEquippedSkillSlot,
 } from '@project-saturday/game-core';
 import type {
@@ -38,6 +38,40 @@ import { formatScenarioReproduction } from '../scenario.js';
 
 export const M2_SKILL_BUILD_REPORT_ID = 'm2_skill_build_baseline_v1' as const;
 export const M2_CONTROLLED_BUILD_SEED = 'm2-control-low-003' as const satisfies RngSeed;
+
+/** Frozen M2 catalog boundary: later additive cards must not rewrite historical evidence. */
+export const M2_SKILL_IDS = Object.freeze([
+  'skill_route_notebook_c',
+  'skill_first_step_lab_b',
+  'skill_secure_hands_routine_b',
+  'skill_full_route_circuit_a',
+  'skill_recovery_window_c',
+  'skill_late_set_engine_b',
+  'skill_empty_tank_reps_a',
+  'skill_compressed_recovery_s',
+  'skill_one_more_rep_c',
+  'skill_broad_horizon_b',
+  'skill_edge_of_focus_a',
+  'skill_reset_ritual_b',
+  'skill_coverage_ledger_b',
+  'skill_high_point_wager_a',
+  'skill_open_field_dare_s',
+  'skill_study_buffer_c',
+  'skill_balanced_calendar_b',
+  'skill_two_track_week_a',
+] as const satisfies readonly (typeof SKILL_IDS)[number][]);
+
+export const M2_SKILL_FAMILY_IDS = Object.freeze([
+  'skill_family_development',
+  'skill_family_game_day',
+  'skill_family_body',
+  'skill_family_mindset',
+  'skill_family_life',
+] as const satisfies readonly (typeof SKILL_FAMILY_IDS)[number][]);
+
+const M2_SKILL_MECHANICS_DEFINITIONS = Object.freeze(
+  skillMechanicsDefinitions.filter(({ id }) => M2_SKILL_IDS.some((skillId) => skillId === id)),
+);
 
 export const M2_SKILL_OFFER_SEEDS = Object.freeze([
   'm2-offer-001',
@@ -106,8 +140,8 @@ export const M2_SKILL_OFFER_SEEDS = Object.freeze([
   'm2-offer-064',
 ] as const satisfies readonly RngSeed[]);
 
-type CatalogSkillId = (typeof SKILL_IDS)[number];
-type CatalogSkillFamilyId = (typeof SKILL_FAMILY_IDS)[number];
+type CatalogSkillId = (typeof M2_SKILL_IDS)[number];
+type CatalogSkillFamilyId = (typeof M2_SKILL_FAMILY_IDS)[number];
 type CatalogSkillGradeId = (typeof SKILL_GRADE_IDS)[number];
 
 export type M2OfferStrategyId = 'film_repeat' | 'weight_repeat';
@@ -212,13 +246,21 @@ export interface ControlledBuildVariantReport {
   readonly revisionBeforeActions: number;
   readonly rngBeforeActions: RngState;
   readonly bodyBeforeActions: number;
-  readonly results: readonly [WeeklyActionResult, WeeklyActionResult, WeeklyActionResult];
+  readonly results: readonly [M2WeeklyActionResult, M2WeeklyActionResult, M2WeeklyActionResult];
   readonly passiveBodyRecovery: ExecutedWrSkillDevelopmentWeek['passiveBodyRecovery'];
   readonly finalBody: number;
   readonly finalFootballIqRating: number;
   readonly finalFootballIqXp: number;
   readonly finalRevision: number;
   readonly finalRng: RngState;
+}
+
+type M2WeeklyActionResult = Omit<WeeklyActionResult, 'practiceImpact'>;
+
+function toM2WeeklyActionResult(result: WeeklyActionResult): M2WeeklyActionResult {
+  const { practiceImpact, ...m2Result } = result;
+  void practiceImpact;
+  return m2Result;
 }
 
 export interface M2ControlledBuildReport {
@@ -247,7 +289,7 @@ export interface M2SkillBuildReport {
   readonly reportId: typeof M2_SKILL_BUILD_REPORT_ID;
   readonly contentCompatibilityVersion: typeof CONTENT_COMPATIBILITY_VERSION;
   readonly contentManifestSchemaVersion: 2;
-  readonly skillCatalogIds: typeof SKILL_IDS;
+  readonly skillCatalogIds: typeof M2_SKILL_IDS;
   readonly skillCatalogCardinality: number;
   readonly offerSeeds: readonly RngSeed[];
   readonly offerSeedCount: number;
@@ -295,11 +337,11 @@ function countRates<TId extends string>(
 }
 
 function isCatalogSkillId(skillId: SkillId): skillId is CatalogSkillId {
-  return SKILL_IDS.some((catalogSkillId) => catalogSkillId === skillId);
+  return M2_SKILL_IDS.some((catalogSkillId) => catalogSkillId === skillId);
 }
 
 function mechanicsForSkill(skillId: SkillId) {
-  const definition = skillMechanicsDefinitions.find(({ id }) => id === skillId);
+  const definition = M2_SKILL_MECHANICS_DEFINITIONS.find(({ id }) => id === skillId);
   if (definition === undefined) {
     return fail('m2_skill_catalog', `missing_skill_definition:${skillId}`);
   }
@@ -319,7 +361,7 @@ function executeWeek(
     actionPlan,
     availableActionIds: AVAILABLE_ACTION_IDS,
     actionDefinitions: weeklyActionDefinitions,
-    skillDefinitions: skillMechanicsDefinitions,
+    skillDefinitions: M2_SKILL_MECHANICS_DEFINITIONS,
     config: developmentWeekConfig,
     serializationMode,
     choicePolicy: ({ offer }) =>
@@ -387,10 +429,10 @@ function strategyReport(
   strategy: M2OfferStrategyDefinition,
   seeds: readonly RngSeed[],
 ): M2OfferStrategyReport {
-  const offerCounts = emptyCounts(SKILL_IDS);
-  const pickCounts = emptyCounts(SKILL_IDS);
-  const offerFamilyCounts = emptyCounts(SKILL_FAMILY_IDS);
-  const pickFamilyCounts = emptyCounts(SKILL_FAMILY_IDS);
+  const offerCounts = emptyCounts(M2_SKILL_IDS);
+  const pickCounts = emptyCounts(M2_SKILL_IDS);
+  const offerFamilyCounts = emptyCounts(M2_SKILL_FAMILY_IDS);
+  const pickFamilyCounts = emptyCounts(M2_SKILL_FAMILY_IDS);
   const offerGradeCounts = emptyCounts(SKILL_GRADE_IDS);
   const pickGradeCounts = emptyCounts(SKILL_GRADE_IDS);
   const samples: M2OfferSampleReport[] = [];
@@ -405,7 +447,7 @@ function strategyReport(
     }
     samples.push(sample);
     behaviorCounts ??= breakthrough.behaviorCounts;
-    const weights = emptyCounts(SKILL_IDS);
+    const weights = emptyCounts(M2_SKILL_IDS);
     for (const candidate of breakthrough.weightedCandidates) {
       if (!isCatalogSkillId(candidate.skillId)) {
         return fail(strategy.strategyId, `unknown_candidate:${candidate.skillId}`);
@@ -450,10 +492,10 @@ function strategyReport(
     pickCount: seeds.length,
     behaviorCounts,
     candidateWeights,
-    offersBySkill: countRates(SKILL_IDS, offerCounts, offerSlotCount),
-    picksBySkill: countRates(SKILL_IDS, pickCounts, seeds.length),
-    offersByFamily: countRates(SKILL_FAMILY_IDS, offerFamilyCounts, offerSlotCount),
-    picksByFamily: countRates(SKILL_FAMILY_IDS, pickFamilyCounts, seeds.length),
+    offersBySkill: countRates(M2_SKILL_IDS, offerCounts, offerSlotCount),
+    picksBySkill: countRates(M2_SKILL_IDS, pickCounts, seeds.length),
+    offersByFamily: countRates(M2_SKILL_FAMILY_IDS, offerFamilyCounts, offerSlotCount),
+    picksByFamily: countRates(M2_SKILL_FAMILY_IDS, pickFamilyCounts, seeds.length),
     offersByGrade: countRates(SKILL_GRADE_IDS, offerGradeCounts, offerSlotCount),
     picksByGrade: countRates(SKILL_GRADE_IDS, pickGradeCounts, seeds.length),
     samples: Object.freeze(samples),
@@ -520,7 +562,7 @@ function buildControlledSharedCareer(serializationMode: SkillCareerSerialization
 }
 
 function roundTripCareer(career: CareerRun, scenarioId: string): CareerRun {
-  const parsed = parseCareerRunV2(JSON.stringify(career));
+  const parsed = parseCareerRun(JSON.stringify(career));
   if (!parsed.ok) {
     return fail(scenarioId, parsed.reason);
   }
@@ -586,7 +628,11 @@ function controlledVariant(
     revisionBeforeActions: career.revision,
     rngBeforeActions: career.rng,
     bodyBeforeActions: career.player.state.body,
-    results: execution.actionResults,
+    results: execution.actionResults.map(toM2WeeklyActionResult) as [
+      M2WeeklyActionResult,
+      M2WeeklyActionResult,
+      M2WeeklyActionResult,
+    ],
     passiveBodyRecovery: execution.passiveBodyRecovery,
     finalBody: execution.career.player.state.body,
     finalFootballIqRating: footballIq.rating,
@@ -599,7 +645,7 @@ function controlledVariant(
 function resultForAction(
   variant: ControlledBuildVariantReport,
   actionId: SkillAwareWeeklyActionPlan[number],
-): WeeklyActionResult {
+): M2WeeklyActionResult {
   const result = variant.results.find((candidate) => candidate.actionId === actionId);
   if (result === undefined) {
     return fail(variant.buildId, `missing_action_result:${actionId}`);
@@ -695,10 +741,10 @@ export function runM2SkillBuildReport(
   if (seeds.length === 0) {
     return fail(M2_SKILL_BUILD_REPORT_ID, 'empty_seed_set');
   }
-  if (contentManifest.schemaVersion !== 2 || contentManifest.contentVersion !== 1) {
+  if (contentManifest.contentVersion !== 1) {
     return fail(M2_SKILL_BUILD_REPORT_ID, 'unexpected_content_version');
   }
-  if (skillMechanicsDefinitions.length !== SKILL_IDS.length) {
+  if (M2_SKILL_MECHANICS_DEFINITIONS.length !== M2_SKILL_IDS.length) {
     return fail(M2_SKILL_BUILD_REPORT_ID, 'skill_catalog_cardinality_mismatch');
   }
   const offerStrategies = M2_OFFER_STRATEGIES.map((strategy) => strategyReport(strategy, seeds));
@@ -716,9 +762,10 @@ export function runM2SkillBuildReport(
   return Object.freeze({
     reportId: M2_SKILL_BUILD_REPORT_ID,
     contentCompatibilityVersion: CONTENT_COMPATIBILITY_VERSION,
-    contentManifestSchemaVersion: contentManifest.schemaVersion,
-    skillCatalogIds: SKILL_IDS,
-    skillCatalogCardinality: SKILL_IDS.length,
+    // This is a historical M2 report field; keep its authored schema identity byte-stable.
+    contentManifestSchemaVersion: 2,
+    skillCatalogIds: M2_SKILL_IDS,
+    skillCatalogCardinality: M2_SKILL_IDS.length,
     offerSeeds: Object.freeze([...seeds]),
     offerSeedCount: seeds.length,
     totalOfferCareers: seeds.length * offerStrategies.length,

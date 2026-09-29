@@ -1,0 +1,9 @@
+{
+  "name": "@project-saturday/desktop",
+  "version": "0.7.5",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "@tauri-apps/cli": "2.11.4"
+  }
+}

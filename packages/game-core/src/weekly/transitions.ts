@@ -1,6 +1,18 @@
-import { BODY_BOUNDS, GPA_BOUNDS } from '../player/bounds.js';
+import {
+  BODY_BOUNDS,
+  CONFIDENCE_BOUNDS,
+  GPA_BOUNDS,
+  PREPARATION_BOUNDS,
+} from '../player/bounds.js';
 import { cloneSerializable, deepFreeze } from '../player/immutable.js';
 import { restoreRngState } from '../random/rng.js';
+import { isWeeklyActionAvailableForCurrentInjury } from '../injuries/transitions.js';
+import { updateProgramDepthAfterWeek } from '../programs/depth.js';
+import { PRACTICE_IMPACT_BOUNDS } from '../programs/tuning.js';
+import type {
+  RecruitingOffenseStyleDefinition,
+  RotationPolicyMechanicsDefinition,
+} from '../programs/types.js';
 import {
   MENTAL_ATTRIBUTE_IDS,
   PHYSICAL_ATTRIBUTE_IDS,
@@ -26,8 +38,20 @@ import {
   type CollectWeeklySkillEffectsResult,
 } from '../skills/effects.js';
 import { isSkillMechanicsDefinitionCatalog } from '../skills/definition.js';
-import type { SkillMechanicsDefinition } from '../skills/types.js';
-import { generateSkillBreakthroughOffer } from '../skills/offers.js';
+import type {
+  AppliedWeeklySkillEffectV2,
+  SkillMechanicsDefinition,
+  WeeklySkillEffectAggregatesV2,
+} from '../skills/types.js';
+import {
+  generateGaugeSkillBreakthroughOffer,
+  generateSkillBreakthroughOffer,
+  type GenerateSkillBreakthroughOfferResult,
+} from '../skills/offers.js';
+import {
+  bankSkillBreakthroughProgress,
+  deriveWeeklySkillBreakthroughProgress,
+} from '../skills/progress.js';
 import { deriveOwnedSkillIds } from '../skills/state.js';
 import { isSkillBreakthroughCadenceWeek } from '../skills/tuning.js';
 import { isWeeklyActionDefinition, isWeeklyActionDefinitionCatalog } from './definition.js';
@@ -42,6 +66,7 @@ import {
 import {
   ATTRIBUTE_XP_PER_RATING,
   WEEKLY_ACTION_PLAN_SIZE,
+  deriveNextWeekPreparation,
   deriveBodyXpEfficiencyPermille,
   deriveTrainingProficiencyLevel,
   getTrainingProficiencyUseCap,
@@ -49,12 +74,16 @@ import {
   isDevelopmentWeekConfig,
   type DevelopmentWeekConfig,
 } from './tuning.js';
-import type {
-  TrainingProficiencyUses,
-  WeeklyActionDefinition,
-  WeeklyActionResult,
-  WeeklyAttributeXpResult,
-  WeeklyProficiencyResult,
+import {
+  WEEKLY_EXPERIENCE_VERSION_CURRENT,
+  WEEKLY_EXPERIENCE_VERSION_LEGACY,
+  type TrainingProficiencyUses,
+  type WeeklyActionDefinition,
+  type WeeklyActionResult,
+  type WeeklyActionResultV3,
+  type WeeklyActionResultV4,
+  type WeeklyAttributeXpResult,
+  type WeeklyProficiencyResult,
 } from './types.js';
 
 export type WeeklyCommandResult =
@@ -214,6 +243,9 @@ function effectIdsForResult(
   definition: WeeklyActionDefinition,
   requestedBodyDelta: number,
   requestedGpaDelta: number,
+  requestedPreparationDelta: number,
+  requestedConfidenceDelta: number,
+  includeExperienceEffects: boolean,
 ): readonly WeeklyActionEffectId[] {
   const applicable = new Set<WeeklyActionEffectId>();
   if (definition.attributeXp.length > 0) {
@@ -224,6 +256,12 @@ function effectIdsForResult(
   }
   if (requestedGpaDelta !== 0) {
     applicable.add('effect_gpa_change');
+  }
+  if (includeExperienceEffects && requestedPreparationDelta !== 0) {
+    applicable.add('effect_preparation_change');
+  }
+  if (includeExperienceEffects && requestedConfidenceDelta !== 0) {
+    applicable.add('effect_confidence_change');
   }
   if (definition.proficiencyId !== null) {
     applicable.add('effect_proficiency_progress');
@@ -238,7 +276,7 @@ function resolveDefinition(
   skillEffects: Extract<CollectWeeklySkillEffectsResult, { readonly ok: true }>,
 ): {
   readonly player: WrPlayer;
-  readonly result: WeeklyActionResult;
+  readonly result: WeeklyActionResultV3 | WeeklyActionResultV4;
 } {
   const phase = career.phase;
   if (phase.type !== 'RESOLVE_ACTIONS') {
@@ -250,6 +288,8 @@ function resolveDefinition(
     career.player.trainingProficiencyUses,
   ) as MutableProficiencyUses;
   const bodyBefore = career.player.state.body;
+  const preparationBefore = career.player.state.preparation;
+  const confidenceBefore = career.player.state.confidence;
   const gpaBefore = career.player.state.gpa;
   const bodyXpEfficiencyPermille = deriveBodyXpEfficiencyPermille(bodyBefore, config);
   const proficiency =
@@ -284,16 +324,68 @@ function resolveDefinition(
     GPA_BOUNDS.min,
     GPA_BOUNDS.max,
   );
+  const useExperienceModel = career.weeklyExperienceVersion === WEEKLY_EXPERIENCE_VERSION_CURRENT;
+  const requestedPreparationDelta = useExperienceModel
+    ? definition.preparationDelta + skillEffects.aggregates.preparationDeltaFlat
+    : definition.preparationDelta;
+  const requestedConfidenceDelta = useExperienceModel
+    ? definition.confidenceDelta + skillEffects.aggregates.confidenceDeltaFlat
+    : definition.confidenceDelta;
+  const preparationAfter = useExperienceModel
+    ? clamp(
+        preparationBefore + requestedPreparationDelta,
+        PREPARATION_BOUNDS.min,
+        PREPARATION_BOUNDS.max,
+      )
+    : preparationBefore;
+  const confidenceAfter = useExperienceModel
+    ? clamp(
+        confidenceBefore + requestedConfidenceDelta,
+        CONFIDENCE_BOUNDS.min,
+        CONFIDENCE_BOUNDS.max,
+      )
+    : confidenceBefore;
   const state: PlayerState = {
     ...career.player.state,
     body: bodyAfter,
+    preparation: preparationAfter,
+    confidence: confidenceAfter,
     gpa: gpaAfter,
   };
-  const result: WeeklyActionResult = {
+  const legacySkillEffectAggregates: WeeklySkillEffectAggregatesV2 = {
+    xpMultiplierPermille: skillEffects.aggregates.xpMultiplierPermille,
+    bodyCostMultiplierPermille: skillEffects.aggregates.bodyCostMultiplierPermille,
+    bodyDeltaFlat: skillEffects.aggregates.bodyDeltaFlat,
+    gpaDeltaMilli: skillEffects.aggregates.gpaDeltaMilli,
+  };
+  const legacyAppliedSkillEffects = skillEffects.appliedSkillEffects.filter(
+    (effect): effect is AppliedWeeklySkillEffectV2 =>
+      effect.type === 'action_xp_multiplier' ||
+      effect.type === 'action_body_cost_multiplier' ||
+      effect.type === 'action_body_delta_flat' ||
+      effect.type === 'action_gpa_delta_milli',
+  );
+  const practiceImpact =
+    career.recruitingState.type === 'COMMITTED'
+      ? clamp(
+          definition.practiceImpact +
+            (useExperienceModel ? skillEffects.aggregates.practiceImpactFlat : 0),
+          PRACTICE_IMPACT_BOUNDS.min,
+          PRACTICE_IMPACT_BOUNDS.max,
+        )
+      : 0;
+  const legacyResult: WeeklyActionResultV3 = {
     actionId: definition.id,
     actionIndex: phase.nextActionIndex,
     weekIndex: career.weekIndex,
-    effectIds: effectIdsForResult(definition, requestedBodyDelta, requestedGpaDelta),
+    effectIds: effectIdsForResult(
+      definition,
+      requestedBodyDelta,
+      requestedGpaDelta,
+      requestedPreparationDelta,
+      requestedConfidenceDelta,
+      useExperienceModel,
+    ),
     bodyBefore,
     baseBodyDelta,
     requestedBodyDelta,
@@ -307,9 +399,27 @@ function resolveDefinition(
     gpaAfter,
     attributeXp,
     proficiency,
-    skillEffectAggregates: skillEffects.aggregates,
-    appliedSkillEffects: skillEffects.appliedSkillEffects,
+    skillEffectAggregates: legacySkillEffectAggregates,
+    appliedSkillEffects: legacyAppliedSkillEffects,
+    practiceImpact,
   };
+  const result: WeeklyActionResultV3 | WeeklyActionResultV4 = useExperienceModel
+    ? {
+        ...legacyResult,
+        skillEffectAggregates: skillEffects.aggregates,
+        appliedSkillEffects: skillEffects.appliedSkillEffects,
+        preparationBefore,
+        basePreparationDelta: definition.preparationDelta,
+        requestedPreparationDelta,
+        actualPreparationDelta: preparationAfter - preparationBefore,
+        preparationAfter,
+        confidenceBefore,
+        baseConfidenceDelta: definition.confidenceDelta,
+        requestedConfidenceDelta,
+        actualConfidenceDelta: confidenceAfter - confidenceBefore,
+        confidenceAfter,
+      }
+    : legacyResult;
 
   return {
     player: {
@@ -336,6 +446,20 @@ export function commitWeeklyActionPlan(
   if (career.phase.type !== 'PLAN_ACTIONS') {
     return failure(career, 'weekly.invalid_phase');
   }
+  if (career.recruitingState.type !== 'COMMITTED') {
+    return failure(career, 'weekly.recruiting_required');
+  }
+  if ('offFieldCareerState' in career) {
+    const nil = career.offFieldCareerState.nil;
+    if ('bootstrapStatus' in nil && nil.bootstrapStatus === 'ACTIVE') {
+      if (
+        nil.activeObligation !== null &&
+        nil.activeObligation.lastResolvedWeekIndex !== career.weekIndex
+      ) {
+        return failure(career, 'weekly.off_field_obligation_required');
+      }
+    }
+  }
   if (!isDenseWeeklyActionArray(actionIds) || actionIds.length !== WEEKLY_ACTION_PLAN_SIZE) {
     return failure(
       career,
@@ -352,11 +476,128 @@ export function commitWeeklyActionPlan(
   ) {
     return failure(career, 'weekly.action_unavailable');
   }
+  if (actionIds.some((actionId) => !isWeeklyActionAvailableForCurrentInjury(career, actionId))) {
+    return failure(career, 'weekly.action_unavailable');
+  }
 
   const cloned = cloneSerializable(career);
   const nextCareer: CareerRun = {
     ...cloned,
     revision: career.revision + 1,
+    weeklyExperienceVersion: WEEKLY_EXPERIENCE_VERSION_CURRENT,
+    phase: {
+      type: 'RESOLVE_ACTIONS',
+      actionIds: [
+        actionIds[0] as WeeklyActionId,
+        actionIds[1] as WeeklyActionId,
+        actionIds[2] as WeeklyActionId,
+      ],
+      nextActionIndex: 0,
+      results: [],
+    },
+  };
+  return success(career, nextCareer);
+}
+
+/**
+ * Preserves the exact pre-program M1/M2 simulation contract for pinned historical reports.
+ * Shipping adapters must use commitWeeklyActionPlan; this command accepts only neutral
+ * NOT_STARTED careers and can never bypass an active CHOOSING shortlist.
+ */
+export function commitHistoricalPreProgramWeeklyActionPlan(
+  career: CareerRun,
+  actionIds: readonly WeeklyActionId[],
+  availableActionIds: readonly WeeklyActionId[],
+): WeeklyCommandResult {
+  if (!validateCareerRun(career).ok) {
+    return failure(career, 'weekly.invalid_career');
+  }
+  if (!canIncrementRevision(career)) {
+    return failure(career, 'weekly.revision_exhausted');
+  }
+  if (career.phase.type !== 'PLAN_ACTIONS') {
+    return failure(career, 'weekly.invalid_phase');
+  }
+  if (career.recruitingState.type !== 'NOT_STARTED') {
+    return failure(career, 'weekly.recruiting_required');
+  }
+  if (!isDenseWeeklyActionArray(actionIds) || actionIds.length !== WEEKLY_ACTION_PLAN_SIZE) {
+    return failure(
+      career,
+      Array.isArray(actionIds) && actionIds.length !== WEEKLY_ACTION_PLAN_SIZE
+        ? 'weekly.invalid_plan_length'
+        : 'weekly.invalid_action_id',
+    );
+  }
+  if (!isDenseWeeklyActionArray(availableActionIds)) {
+    return failure(career, 'weekly.invalid_available_actions');
+  }
+  if (
+    actionIds.some((actionId) => !availableActionIds.some((available) => available === actionId))
+  ) {
+    return failure(career, 'weekly.action_unavailable');
+  }
+  const cloned = cloneSerializable(career);
+  const nextCareer: CareerRun = {
+    ...cloned,
+    revision: career.revision + 1,
+    weeklyExperienceVersion: WEEKLY_EXPERIENCE_VERSION_LEGACY,
+    phase: {
+      type: 'RESOLVE_ACTIONS',
+      actionIds: [
+        actionIds[0] as WeeklyActionId,
+        actionIds[1] as WeeklyActionId,
+        actionIds[2] as WeeklyActionId,
+      ],
+      nextActionIndex: 0,
+      results: [],
+    },
+  };
+  return success(career, nextCareer);
+}
+
+/**
+ * Preserves the shipped M3 program/depth simulation baseline after the current-v4
+ * experience model replaces its weekly formula. Testkit is the only intended caller.
+ */
+export function commitHistoricalM3WeeklyActionPlan(
+  career: CareerRun,
+  actionIds: readonly WeeklyActionId[],
+  availableActionIds: readonly WeeklyActionId[],
+): WeeklyCommandResult {
+  if (!validateCareerRun(career).ok) {
+    return failure(career, 'weekly.invalid_career');
+  }
+  if (!canIncrementRevision(career)) {
+    return failure(career, 'weekly.revision_exhausted');
+  }
+  if (career.phase.type !== 'PLAN_ACTIONS') {
+    return failure(career, 'weekly.invalid_phase');
+  }
+  if (career.recruitingState.type !== 'COMMITTED') {
+    return failure(career, 'weekly.recruiting_required');
+  }
+  if (!isDenseWeeklyActionArray(actionIds) || actionIds.length !== WEEKLY_ACTION_PLAN_SIZE) {
+    return failure(
+      career,
+      Array.isArray(actionIds) && actionIds.length !== WEEKLY_ACTION_PLAN_SIZE
+        ? 'weekly.invalid_plan_length'
+        : 'weekly.invalid_action_id',
+    );
+  }
+  if (!isDenseWeeklyActionArray(availableActionIds)) {
+    return failure(career, 'weekly.invalid_available_actions');
+  }
+  if (
+    actionIds.some((actionId) => !availableActionIds.some((available) => available === actionId))
+  ) {
+    return failure(career, 'weekly.action_unavailable');
+  }
+  const cloned = cloneSerializable(career);
+  const nextCareer: CareerRun = {
+    ...cloned,
+    revision: career.revision + 1,
+    weeklyExperienceVersion: WEEKLY_EXPERIENCE_VERSION_LEGACY,
     phase: {
       type: 'RESOLVE_ACTIONS',
       actionIds: [
@@ -376,6 +617,8 @@ export function resolveNextWeeklyAction(
   definition: WeeklyActionDefinition,
   config: DevelopmentWeekConfig,
   skillDefinitions: readonly SkillMechanicsDefinition[] = [],
+  offenseStyleDefinitions: readonly RecruitingOffenseStyleDefinition[] = [],
+  rotationPolicyDefinitions: readonly RotationPolicyMechanicsDefinition[] = [],
 ): WeeklyCommandResult {
   if (!validateCareerRun(career).ok) {
     return failure(career, 'weekly.invalid_career');
@@ -414,28 +657,83 @@ export function resolveNextWeeklyAction(
   }
 
   const resolved = resolveDefinition(career, definition, config, skillEffects);
-  const results = [...career.phase.results.map(cloneSerializable), resolved.result];
+  const results: Array<WeeklyActionResultV3 | WeeklyActionResultV4> = [
+    ...career.phase.results.map((result) => cloneSerializable(result)),
+    resolved.result,
+  ];
   const cloned = cloneSerializable(career);
-  const phase =
-    results.length === WEEKLY_ACTION_PLAN_SIZE
-      ? {
-          type: 'WEEK_END' as const,
-          results: [
-            results[0] as WeeklyActionResult,
-            results[1] as WeeklyActionResult,
-            results[2] as WeeklyActionResult,
-          ] as const,
-        }
-      : {
-          type: 'RESOLVE_ACTIONS' as const,
-          actionIds: [...career.phase.actionIds] as [
-            WeeklyActionId,
-            WeeklyActionId,
-            WeeklyActionId,
-          ],
-          nextActionIndex: results.length as 1 | 2,
-          results,
-        };
+  let nextPlayer = resolved.player;
+  let nextProgramContext = cloned.programContext;
+  let depthUpdate = null;
+  if (results.length === WEEKLY_ACTION_PLAN_SIZE && career.recruitingState.type === 'COMMITTED') {
+    const updatedDepth = updateProgramDepthAfterWeek(
+      { ...career, player: resolved.player },
+      [
+        results[0] as WeeklyActionResult,
+        results[1] as WeeklyActionResult,
+        results[2] as WeeklyActionResult,
+      ],
+      offenseStyleDefinitions,
+      rotationPolicyDefinitions,
+      career.weeklyExperienceVersion === WEEKLY_EXPERIENCE_VERSION_CURRENT
+        ? 'experience'
+        : 'legacy',
+    );
+    if (!updatedDepth.ok) {
+      return failure(
+        career,
+        updatedDepth.reason === 'depth.invalid_offense_catalog'
+          ? 'weekly.invalid_offense_definitions'
+          : updatedDepth.reason === 'depth.invalid_rotation_catalog'
+            ? 'weekly.invalid_rotation_definitions'
+            : 'weekly.internal_invariant_failure',
+      );
+    }
+    nextPlayer = updatedDepth.player;
+    nextProgramContext = updatedDepth.programContext;
+    depthUpdate = updatedDepth.depthUpdate;
+  }
+  let phase: CareerRun['phase'];
+  if (results.length === WEEKLY_ACTION_PLAN_SIZE) {
+    phase =
+      career.weeklyExperienceVersion === WEEKLY_EXPERIENCE_VERSION_CURRENT
+        ? {
+            type: 'WEEK_END',
+            results: results as [WeeklyActionResultV4, WeeklyActionResultV4, WeeklyActionResultV4],
+            depthUpdate: depthUpdate as Extract<
+              CareerRun['phase'],
+              { readonly type: 'WEEK_END'; readonly results: readonly WeeklyActionResultV4[] }
+            >['depthUpdate'],
+          }
+        : {
+            type: 'WEEK_END',
+            results: results as [WeeklyActionResultV3, WeeklyActionResultV3, WeeklyActionResultV3],
+            depthUpdate: depthUpdate as Extract<
+              CareerRun['phase'],
+              { readonly type: 'WEEK_END'; readonly results: readonly WeeklyActionResultV3[] }
+            >['depthUpdate'],
+          };
+  } else {
+    const actionIds = [...career.phase.actionIds] as [
+      WeeklyActionId,
+      WeeklyActionId,
+      WeeklyActionId,
+    ];
+    phase =
+      career.weeklyExperienceVersion === 2
+        ? {
+            type: 'RESOLVE_ACTIONS',
+            actionIds,
+            nextActionIndex: results.length as 1 | 2,
+            results: results as WeeklyActionResultV4[],
+          }
+        : {
+            type: 'RESOLVE_ACTIONS',
+            actionIds,
+            nextActionIndex: results.length as 1 | 2,
+            results: results as WeeklyActionResultV3[],
+          };
+  }
   const nextCareer: CareerRun = {
     ...cloned,
     revision: career.revision + 1,
@@ -444,16 +742,19 @@ export function resolveNextWeeklyAction(
       definition.id,
     ],
     phase,
-    player: resolved.player,
+    player: nextPlayer,
+    programContext: nextProgramContext,
   };
   return success(career, nextCareer);
 }
 
-export function advanceDevelopmentWeek(
+function advanceDevelopmentWeekInternal(
   career: CareerRun,
   config: DevelopmentWeekConfig,
-  skillDefinitions: readonly SkillMechanicsDefinition[] = [],
-  weeklyActionDefinitions: readonly WeeklyActionDefinition[] = [],
+  skillDefinitions: readonly SkillMechanicsDefinition[],
+  weeklyActionDefinitions: readonly WeeklyActionDefinition[],
+  offerModel: 'gauge' | 'historical_cadence' | 'historical_gauge',
+  phasePolicy: 'standard' | 'season_camp',
 ): WeeklyCommandResult {
   if (!validateCareerRun(career).ok) {
     return failure(career, 'weekly.invalid_career');
@@ -461,7 +762,17 @@ export function advanceDevelopmentWeek(
   if (!canIncrementRevision(career)) {
     return failure(career, 'weekly.revision_exhausted');
   }
-  if (career.phase.type !== 'WEEK_END') {
+  const historicalWeekEnd = offerModel !== 'gauge';
+  const usesGauge = offerModel !== 'historical_cadence';
+  const validPhase =
+    phasePolicy === 'season_camp'
+      ? career.recruitingState.type === 'COMMITTED' && career.phase.type === 'WEEK_END'
+      : historicalWeekEnd
+        ? career.phase.type === 'WEEK_END'
+        : career.recruitingState.type === 'COMMITTED'
+          ? career.phase.type === 'POST_GAME'
+          : career.phase.type === 'WEEK_END';
+  if (!validPhase) {
     return failure(career, 'weekly.invalid_phase');
   }
   if (!Number.isSafeInteger(career.weekIndex) || career.weekIndex === Number.MAX_SAFE_INTEGER) {
@@ -504,8 +815,29 @@ export function advanceDevelopmentWeek(
   const completedWeekNumber = career.weekIndex + 1;
   let nextRng = restoreRngState(career.rng);
   let nextPhase: CareerRun['phase'] = { type: 'PLAN_ACTIONS' };
-  if (isSkillBreakthroughCadenceWeek(completedWeekNumber)) {
-    const generatedOffer = generateSkillBreakthroughOffer(
+  let breakthroughProgress = usesGauge ? deriveWeeklySkillBreakthroughProgress(career) : null;
+  let generatedOffer: GenerateSkillBreakthroughOfferResult | null = null;
+  if (usesGauge && breakthroughProgress?.triggeredOffer === true) {
+    generatedOffer = generateGaugeSkillBreakthroughOffer(
+      {
+        positionId: career.player.positionId,
+        archetypeId: career.player.archetypeId,
+        playerTagIds: career.player.tagIds,
+        ownedSkillIds: deriveOwnedSkillIds(career.player.skillState),
+        weekIndex: completedWeekNumber,
+        recentWeeklyActionIds: career.recentWeeklyActionIds,
+        rng: career.rng,
+        offerIndex: career.player.skillState.acquisitions.length,
+        trigger: breakthroughProgress,
+      },
+      skillDefinitions,
+      weeklyActionDefinitions,
+    );
+  } else if (
+    offerModel === 'historical_cadence' &&
+    isSkillBreakthroughCadenceWeek(completedWeekNumber)
+  ) {
+    generatedOffer = generateSkillBreakthroughOffer(
       {
         positionId: career.player.positionId,
         archetypeId: career.player.archetypeId,
@@ -519,6 +851,8 @@ export function advanceDevelopmentWeek(
       skillDefinitions,
       weeklyActionDefinitions,
     );
+  }
+  if (generatedOffer !== null) {
     if (!generatedOffer.ok) {
       return failure(
         career,
@@ -537,25 +871,112 @@ export function advanceDevelopmentWeek(
     nextRng = generatedOffer.nextRng;
     if (generatedOffer.offer !== null) {
       nextPhase = { type: 'SKILL_BREAKTHROUGH', offer: generatedOffer.offer };
+    } else if (breakthroughProgress !== null && breakthroughProgress.triggeredOffer) {
+      breakthroughProgress = bankSkillBreakthroughProgress(breakthroughProgress);
     }
   }
 
   const cloned = cloneSerializable(career);
   const nextBody = passiveRecovery.evidence.bodyAfter;
+  const nextPreparation =
+    career.weeklyExperienceVersion === 2
+      ? deriveNextWeekPreparation(career.player.state.preparation)
+      : career.player.state.preparation;
   const nextCareer: CareerRun = {
     ...cloned,
     revision: career.revision + 1,
     weekIndex: completedWeekNumber,
     rng: nextRng,
     lastPassiveBodyRecovery: passiveRecovery.evidence,
+    weeklyExperienceVersion: WEEKLY_EXPERIENCE_VERSION_CURRENT,
     phase: nextPhase,
     player: {
       ...cloned.player,
+      skillState:
+        breakthroughProgress === null
+          ? cloned.player.skillState
+          : {
+              ...cloned.player.skillState,
+              breakthroughGauge: {
+                model: 'gauge_v1',
+                progress: breakthroughProgress.progressAfter,
+                threshold: breakthroughProgress.threshold,
+                lastProgress: breakthroughProgress,
+              },
+            },
       state: {
         ...cloned.player.state,
         body: nextBody,
+        preparation: nextPreparation,
       },
     },
   };
   return success(career, nextCareer);
+}
+
+export function advanceDevelopmentWeek(
+  career: CareerRun,
+  config: DevelopmentWeekConfig,
+  skillDefinitions: readonly SkillMechanicsDefinition[] = [],
+  weeklyActionDefinitions: readonly WeeklyActionDefinition[] = [],
+): WeeklyCommandResult {
+  return advanceDevelopmentWeekInternal(
+    career,
+    config,
+    skillDefinitions,
+    weeklyActionDefinitions,
+    'gauge',
+    'standard',
+  );
+}
+
+/** Season orchestration only: camp completes a development week without requiring a game. */
+export function advanceSeasonCampDevelopmentWeek(
+  career: CareerRun,
+  config: DevelopmentWeekConfig,
+  skillDefinitions: readonly SkillMechanicsDefinition[] = [],
+  weeklyActionDefinitions: readonly WeeklyActionDefinition[] = [],
+): WeeklyCommandResult {
+  return advanceDevelopmentWeekInternal(
+    career,
+    config,
+    skillDefinitions,
+    weeklyActionDefinitions,
+    'gauge',
+    'season_camp',
+  );
+}
+
+/** Historical report compatibility only; shipping adapters must use `advanceDevelopmentWeek`. */
+export function advanceHistoricalDevelopmentWeek(
+  career: CareerRun,
+  config: DevelopmentWeekConfig,
+  skillDefinitions: readonly SkillMechanicsDefinition[] = [],
+  weeklyActionDefinitions: readonly WeeklyActionDefinition[] = [],
+): WeeklyCommandResult {
+  return advanceDevelopmentWeekInternal(
+    career,
+    config,
+    skillDefinitions,
+    weeklyActionDefinitions,
+    'historical_cadence',
+    'standard',
+  );
+}
+
+/** Checked-report compatibility only; shipping adapters must use `advanceDevelopmentWeek`. */
+export function advanceHistoricalGaugeDevelopmentWeek(
+  career: CareerRun,
+  config: DevelopmentWeekConfig,
+  skillDefinitions: readonly SkillMechanicsDefinition[] = [],
+  weeklyActionDefinitions: readonly WeeklyActionDefinition[] = [],
+): WeeklyCommandResult {
+  return advanceDevelopmentWeekInternal(
+    career,
+    config,
+    skillDefinitions,
+    weeklyActionDefinitions,
+    'historical_gauge',
+    'standard',
+  );
 }

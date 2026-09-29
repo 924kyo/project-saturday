@@ -8,7 +8,11 @@ export const WEEKLY_ACTION_ATTRIBUTE_TARGET_MAX = 3 as const;
 export const WEEKLY_ACTION_TAG_ID_MAX = 8 as const;
 export const WEEKLY_ACTION_BODY_DELTA_BOUNDS = Object.freeze({ min: -40, max: 40 });
 export const WEEKLY_ACTION_GPA_DELTA_BOUNDS = Object.freeze({ min: -0.5, max: 0.5 });
+export const WEEKLY_ACTION_PREPARATION_DELTA_BOUNDS = Object.freeze({ min: -25, max: 25 });
+export const WEEKLY_ACTION_CONFIDENCE_DELTA_BOUNDS = Object.freeze({ min: -25, max: 25 });
 export const PASSIVE_BODY_RECOVERY_BOUNDS = Object.freeze({ min: 0, max: 100 });
+export const PREPARATION_ROLLOVER_NEUTRAL = 50 as const;
+export const PREPARATION_ROLLOVER_RETENTION_PERMILLE = 500 as const;
 
 export const TRAINING_PROFICIENCY_LEVEL_COUNT = 6 as const;
 export const TRAINING_PROFICIENCY_LEVEL_BOUNDS = Object.freeze({ min: 0, max: 5 });
@@ -173,4 +177,18 @@ export function getTrainingProficiencyUseCap(config: DevelopmentWeekConfig): num
     throw new RangeError('Proficiency cap requires valid development tuning.');
   }
   return config.proficiencyUseThresholds[TRAINING_PROFICIENCY_LEVEL_COUNT - 1] as number;
+}
+
+/** Retains half of the prior week's deviation from neutral without consuming RNG. */
+export function deriveNextWeekPreparation(preparation: number): number {
+  if (!Number.isInteger(preparation) || preparation < 0 || preparation > 100) {
+    throw new RangeError('Preparation rollover requires a bounded integer.');
+  }
+  return (
+    PREPARATION_ROLLOVER_NEUTRAL +
+    Math.round(
+      ((preparation - PREPARATION_ROLLOVER_NEUTRAL) * PREPARATION_ROLLOVER_RETENTION_PERMILLE) /
+        1_000,
+    )
+  );
 }

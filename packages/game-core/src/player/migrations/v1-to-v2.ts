@@ -1,5 +1,5 @@
-import { createEmptyPlayerSkillState } from '../../skills/state.js';
-import { NEUTRAL_WEEKLY_SKILL_EFFECT_AGGREGATES } from '../../skills/effects.js';
+import { createEmptyPlayerSkillStateV2 } from '../../skills/state.js';
+import { NEUTRAL_WEEKLY_SKILL_EFFECT_AGGREGATES_V2 } from '../../skills/effects.js';
 import type { WeeklyActionId } from '../../weekly/ids.js';
 import type {
   CareerPhaseV2,
@@ -28,7 +28,7 @@ function migrateWeeklyActionResult(result: WeeklyActionResultV1): WeeklyActionRe
     ...cloneSerializable(result),
     baseBodyDelta: result.requestedBodyDelta,
     baseGpaDelta: result.requestedGpaDelta,
-    skillEffectAggregates: cloneSerializable(NEUTRAL_WEEKLY_SKILL_EFFECT_AGGREGATES),
+    skillEffectAggregates: cloneSerializable(NEUTRAL_WEEKLY_SKILL_EFFECT_AGGREGATES_V2),
     appliedSkillEffects: [],
   };
 }
@@ -76,7 +76,7 @@ export function migrateCareerRunV1ToV2(career: CareerRunV1): CareerRunV2 {
     phase: migratePhase(snapshot),
     player: {
       ...snapshot.player,
-      skillState: createEmptyPlayerSkillState(),
+      skillState: createEmptyPlayerSkillStateV2(),
     },
   };
   const validation = validateCareerRunV2(migrated);

@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import {
+  completeGameAndAdvanceWeek,
   createRepresentativeCareer,
   draftActions,
   expectHorizontallyWithinViewport,
@@ -11,6 +12,7 @@ import {
   REPRESENTATIVE_IDENTITY,
   waitForPersistedCareer,
   type AppLocale,
+  type PersistedCareer,
   type PersistedCareerInPhase,
 } from './support/career';
 
@@ -23,6 +25,7 @@ const SECOND_WEEK_ACTIONS = ['action_speed_work', 'action_study_hall', 'action_r
 
 const LOCALE_CASES = [
   {
+    bodyLabel: '몸 상태',
     creationTitle: '나만의 WR을 만드세요',
     locale: 'ko-KR',
     playerName: '민준 토요일',
@@ -30,6 +33,7 @@ const LOCALE_CASES = [
     weekThree: '3주차',
   },
   {
+    bodyLabel: 'Body',
     creationTitle: 'Create your WR',
     locale: 'en-US',
     playerName: 'Avery Saturday',
@@ -38,6 +42,7 @@ const LOCALE_CASES = [
   },
 ] as const satisfies readonly {
   readonly creationTitle: string;
+  readonly bodyLabel: string;
   readonly locale: AppLocale;
   readonly playerName: string;
   readonly routeActionName: string;
@@ -59,6 +64,18 @@ async function resolveAndWait<PhaseType extends 'RESOLVE_ACTIONS' | 'WEEK_END'>(
   await expect(resolveButton).toBeEnabled();
   await resolveButton.click();
   return waitForPersistedCareer(page, expected);
+}
+
+async function choosePendingBreakthrough(page: Page, career: PersistedCareer) {
+  if (career.phase.type !== 'SKILL_BREAKTHROUGH') return career;
+  const skillId = career.phase.offer.offeredSkillIds[0];
+  await page.getByTestId(`skill-offer-${skillId}`).check();
+  await page.getByTestId('skill-choose-confirm').click();
+  return waitForPersistedCareer(page, {
+    phase: 'PLAN_ACTIONS',
+    revision: career.revision + 1,
+    weekIndex: career.weekIndex,
+  });
 }
 
 for (const localeCase of LOCALE_CASES) {
@@ -102,10 +119,18 @@ for (const localeCase of LOCALE_CASES) {
         nextActionIndex: 0,
         phase: 'RESOLVE_ACTIONS',
         resultActionIds: [],
-        revision: 1,
+        revision: 5,
         weekIndex: 0,
       });
       expect(committed.rng).toEqual(created.rng);
+      await expect(page.locator('#weekly-heading')).toBeFocused();
+      await expect
+        .poll(() =>
+          page
+            .locator('#weekly-heading')
+            .evaluate((element) => getComputedStyle(element).outlineStyle),
+        )
+        .toBe('none');
 
       await page.reload();
       await expect(page.getByTestId('weekly-phase')).toHaveAttribute(
@@ -121,7 +146,7 @@ for (const localeCase of LOCALE_CASES) {
         nextActionIndex: 1,
         phase: 'RESOLVE_ACTIONS',
         resultActionIds: FIRST_WEEK_ACTIONS.slice(0, 1),
-        revision: 2,
+        revision: 6,
         weekIndex: 0,
       });
       expect(afterFirstResult.phase.results).toHaveLength(1);
@@ -141,13 +166,13 @@ for (const localeCase of LOCALE_CASES) {
         nextActionIndex: 2,
         phase: 'RESOLVE_ACTIONS',
         resultActionIds: FIRST_WEEK_ACTIONS.slice(0, 2),
-        revision: 3,
+        revision: 7,
         weekIndex: 0,
       });
       const firstWeekEnd = await resolveAndWait(page, {
         phase: 'WEEK_END',
         resultActionIds: FIRST_WEEK_ACTIONS,
-        revision: 4,
+        revision: 8,
         weekIndex: 0,
       });
       expect(firstWeekEnd.phase.results).toHaveLength(3);
@@ -156,21 +181,14 @@ for (const localeCase of LOCALE_CASES) {
         3,
       );
 
-      await page.getByTestId('advance-week').click();
-      const breakthrough = await waitForPersistedCareer(page, {
-        phase: 'SKILL_BREAKTHROUGH',
-        revision: 5,
-        weekIndex: 1,
-      });
-      const selectedSkillId = breakthrough.phase.offer.offeredSkillIds[0];
-      await page.getByTestId(`skill-offer-${selectedSkillId}`).click();
-      await page.getByTestId('skill-choose-confirm').click();
-      const afterBreakthrough = await waitForPersistedCareer(page, {
-        phase: 'PLAN_ACTIONS',
-        revision: 6,
-        weekIndex: 1,
-      });
-      expect(afterBreakthrough.rng).toEqual(breakthrough.rng);
+      const afterFirstAdvance = await completeGameAndAdvanceWeek(page, firstWeekEnd);
+      expect(afterFirstAdvance.phase.type).toBe('PLAN_ACTIONS');
+      expect(afterFirstAdvance.weekIndex).toBe(1);
+      expect(afterFirstAdvance.player.skillState.acquisitions).toEqual([]);
+      expect(afterFirstAdvance.player.skillState.breakthroughGauge.progress).toBeGreaterThan(0);
+      await page.getByTestId('career-nav-skills').click();
+      await expect(page.getByTestId('skill-breakthrough-gauge')).toBeVisible();
+      await page.getByTestId('career-nav-week').click();
 
       await draftActions(page, SECOND_WEEK_ACTIONS);
       await page.getByTestId('action-commit').click();
@@ -179,7 +197,7 @@ for (const localeCase of LOCALE_CASES) {
         nextActionIndex: 0,
         phase: 'RESOLVE_ACTIONS',
         resultActionIds: [],
-        revision: 7,
+        revision: afterFirstAdvance.revision + 1,
         weekIndex: 1,
       });
       await resolveAndWait(page, {
@@ -187,7 +205,7 @@ for (const localeCase of LOCALE_CASES) {
         nextActionIndex: 1,
         phase: 'RESOLVE_ACTIONS',
         resultActionIds: SECOND_WEEK_ACTIONS.slice(0, 1),
-        revision: 8,
+        revision: afterFirstAdvance.revision + 2,
         weekIndex: 1,
       });
       await resolveAndWait(page, {
@@ -195,23 +213,21 @@ for (const localeCase of LOCALE_CASES) {
         nextActionIndex: 2,
         phase: 'RESOLVE_ACTIONS',
         resultActionIds: SECOND_WEEK_ACTIONS.slice(0, 2),
-        revision: 9,
+        revision: afterFirstAdvance.revision + 3,
         weekIndex: 1,
       });
-      await resolveAndWait(page, {
+      const secondWeekEnd = await resolveAndWait(page, {
         phase: 'WEEK_END',
         resultActionIds: SECOND_WEEK_ACTIONS,
-        revision: 10,
+        revision: afterFirstAdvance.revision + 4,
         weekIndex: 1,
       });
 
-      await page.getByTestId('advance-week').click();
-      const finalBeforeReload = await waitForPersistedCareer(page, {
-        phase: 'PLAN_ACTIONS',
-        revision: 11,
-        weekIndex: 2,
-      });
-      expect(finalBeforeReload.rng).toEqual(afterBreakthrough.rng);
+      const finalBeforeChoice = await completeGameAndAdvanceWeek(page, secondWeekEnd);
+      const finalBeforeReload = await choosePendingBreakthrough(page, finalBeforeChoice);
+      expect(finalBeforeReload.phase.type).toBe('PLAN_ACTIONS');
+      expect(finalBeforeReload.weekIndex).toBe(2);
+      expect(finalBeforeReload.rng.drawCount).toBeGreaterThan(afterFirstAdvance.rng.drawCount);
 
       await page.reload();
       await expect(page.locator('html')).toHaveAttribute('lang', localeCase.locale);
@@ -220,7 +236,8 @@ for (const localeCase of LOCALE_CASES) {
       await expect(
         page.getByRole('heading', { level: 1, name: localeCase.playerName }),
       ).toBeVisible();
-      await expect(page.getByRole('meter')).toHaveAttribute(
+      await page.getByTestId('career-nav-home').click();
+      await expect(page.getByRole('meter', { name: localeCase.bodyLabel })).toHaveAttribute(
         'aria-valuenow',
         String(finalBeforeReload.player.state.body),
       );
@@ -281,9 +298,35 @@ test.describe('M1 320px keyboard and touch-target flow', () => {
     await creationSubmit.focus();
     await expect(creationSubmit).toBeFocused();
     await page.keyboard.press('Enter');
+    const choosing = await waitForPersistedCareer(page, {
+      phase: 'PLAN_ACTIONS',
+      revision: 1,
+      weekIndex: 0,
+    });
+    if (choosing.recruitingState.type !== 'CHOOSING') {
+      throw new Error('Expected recruiting offers after keyboard creation.');
+    }
+    const firstOffer = choosing.recruitingState.offers[0];
+    if (firstOffer === undefined) {
+      throw new Error('Expected the first recruiting offer.');
+    }
+    const programRadio = page.locator(
+      `input[name="program-offer"][value="${firstOffer.programId}"]`,
+    );
+    const programOffer = programRadio.locator('..');
+    await expectTouchTarget(programOffer);
+    await expectHorizontallyWithinViewport(page, programOffer);
+    await programRadio.focus();
+    await page.keyboard.press('Space');
+    await expect(programRadio).toBeChecked();
+    const programCommit = page.getByTestId('commit-program');
+    await expectTouchTarget(programCommit);
+    await expectHorizontallyWithinViewport(page, programCommit);
+    await programCommit.focus();
+    await page.keyboard.press('Enter');
     await waitForPersistedCareer(page, {
       phase: 'PLAN_ACTIONS',
-      revision: 0,
+      revision: 4,
       weekIndex: 0,
     });
     await expectNoHorizontalOverflow(page);
@@ -316,10 +359,17 @@ test.describe('M1 320px keyboard and touch-target flow', () => {
       nextActionIndex: 0,
       phase: 'RESOLVE_ACTIONS',
       resultActionIds: [],
-      revision: 1,
+      revision: 5,
       weekIndex: 0,
     });
     await expect(page.locator('#weekly-heading')).toBeFocused();
+    await expect
+      .poll(() =>
+        page
+          .locator('#weekly-heading')
+          .evaluate((element) => getComputedStyle(element).outlineStyle),
+      )
+      .toBe('solid');
     await expectNoHorizontalOverflow(page);
 
     const resolveButton = page.getByTestId('resolve-next');
@@ -338,9 +388,19 @@ test.describe('M1 320px keyboard and touch-target flow', () => {
             }
           : { phase: 'WEEK_END' as const }),
         resultActionIds: FIRST_WEEK_ACTIONS.slice(0, resultCount),
-        revision: 1 + resultCount,
+        revision: 5 + resultCount,
         weekIndex: 0,
       });
+      if (resultCount === 1) {
+        const ratingProgress = page.getByTestId('result-progress-attribute_wr_route_running');
+        await expect(ratingProgress).toBeVisible();
+        await expectHorizontallyWithinViewport(page, ratingProgress);
+        await expect(ratingProgress.getByRole('progressbar')).toHaveAttribute(
+          'aria-valuemax',
+          '100',
+        );
+        await expect(page.getByTestId('result-proficiency-proficiency_route_drills')).toBeVisible();
+      }
     }
     await expect(page.locator('#weekly-heading')).toBeFocused();
     await expectNoHorizontalOverflow(page);
@@ -348,33 +408,24 @@ test.describe('M1 320px keyboard and touch-target flow', () => {
     const advance = page.getByTestId('advance-week');
     await expectTouchTarget(advance);
     await expectHorizontallyWithinViewport(page, advance);
-    await advance.focus();
-    await page.keyboard.press('Enter');
-    const breakthrough = await waitForPersistedCareer(page, {
-      phase: 'SKILL_BREAKTHROUGH',
-      revision: 5,
-      weekIndex: 1,
-    });
+    const persistedWeekEnd = await readActiveCareer(page);
+    if (persistedWeekEnd?.phase.type !== 'WEEK_END') {
+      throw new Error('Expected a week-end career before the game journey.');
+    }
+    const afterFirstAdvance = await completeGameAndAdvanceWeek(
+      page,
+      persistedWeekEnd as PersistedCareerInPhase<'WEEK_END'>,
+    );
+    expect(afterFirstAdvance.phase.type).toBe('PLAN_ACTIONS');
+    expect(afterFirstAdvance.weekIndex).toBe(1);
     await expect(page.locator('#weekly-heading')).toBeFocused();
     await expectNoHorizontalOverflow(page);
-
-    const offeredSkill = page.getByTestId(
-      `skill-offer-${breakthrough.phase.offer.offeredSkillIds[0]}`,
-    );
-    await expectHorizontallyWithinViewport(page, offeredSkill.locator('..'));
-    await offeredSkill.focus();
-    await page.keyboard.press('Space');
-    const chooseSkill = page.getByTestId('skill-choose-confirm');
-    await expectTouchTarget(chooseSkill);
-    await expectHorizontallyWithinViewport(page, chooseSkill);
-    await chooseSkill.focus();
-    await page.keyboard.press('Enter');
-    await waitForPersistedCareer(page, {
-      phase: 'PLAN_ACTIONS',
-      revision: 6,
-      weekIndex: 1,
-    });
-    await expect(page.locator('#weekly-heading')).toBeFocused();
+    expect(afterFirstAdvance.player.skillState.breakthroughGauge.progress).toBeGreaterThan(0);
+    await page.getByTestId('career-nav-skills').click();
+    const gauge = page.getByTestId('skill-breakthrough-gauge');
+    await expect(gauge).toBeVisible();
+    await expectHorizontallyWithinViewport(page, gauge);
+    await expect(page.getByTestId('skills-empty')).toBeVisible();
     await expectNoHorizontalOverflow(page);
   });
 });

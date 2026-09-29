@@ -1,7 +1,8 @@
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir, stat } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { verifyJavaScriptBudgets } from './build-budgets.mjs';
 
 const projectRoot = process.cwd();
 
@@ -53,6 +54,18 @@ contentValidation.assertShippedContentIsValid();
 const webDist = path.join(projectRoot, 'apps', 'web', 'dist');
 const manifest = JSON.parse(await readFile(path.join(webDist, 'manifest.webmanifest'), 'utf8'));
 const serviceWorker = await readFile(path.join(webDist, 'sw.js'), 'utf8');
+const assetDirectory = path.join(webDist, 'assets');
+const assets = await Promise.all(
+  (await readdir(assetDirectory)).map(async (name) => ({
+    name,
+    bytes: (await stat(path.join(assetDirectory, name))).size,
+  })),
+);
+verifyJavaScriptBudgets(
+  assets,
+  await readFile(path.join(webDist, 'index.html'), 'utf8'),
+  serviceWorker,
+);
 
 if (
   !Array.isArray(manifest.icons) ||

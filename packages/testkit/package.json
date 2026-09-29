@@ -12,7 +12,12 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "report:development": "corepack pnpm --filter @project-saturday/game-content build && tsc -p tsconfig.build.json && node dist/report-cli.js",
+    "profile:wr-v8": "corepack pnpm --filter @project-saturday/game-core build && corepack pnpm --filter @project-saturday/game-content build && tsc -p tsconfig.build.json && node dist/profile-wr-v8-cli.js",
+    "profile:m6": "corepack pnpm --filter @project-saturday/game-core build && corepack pnpm --filter @project-saturday/game-content build && tsc -p tsconfig.build.json && node dist/profile-m6-cli.js",
+    "profile:m7": "corepack pnpm --filter @project-saturday/game-core build && corepack pnpm --filter @project-saturday/game-content build && tsc -p tsconfig.build.json && node dist/profile-m7-cli.js",
+    "profile:m7-current": "corepack pnpm --filter @project-saturday/game-core build && corepack pnpm --filter @project-saturday/game-content build && tsc -p tsconfig.build.json && node dist/profile-m7-current-cli.js",
+    "report:roster": "corepack pnpm --filter @project-saturday/game-core build && corepack pnpm --filter @project-saturday/game-content build && tsc -p tsconfig.build.json && node dist/roster-report-cli.js",
+    "report:development": "corepack pnpm --filter @project-saturday/game-core build && corepack pnpm --filter @project-saturday/game-content build && tsc -p tsconfig.build.json && node dist/report-cli.js",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.test.json",
     "test": "vitest run --config vitest.config.ts"
   },

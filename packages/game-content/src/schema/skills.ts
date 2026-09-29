@@ -28,6 +28,28 @@ export const SKILL_IDS = [
   'skill_study_buffer_c',
   'skill_balanced_calendar_b',
   'skill_two_track_week_a',
+  'skill_assignment_echo_c',
+  'skill_clean_install_b',
+  'skill_package_memory_b',
+  'skill_quiet_checkin_c',
+  'skill_trust_window_a',
+  'skill_signal_reader_a',
+  'skill_coaches_key_s',
+  'skill_composure_anchor_b',
+  'skill_campus_bridge_b',
+  'skill_stem_library_c',
+  'skill_catch_point_map_b',
+  'skill_acceleration_ladder_b',
+  'skill_technique_chain_a',
+  'skill_sideline_compass_c',
+  'skill_leverage_snapshot_c',
+  'skill_late_hands_b',
+  'skill_stem_pressure_b',
+  'skill_red_zone_patience_a',
+  'skill_scramble_compass_a',
+  'skill_fourth_quarter_spark_s',
+  'skill_training_buffer_b',
+  'skill_next_snap_reset_a',
 ] as const;
 
 export const SKILL_GRADE_IDS = [
@@ -39,6 +61,7 @@ export const SKILL_GRADE_IDS = [
 
 export const SKILL_FAMILY_IDS = [
   'skill_family_development',
+  'skill_family_role_coach',
   'skill_family_game_day',
   'skill_family_body',
   'skill_family_mindset',
@@ -50,8 +73,13 @@ export const SKILL_EFFECT_TYPES = [
   'action_body_cost_multiplier',
   'action_body_delta_flat',
   'action_gpa_delta_milli',
+  'action_preparation_delta_flat',
+  'action_confidence_delta_flat',
+  'action_practice_impact_flat',
   'passive_body_recovery_flat',
+  'injury_risk_multiplier',
   'game_hook',
+  'life_hook',
 ] as const;
 
 export const SKILL_EFFECT_CONDITION_TYPES = [
@@ -69,12 +97,30 @@ export const SKILL_GAME_HOOK_IDS = [
   'game_hook_tipped_turnover_risk_bonus',
   'game_hook_yac_yardage_multiplier',
   'game_hook_fumble_risk_multiplier',
+  'game_hook_assignment_reliability_bonus',
+  'game_hook_package_snap_bonus',
+  'game_hook_pressure_composure_bonus',
+] as const;
+
+export const SKILL_LIFE_HOOK_IDS = [
+  'life_hook_nil_reward_multiplier',
+  'life_hook_event_option_access',
+  'life_hook_relationship_gain_multiplier',
 ] as const;
 
 export const SKILL_BEHAVIOR_TAG_IDS = [
   'behavior_repeat_action',
   'behavior_varied_actions',
   'behavior_study_then_training',
+] as const;
+
+export const SKILL_BREAKTHROUGH_SOURCE_IDS = [
+  'breakthrough_source_development',
+  'breakthrough_source_role_coach',
+  'breakthrough_source_game_day',
+  'breakthrough_source_mindset',
+  'breakthrough_source_body',
+  'breakthrough_source_life',
 ] as const;
 
 export const SKILL_TRADEOFF_IDS = [
@@ -87,6 +133,10 @@ export const SKILL_TRADEOFF_IDS = [
   'skill_high_point_wager_a',
   'skill_open_field_dare_s',
   'skill_two_track_week_a',
+  'skill_trust_window_a',
+  'skill_coaches_key_s',
+  'skill_acceleration_ladder_b',
+  'skill_fourth_quarter_spark_s',
 ] as const;
 
 export const SKILL_GRADE_BASE_OFFER_WEIGHTS = {
@@ -106,6 +156,7 @@ export const SKILL_GRADE_NAME_KEYS = {
 export const SKILL_FAMILY_NAME_KEYS = {
   skill_family_body: 'skills.family.body',
   skill_family_development: 'skills.family.development',
+  skill_family_role_coach: 'skills.family.roleCoach',
   skill_family_game_day: 'skills.family.gameDay',
   skill_family_life: 'skills.family.life',
   skill_family_mindset: 'skills.family.mindset',
@@ -130,6 +181,28 @@ const EXPECTED_FAMILY_BY_SKILL_ID = {
   skill_secure_hands_routine_b: 'skill_family_development',
   skill_study_buffer_c: 'skill_family_life',
   skill_two_track_week_a: 'skill_family_life',
+  skill_assignment_echo_c: 'skill_family_role_coach',
+  skill_clean_install_b: 'skill_family_role_coach',
+  skill_package_memory_b: 'skill_family_role_coach',
+  skill_quiet_checkin_c: 'skill_family_role_coach',
+  skill_trust_window_a: 'skill_family_role_coach',
+  skill_signal_reader_a: 'skill_family_role_coach',
+  skill_coaches_key_s: 'skill_family_role_coach',
+  skill_composure_anchor_b: 'skill_family_mindset',
+  skill_campus_bridge_b: 'skill_family_life',
+  skill_stem_library_c: 'skill_family_development',
+  skill_catch_point_map_b: 'skill_family_development',
+  skill_acceleration_ladder_b: 'skill_family_development',
+  skill_technique_chain_a: 'skill_family_development',
+  skill_sideline_compass_c: 'skill_family_game_day',
+  skill_leverage_snapshot_c: 'skill_family_game_day',
+  skill_late_hands_b: 'skill_family_game_day',
+  skill_stem_pressure_b: 'skill_family_game_day',
+  skill_red_zone_patience_a: 'skill_family_game_day',
+  skill_scramble_compass_a: 'skill_family_game_day',
+  skill_fourth_quarter_spark_s: 'skill_family_game_day',
+  skill_training_buffer_b: 'skill_family_body',
+  skill_next_snap_reset_a: 'skill_family_mindset',
 } as const satisfies Readonly<
   Record<(typeof SKILL_IDS)[number], (typeof SKILL_FAMILY_IDS)[number]>
 >;
@@ -153,6 +226,28 @@ const EXPECTED_GRADE_BY_SKILL_ID = {
   skill_secure_hands_routine_b: 'skill_grade_b',
   skill_study_buffer_c: 'skill_grade_c',
   skill_two_track_week_a: 'skill_grade_a',
+  skill_assignment_echo_c: 'skill_grade_c',
+  skill_clean_install_b: 'skill_grade_b',
+  skill_package_memory_b: 'skill_grade_b',
+  skill_quiet_checkin_c: 'skill_grade_c',
+  skill_trust_window_a: 'skill_grade_a',
+  skill_signal_reader_a: 'skill_grade_a',
+  skill_coaches_key_s: 'skill_grade_s',
+  skill_composure_anchor_b: 'skill_grade_b',
+  skill_campus_bridge_b: 'skill_grade_b',
+  skill_stem_library_c: 'skill_grade_c',
+  skill_catch_point_map_b: 'skill_grade_b',
+  skill_acceleration_ladder_b: 'skill_grade_b',
+  skill_technique_chain_a: 'skill_grade_a',
+  skill_sideline_compass_c: 'skill_grade_c',
+  skill_leverage_snapshot_c: 'skill_grade_c',
+  skill_late_hands_b: 'skill_grade_b',
+  skill_stem_pressure_b: 'skill_grade_b',
+  skill_red_zone_patience_a: 'skill_grade_a',
+  skill_scramble_compass_a: 'skill_grade_a',
+  skill_fourth_quarter_spark_s: 'skill_grade_s',
+  skill_training_buffer_b: 'skill_grade_b',
+  skill_next_snap_reset_a: 'skill_grade_a',
 } as const satisfies Readonly<Record<(typeof SKILL_IDS)[number], (typeof SKILL_GRADE_IDS)[number]>>;
 
 export const skillIdSchema = z.enum(SKILL_IDS);
@@ -161,10 +256,13 @@ export const skillFamilyIdSchema = z.enum(SKILL_FAMILY_IDS);
 export const skillEffectTypeSchema = z.enum(SKILL_EFFECT_TYPES);
 export const skillEffectConditionTypeSchema = z.enum(SKILL_EFFECT_CONDITION_TYPES);
 export const skillGameHookIdSchema = z.enum(SKILL_GAME_HOOK_IDS);
+export const skillLifeHookIdSchema = z.enum(SKILL_LIFE_HOOK_IDS);
 export const skillBehaviorTagIdSchema = z.enum(SKILL_BEHAVIOR_TAG_IDS);
+export const skillBreakthroughSourceIdSchema = z.enum(SKILL_BREAKTHROUGH_SOURCE_IDS);
 export const skillBehaviorAffinityTagIdSchema = z.union([
   weeklyActionTagIdSchema,
   skillBehaviorTagIdSchema,
+  skillBreakthroughSourceIdSchema,
 ]);
 
 const playerTagIdSchema = stableContentIdSchema.refine((id) => id.startsWith('tag_'), {
@@ -295,6 +393,42 @@ export const skillEffectSchema = z
       .strict(),
     z
       .object({
+        ...scopedEffectFields,
+        delta: z
+          .number()
+          .int()
+          .min(-20)
+          .max(20)
+          .refine((value) => value !== 0),
+        type: z.literal('action_preparation_delta_flat'),
+      })
+      .strict(),
+    z
+      .object({
+        ...scopedEffectFields,
+        delta: z
+          .number()
+          .int()
+          .min(-20)
+          .max(20)
+          .refine((value) => value !== 0),
+        type: z.literal('action_confidence_delta_flat'),
+      })
+      .strict(),
+    z
+      .object({
+        ...scopedEffectFields,
+        delta: z
+          .number()
+          .int()
+          .min(-10)
+          .max(10)
+          .refine((value) => value !== 0),
+        type: z.literal('action_practice_impact_flat'),
+      })
+      .strict(),
+    z
+      .object({
         delta: z
           .number()
           .int()
@@ -306,13 +440,53 @@ export const skillEffectSchema = z
       .strict(),
     z
       .object({
+        multiplierPermille: z
+          .number()
+          .int()
+          .min(500)
+          .max(1500)
+          .refine((value) => value !== 1000),
+        type: z.literal('injury_risk_multiplier'),
+      })
+      .strict(),
+    z
+      .object({
         hookId: skillGameHookIdSchema,
         type: z.literal('game_hook'),
         valueMilli: z.number().int().min(1).max(1500),
       })
       .strict(),
+    z
+      .object({
+        hookId: skillLifeHookIdSchema,
+        type: z.literal('life_hook'),
+        valueMilli: z.number().int().min(500).max(1500),
+      })
+      .strict(),
   ])
   .superRefine((effect, context) => {
+    if (effect.type === 'life_hook') {
+      const expected = {
+        life_hook_event_option_access: { min: 1000, max: 1000 },
+        life_hook_nil_reward_multiplier: { min: 500, max: 1500 },
+        life_hook_relationship_gain_multiplier: { min: 1001, max: 1500 },
+      } as const;
+      const bounds = expected[effect.hookId];
+      if (
+        effect.valueMilli < bounds.min ||
+        effect.valueMilli > bounds.max ||
+        ((effect.hookId === 'life_hook_nil_reward_multiplier' ||
+          effect.hookId === 'life_hook_relationship_gain_multiplier') &&
+          effect.valueMilli === 1000)
+      ) {
+        context.addIssue({
+          code: 'custom',
+          message: `${effect.hookId} value is outside its supported contract.`,
+          path: ['valueMilli'],
+        });
+      }
+      return;
+    }
     if (effect.type !== 'game_hook') {
       return;
     }
@@ -320,6 +494,9 @@ export const skillEffectSchema = z
       game_hook_contested_catch_success_bonus: { min: 1, max: 500 },
       game_hook_coverage_clue_bonus: { min: 1000, max: 1000 },
       game_hook_fumble_risk_multiplier: { min: 500, max: 1500 },
+      game_hook_assignment_reliability_bonus: { min: 1, max: 500 },
+      game_hook_package_snap_bonus: { min: 1, max: 250 },
+      game_hook_pressure_composure_bonus: { min: 1, max: 500 },
       game_hook_tipped_turnover_risk_bonus: { min: 1, max: 500 },
       game_hook_yac_yardage_multiplier: { min: 1001, max: 1500 },
     } as const;
@@ -403,7 +580,11 @@ function refineSkillMechanics(
   }
   if (
     !definition.effects.some(
-      ({ type }) => type !== 'game_hook' && type !== 'passive_body_recovery_flat',
+      ({ type }) =>
+        type !== 'game_hook' &&
+        type !== 'life_hook' &&
+        type !== 'passive_body_recovery_flat' &&
+        type !== 'injury_risk_multiplier',
     )
   ) {
     context.addIssue({
@@ -433,6 +614,9 @@ export function isMechanicallyInferredTradeoff(effects: readonly SkillEffect[]):
         hasDrawback ||= effect.multiplierPermille > 1000;
         break;
       case 'action_body_delta_flat':
+      case 'action_preparation_delta_flat':
+      case 'action_confidence_delta_flat':
+      case 'action_practice_impact_flat':
       case 'passive_body_recovery_flat':
         hasBenefit ||= effect.delta > 0;
         hasDrawback ||= effect.delta < 0;
@@ -441,12 +625,27 @@ export function isMechanicallyInferredTradeoff(effects: readonly SkillEffect[]):
         hasBenefit ||= effect.deltaMilli > 0;
         hasDrawback ||= effect.deltaMilli < 0;
         break;
+      case 'injury_risk_multiplier':
+        hasBenefit ||= effect.multiplierPermille < 1000;
+        hasDrawback ||= effect.multiplierPermille > 1000;
+        break;
       case 'game_hook':
         if (effect.hookId === 'game_hook_fumble_risk_multiplier') {
           hasBenefit ||= effect.valueMilli < 1000;
           hasDrawback ||= effect.valueMilli > 1000;
         } else if (effect.hookId === 'game_hook_tipped_turnover_risk_bonus') {
           hasDrawback = true;
+        } else {
+          hasBenefit = true;
+        }
+        break;
+      case 'life_hook':
+        if (
+          effect.hookId === 'life_hook_nil_reward_multiplier' ||
+          effect.hookId === 'life_hook_relationship_gain_multiplier'
+        ) {
+          hasBenefit ||= effect.valueMilli > 1000;
+          hasDrawback ||= effect.valueMilli < 1000;
         } else {
           hasBenefit = true;
         }
@@ -521,11 +720,12 @@ export const skillContentSchema = z
       });
     }
     const expectedFamilyCounts = {
-      skill_family_body: 4,
-      skill_family_development: 4,
-      skill_family_game_day: 3,
-      skill_family_life: 3,
-      skill_family_mindset: 4,
+      skill_family_body: 5,
+      skill_family_development: 8,
+      skill_family_role_coach: 7,
+      skill_family_game_day: 10,
+      skill_family_life: 4,
+      skill_family_mindset: 6,
     } as const;
     for (const familyId of SKILL_FAMILY_IDS) {
       const actualCount = definitions.filter(
@@ -548,7 +748,9 @@ export type SkillFamilyId = (typeof SKILL_FAMILY_IDS)[number];
 export type SkillEffectType = (typeof SKILL_EFFECT_TYPES)[number];
 export type SkillEffectConditionType = (typeof SKILL_EFFECT_CONDITION_TYPES)[number];
 export type SkillGameHookId = (typeof SKILL_GAME_HOOK_IDS)[number];
+export type SkillLifeHookId = (typeof SKILL_LIFE_HOOK_IDS)[number];
 export type SkillBehaviorTagId = (typeof SKILL_BEHAVIOR_TAG_IDS)[number];
+export type SkillBreakthroughSourceId = (typeof SKILL_BREAKTHROUGH_SOURCE_IDS)[number];
 export type SkillBehaviorAffinityTagId = z.infer<typeof skillBehaviorAffinityTagIdSchema>;
 export type SkillActionScope = DeepReadonly<z.infer<typeof skillActionScopeSchema>>;
 export type SkillEffectCondition = DeepReadonly<z.infer<typeof skillEffectConditionSchema>>;

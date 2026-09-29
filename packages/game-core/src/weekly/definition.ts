@@ -1,11 +1,14 @@
 import { isIntegerWithinBounds, isWithinBounds } from '../player/bounds.js';
 import { isPlayerAttributeId } from '../player/ids.js';
+import { PRACTICE_IMPACT_BOUNDS } from '../programs/tuning.js';
 import { WEEKLY_ACTION_PROFICIENCY_IDS, isWeeklyActionId, isWeeklyActionTagId } from './ids.js';
 import {
   WEEKLY_ACTION_ATTRIBUTE_TARGET_MAX,
   WEEKLY_ACTION_BASE_XP_BOUNDS,
   WEEKLY_ACTION_BODY_DELTA_BOUNDS,
+  WEEKLY_ACTION_CONFIDENCE_DELTA_BOUNDS,
   WEEKLY_ACTION_GPA_DELTA_BOUNDS,
+  WEEKLY_ACTION_PREPARATION_DELTA_BOUNDS,
   WEEKLY_ACTION_TAG_ID_MAX,
 } from './tuning.js';
 import type { WeeklyActionDefinition } from './types.js';
@@ -24,7 +27,17 @@ export function isWeeklyActionDefinition(value: unknown): value is WeeklyActionD
   if (!isRecord(value)) {
     return false;
   }
-  const expectedKeys = ['id', 'tagIds', 'attributeXp', 'bodyDelta', 'gpaDelta', 'proficiencyId'];
+  const expectedKeys = [
+    'id',
+    'tagIds',
+    'attributeXp',
+    'bodyDelta',
+    'preparationDelta',
+    'confidenceDelta',
+    'gpaDelta',
+    'practiceImpact',
+    'proficiencyId',
+  ];
   if (
     Object.keys(value).length !== expectedKeys.length ||
     expectedKeys.some((key) => !Object.hasOwn(value, key)) ||
@@ -32,7 +45,10 @@ export function isWeeklyActionDefinition(value: unknown): value is WeeklyActionD
     !Array.isArray(value['tagIds']) ||
     value['tagIds'].length > WEEKLY_ACTION_TAG_ID_MAX ||
     !isIntegerWithinBounds(value['bodyDelta'], WEEKLY_ACTION_BODY_DELTA_BOUNDS) ||
+    !isIntegerWithinBounds(value['preparationDelta'], WEEKLY_ACTION_PREPARATION_DELTA_BOUNDS) ||
+    !isIntegerWithinBounds(value['confidenceDelta'], WEEKLY_ACTION_CONFIDENCE_DELTA_BOUNDS) ||
     !isWithinBounds(value['gpaDelta'], WEEKLY_ACTION_GPA_DELTA_BOUNDS) ||
+    !isIntegerWithinBounds(value['practiceImpact'], PRACTICE_IMPACT_BOUNDS) ||
     value['proficiencyId'] !== WEEKLY_ACTION_PROFICIENCY_IDS[value['id']] ||
     !Array.isArray(value['attributeXp']) ||
     value['attributeXp'].length > WEEKLY_ACTION_ATTRIBUTE_TARGET_MAX
@@ -55,6 +71,8 @@ export function isWeeklyActionDefinition(value: unknown): value is WeeklyActionD
   if (
     value['attributeXp'].length === 0 &&
     value['bodyDelta'] === 0 &&
+    value['preparationDelta'] === 0 &&
+    value['confidenceDelta'] === 0 &&
     value['gpaDelta'] === 0 &&
     value['proficiencyId'] === null
   ) {

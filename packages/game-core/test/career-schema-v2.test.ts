@@ -2,6 +2,7 @@ import {
   CAREER_SCHEMA_VERSION,
   CAREER_SCHEMA_VERSION_V1,
   CAREER_SCHEMA_VERSION_V2,
+  CAREER_SCHEMA_VERSION_V7,
   RECENT_WEEKLY_ACTION_ID_LIMIT,
   SKILL_ID_PREFIX,
   STABLE_DOMAIN_ID_MAX_LENGTH,
@@ -10,6 +11,11 @@ import {
   isCareerRunV2,
   isSkillId,
   migrateCareerRunV1ToV2,
+  migrateCareerRunV2ToV3,
+  migrateCareerRunV3ToV4,
+  migrateCareerRunV4ToV5,
+  migrateCareerRunV5ToV6,
+  migrateCareerRunV6ToV7,
   nextUint32,
   parseCareerRun,
   parseCareerRunV1,
@@ -414,7 +420,7 @@ describe('CareerRun schema v2 and schema-v1 migration', () => {
       const migrated = migrateCareerRunV1ToV2(career);
 
       expect(migrated.schemaVersion).toBe(CAREER_SCHEMA_VERSION_V2);
-      expect(CAREER_SCHEMA_VERSION).toBe(CAREER_SCHEMA_VERSION_V2);
+      expect(CAREER_SCHEMA_VERSION).toBe(CAREER_SCHEMA_VERSION_V7);
       expect(stripV2Fields(migrated)).toEqual(career);
       expect(migrated.recentWeeklyActionIds).toEqual(phaseResultActionIds(career));
       expect(migrated.player.skillState).toEqual({
@@ -449,6 +455,11 @@ describe('CareerRun schema v2 and schema-v1 migration', () => {
   it('dispatches strict v1, strict v2, and migrating current parsers without cross-version acceptance', () => {
     const legacy = CAREER_RUN_V1_PHASE_FIXTURES.weekEnd;
     const current = migrateCareerRunV1ToV2(legacy);
+    const migratedCurrent = migrateCareerRunV6ToV7(
+      migrateCareerRunV5ToV6(
+        migrateCareerRunV4ToV5(migrateCareerRunV3ToV4(migrateCareerRunV2ToV3(current))),
+      ),
+    );
 
     const parsedV1 = parseCareerRunV1(JSON.stringify(legacy));
     expect(parsedV1).toEqual(expect.objectContaining({ ok: true, career: legacy }));
@@ -471,13 +482,13 @@ describe('CareerRun schema v2 and schema-v1 migration', () => {
     const dispatchedLegacy = parseCareerRun(legacy);
     const dispatchedCurrent = parseCareerRun(current);
     expect(parsedCurrent).toEqual({ ok: true, career: current });
-    expect(dispatchedLegacy).toEqual({ ok: true, career: current });
-    expect(dispatchedCurrent).toEqual({ ok: true, career: current });
+    expect(dispatchedLegacy).toEqual({ ok: true, career: migratedCurrent });
+    expect(dispatchedCurrent).toEqual({ ok: true, career: migratedCurrent });
     if (dispatchedLegacy.ok) {
       expectDeepFrozen(dispatchedLegacy.career);
     }
 
-    for (const schemaVersion of [0, 3]) {
+    for (const schemaVersion of [0, 8]) {
       const unsupported = jsonClone(current) as unknown as Record<string, unknown>;
       unsupported['schemaVersion'] = schemaVersion;
       expect(parseCareerRun(unsupported)).toEqual({
@@ -517,7 +528,7 @@ describe('CareerRun schema v2 and schema-v1 migration', () => {
     if (parsed.ok) {
       expect(parsed.career.player.state.body).toBe(80);
       expect(parsed.career.phase).toEqual(
-        migrateCareerRunV1ToV2(CAREER_RUN_V1_PHASE_FIXTURES.weekEnd).phase,
+        migrateCareerRunV2ToV3(migrateCareerRunV1ToV2(CAREER_RUN_V1_PHASE_FIXTURES.weekEnd)).phase,
       );
       expectDeepFrozen(parsed.career);
     }
@@ -622,9 +633,9 @@ describe('schema-v2 skill-state and breakthrough invariants', () => {
     const career = validSkillBreakthroughCareer();
     expect(career.recentWeeklyActionIds).toHaveLength(RECENT_WEEKLY_ACTION_ID_LIMIT);
     expect(validateCareerRunV2(career)).toEqual({ ok: true, issues: [] });
-    expect(validateCareerRun(career)).toEqual({ ok: true, issues: [] });
+    expect(validateCareerRun(career).ok).toBe(false);
     expect(isCareerRunV2(career)).toBe(true);
-    expect(isCareerRun(career)).toBe(true);
+    expect(isCareerRun(career)).toBe(false);
     expect(career.player.skillState.acquisitions[0]?.offeredSkillIds).toContain('skill_fixture_b');
     expect(career.player.skillState.acquisitions[1]?.offeredSkillIds).toContain('skill_fixture_b');
     if (career.phase.type === 'SKILL_BREAKTHROUGH') {

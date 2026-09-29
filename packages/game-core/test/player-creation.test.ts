@@ -18,7 +18,7 @@ import {
   derivePlayerId,
   deriveWrOverall,
   isCareerRun,
-  parseCareerRunV2,
+  parseCareerRun,
   validateCareerRun,
   type CreateWrCareerInput,
   type InitialAttributeRatings,
@@ -134,17 +134,25 @@ function cloneInput(): DeepMutable<CreateWrCareerInput> {
 }
 
 describe('WR player creation', () => {
-  it('creates a strict schema-v2 WR career with all specified attribute groups', () => {
+  it('creates a strict schema-v3 pre-program WR career with all specified attribute groups', () => {
     const career = expectSuccess();
 
     expect(career.schemaVersion).toBe(CAREER_SCHEMA_VERSION);
     expect(career.programId).toBeNull();
+    expect(career.recruitingState).toEqual({ type: 'NOT_STARTED' });
+    expect(career.programContext).toBeNull();
     expect(career.weekIndex).toBe(0);
     expect(career.recentWeeklyActionIds).toEqual([]);
     expect(career.lastPassiveBodyRecovery).toBeNull();
     expect(career.player.positionId).toBe(POSITION_WR_ID);
     expect(career.player.skillState).toEqual({
       acquisitions: [],
+      breakthroughGauge: {
+        model: 'gauge_v1',
+        progress: 0,
+        threshold: 100,
+        lastProgress: null,
+      },
       equippedSkillIds: [null, null, null, null],
     });
     expect(Object.keys(career.player.attributes.physical)).toHaveLength(6);
@@ -512,7 +520,7 @@ describe('career invariants and serialization', () => {
     }
   });
 
-  it('rejects an incompatible personality pair in a raw schema-v2 career', () => {
+  it('rejects an incompatible personality pair in a raw schema-v3 career', () => {
     const tampered = JSON.parse(JSON.stringify(expectSuccess())) as {
       player: { personalityTraitIds: string[] };
     };
@@ -532,11 +540,11 @@ describe('career invariants and serialization', () => {
   });
 });
 
-describe('current schema-v2 career parsing', () => {
+describe('current schema-v4 career parsing', () => {
   it('deeply clones and freezes valid object and JSON inputs', () => {
     const source = JSON.parse(JSON.stringify(expectSuccess())) as Record<string, unknown>;
-    const fromObject = parseCareerRunV2(source);
-    const fromJson = parseCareerRunV2(JSON.stringify(source));
+    const fromObject = parseCareerRun(source);
+    const fromJson = parseCareerRun(JSON.stringify(source));
 
     expect(fromObject).toEqual(fromJson);
     expect(fromObject.ok).toBe(true);
@@ -552,7 +560,7 @@ describe('current schema-v2 career parsing', () => {
   });
 
   it('distinguishes malformed JSON, unsupported versions, and invalid current data', () => {
-    expect(parseCareerRunV2('{')).toEqual({
+    expect(parseCareerRun('{')).toEqual({
       ok: false,
       reason: 'career_parse.invalid_json',
       issues: [],
@@ -561,8 +569,8 @@ describe('current schema-v2 career parsing', () => {
     const unsupported = JSON.parse(JSON.stringify(expectSuccess())) as {
       schemaVersion: number;
     };
-    unsupported.schemaVersion = 3;
-    expect(parseCareerRunV2(unsupported)).toEqual({
+    unsupported.schemaVersion = 8;
+    expect(parseCareerRun(unsupported)).toEqual({
       ok: false,
       reason: 'career_parse.unsupported_version',
       issues: [],
@@ -572,7 +580,7 @@ describe('current schema-v2 career parsing', () => {
       player: { state: { body: number } };
     };
     invalid.player.state.body = 101;
-    expect(parseCareerRunV2(invalid)).toEqual(
+    expect(parseCareerRun(invalid)).toEqual(
       expect.objectContaining({
         ok: false,
         reason: 'career_parse.invalid_career',
@@ -589,7 +597,7 @@ describe('current schema-v2 career parsing', () => {
     };
     legacyLike.schemaVersion = 0;
 
-    expect(parseCareerRunV2(legacyLike)).toEqual({
+    expect(parseCareerRun(legacyLike)).toEqual({
       ok: false,
       reason: 'career_parse.unsupported_version',
       issues: [],
@@ -609,7 +617,7 @@ describe('current schema-v2 career parsing', () => {
       },
     });
 
-    const parsed = parseCareerRunV2(accessorBacked);
+    const parsed = parseCareerRun(accessorBacked);
     expect(parsed).toEqual(expect.objectContaining({ ok: true }));
     expect(bodyReads).toBe(1);
     if (parsed.ok) {

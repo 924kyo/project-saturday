@@ -8,6 +8,8 @@ The product must feel deep behind the scenes but fast in hand: normally the play
 
 ## Read before work
 
+For routine autonomous continuation, follow `docs/execution/EXECUTION_EFFICIENCY_PROTOCOL.md`: read this file, compact progress, the active plan, and that plan's relevant specs. The full orientation list below applies on initial onboarding or when changed scope requires it; do not repeatedly ingest historical archives. Use `TEST_GATE_TIERS.md` for validation scope, without waiving final milestone gates.
+
 Always read:
 
 - `docs/INDEX.md`

@@ -3,8 +3,10 @@ import { isPlayerTagId, isPositionId, isWrArchetypeId } from '../player/ids.js';
 import { isWeeklyActionId, isWeeklyActionTagId } from '../weekly/ids.js';
 import {
   isSkillBehaviorTagId,
+  isSkillBreakthroughSourceId,
   isSkillFamilyId,
   isSkillGameHookId,
+  isSkillLifeHookId,
   isSkillGradeId,
   isSkillId,
 } from './ids.js';
@@ -19,6 +21,10 @@ import {
   SKILL_ELIGIBILITY_ID_LIST_MAX,
   SKILL_GAME_HOOK_VALUE_MILLI_BOUNDS,
   SKILL_GPA_DELTA_MILLI_BOUNDS,
+  SKILL_PREPARATION_DELTA_FLAT_BOUNDS,
+  SKILL_CONFIDENCE_DELTA_FLAT_BOUNDS,
+  SKILL_PRACTICE_IMPACT_FLAT_BOUNDS,
+  SKILL_LIFE_HOOK_VALUE_MILLI_BOUNDS,
   SKILL_NEUTRAL_MULTIPLIER_PERMILLE,
   SKILL_PASSIVE_BODY_RECOVERY_FLAT_BOUNDS,
 } from './tuning.js';
@@ -159,11 +165,41 @@ export function isSkillEffect(value: unknown): value is SkillEffect {
         isIntegerWithinBounds(value['deltaMilli'], SKILL_GPA_DELTA_MILLI_BOUNDS) &&
         value['deltaMilli'] !== 0
       );
+    case 'action_preparation_delta_flat':
+      return (
+        hasExactKeys(value, ['type', 'scope', 'condition', 'delta']) &&
+        hasScopedCondition(value) &&
+        isIntegerWithinBounds(value['delta'], SKILL_PREPARATION_DELTA_FLAT_BOUNDS) &&
+        value['delta'] !== 0
+      );
+    case 'action_confidence_delta_flat':
+      return (
+        hasExactKeys(value, ['type', 'scope', 'condition', 'delta']) &&
+        hasScopedCondition(value) &&
+        isIntegerWithinBounds(value['delta'], SKILL_CONFIDENCE_DELTA_FLAT_BOUNDS) &&
+        value['delta'] !== 0
+      );
+    case 'action_practice_impact_flat':
+      return (
+        hasExactKeys(value, ['type', 'scope', 'condition', 'delta']) &&
+        hasScopedCondition(value) &&
+        isIntegerWithinBounds(value['delta'], SKILL_PRACTICE_IMPACT_FLAT_BOUNDS) &&
+        value['delta'] !== 0
+      );
     case 'passive_body_recovery_flat':
       return (
         hasExactKeys(value, ['type', 'delta']) &&
         isIntegerWithinBounds(value['delta'], SKILL_PASSIVE_BODY_RECOVERY_FLAT_BOUNDS) &&
         value['delta'] !== 0
+      );
+    case 'injury_risk_multiplier':
+      return (
+        hasExactKeys(value, ['type', 'multiplierPermille']) &&
+        isIntegerWithinBounds(
+          value['multiplierPermille'],
+          SKILL_EFFECT_MULTIPLIER_PERMILLE_BOUNDS,
+        ) &&
+        value['multiplierPermille'] !== SKILL_NEUTRAL_MULTIPLIER_PERMILLE
       );
     case 'game_hook':
       return (
@@ -177,6 +213,22 @@ export function isSkillEffect(value: unknown): value is SkillEffect {
         ) &&
         !(
           value['hookId'] === 'game_hook_fumble_risk_multiplier' &&
+          value['valueMilli'] === SKILL_NEUTRAL_MULTIPLIER_PERMILLE
+        )
+      );
+    case 'life_hook':
+      return (
+        hasExactKeys(value, ['type', 'hookId', 'valueMilli']) &&
+        isSkillLifeHookId(value['hookId']) &&
+        isIntegerWithinBounds(
+          value['valueMilli'],
+          SKILL_LIFE_HOOK_VALUE_MILLI_BOUNDS[
+            value['hookId'] as keyof typeof SKILL_LIFE_HOOK_VALUE_MILLI_BOUNDS
+          ],
+        ) &&
+        !(
+          (value['hookId'] === 'life_hook_nil_reward_multiplier' ||
+            value['hookId'] === 'life_hook_relationship_gain_multiplier') &&
           value['valueMilli'] === SKILL_NEUTRAL_MULTIPLIER_PERMILLE
         )
       );
@@ -223,7 +275,9 @@ function isSkillBehaviorWeightRule(value: unknown): value is SkillBehaviorWeight
   return (
     isRecord(value) &&
     hasExactKeys(value, ['affinityTagId', 'weightBonus']) &&
-    (isSkillBehaviorTagId(value['affinityTagId']) || isWeeklyActionTagId(value['affinityTagId'])) &&
+    (isSkillBehaviorTagId(value['affinityTagId']) ||
+      isSkillBreakthroughSourceId(value['affinityTagId']) ||
+      isWeeklyActionTagId(value['affinityTagId'])) &&
     isIntegerWithinBounds(value['weightBonus'], SKILL_BEHAVIOR_WEIGHT_BONUS_BOUNDS)
   );
 }

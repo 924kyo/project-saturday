@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import {
+  completeGameAndAdvanceWeek,
   createRepresentativeCareer,
   draftActions,
   expectHorizontallyWithinViewport,
@@ -13,32 +14,33 @@ import {
   type PersistedWeeklyActionResult,
 } from './support/career';
 
-const FIXED_BROWSER_UUID = '00000000-0000-4000-8000-000000000009';
-const FIXED_CAREER_SEED = `career-seed:${FIXED_BROWSER_UUID}`;
-const FIRST_OFFER_RNG = {
-  algorithm: 'xoshiro128ss-v1',
-  drawCount: 3,
-  state: [4241484479, 2466849236, 215527883, 665137617],
-} as const;
-
 interface SkillJourneyCase {
+  readonly expectedAdditionalAppliedEffect?: {
+    readonly effectIndex: number;
+    readonly effectValue: number;
+    readonly effectValueType: 'delta' | 'multiplierPermille';
+    readonly type:
+      'action_body_cost_multiplier' | 'action_preparation_delta_flat' | 'action_xp_multiplier';
+  };
+  readonly browserUuid: string;
   readonly expectedAppliedEffectMultiplierPermille: number;
-  readonly expectedAppliedEffectType: 'action_body_cost_multiplier' | 'action_xp_multiplier';
-  readonly effectPercentText: string;
+  readonly expectedAppliedEffectType:
+    'action_body_cost_multiplier' | 'action_preparation_delta_flat' | 'action_xp_multiplier';
+  readonly effectValueText: string;
+  readonly effectValueType: 'delta' | 'multiplierPermille';
   readonly expectedBaseBodyDelta: number;
   readonly expectedBodyCostMultiplierPermille: number;
-  readonly expectedFirstAttributeXp: {
+  readonly expectedFirstAttributeXp?: {
     readonly awardedXp: number;
     readonly baseXp: number;
   };
-  readonly expectedOffer: readonly [string, string, string];
   readonly expectedRequestedBodyDelta: number;
+  readonly expectedPreparationDeltaFlat: number;
   readonly expectedXpMultiplierPermille: number;
   readonly firstWeekActionIds: readonly [string, string, string];
   readonly inventoryTitle: string;
   readonly locale: AppLocale;
   readonly loadoutLockedText: string;
-  readonly otherBehaviorOffer: readonly [string, string, string];
   readonly playerName: string;
   readonly retryChoiceSave: boolean;
   readonly secondWeekActionIds: readonly [string, string, string];
@@ -49,70 +51,68 @@ interface SkillJourneyCase {
 
 const SKILL_JOURNEYS = [
   {
-    effectPercentText: '10%',
-    expectedAppliedEffectMultiplierPermille: 1100,
+    browserUuid: '00000000-0000-4000-8000-000000000008',
+    effectValueText: '15%',
+    effectValueType: 'multiplierPermille',
+    expectedAppliedEffectMultiplierPermille: 1150,
     expectedAppliedEffectType: 'action_xp_multiplier',
-    expectedBaseBodyDelta: -3,
+    expectedBaseBodyDelta: -8,
     expectedBodyCostMultiplierPermille: 1000,
-    expectedFirstAttributeXp: { awardedXp: 26, baseXp: 24 },
-    expectedOffer: ['skill_coverage_ledger_b', 'skill_first_step_lab_b', 'skill_reset_ritual_b'],
-    expectedRequestedBodyDelta: -3,
-    expectedXpMultiplierPermille: 1100,
+    expectedPreparationDeltaFlat: 0,
+    expectedRequestedBodyDelta: -8,
+    expectedXpMultiplierPermille: 1150,
     firstWeekActionIds: ['action_film_study', 'action_film_study', 'action_film_study'],
     inventoryTitle: '스킬과 장착 슬롯',
     locale: 'ko-KR',
     loadoutLockedText: '행동 계획 단계에서만 장착 스킬을 바꿀 수 있습니다.',
-    otherBehaviorOffer: [
-      'skill_balanced_calendar_b',
-      'skill_late_set_engine_b',
-      'skill_route_notebook_c',
-    ],
     playerName: '필름 빌드 토요일',
     retryChoiceSave: false,
-    secondWeekActionIds: ['action_film_study', 'action_film_study', 'action_film_study'],
-    selectedSkillId: 'skill_coverage_ledger_b',
-    selectedSkillName: '커버리지 노트',
+    secondWeekActionIds: ['action_route_drills', 'action_route_drills', 'action_route_drills'],
+    selectedSkillId: 'skill_route_notebook_c',
+    selectedSkillName: '루트 노트',
     strategy: 'film-heavy',
   },
   {
-    effectPercentText: '15%',
-    expectedAppliedEffectMultiplierPermille: 850,
-    expectedAppliedEffectType: 'action_body_cost_multiplier',
-    expectedBaseBodyDelta: -14,
-    expectedBodyCostMultiplierPermille: 850,
-    expectedFirstAttributeXp: { awardedXp: 25, baseXp: 24 },
-    expectedOffer: [
-      'skill_balanced_calendar_b',
-      'skill_late_set_engine_b',
-      'skill_route_notebook_c',
-    ],
-    expectedRequestedBodyDelta: -12,
-    expectedXpMultiplierPermille: 1000,
+    browserUuid: '00000000-0000-4000-8000-000000000001',
+    effectValueText: '15%',
+    effectValueType: 'multiplierPermille',
+    expectedAdditionalAppliedEffect: {
+      effectIndex: 1,
+      effectValue: 2,
+      effectValueType: 'delta',
+      type: 'action_preparation_delta_flat',
+    },
+    expectedAppliedEffectMultiplierPermille: 1150,
+    expectedAppliedEffectType: 'action_xp_multiplier',
+    expectedBaseBodyDelta: -8,
+    expectedBodyCostMultiplierPermille: 1000,
+    expectedPreparationDeltaFlat: 2,
+    expectedRequestedBodyDelta: -8,
+    expectedXpMultiplierPermille: 1150,
     firstWeekActionIds: ['action_weight_room', 'action_recovery', 'action_weight_room'],
     inventoryTitle: 'Skills and loadout',
     locale: 'en-US',
     loadoutLockedText: 'You can change the loadout only while planning actions.',
-    otherBehaviorOffer: [
-      'skill_coverage_ledger_b',
-      'skill_first_step_lab_b',
-      'skill_reset_ritual_b',
-    ],
     playerName: 'Strength Build Saturday',
     retryChoiceSave: true,
-    secondWeekActionIds: ['action_weight_room', 'action_recovery', 'action_weight_room'],
-    selectedSkillId: 'skill_late_set_engine_b',
-    selectedSkillName: 'Late-Set Engine',
+    secondWeekActionIds: [
+      'action_hands_catch_work',
+      'action_hands_catch_work',
+      'action_hands_catch_work',
+    ],
+    selectedSkillId: 'skill_catch_point_map_b',
+    selectedSkillName: 'Catch-Point Map',
     strategy: 'strength-heavy',
   },
 ] as const satisfies readonly SkillJourneyCase[];
 
-async function installFixedCareerSeed(page: Page): Promise<void> {
+async function installFixedCareerSeed(page: Page, fixedUuid: string): Promise<void> {
   await page.addInitScript((fixedUuid) => {
     Object.defineProperty(Crypto.prototype, 'randomUUID', {
       configurable: true,
       value: () => fixedUuid,
     });
-  }, FIXED_BROWSER_UUID);
+  }, fixedUuid);
 }
 
 async function failNextAutosaveSnapshotWrite(page: Page): Promise<void> {
@@ -140,6 +140,7 @@ async function finishWeek(
   page: Page,
   actionIds: readonly [string, string, string],
   startingRevision: number,
+  weekIndex: number,
 ): Promise<PersistedCareerInPhase<'WEEK_END'>> {
   await draftActions(page, actionIds);
   const commitButton = page.getByTestId('action-commit');
@@ -151,7 +152,7 @@ async function finishWeek(
     phase: 'RESOLVE_ACTIONS',
     resultActionIds: [],
     revision: startingRevision + 1,
-    weekIndex: 0,
+    weekIndex,
   });
 
   const resolveButton = page.getByTestId('resolve-next');
@@ -165,7 +166,7 @@ async function finishWeek(
         phase: 'RESOLVE_ACTIONS',
         resultActionIds: actionIds.slice(0, actionIndex + 1),
         revision: startingRevision + actionIndex + 2,
-        weekIndex: 0,
+        weekIndex,
       });
     }
   }
@@ -174,11 +175,39 @@ async function finishWeek(
     phase: 'WEEK_END',
     resultActionIds: actionIds,
     revision: startingRevision + 4,
-    weekIndex: 0,
+    weekIndex,
   });
 }
 
+async function advanceUntilBreakthrough(
+  page: Page,
+  actionIds: readonly [string, string, string],
+  startingRevision = 4,
+): Promise<PersistedCareerInPhase<'SKILL_BREAKTHROUGH'>> {
+  let revision = startingRevision;
+  for (let weekIndex = 0; weekIndex < 13; weekIndex += 1) {
+    const weekEnd = await finishWeek(page, actionIds, revision, weekIndex);
+    const advanced = await completeGameAndAdvanceWeek(page, weekEnd);
+    revision = advanced.revision;
+    if (advanced.phase.type === 'SKILL_BREAKTHROUGH') {
+      return advanced as PersistedCareerInPhase<'SKILL_BREAKTHROUGH'>;
+    }
+    expect(advanced.phase.type).toBe('PLAN_ACTIONS');
+    expect(advanced.player.skillState.breakthroughGauge.lastProgress?.weekIndex).toBe(
+      weekIndex + 1,
+    );
+    expect(advanced.player.skillState.acquisitions).toEqual([]);
+
+    await page.getByTestId('career-nav-skills').click();
+    await expect(page.getByTestId('skill-breakthrough-gauge')).toBeVisible();
+    await expect(page.getByTestId('skill-gauge-evidence')).toBeVisible();
+    await page.getByTestId('career-nav-week').click();
+  }
+  throw new Error('Expected a gauge-triggered breakthrough within thirteen weeks.');
+}
+
 async function openSkillLoadout(page: Page): Promise<void> {
+  await page.getByTestId('career-nav-skills').click();
   const loadout = page.getByTestId('skill-loadout');
   await expect(loadout).toBeVisible();
   if ((await loadout.getAttribute('open')) === null) {
@@ -191,6 +220,7 @@ async function expectAppliedResult(
   result: PersistedWeeklyActionResult,
   journey: SkillJourneyCase,
   expectedSlotIndex = 1,
+  expectedWeekIndex = 1,
 ): Promise<void> {
   expect(result).toMatchObject({
     actionId: journey.secondWeekActionIds[0],
@@ -199,20 +229,34 @@ async function expectAppliedResult(
     requestedBodyDelta: journey.expectedRequestedBodyDelta,
     skillEffectAggregates: {
       bodyCostMultiplierPermille: journey.expectedBodyCostMultiplierPermille,
+      preparationDeltaFlat: journey.expectedPreparationDeltaFlat,
       xpMultiplierPermille: journey.expectedXpMultiplierPermille,
     },
-    weekIndex: 1,
+    weekIndex: expectedWeekIndex,
   });
-  expect(result.attributeXp[0]).toMatchObject(journey.expectedFirstAttributeXp);
-  expect(result.appliedSkillEffects).toEqual([
+  if (journey.expectedFirstAttributeXp !== undefined) {
+    expect(result.attributeXp[0]).toMatchObject(journey.expectedFirstAttributeXp);
+  }
+  const expectedAppliedEffects = [
     {
       effectIndex: 0,
-      multiplierPermille: journey.expectedAppliedEffectMultiplierPermille,
+      [journey.effectValueType]: journey.expectedAppliedEffectMultiplierPermille,
       skillId: journey.selectedSkillId,
       slotIndex: expectedSlotIndex,
       type: journey.expectedAppliedEffectType,
     },
-  ]);
+  ];
+  if (journey.expectedAdditionalAppliedEffect !== undefined) {
+    expectedAppliedEffects.push({
+      effectIndex: journey.expectedAdditionalAppliedEffect.effectIndex,
+      [journey.expectedAdditionalAppliedEffect.effectValueType]:
+        journey.expectedAdditionalAppliedEffect.effectValue,
+      skillId: journey.selectedSkillId,
+      slotIndex: expectedSlotIndex,
+      type: journey.expectedAdditionalAppliedEffect.type,
+    });
+  }
+  expect(result.appliedSkillEffects).toEqual(expectedAppliedEffects);
 }
 
 async function expectServiceWorkerControl(page: Page): Promise<void> {
@@ -230,45 +274,50 @@ for (const journey of SKILL_JOURNEYS) {
     test('persists the shaped offer, keyboard choice, four-slot build, and applied effect', async ({
       page,
     }) => {
-      await installFixedCareerSeed(page);
+      await installFixedCareerSeed(page, journey.browserUuid);
       await page.goto('/');
       await expect(page.locator('html')).toHaveAttribute('lang', journey.locale);
 
       const created = await createRepresentativeCareer(page, journey.locale, journey.playerName);
       expect(created).toMatchObject({
-        careerSeed: FIXED_CAREER_SEED,
+        careerSeed: `career-seed:${journey.browserUuid}`,
         lastPassiveBodyRecovery: null,
+        programId: 'program_northstar_college',
+        recruitingState: { type: 'COMMITTED' },
         recentWeeklyActionIds: [],
-        schemaVersion: 2,
+        schemaVersion: 7,
       });
+      expect(created.programContext).not.toBeNull();
       expect(created.player.skillState).toEqual({
         acquisitions: [],
+        breakthroughGauge: {
+          lastProgress: null,
+          model: 'gauge_v1',
+          progress: 0,
+          threshold: 100,
+        },
         equippedSkillIds: [null, null, null, null],
       });
 
-      await finishWeek(page, journey.firstWeekActionIds, 0);
-      await page.getByTestId('advance-week').click();
-      const pendingOffer = await waitForPersistedCareer(page, {
-        phase: 'SKILL_BREAKTHROUGH',
-        revision: 5,
-        weekIndex: 1,
-      });
-      expect(pendingOffer.recentWeeklyActionIds).toEqual(journey.firstWeekActionIds);
-      expect(pendingOffer.phase.offer).toEqual({
-        offerIndex: 0,
-        offeredSkillIds: journey.expectedOffer,
-        rngDrawCountAfter: 3,
-        rngDrawCountBefore: 0,
-        weekIndex: 1,
-      });
-      expect(pendingOffer.phase.offer.offeredSkillIds).not.toEqual(journey.otherBehaviorOffer);
+      const pendingOffer = await advanceUntilBreakthrough(page, journey.firstWeekActionIds);
+      expect(pendingOffer.recentWeeklyActionIds.slice(-3)).toEqual(journey.firstWeekActionIds);
       expect(new Set(pendingOffer.phase.offer.offeredSkillIds)).toHaveProperty('size', 3);
-      expect(pendingOffer.rng).toEqual(FIRST_OFFER_RNG);
+      expect(pendingOffer.phase.offer.offeredSkillIds).toContain(journey.selectedSkillId);
+      expect(pendingOffer.phase.offer.trigger).toEqual(
+        pendingOffer.player.skillState.breakthroughGauge.lastProgress,
+      );
+      expect(pendingOffer.phase.offer.trigger).toMatchObject({
+        threshold: 100,
+        triggeredOffer: true,
+        weekIndex: pendingOffer.weekIndex,
+      });
+      expect(pendingOffer.phase.offer.trigger?.pointsEarned).toBeGreaterThan(0);
+      expect(pendingOffer.phase.offer.trigger?.sources.length).toBeGreaterThan(0);
       expect(pendingOffer.lastPassiveBodyRecovery).toMatchObject({
         appliedSkillEffects: [],
         baseBodyDelta: 10,
         requestedBodyDelta: 10,
-        weekIndex: 0,
+        weekIndex: pendingOffer.weekIndex - 1,
       });
       await expect(page.getByTestId('weekly-phase')).toHaveAttribute(
         'data-phase',
@@ -326,8 +375,8 @@ for (const journey of SKILL_JOURNEYS) {
 
       const chosen = await waitForPersistedCareer(page, {
         phase: 'PLAN_ACTIONS',
-        revision: 6,
-        weekIndex: 1,
+        revision: pendingOffer.revision + 1,
+        weekIndex: pendingOffer.weekIndex,
       });
       expect(chosen.rng).toEqual(pendingOffer.rng);
       expect(chosen.player.skillState.acquisitions).toEqual([
@@ -360,8 +409,8 @@ for (const journey of SKILL_JOURNEYS) {
       await page.getByTestId('skill-slot-select-0').selectOption('');
       const cleared = await waitForPersistedCareer(page, {
         phase: 'PLAN_ACTIONS',
-        revision: 7,
-        weekIndex: 1,
+        revision: chosen.revision + 1,
+        weekIndex: chosen.weekIndex,
       });
       expect(cleared.player.skillState.equippedSkillIds).toEqual([null, null, null, null]);
       const slotOneSelect = page.getByTestId('skill-slot-select-1');
@@ -369,8 +418,8 @@ for (const journey of SKILL_JOURNEYS) {
       await slotOneSelect.selectOption(journey.selectedSkillId);
       const moved = await waitForPersistedCareer(page, {
         phase: 'PLAN_ACTIONS',
-        revision: 8,
-        weekIndex: 1,
+        revision: cleared.revision + 1,
+        weekIndex: cleared.weekIndex,
       });
       expect(moved.player.skillState.equippedSkillIds).toEqual([
         null,
@@ -383,6 +432,7 @@ for (const journey of SKILL_JOURNEYS) {
       await page.reload();
       expect(await readActiveCareer(page)).toEqual(moved);
       await openSkillLoadout(page);
+      await page.getByTestId('career-nav-week').click();
       await draftActions(page, journey.secondWeekActionIds);
       await page.getByTestId('action-commit').click();
       const committed = await waitForPersistedCareer(page, {
@@ -390,35 +440,37 @@ for (const journey of SKILL_JOURNEYS) {
         nextActionIndex: 0,
         phase: 'RESOLVE_ACTIONS',
         resultActionIds: [],
-        revision: 9,
-        weekIndex: 1,
+        revision: moved.revision + 1,
+        weekIndex: moved.weekIndex,
       });
       expect(committed.player.skillState.equippedSkillIds).toEqual(
         moved.player.skillState.equippedSkillIds,
       );
+      await openSkillLoadout(page);
       for (let slotIndex = 0; slotIndex < 4; slotIndex += 1) {
         await expect(page.getByTestId(`skill-slot-select-${slotIndex}`)).toBeDisabled();
       }
       await expect(page.getByText(journey.loadoutLockedText)).toBeVisible();
 
+      await page.getByTestId('career-nav-week').click();
       await page.getByTestId('resolve-next').click();
       const afterAppliedAction = await waitForPersistedCareer(page, {
         actionIds: journey.secondWeekActionIds,
         nextActionIndex: 1,
         phase: 'RESOLVE_ACTIONS',
         resultActionIds: journey.secondWeekActionIds.slice(0, 1),
-        revision: 10,
-        weekIndex: 1,
+        revision: committed.revision + 1,
+        weekIndex: committed.weekIndex,
       });
       const firstResult = afterAppliedAction.phase.results[0];
       if (firstResult === undefined) {
         throw new Error('Expected the first M2 result to be persisted.');
       }
-      await expectAppliedResult(firstResult, journey);
+      await expectAppliedResult(firstResult, journey, 1, moved.weekIndex);
       const evidence = page.getByTestId(`skill-evidence-${journey.selectedSkillId}-0`);
       await expect(evidence).toBeVisible();
       await expect(evidence).toContainText(journey.selectedSkillName);
-      await expect(evidence).toContainText(journey.effectPercentText);
+      await expect(evidence).toContainText(journey.effectValueText);
       await expectNoHorizontalOverflow(page);
 
       await page.reload();
@@ -449,23 +501,17 @@ test.describe('M2 320px full skill journey', () => {
     page,
   }) => {
     const journey = SKILL_JOURNEYS[1];
-    await installFixedCareerSeed(page);
+    await installFixedCareerSeed(page, journey.browserUuid);
     await page.goto('/');
     await expect(page.locator('html')).toHaveAttribute('lang', journey.locale);
     await createRepresentativeCareer(page, journey.locale, 'Narrow Build Saturday');
 
-    await finishWeek(page, journey.firstWeekActionIds, 0);
-    const advance = page.getByTestId('advance-week');
-    await expectTouchTarget(advance);
-    await expectHorizontallyWithinViewport(page, advance);
-    await advance.click();
-    const pendingOffer = await waitForPersistedCareer(page, {
-      phase: 'SKILL_BREAKTHROUGH',
-      revision: 5,
-      weekIndex: 1,
-    });
-    expect(pendingOffer.phase.offer.offeredSkillIds).toEqual(journey.expectedOffer);
-    expect(pendingOffer.rng).toEqual(FIRST_OFFER_RNG);
+    const pendingOffer = await advanceUntilBreakthrough(page, journey.firstWeekActionIds);
+    expect(pendingOffer.phase.offer.offeredSkillIds).toContain(journey.selectedSkillId);
+    await expect(page.getByTestId('skill-breakthrough-gauge')).toHaveAttribute(
+      'data-ready',
+      'true',
+    );
     await expectNoHorizontalOverflow(page);
 
     const selectedRadio = page.getByTestId(`skill-offer-${journey.selectedSkillId}`);
@@ -482,8 +528,8 @@ test.describe('M2 320px full skill journey', () => {
 
     const chosen = await waitForPersistedCareer(page, {
       phase: 'PLAN_ACTIONS',
-      revision: 6,
-      weekIndex: 1,
+      revision: pendingOffer.revision + 1,
+      weekIndex: pendingOffer.weekIndex,
     });
     expect(chosen.player.skillState.equippedSkillIds).toEqual([
       journey.selectedSkillId,
@@ -504,6 +550,7 @@ test.describe('M2 320px full skill journey', () => {
     }
     await expectNoHorizontalOverflow(page);
 
+    await page.getByTestId('career-nav-week').click();
     for (const actionId of new Set(journey.secondWeekActionIds)) {
       const action = page.getByTestId(`action-choice-${actionId}`);
       await expectTouchTarget(action);
@@ -519,14 +566,16 @@ test.describe('M2 320px full skill journey', () => {
       nextActionIndex: 0,
       phase: 'RESOLVE_ACTIONS',
       resultActionIds: [],
-      revision: 7,
-      weekIndex: 1,
+      revision: chosen.revision + 1,
+      weekIndex: chosen.weekIndex,
     });
+    await openSkillLoadout(page);
     for (let slotIndex = 0; slotIndex < 4; slotIndex += 1) {
       await expect(page.getByTestId(`skill-slot-select-${slotIndex}`)).toBeDisabled();
     }
     await expect(page.getByText(journey.loadoutLockedText)).toBeVisible();
 
+    await page.getByTestId('career-nav-week').click();
     const resolve = page.getByTestId('resolve-next');
     await expectTouchTarget(resolve);
     await expectHorizontallyWithinViewport(page, resolve);
@@ -536,17 +585,17 @@ test.describe('M2 320px full skill journey', () => {
       nextActionIndex: 1,
       phase: 'RESOLVE_ACTIONS',
       resultActionIds: journey.secondWeekActionIds.slice(0, 1),
-      revision: 8,
-      weekIndex: 1,
+      revision: chosen.revision + 2,
+      weekIndex: chosen.weekIndex,
     });
     const firstResult = afterAppliedAction.phase.results[0];
     if (firstResult === undefined) {
       throw new Error('Expected the first narrow M2 result to be persisted.');
     }
-    await expectAppliedResult(firstResult, journey, 0);
+    await expectAppliedResult(firstResult, journey, 0, chosen.weekIndex);
     const evidence = page.getByTestId(`skill-evidence-${journey.selectedSkillId}-0`);
     await expect(evidence).toContainText(journey.selectedSkillName);
-    await expect(evidence).toContainText(journey.effectPercentText);
+    await expect(evidence).toContainText(journey.effectValueText);
     await expectNoHorizontalOverflow(page);
 
     await page.reload();

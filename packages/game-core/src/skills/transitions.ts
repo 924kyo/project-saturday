@@ -88,6 +88,7 @@ export function chooseSkillBreakthrough(
     player: {
       ...cloned.player,
       skillState: {
+        ...cloned.player.skillState,
         acquisitions: [...cloned.player.skillState.acquisitions, { ...offer, selectedSkillId }],
         equippedSkillIds,
       },

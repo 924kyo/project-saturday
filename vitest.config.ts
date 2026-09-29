@@ -2,6 +2,8 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
+    // Bound CPU contention for full-career replay tests; retain their timeouts.
+    maxWorkers: 4,
     projects: [
       'packages/game-core/vitest.config.ts',
       'packages/game-content/vitest.config.ts',

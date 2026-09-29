@@ -1,13 +1,19 @@
 import {
   SKILL_BEHAVIOR_TAG_IDS as CORE_SKILL_BEHAVIOR_TAG_IDS,
+  SKILL_BREAKTHROUGH_SOURCE_IDS as CORE_SKILL_BREAKTHROUGH_SOURCE_IDS,
   SKILL_EFFECT_CONDITION_TYPES as CORE_SKILL_EFFECT_CONDITION_TYPES,
   SKILL_EFFECT_TYPES as CORE_SKILL_EFFECT_TYPES,
   SKILL_FAMILY_IDS as CORE_SKILL_FAMILY_IDS,
   SKILL_GAME_HOOK_IDS as CORE_SKILL_GAME_HOOK_IDS,
+  SKILL_LIFE_HOOK_IDS as CORE_SKILL_LIFE_HOOK_IDS,
   SKILL_GRADE_IDS as CORE_SKILL_GRADE_IDS,
   isSkillId as isCoreSkillId,
   isSkillMechanicsDefinitionCatalog as isCoreSkillMechanicsDefinitionCatalog,
   isWeeklyActionTagId as isCoreWeeklyActionTagId,
+  collectEquippedGameHooks,
+  deriveEligibleWeightedSkillOfferPool,
+  deriveInjuryRiskSkillEffects,
+  type PlayerSkillStateV2,
   type SkillMechanicsDefinition as CoreSkillMechanicsDefinition,
 } from '@project-saturday/game-core';
 import { describe, expect, it } from 'vitest';
@@ -17,15 +23,18 @@ import {
   skillMechanicsDefinitions,
   skills,
   weeklyActions,
+  weeklyActionDefinitions,
 } from '../content/index.js';
 import { localeMessages, type SupportedLocale } from '../locales/index.js';
 import { CONTENT_COMPATIBILITY_VERSION } from '../schema/content.js';
 import {
   SKILL_BEHAVIOR_TAG_IDS,
+  SKILL_BREAKTHROUGH_SOURCE_IDS,
   SKILL_EFFECT_CONDITION_TYPES,
   SKILL_EFFECT_TYPES,
   SKILL_FAMILY_IDS,
   SKILL_GAME_HOOK_IDS,
+  SKILL_LIFE_HOOK_IDS,
   SKILL_GRADE_BASE_OFFER_WEIGHTS,
   SKILL_GRADE_IDS,
   SKILL_IDS,
@@ -68,14 +77,14 @@ function skillById(id: (typeof SKILL_IDS)[number]) {
   return skill;
 }
 
-describe('M2 skill content', () => {
-  it('ships schema v2 with compatibility v1 and exactly 18 cards in stable order', () => {
+describe('M5 skill content', () => {
+  it('keeps compatibility v1 under manifest schema v7 and all 40 cards in stable order', () => {
     expect(CONTENT_COMPATIBILITY_VERSION).toBe(1);
     expect(contentManifest.contentVersion).toBe(1);
-    expect(contentManifest.schemaVersion).toBe(2);
+    expect(contentManifest.schemaVersion).toBe(9);
     expect(contentManifest.skills).toBe(skills);
     expect(skills.map(({ id }) => id)).toEqual(SKILL_IDS);
-    expect(skills).toHaveLength(18);
+    expect(skills).toHaveLength(40);
     expect(validateContent({ localeResources: localeMessages, manifest: contentManifest })).toEqual(
       { issues: [], ok: true },
     );
@@ -90,11 +99,12 @@ describe('M2 skill content', () => {
         ]),
       ),
     ).toEqual({
-      skill_family_body: 4,
-      skill_family_development: 4,
-      skill_family_game_day: 3,
-      skill_family_life: 3,
-      skill_family_mindset: 4,
+      skill_family_body: 5,
+      skill_family_development: 8,
+      skill_family_game_day: 10,
+      skill_family_life: 4,
+      skill_family_mindset: 6,
+      skill_family_role_coach: 7,
     });
     expect(new Set(skills.map(({ gradeId }) => gradeId))).toEqual(new Set(SKILL_GRADE_IDS));
     expect(
@@ -123,6 +133,28 @@ describe('M2 skill content', () => {
       ['skill_study_buffer_c', 'skill_family_life', 'skill_grade_c', 100],
       ['skill_balanced_calendar_b', 'skill_family_life', 'skill_grade_b', 70],
       ['skill_two_track_week_a', 'skill_family_life', 'skill_grade_a', 35],
+      ['skill_assignment_echo_c', 'skill_family_role_coach', 'skill_grade_c', 100],
+      ['skill_clean_install_b', 'skill_family_role_coach', 'skill_grade_b', 70],
+      ['skill_package_memory_b', 'skill_family_role_coach', 'skill_grade_b', 70],
+      ['skill_quiet_checkin_c', 'skill_family_role_coach', 'skill_grade_c', 100],
+      ['skill_trust_window_a', 'skill_family_role_coach', 'skill_grade_a', 35],
+      ['skill_signal_reader_a', 'skill_family_role_coach', 'skill_grade_a', 35],
+      ['skill_coaches_key_s', 'skill_family_role_coach', 'skill_grade_s', 10],
+      ['skill_composure_anchor_b', 'skill_family_mindset', 'skill_grade_b', 70],
+      ['skill_campus_bridge_b', 'skill_family_life', 'skill_grade_b', 70],
+      ['skill_stem_library_c', 'skill_family_development', 'skill_grade_c', 100],
+      ['skill_catch_point_map_b', 'skill_family_development', 'skill_grade_b', 70],
+      ['skill_acceleration_ladder_b', 'skill_family_development', 'skill_grade_b', 70],
+      ['skill_technique_chain_a', 'skill_family_development', 'skill_grade_a', 35],
+      ['skill_sideline_compass_c', 'skill_family_game_day', 'skill_grade_c', 100],
+      ['skill_leverage_snapshot_c', 'skill_family_game_day', 'skill_grade_c', 100],
+      ['skill_late_hands_b', 'skill_family_game_day', 'skill_grade_b', 70],
+      ['skill_stem_pressure_b', 'skill_family_game_day', 'skill_grade_b', 70],
+      ['skill_red_zone_patience_a', 'skill_family_game_day', 'skill_grade_a', 35],
+      ['skill_scramble_compass_a', 'skill_family_game_day', 'skill_grade_a', 35],
+      ['skill_fourth_quarter_spark_s', 'skill_family_game_day', 'skill_grade_s', 10],
+      ['skill_training_buffer_b', 'skill_family_body', 'skill_grade_b', 70],
+      ['skill_next_snap_reset_a', 'skill_family_mindset', 'skill_grade_a', 35],
     ]);
     for (const skill of skills) {
       expect(skill.baseOfferWeight, skill.id).toBe(SKILL_GRADE_BASE_OFFER_WEIGHTS[skill.gradeId]);
@@ -155,9 +187,10 @@ describe('M2 skill content', () => {
   });
 
   it('keeps all affinities reachable from authored action tags or three derived behaviors', () => {
-    const reachableTags = new Set([
+    const reachableTags = new Set<string>([
       ...weeklyActions.flatMap(({ tags }) => tags),
       ...SKILL_BEHAVIOR_TAG_IDS,
+      ...SKILL_BREAKTHROUGH_SOURCE_IDS,
     ]);
     expect(new Set(weeklyActions.flatMap(({ tags }) => tags))).toEqual(
       new Set(WEEKLY_ACTION_TAG_IDS),
@@ -219,14 +252,14 @@ describe('M2 skill content', () => {
     );
   });
 
-  it('identifies exactly nine mechanically inferred tradeoffs', () => {
+  it('preserves all shipped tradeoffs and adds two explicit M5 tradeoffs', () => {
     const explicitTradeoffIds = skills.filter(({ isTradeoff }) => isTradeoff).map(({ id }) => id);
     const inferredTradeoffIds = skills
       .filter(({ effects }) => isMechanicallyInferredTradeoff(effects))
       .map(({ id }) => id);
     expect(explicitTradeoffIds).toEqual(SKILL_TRADEOFF_IDS);
     expect(inferredTradeoffIds).toEqual(SKILL_TRADEOFF_IDS);
-    expect(explicitTradeoffIds).toHaveLength(9);
+    expect(explicitTradeoffIds).toHaveLength(13);
   });
 
   it('projects strict display-free definitions aligned with the public game-core contract', () => {
@@ -255,8 +288,104 @@ describe('M2 skill content', () => {
     expect(SKILL_EFFECT_TYPES).toEqual(CORE_SKILL_EFFECT_TYPES);
     expect(SKILL_EFFECT_CONDITION_TYPES).toEqual(CORE_SKILL_EFFECT_CONDITION_TYPES);
     expect(SKILL_GAME_HOOK_IDS).toEqual(CORE_SKILL_GAME_HOOK_IDS);
+    expect(SKILL_LIFE_HOOK_IDS).toEqual(CORE_SKILL_LIFE_HOOK_IDS);
     expect(SKILL_BEHAVIOR_TAG_IDS).toEqual(CORE_SKILL_BEHAVIOR_TAG_IDS);
+    expect(SKILL_BREAKTHROUGH_SOURCE_IDS).toEqual(CORE_SKILL_BREAKTHROUGH_SOURCE_IDS);
     expect(WEEKLY_ACTION_TAG_IDS.every((tagId) => isCoreWeeklyActionTagId(tagId))).toBe(true);
+  });
+
+  it('keeps every card offer-reachable and proves distinct development, game, and Body builds', () => {
+    const pool = deriveEligibleWeightedSkillOfferPool(
+      {
+        positionId: 'position_wr',
+        archetypeId: 'archetype_wr_deep_threat',
+        playerTagIds: [],
+        ownedSkillIds: [],
+        weekIndex: 1,
+        recentWeeklyActionIds: [],
+      },
+      skillMechanicsDefinitions,
+      weeklyActionDefinitions,
+    );
+    expect(pool).toEqual(expect.objectContaining({ ok: true }));
+    if (!pool.ok) throw new TypeError(pool.reason);
+    expect(pool.candidates.map(({ skillId }) => skillId).sort()).toEqual([...SKILL_IDS].sort());
+
+    const trainingBuffer = skillById('skill_training_buffer_b');
+    const bodyState = {
+      acquisitions: [
+        {
+          offerIndex: 0,
+          weekIndex: 1,
+          offeredSkillIds: [
+            'skill_training_buffer_b',
+            'skill_stem_library_c',
+            'skill_sideline_compass_c',
+          ],
+          rngDrawCountBefore: 0,
+          rngDrawCountAfter: 3,
+          selectedSkillId: 'skill_training_buffer_b',
+        },
+      ],
+      equippedSkillIds: ['skill_training_buffer_b', null, null, null],
+    } as const satisfies PlayerSkillStateV2;
+    expect(deriveInjuryRiskSkillEffects(bodyState, skillMechanicsDefinitions)).toEqual({
+      ok: true,
+      multiplierPermille: 800,
+      appliedSkillEffects: [
+        {
+          type: 'injury_risk_multiplier',
+          skillId: 'skill_training_buffer_b',
+          slotIndex: 0,
+          effectIndex: trainingBuffer.effects.findIndex(
+            ({ type }) => type === 'injury_risk_multiplier',
+          ),
+          multiplierPermille: 800,
+        },
+      ],
+    });
+
+    const gameState = {
+      acquisitions: [
+        {
+          offerIndex: 0,
+          weekIndex: 1,
+          offeredSkillIds: [
+            'skill_fourth_quarter_spark_s',
+            'skill_stem_library_c',
+            'skill_training_buffer_b',
+          ],
+          rngDrawCountBefore: 0,
+          rngDrawCountAfter: 3,
+          selectedSkillId: 'skill_fourth_quarter_spark_s',
+        },
+      ],
+      equippedSkillIds: ['skill_fourth_quarter_spark_s', null, null, null],
+    } as const satisfies PlayerSkillStateV2;
+    expect(collectEquippedGameHooks(gameState, skillMechanicsDefinitions)).toEqual(
+      expect.objectContaining({
+        ok: true,
+        hooks: expect.arrayContaining([
+          expect.objectContaining({
+            hookId: 'game_hook_yac_yardage_multiplier',
+            valueMilli: 1250,
+          }),
+          expect.objectContaining({
+            hookId: 'game_hook_fumble_risk_multiplier',
+            valueMilli: 1150,
+          }),
+        ]),
+      }),
+    );
+    expect(skillById('skill_technique_chain_a').effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'action_xp_multiplier',
+          condition: { minimumCount: 3, type: 'plan_distinct_action_count_at_least' },
+        }),
+        expect.objectContaining({ type: 'action_practice_impact_flat', delta: 2 }),
+      ]),
+    );
   });
 
   it('rejects unsupported IDs, inert parameters, malformed scopes, and false tradeoff metadata', () => {

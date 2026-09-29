@@ -8,8 +8,10 @@ export {
   STORAGE_STORE_NAMES,
   type SaveEnvelope,
   type StorageAdapter,
+  type StorageDelete,
   type StorageEntry,
   type StorageStoreName,
+  type StorageWrite,
 } from './storage';
 export {
   CAREER_ENVELOPE_FAILURE_REASONS,
@@ -17,19 +19,55 @@ export {
   CAREER_SNAPSHOT_RETENTION,
   CURRENT_CAREER_SAVE_VERSION,
   CURRENT_CAREER_STORAGE_ID,
+  META_PROFILE_SAVE_VERSION,
+  META_PROFILE_STORAGE_ID,
   SHIPPED_CAREER_CONTENT_VERSION,
   CareerPersistence,
+  CareerCompletionPersistence,
+  MetaProfilePersistence,
   canonicalStringify,
   computeSaveChecksum,
   validateCareerSaveEnvelope,
+  validateMetaSaveEnvelope,
   type CareerEnvelopeFailure,
   type CareerEnvelopeFailureReason,
   type CareerLoadWarning,
   type CareerPersistenceOptions,
   type CareerSaveFailureReason,
   type CareerSaveFailureStage,
+  type SaveCareerCompletionResult,
   type LoadCareerResult,
+  type LoadMetaProfileResult,
   type SaveCareerResult,
+  type SaveMetaProfileResult,
   type SaveChecksumFields,
   type ValidateCareerEnvelopeResult,
+  type ValidateMetaEnvelopeResult,
 } from './career-persistence';
+export {
+  ACTIVE_CAREER_KIND_STORAGE_ID,
+  POSITION_ALPHA_SAVE_VERSION,
+  POSITION_ALPHA_SNAPSHOT_RETENTION,
+  POSITION_ALPHA_STORAGE_ID,
+  PositionAlphaPersistence,
+  POSITION_ALUMNI_STORAGE_PREFIX,
+  type ActiveCareerKind,
+  type LoadPositionAlphaResult,
+  type PositionAlphaPersistenceOptions,
+  type SavePositionAlphaResult,
+} from './position-alpha-persistence';
+export {
+  PositionAlphaPersistenceV2,
+  decodePositionAlphaEnvelopeV2,
+  POSITION_ALPHA_SAVE_VERSION_V2,
+} from './position-alpha-persistence-v2';
+export {
+  PositionAlphaPersistenceV3,
+  decodePositionAlphaEnvelopeV3,
+  POSITION_ALPHA_SAVE_VERSION_V3,
+} from './position-alpha-persistence-v3';
+export {
+  CareerManagementPersistence,
+  type CareerManagementCheckpoint,
+  type CareerManagementResult,
+} from './career-management';

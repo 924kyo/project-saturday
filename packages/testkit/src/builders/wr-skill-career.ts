@@ -1,10 +1,10 @@
 import {
-  advanceDevelopmentWeek,
+  advanceHistoricalDevelopmentWeek as advanceDevelopmentWeek,
   chooseSkillBreakthrough,
-  commitWeeklyActionPlan,
+  commitHistoricalPreProgramWeeklyActionPlan,
   deriveEligibleWeightedSkillOfferPool,
   deriveOwnedSkillIds,
-  parseCareerRunV2,
+  parseCareerRun,
   resolveNextWeeklyAction,
   validateCareerRun,
 } from '@project-saturday/game-core';
@@ -131,7 +131,7 @@ function roundTripCareer(
   input: ExecuteWrSkillDevelopmentWeekInput,
   stage: string,
 ): CareerRun {
-  const parsed = parseCareerRunV2(JSON.stringify(career));
+  const parsed = parseCareerRun(JSON.stringify(career));
   if (!parsed.ok) {
     return fail(input, stage, parsed.reason);
   }
@@ -165,7 +165,11 @@ export function executeWrSkillDevelopmentWeek(
   const weekIndex = input.career.weekIndex;
   let career = input.career;
 
-  const committed = commitWeeklyActionPlan(career, input.actionPlan, input.availableActionIds);
+  const committed = commitHistoricalPreProgramWeeklyActionPlan(
+    career,
+    input.actionPlan,
+    input.availableActionIds,
+  );
   if (!committed.ok) {
     return fail(input, 'commit_plan', committed.reason);
   }

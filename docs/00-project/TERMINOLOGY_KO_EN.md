@@ -13,10 +13,20 @@ Use this as the initial product glossary. Natural UI wording can evolve, but avo
 | Coach Trust | 코치 신뢰 | |
 | Scheme Fit | 전술 적합도 | |
 | Practice Grade | 훈련 평가 | Avoid confusing with school grades |
+| Practice Form | 훈련 폼 | Rolling recent-practice state; distinct from a single weekly score |
 | Body | 몸 상태 | Mechanical key remains `Body` |
 | Confidence | 자신감 | |
 | Football IQ | 풋볼 IQ | Could later editorialize as 경기 이해도 if preferred |
 | Film Study | 필름 스터디 | Tooltip can explain 상대 영상 분석 |
+| Game Day | 경기일 | Purpose destination and weekly football participation context |
+| Key Snap | 키 스냅 | One important athlete-level football decision; do not imply control of the whole play call |
+| Coverage | 커버리지 | Defensive shell/context shown according to information quality |
+| Leverage | 레버리지 | Defender positioning; explanatory copy should name the lane or side when possible |
+| Release Technique | 릴리스 기술 | WR action at the line of scrimmage |
+| Route Response | 루트 대응 | Athlete adjustment to leverage; distinct from choosing the team play |
+| Catch Approach | 캐치 접근 | How the WR attacks or protects the catch point |
+| After-catch Choice / YAC | 캐치 후 전진 / YAC | Balance extra yards and ball security |
+| Performance Grade | 경기 평가 | Post-game football grade; distinct from Practice Grade and GPA |
 | Weekly Action | 주간 행동 | Short UI may use 행동 when the weekly context is already clear |
 | Action Planning | 행동 계획 | The reversible three-slot draft phase |
 | Action Resolution | 행동 진행 | Resolves the committed queue in order |
@@ -35,6 +45,9 @@ Use this as the initial product glossary. Natural UI wording can evolve, but avo
 | Blue-Chip | 최상급 유망주 | Avoid forcing jargon in beginner UI |
 | Redshirt-like development year | 성장 유예 / 레드셔츠형 시즌 | Exact rules are fictionalized; legal copy should not imply exact NCAA rule simulation |
 | NIL | NIL | Explain once as 이름·이미지·브랜드 기반 상업 활동 |
+| Player Development | 선수 육성 | Program quality/facility context |
+| Position Room / WR Room | 포지션 룸 / WR 포지션 룸 | The player and direct depth-chart competitors |
+| Starter / Rotation / Reserve / Developmental | 스타터 / 로테이션 / 리저브 / 육성 | Stable role-band labels |
 | Brand | 브랜드 | |
 | Transfer Portal | 트랜스퍼 포털 | |
 | Rivalry | 라이벌전 | |

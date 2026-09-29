@@ -1,15 +1,22 @@
 import { describe, expect, it } from 'vitest';
 import { chooseSkillBreakthrough } from '@project-saturday/game-core';
 
+import { completeShippedGame } from '../test/game-fixture';
+
 import {
   addDraftAction,
   advanceCareerWeek,
   canAddPersonalityTrait,
   commitCareerActionDraft,
+  commitCareerProgramChoice,
   createCareerFromDraft,
   createDefaultCreationDraft,
   getAppearanceSummary,
+  getArchetypeEmphasisAttributeIds,
+  getAttributeProgressPresentation,
   getAttributeSummary,
+  getTrainingProficiencyProgress,
+  getTrainingProficiencySummary,
   moveDraftAction,
   removeDraftAction,
   resolveCareerNextAction,
@@ -24,12 +31,27 @@ function validDraft() {
   };
 }
 
-function createdCareer() {
+function choosingCareer() {
   const result = createCareerFromDraft(validDraft(), 'career-ui-test-seed');
   if (!result.ok) {
     throw new Error(JSON.stringify(result.issues));
   }
   return result.career;
+}
+
+function createdCareer() {
+  const choosing = choosingCareer();
+  if (choosing.recruitingState.type !== 'CHOOSING') {
+    throw new Error('Expected a recruiting shortlist.');
+  }
+  const committed = commitCareerProgramChoice(
+    choosing,
+    choosing.recruitingState.offers[0].programId,
+  );
+  if (!committed.ok) {
+    throw new Error(committed.reason);
+  }
+  return committed.career;
 }
 
 describe('pure creation UI orchestration', () => {
@@ -90,11 +112,97 @@ describe('pure creation UI orchestration', () => {
       expect(result.career.player.weightKg).toBe(86);
       expect(getAttributeSummary(result.career)).toHaveLength(16);
       expect(getAppearanceSummary(result.career.player.appearance)).toHaveLength(13);
+      expect(result.career.revision).toBe(1);
+      expect(result.career.rng.drawCount).toBe(0);
+      expect(result.career.recruitingState.type).toBe('CHOOSING');
+      if (result.career.recruitingState.type === 'CHOOSING') {
+        expect(result.career.recruitingState.recruitAbilityScore).toBe(54);
+        expect(result.career.recruitingState.backgroundModifier).toBe(12);
+        expect(result.career.recruitingState.recruitScore).toBe(66);
+        expect(result.career.recruitingState.recruitTierId).toBe('recruit_tier_national');
+        expect(result.career.recruitingState.offers).toHaveLength(5);
+        expect(
+          new Set(result.career.recruitingState.offers.map(({ programId }) => programId)).size,
+        ).toBe(5);
+      }
+    }
+  });
+
+  it('delegates offered program commitment and exact seeded room generation to core', () => {
+    const choosing = choosingCareer();
+    if (choosing.recruitingState.type !== 'CHOOSING') {
+      throw new Error('Expected a recruiting shortlist.');
+    }
+    const selectedProgramId = choosing.recruitingState.offers[0].programId;
+    const committed = commitCareerProgramChoice(choosing, selectedProgramId);
+    expect(committed.ok).toBe(true);
+    if (committed.ok) {
+      expect(committed.career.programId).toBe(selectedProgramId);
+      expect(committed.career.recruitingState.type).toBe('COMMITTED');
+      expect(committed.career.programContext?.competitors).toHaveLength(7);
+      expect(committed.career.programContext?.depthOrderIds).toHaveLength(8);
+      expect(committed.career.rng.drawCount - choosing.rng.drawCount).toBe(35);
     }
   });
 });
 
 describe('pure weekly UI orchestration', () => {
+  it('derives rating and proficiency progress from authoritative tuning', () => {
+    expect(getAttributeProgressPresentation({ rating: 72, xp: 37 })).toEqual({
+      currentXp: 37,
+      nextRating: 73,
+      progressPermille: 370,
+      remainingXp: 63,
+      requiredXp: 100,
+    });
+    expect(getAttributeProgressPresentation({ rating: 100, xp: 0 })).toEqual({
+      currentXp: 100,
+      nextRating: null,
+      progressPermille: 1000,
+      remainingXp: 0,
+      requiredXp: 100,
+    });
+    expect(
+      getTrainingProficiencyProgress('action_route_drills', 'proficiency_route_drills', 5),
+    ).toEqual({
+      actionId: 'action_route_drills',
+      currentMultiplierPermille: 1140,
+      currentThreshold: 5,
+      level: 2,
+      nextLevel: 3,
+      nextMultiplierPermille: 1180,
+      nextThreshold: 9,
+      proficiencyId: 'proficiency_route_drills',
+      progressPermille: 0,
+      remainingUses: 4,
+      uses: 5,
+    });
+    expect(
+      getTrainingProficiencyProgress('action_route_drills', 'proficiency_route_drills', 20),
+    ).toMatchObject({
+      currentMultiplierPermille: 1230,
+      level: 5,
+      nextLevel: null,
+      nextMultiplierPermille: null,
+      nextThreshold: null,
+      progressPermille: 1000,
+      remainingUses: 0,
+    });
+
+    const career = createdCareer();
+    expect(getArchetypeEmphasisAttributeIds(career)).toEqual([
+      'attribute_speed',
+      'attribute_burst',
+    ]);
+    expect(getTrainingProficiencySummary(career)).toHaveLength(7);
+    expect(getTrainingProficiencySummary(career)[0]).toMatchObject({
+      actionId: 'action_route_drills',
+      level: 0,
+      nextThreshold: 2,
+      remainingUses: 2,
+    });
+  });
+
   it('preserves duplicate action IDs and ordered local draft edits', () => {
     let draft = addDraftAction([], 'action_route_drills');
     draft = addDraftAction(draft, 'action_route_drills');
@@ -131,20 +239,50 @@ describe('pure weekly UI orchestration', () => {
       career = resolved.career;
     }
     expect(career.phase.type).toBe('WEEK_END');
+    expect(advanceCareerWeek(career).ok).toBe(false);
+    career = completeShippedGame(career);
+    expect(career.phase.type).toBe('POST_GAME');
     const advanced = advanceCareerWeek(career);
     expect(advanced.ok).toBe(true);
     if (advanced.ok) {
-      expect(advanced.career.phase.type).toBe('SKILL_BREAKTHROUGH');
+      expect(advanced.career.phase.type).toBe('PLAN_ACTIONS');
       expect(advanced.career.weekIndex).toBe(1);
+      expect(advanced.career.player.skillState.breakthroughGauge.progress).toBeGreaterThan(0);
       expect(start.phase.type).toBe('PLAN_ACTIONS');
-      expect(start.revision).toBe(0);
-      if (advanced.career.phase.type !== 'SKILL_BREAKTHROUGH') {
+      expect(start.revision).toBe(2);
+      let breakthrough = advanced.career;
+      for (let week = 1; week < 13 && breakthrough.phase.type !== 'SKILL_BREAKTHROUGH'; week += 1) {
+        const nextPlan = commitCareerActionDraft(breakthrough, [
+          'action_route_drills',
+          'action_route_drills',
+          'action_recovery',
+        ]);
+        if (!nextPlan.ok) {
+          throw new Error(nextPlan.reason);
+        }
+        breakthrough = nextPlan.career;
+        for (let action = 0; action < 3; action += 1) {
+          const nextAction = resolveCareerNextAction(breakthrough);
+          if (!nextAction.ok) {
+            throw new Error(nextAction.reason);
+          }
+          breakthrough = nextAction.career;
+        }
+        breakthrough = completeShippedGame(breakthrough);
+        const nextWeek = advanceCareerWeek(breakthrough);
+        if (!nextWeek.ok) {
+          throw new Error(nextWeek.reason);
+        }
+        breakthrough = nextWeek.career;
+      }
+      expect(breakthrough.phase.type).toBe('SKILL_BREAKTHROUGH');
+      if (breakthrough.phase.type !== 'SKILL_BREAKTHROUGH') {
         return;
       }
 
       const acquired = chooseSkillBreakthrough(
-        advanced.career,
-        advanced.career.phase.offer.offeredSkillIds[0],
+        breakthrough,
+        breakthrough.phase.offer.offeredSkillIds[0],
       );
       expect(acquired.ok).toBe(true);
       if (!acquired.ok) {

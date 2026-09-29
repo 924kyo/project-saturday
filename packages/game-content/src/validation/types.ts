@@ -3,6 +3,7 @@ import type { SupportedLocale } from '../locales/index.js';
 export type ValidationIssueCode =
   | 'content.duplicate-id'
   | 'content.invalid-reference'
+  | 'content.invalid-mechanics'
   | 'content.invalid-schema'
   | 'content.missing-localization-reference'
   | 'locale.blank-message'

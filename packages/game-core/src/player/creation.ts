@@ -1,4 +1,5 @@
 import { createRng, type RngSeed } from '../random/rng.js';
+import { createEmptyGameCareerState } from '../games/types.js';
 import { createEmptyPlayerSkillState } from '../skills/state.js';
 import {
   ATTRIBUTE_RATING_BOUNDS,
@@ -8,6 +9,7 @@ import {
   CONFIDENCE_BOUNDS,
   GPA_BOUNDS,
   HEIGHT_CM_BOUNDS,
+  INITIAL_PREPARATION,
   WEIGHT_KG_BOUNDS,
   isIntegerWithinBounds,
   isWithinBounds,
@@ -15,13 +17,10 @@ import {
 import { deepFreeze } from './immutable.js';
 import {
   CREATION_STATE_IDS,
-  MENTAL_ATTRIBUTE_IDS,
   PERSONALITY_TRAIT_IDS,
   PERSONALITY_TRAIT_INCOMPATIBILITIES,
-  PHYSICAL_ATTRIBUTE_IDS,
   PLAYER_ATTRIBUTE_IDS,
   POSITION_WR_ID,
-  WR_ATTRIBUTE_IDS,
   arePersonalityTraitsCompatible,
   isCareerId,
   isCreationStateId,
@@ -49,8 +48,11 @@ import {
   type PlayerState,
   type WrPlayerAttributes,
 } from './types.js';
+import { createPendingOffFieldCareerState } from '../off-field/state.js';
 import { validateCareerRun } from './validation.js';
 import { TRAINING_PROFICIENCY_IDS } from '../weekly/ids.js';
+import { WEEKLY_EXPERIENCE_VERSION_CURRENT } from '../weekly/types.js';
+import { derivePositionOverall } from './progression.js';
 
 export type InitialAttributeRatings = Readonly<Record<PlayerAttributeId, number>>;
 export type InitialCreationState = Readonly<Record<CreationStateId, number>>;
@@ -689,6 +691,7 @@ export function createWrCareer(input: CreateWrCareerInput): CreateWrCareerResult
 
   const playerState: PlayerState = {
     body: state.state_body,
+    preparation: INITIAL_PREPARATION,
     confidence: state.state_confidence,
     coachTrust: state.state_coach_trust,
     brand: state.state_brand,
@@ -709,6 +712,18 @@ export function createWrCareer(input: CreateWrCareerInput): CreateWrCareerResult
     weekIndex: 0,
     recentWeeklyActionIds: [],
     lastPassiveBodyRecovery: null,
+    recruitingState: { type: 'NOT_STARTED' },
+    programContext: null,
+    gameCareerState: createEmptyGameCareerState(),
+    weeklyExperienceVersion: WEEKLY_EXPERIENCE_VERSION_CURRENT,
+    seasonCareerState: {
+      model: 'season_v1',
+      bootstrapStatus: 'PENDING',
+      seasonsCompleted: 0,
+      activeSeasonId: null,
+      lastCompletedSeason: null,
+    },
+    offFieldCareerState: createPendingOffFieldCareerState(),
     phase: { type: 'PLAN_ACTIONS' },
     player: {
       id: playerId,
@@ -746,10 +761,13 @@ export function createWrCareer(input: CreateWrCareerInput): CreateWrCareerResult
 
 export function deriveWrOverall(career: Pick<CareerRun, 'player'>): number {
   const attributes = career.player.attributes;
-  const ratings = [
-    ...PHYSICAL_ATTRIBUTE_IDS.map((attributeId) => attributes.physical[attributeId].rating),
-    ...MENTAL_ATTRIBUTE_IDS.map((attributeId) => attributes.mental[attributeId].rating),
-    ...WR_ATTRIBUTE_IDS.map((attributeId) => attributes.wr[attributeId].rating),
-  ];
-  return Math.round(ratings.reduce((total, rating) => total + rating, 0) / ratings.length);
+  const result = derivePositionOverall(POSITION_WR_ID, {
+    ...attributes.physical,
+    ...attributes.mental,
+    ...attributes.wr,
+  });
+  if (!result.ok) {
+    throw new Error('A validated WR career must have complete overall-rating attributes.');
+  }
+  return result.overall;
 }

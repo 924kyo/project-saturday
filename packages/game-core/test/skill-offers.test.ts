@@ -1,17 +1,27 @@
 import {
   RECENT_WEEKLY_ACTION_ID_LIMIT,
-  advanceDevelopmentWeek,
+  advanceDevelopmentWeek as advanceCurrentDevelopmentWeek,
+  advanceHistoricalDevelopmentWeek as advanceDevelopmentWeek,
   chooseSkillBreakthrough,
   commitWeeklyActionPlan,
   createRng,
   deriveEligibleWeightedSkillOfferPool,
   deriveSkillBehaviorAffinityCounts,
+  generateGaugeSkillBreakthroughOffer,
   generateSkillBreakthroughOffer,
   isSkillBreakthroughCadenceWeek,
   migrateCareerRunV1ToV2,
+  migrateCareerRunV2ToV3,
+  migrateCareerRunV3ToV4,
+  migrateCareerRunV4ToV5,
+  migrateCareerRunV5ToV6,
+  migrateCareerRunV6ToV7,
+  prepareGame,
+  resolveKeySnap,
+  startGame,
   nextInt,
   nextUint32,
-  parseCareerRunV2,
+  parseCareerRun,
   resolveNextWeeklyAction,
   setEquippedSkillSlot,
   validateCareerRun,
@@ -19,6 +29,8 @@ import {
   type DevelopmentWeekConfig,
   type EquippedSkillIds,
   type GenerateSkillBreakthroughOfferInput,
+  type GameCommandResult,
+  type SkillBreakthroughProgressEvidence,
   type RngState,
   type SkillAcquisitionRecord,
   type SkillBehaviorWeightRule,
@@ -36,6 +48,19 @@ import {
 import { describe, expect, it } from 'vitest';
 
 import { CAREER_RUN_V1_PHASE_FIXTURES } from './fixtures/career-run-v1.js';
+import {
+  TEST_OFFENSE_STYLE_DEFINITIONS,
+  TEST_ROTATION_POLICY_DEFINITIONS,
+  enrollTestCareer,
+} from './helpers/enrolled-career.js';
+import {
+  TEST_GAME_FAMILIES,
+  TEST_GAME_PATTERNS,
+  TEST_GAME_SKILLS,
+  TEST_GAME_TUNING,
+  TEST_OPPONENT_GAME_PROFILE,
+  TEST_PLAYER_GAME_PROFILE,
+} from './helpers/game-fixtures.js';
 
 const DEVELOPMENT_CONFIG = {
   bodyXpEfficiencyMinPermille: 600,
@@ -51,6 +76,9 @@ const ROUTE_DRILLS = {
   attributeXp: [{ attributeId: 'attribute_wr_route_running', baseXp: 26 }],
   bodyDelta: -8,
   gpaDelta: 0,
+  practiceImpact: 0,
+  preparationDelta: 0,
+  confidenceDelta: 0,
   proficiencyId: 'proficiency_route_drills',
 } as const satisfies WeeklyActionDefinition;
 
@@ -60,6 +88,9 @@ const RECOVERY = {
   attributeXp: [],
   bodyDelta: 10,
   gpaDelta: 0,
+  practiceImpact: 0,
+  preparationDelta: 0,
+  confidenceDelta: 0,
   proficiencyId: null,
 } as const satisfies WeeklyActionDefinition;
 
@@ -69,6 +100,9 @@ const STUDY_HALL = {
   attributeXp: [],
   bodyDelta: 0,
   gpaDelta: 0.1,
+  practiceImpact: 0,
+  preparationDelta: 0,
+  confidenceDelta: 0,
   proficiencyId: null,
 } as const satisfies WeeklyActionDefinition;
 
@@ -151,7 +185,17 @@ function expectValid(career: CareerRun): CareerRun {
 }
 
 function weekEndAt(weekIndex: number, seed: string | number = 'skill-offer-week'): CareerRun {
-  const career = jsonClone(migrateCareerRunV1ToV2(CAREER_RUN_V1_PHASE_FIXTURES.weekEnd));
+  const career = jsonClone(
+    migrateCareerRunV6ToV7(
+      migrateCareerRunV5ToV6(
+        migrateCareerRunV4ToV5(
+          migrateCareerRunV3ToV4(
+            migrateCareerRunV2ToV3(migrateCareerRunV1ToV2(CAREER_RUN_V1_PHASE_FIXTURES.weekEnd)),
+          ),
+        ),
+      ),
+    ),
+  );
   career.weekIndex = weekIndex;
   career.rng = jsonClone(createRng(seed));
   career.recentWeeklyActionIds = ['action_recovery', 'action_recovery', 'action_recovery'];
@@ -165,9 +209,19 @@ function weekEndAt(weekIndex: number, seed: string | number = 'skill-offer-week'
 }
 
 function planAt(weekIndex = 17): CareerRun {
-  const career = jsonClone(migrateCareerRunV1ToV2(CAREER_RUN_V1_PHASE_FIXTURES.plan));
+  const career = jsonClone(
+    migrateCareerRunV6ToV7(
+      migrateCareerRunV5ToV6(
+        migrateCareerRunV4ToV5(
+          migrateCareerRunV3ToV4(
+            migrateCareerRunV2ToV3(migrateCareerRunV1ToV2(CAREER_RUN_V1_PHASE_FIXTURES.plan)),
+          ),
+        ),
+      ),
+    ),
+  );
   career.weekIndex = weekIndex;
-  return expectValid(career);
+  return expectValid(enrollTestCareer(career));
 }
 
 function withOwnedSkills(
@@ -199,6 +253,7 @@ function withOwnedSkills(
   career.rng = jsonClone(rng);
   career.player.skillState = jsonClone({
     acquisitions,
+    breakthroughGauge: career.player.skillState.breakthroughGauge,
     equippedSkillIds: equippedSkillIds ?? [
       ownedSkillIds[0] ?? null,
       ownedSkillIds[1] ?? null,
@@ -231,12 +286,79 @@ function withPendingOffer(
   return expectValid(career);
 }
 
-function commandCareer(result: SkillCommandResult | WeeklyCommandResult): CareerRun {
+function commandCareer(
+  result: SkillCommandResult | WeeklyCommandResult | GameCommandResult,
+): CareerRun {
   expect(result.ok).toBe(true);
   if (!result.ok) {
     throw new Error(result.reason);
   }
   return result.career;
+}
+
+function completeCurrentGame(weekEnd: CareerRun): CareerRun {
+  let career = commandCareer(
+    prepareGame(
+      weekEnd,
+      TEST_PLAYER_GAME_PROFILE,
+      TEST_OPPONENT_GAME_PROFILE,
+      TEST_GAME_TUNING,
+      TEST_GAME_FAMILIES,
+      TEST_GAME_PATTERNS,
+      TEST_GAME_SKILLS,
+    ),
+  );
+  career = commandCareer(
+    startGame(career, TEST_GAME_TUNING, TEST_GAME_FAMILIES, TEST_GAME_PATTERNS, TEST_GAME_SKILLS),
+  );
+  while (career.phase.type === 'KEY_SNAP') {
+    career = commandCareer(
+      resolveKeySnap(
+        career,
+        career.phase.pendingSnap.decisionIds[0],
+        TEST_GAME_TUNING,
+        TEST_GAME_FAMILIES,
+        TEST_GAME_PATTERNS,
+        TEST_GAME_SKILLS,
+      ),
+    );
+  }
+  if (career.phase.type !== 'POST_GAME') throw new Error('Expected completed current game.');
+  return career;
+}
+
+function completeCurrentWeek(
+  base: CareerRun,
+  actionIds: readonly [WeeklyActionId, WeeklyActionId, WeeklyActionId],
+  skillDefinitions: readonly SkillMechanicsDefinition[] = [],
+): CareerRun {
+  let career = commandCareer(
+    commitWeeklyActionPlan(
+      base,
+      actionIds,
+      ACTION_DEFINITIONS.map(({ id }) => id),
+    ),
+  );
+  for (const actionId of actionIds) {
+    const definition = ACTION_DEFINITIONS.find((candidate) => candidate.id === actionId);
+    if (definition === undefined) {
+      throw new Error(`Missing test action ${actionId}.`);
+    }
+    career = commandCareer(
+      resolveNextWeeklyAction(
+        career,
+        definition,
+        DEVELOPMENT_CONFIG,
+        skillDefinitions,
+        TEST_OFFENSE_STYLE_DEFINITIONS,
+        TEST_ROTATION_POLICY_DEFINITIONS,
+      ),
+    );
+  }
+  if (career.phase.type !== 'WEEK_END') {
+    throw new Error('Expected completed current week.');
+  }
+  return career;
 }
 
 function expectFailureUnchanged(
@@ -255,6 +377,24 @@ function generationInput(
     ...BASE_CONTEXT,
     rng,
     offerIndex: 0,
+  };
+}
+
+function gaugeTrigger(
+  weekIndex = 2,
+  sourceId:
+    | 'breakthrough_source_role_coach'
+    | 'breakthrough_source_life' = 'breakthrough_source_role_coach',
+): SkillBreakthroughProgressEvidence {
+  return {
+    model: 'gauge_v1',
+    weekIndex,
+    progressBefore: 90,
+    pointsEarned: 12,
+    progressAfter: 2,
+    threshold: 100,
+    triggeredOffer: true,
+    sources: [{ sourceId, points: 12 }],
   };
 }
 
@@ -358,15 +498,11 @@ describe('skill breakthrough eligibility and behavior affinity', () => {
       ],
     });
 
-    const malformedFuturePosition = jsonClone(definitions[0] as SkillMechanicsDefinition);
-    malformedFuturePosition.eligibility.positionIds = ['position_qb' as 'position_wr'];
+    const reservedQbPosition = jsonClone(definitions[0] as SkillMechanicsDefinition);
+    reservedQbPosition.eligibility.positionIds = ['position_qb'];
     expect(
-      deriveEligibleWeightedSkillOfferPool(
-        BASE_CONTEXT,
-        [malformedFuturePosition],
-        ACTION_DEFINITIONS,
-      ),
-    ).toEqual({ ok: false, reason: 'skill_offer.invalid_skill_definitions' });
+      deriveEligibleWeightedSkillOfferPool(BASE_CONTEXT, [reservedQbPosition], ACTION_DEFINITIONS),
+    ).toEqual({ ok: true, behaviorCounts: expect.any(Array), candidates: [] });
   });
 
   it('changes candidate weights by exact occurrence counts and preserves canonical ID order', () => {
@@ -642,6 +778,185 @@ describe('deterministic weighted offers', () => {
   });
 });
 
+describe('current Breakthrough Gauge offers', () => {
+  const GAUGE_OFFER_DEFINITIONS = [
+    skillDefinition('skill_gauge_role', {
+      baseOfferWeight: 10,
+      behaviorWeightRules: [{ affinityTagId: 'breakthrough_source_role_coach', weightBonus: 5 }],
+    }),
+    skillDefinition('skill_gauge_a', { baseOfferWeight: 10 }),
+    skillDefinition('skill_gauge_b', { baseOfferWeight: 10 }),
+    skillDefinition('skill_gauge_c', { baseOfferWeight: 10 }),
+  ] as const;
+
+  it('accepts a non-cadence threshold trigger, weights its sources, and snapshots exact evidence', () => {
+    const trigger = gaugeTrigger();
+    const input = {
+      ...generationInput(createRng('gauge-offer')),
+      weekIndex: 2,
+      trigger,
+    };
+    const before = JSON.stringify(input);
+    const pool = deriveEligibleWeightedSkillOfferPool(
+      {
+        positionId: input.positionId,
+        archetypeId: input.archetypeId,
+        playerTagIds: input.playerTagIds,
+        ownedSkillIds: input.ownedSkillIds,
+        weekIndex: input.weekIndex,
+        recentWeeklyActionIds: input.recentWeeklyActionIds,
+      },
+      GAUGE_OFFER_DEFINITIONS,
+      ACTION_DEFINITIONS,
+      trigger.sources,
+    );
+    expect(pool).toEqual(
+      expect.objectContaining({
+        ok: true,
+        candidates: expect.arrayContaining([
+          { skillId: 'skill_gauge_role', weight: 25 },
+          { skillId: 'skill_gauge_a', weight: 10 },
+        ]),
+      }),
+    );
+
+    const generated = generateGaugeSkillBreakthroughOffer(
+      input,
+      GAUGE_OFFER_DEFINITIONS,
+      ACTION_DEFINITIONS,
+    );
+    expect(JSON.stringify(input)).toBe(before);
+    expect(generated.ok).toBe(true);
+    if (!generated.ok || generated.offer === null || !('trigger' in generated.offer)) {
+      throw new Error('Expected current gauge offer.');
+    }
+    expect(generated.offer.weekIndex).toBe(2);
+    expect(generated.offer.rngDrawCountAfter - generated.offer.rngDrawCountBefore).toBe(3);
+    expect(generated.offer.trigger).toEqual(trigger);
+    expect(generated.offer.trigger).not.toBe(trigger);
+    expectDeepFrozen(generated);
+  });
+
+  it('accumulates visible weekly evidence without a week-one drip, then drafts at threshold', () => {
+    const firstWeekEnd = completeCurrentWeek(planAt(0), [
+      'action_study_hall',
+      'action_recovery',
+      'action_route_drills',
+    ]);
+    const firstPostGame = completeCurrentGame(firstWeekEnd);
+    const firstRng = firstPostGame.rng;
+    const firstAdvance = commandCareer(
+      advanceCurrentDevelopmentWeek(
+        firstPostGame,
+        DEVELOPMENT_CONFIG,
+        GAUGE_OFFER_DEFINITIONS,
+        ACTION_DEFINITIONS,
+      ),
+    );
+    expect(firstAdvance.phase).toEqual({ type: 'PLAN_ACTIONS' });
+    expect(firstAdvance.rng).toEqual(firstRng);
+    expect(firstAdvance.player.skillState.breakthroughGauge.progress).toBeGreaterThan(0);
+    expect(firstAdvance.player.skillState.breakthroughGauge.progress).toBeLessThan(100);
+    expect(firstAdvance.player.skillState.breakthroughGauge.lastProgress?.sources).toContainEqual({
+      sourceId: 'breakthrough_source_life',
+      points: 22,
+    });
+
+    const nearThreshold = jsonClone(planAt(0));
+    nearThreshold.player.skillState.breakthroughGauge = {
+      model: 'gauge_v1',
+      progress: 95,
+      threshold: 100,
+      lastProgress: {
+        model: 'gauge_v1',
+        weekIndex: 0,
+        progressBefore: 83,
+        pointsEarned: 12,
+        progressAfter: 95,
+        threshold: 100,
+        triggeredOffer: false,
+        sources: [{ sourceId: 'breakthrough_source_life', points: 12 }],
+      },
+    };
+    expectValid(nearThreshold);
+    const thresholdWeekEnd = completeCurrentWeek(nearThreshold, [
+      'action_study_hall',
+      'action_recovery',
+      'action_route_drills',
+    ]);
+    const drafted = commandCareer(
+      advanceCurrentDevelopmentWeek(
+        completeCurrentGame(thresholdWeekEnd),
+        DEVELOPMENT_CONFIG,
+        GAUGE_OFFER_DEFINITIONS,
+        ACTION_DEFINITIONS,
+      ),
+    );
+    expect(drafted.phase.type).toBe('SKILL_BREAKTHROUGH');
+    if (drafted.phase.type !== 'SKILL_BREAKTHROUGH' || !('trigger' in drafted.phase.offer)) {
+      throw new Error('Expected persisted gauge draft.');
+    }
+    expect(drafted.phase.offer.trigger.triggeredOffer).toBe(true);
+    expect(drafted.player.skillState.breakthroughGauge.lastProgress).toEqual(
+      drafted.phase.offer.trigger,
+    );
+    const selected = commandCareer(
+      chooseSkillBreakthrough(drafted, drafted.phase.offer.offeredSkillIds[0]),
+    );
+    expect(selected.player.skillState.acquisitions.at(-1)).toEqual(
+      expect.objectContaining({ trigger: drafted.phase.offer.trigger }),
+    );
+
+    const tampered = jsonClone(drafted);
+    tampered.player.skillState.breakthroughGauge.progress += 1;
+    expect(validateCareerRun(tampered).ok).toBe(false);
+    expect(parseCareerRun(tampered).ok).toBe(false);
+  });
+
+  it('banks a full gauge without RNG when fewer than three cards are eligible', () => {
+    const full = jsonClone(planAt(0));
+    full.player.skillState.breakthroughGauge = {
+      model: 'gauge_v1',
+      progress: 100,
+      threshold: 100,
+      lastProgress: {
+        model: 'gauge_v1',
+        weekIndex: 0,
+        progressBefore: 90,
+        pointsEarned: 10,
+        progressAfter: 100,
+        threshold: 100,
+        triggeredOffer: false,
+        sources: [{ sourceId: 'breakthrough_source_body', points: 10 }],
+      },
+    };
+    expectValid(full);
+    const weekEnd = completeCurrentWeek(full, [
+      'action_study_hall',
+      'action_recovery',
+      'action_route_drills',
+    ]);
+    const postGame = completeCurrentGame(weekEnd);
+    const rngBefore = postGame.rng;
+    const advanced = commandCareer(
+      advanceCurrentDevelopmentWeek(
+        postGame,
+        DEVELOPMENT_CONFIG,
+        GAUGE_OFFER_DEFINITIONS.slice(0, 2),
+        ACTION_DEFINITIONS,
+      ),
+    );
+    expect(advanced.phase).toEqual({ type: 'PLAN_ACTIONS' });
+    expect(advanced.rng).toEqual(rngBefore);
+    expect(advanced.player.skillState.breakthroughGauge).toEqual(
+      expect.objectContaining({
+        progress: 100,
+        lastProgress: expect.objectContaining({ progressAfter: 100, triggeredOffer: false }),
+      }),
+    );
+  });
+});
+
 describe('cadence and weekly advancement integration', () => {
   const OFFER_DEFINITIONS = ['a', 'b', 'c', 'd'].map((suffix) =>
     skillDefinition(skillId(`cadence_${suffix}`), { baseOfferWeight: 10 }),
@@ -857,7 +1172,7 @@ describe('skill acquisition and loadout commands', () => {
 
   it('continues identically after JSON reload and rejects choice failures by exact reference', () => {
     const pending = withPendingOffer(planAt(), OFFER_IDS);
-    const parsed = parseCareerRunV2(JSON.stringify(pending));
+    const parsed = parseCareerRun(JSON.stringify(pending));
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) {
       throw new Error(parsed.reason);

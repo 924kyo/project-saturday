@@ -5,10 +5,11 @@ import {
   TRAINING_PROFICIENCY_IDS,
   TRAINING_PROFICIENCY_USE_HARD_CAP,
   WEEKLY_ACTION_IDS,
-  advanceDevelopmentWeek,
+  advanceHistoricalDevelopmentWeek as advanceDevelopmentWeek,
   commitWeeklyActionPlan,
   createWrCareer,
   deriveBodyXpEfficiencyPermille,
+  deriveNextWeekPreparation,
   deriveTrainingProficiencyLevel,
   getTrainingProficiencyUseCap,
   getTrainingProficiencyXpMultiplierPermille,
@@ -25,6 +26,11 @@ import {
   type WeeklyCommandResult,
 } from '../src/index.js';
 import { describe, expect, it } from 'vitest';
+import {
+  TEST_OFFENSE_STYLE_DEFINITIONS,
+  TEST_ROTATION_POLICY_DEFINITIONS,
+  enrollTestCareer,
+} from './helpers/enrolled-career.js';
 
 const DEVELOPMENT_CONFIG = {
   bodyXpEfficiencyMinPermille: 600,
@@ -40,6 +46,9 @@ const ROUTE_DRILLS = {
   attributeXp: [{ attributeId: 'attribute_wr_route_running', baseXp: 26 }],
   bodyDelta: -8,
   gpaDelta: 0,
+  practiceImpact: 0,
+  preparationDelta: 0,
+  confidenceDelta: 0,
   proficiencyId: 'proficiency_route_drills',
 } as const satisfies WeeklyActionDefinition;
 
@@ -49,6 +58,9 @@ const RECOVERY = {
   attributeXp: [],
   bodyDelta: 32,
   gpaDelta: 0,
+  practiceImpact: 0,
+  preparationDelta: 0,
+  confidenceDelta: 0,
   proficiencyId: null,
 } as const satisfies WeeklyActionDefinition;
 
@@ -58,7 +70,22 @@ const STUDY_HALL = {
   attributeXp: [],
   bodyDelta: 0,
   gpaDelta: 0.15,
+  practiceImpact: 0,
+  preparationDelta: 0,
+  confidenceDelta: 0,
   proficiencyId: null,
+} as const satisfies WeeklyActionDefinition;
+
+const FILM_FOCUS = {
+  id: 'action_film_study',
+  tagIds: ['action_focus_film_study'],
+  attributeXp: [{ attributeId: 'attribute_football_iq', baseXp: 24 }],
+  bodyDelta: -3,
+  preparationDelta: 12,
+  confidenceDelta: 1,
+  gpaDelta: 0,
+  practiceImpact: 5,
+  proficiencyId: 'proficiency_film_study',
 } as const satisfies WeeklyActionDefinition;
 
 function baseRatings(rating = 60): InitialAttributeRatings {
@@ -146,7 +173,7 @@ function createCareer(): CareerRun {
   if (!result.ok) {
     throw new Error(JSON.stringify(result.issues));
   }
-  return result.career;
+  return enrollTestCareer(result.career);
 }
 
 function commandCareer(result: WeeklyCommandResult): CareerRun {
@@ -175,7 +202,16 @@ function resolveAll(
 ): CareerRun {
   let current = career;
   for (const definition of definitions) {
-    current = commandCareer(resolveNextWeeklyAction(current, definition, config));
+    current = commandCareer(
+      resolveNextWeeklyAction(
+        current,
+        definition,
+        config,
+        [],
+        TEST_OFFENSE_STYLE_DEFINITIONS,
+        TEST_ROTATION_POLICY_DEFINITIONS,
+      ),
+    );
   }
   return current;
 }
@@ -291,13 +327,20 @@ describe('development tuning and definitions', () => {
 });
 
 describe('weekly phase commands', () => {
-  it('initializes schema-v2 planning state, revision, history, skills, and proficiency uses', () => {
+  it('initializes current-v4 planning state, revision, history, skills, and proficiency uses', () => {
     const career = createCareer();
     expect(career.revision).toBe(0);
+    expect(career.weeklyExperienceVersion).toBe(2);
     expect(career.phase).toEqual({ type: 'PLAN_ACTIONS' });
     expect(career.recentWeeklyActionIds).toEqual([]);
     expect(career.player.skillState).toEqual({
       acquisitions: [],
+      breakthroughGauge: {
+        model: 'gauge_v1',
+        progress: 0,
+        threshold: 100,
+        lastProgress: null,
+      },
       equippedSkillIds: [null, null, null, null],
     });
     expect(career.player.trainingProficiencyUses).toEqual(
@@ -387,12 +430,91 @@ describe('weekly phase commands', () => {
     expect(finished.player.trainingProficiencyUses.proficiency_route_drills).toBe(3);
     expect(finished.player.state.body).toBe(53);
     expect(finished.rng).toEqual(initial.rng);
-    expect(finished.rng.drawCount).toBe(0);
+    expect(finished.rng.drawCount).toBe(35);
     expect(finished.phase.results[0].effectIds).toEqual([
       'effect_attribute_progress',
       'effect_body_change',
       'effect_proficiency_progress',
     ]);
+  });
+
+  it('persists ordered Preparation/Confidence consequences and rolls Preparation toward neutral', () => {
+    const initial = createCareer();
+    const weekEnd = resolveAll(
+      commit(initial, ['action_film_study', 'action_film_study', 'action_film_study']),
+      [FILM_FOCUS, FILM_FOCUS, FILM_FOCUS],
+    );
+    expect(weekEnd.phase.type).toBe('WEEK_END');
+    if (weekEnd.phase.type !== 'WEEK_END') {
+      return;
+    }
+    expect(weekEnd.phase.results.map((result) => result.effectIds)).toEqual([
+      [
+        'effect_attribute_progress',
+        'effect_body_change',
+        'effect_preparation_change',
+        'effect_confidence_change',
+        'effect_proficiency_progress',
+      ],
+      [
+        'effect_attribute_progress',
+        'effect_body_change',
+        'effect_preparation_change',
+        'effect_confidence_change',
+        'effect_proficiency_progress',
+      ],
+      [
+        'effect_attribute_progress',
+        'effect_body_change',
+        'effect_preparation_change',
+        'effect_confidence_change',
+        'effect_proficiency_progress',
+      ],
+    ]);
+    expect(
+      weekEnd.phase.results.map((result) =>
+        'preparationAfter' in result ? [result.preparationBefore, result.preparationAfter] : null,
+      ),
+    ).toEqual([
+      [50, 62],
+      [62, 74],
+      [74, 86],
+    ]);
+    expect(
+      weekEnd.phase.results.map((result) =>
+        'confidenceAfter' in result ? [result.confidenceBefore, result.confidenceAfter] : null,
+      ),
+    ).toEqual([
+      [50, 51],
+      [51, 52],
+      [52, 53],
+    ]);
+    expect(weekEnd.player.state).toEqual(
+      expect.objectContaining({ body: 68, preparation: 86, confidence: 53 }),
+    );
+    expect(weekEnd.phase.depthUpdate).toEqual(
+      expect.objectContaining({
+        weeklyPracticeScore: 73,
+        practiceGrade: {
+          model: 'experience_v1',
+          baseScore: 50,
+          focusImpact: 15,
+          bodyAfterFocus: 68,
+          bodyContribution: 2,
+          preparationAfterFocus: 86,
+          preparationTarget: 55,
+          preparationContribution: 6,
+          confidenceAfterFocus: 53,
+          confidenceContribution: 0,
+        },
+      }),
+    );
+    const advanced = commandCareer(advanceDevelopmentWeek(weekEnd, DEVELOPMENT_CONFIG));
+    expect(deriveNextWeekPreparation(86)).toBe(68);
+    expect(advanced.player.state.preparation).toBe(68);
+    expect(advanced.player.state.confidence).toBe(53);
+    expect(advanced.rng).toEqual(weekEnd.rng);
+    expect(validateCareerRun(advanced)).toEqual({ ok: true, issues: [] });
   });
 
   it('rejects phase-invalid and mismatched commands without changing the career reference', () => {
@@ -597,7 +719,7 @@ describe('weekly phase commands', () => {
       );
       expect(validateCareerRun(career).ok).toBe(true);
     }
-    expect(career.rng.drawCount).toBe(0);
+    expect(career.rng.drawCount).toBe(35);
     expect(career.recentWeeklyActionIds).toEqual([
       'action_route_drills',
       'action_recovery',
@@ -634,6 +756,14 @@ describe('strict persisted weekly invariants', () => {
       (career) => {
         if (career.phase.type === 'WEEK_END' && career.phase.results[0].proficiency !== null) {
           career.phase.results[0].proficiency.usesAfter += 2;
+        }
+      },
+      (career) => {
+        if (career.phase.type === 'WEEK_END') {
+          career.phase.depthUpdate = null;
+          if (career.programContext !== null) {
+            career.programContext.latestDepthUpdate = null;
+          }
         }
       },
       (career) => {

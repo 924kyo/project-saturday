@@ -8,6 +8,14 @@ import {
 import type { MessageKey, SupportedLocale } from '@project-saturday/game-content/locales';
 
 import { useAppTranslation } from '../i18n/i18n';
+import { OnboardingGuide } from '../onboarding/OnboardingUi';
+import {
+  CREATION_ONBOARDING_TOPIC,
+  isOnboardingComplete,
+  type OnboardingSettings,
+  type OnboardingTopic,
+} from '../onboarding/onboarding';
+import { AthletePortrait } from './AthletePortrait';
 import {
   APPEARANCE_FIELD_ORDER,
   canAddPersonalityTrait,
@@ -30,12 +38,18 @@ const CREATION_ISSUE_KEYS = {
   'creation-ui.mechanics-failed': 'career.creation.errors.mechanics',
   'creation-ui.player-failed': 'career.creation.errors.player',
 } as const satisfies Readonly<Record<CreationUiIssueCode, MessageKey>>;
+const PROFILE_PORTRAIT_SIZE = 'profile' as const;
 
 export interface CreationScreenProps {
   readonly busy: boolean;
   readonly issues: readonly CreationUiIssueCode[];
+  readonly latestAlumnusName: string | null;
+  readonly legacyAlumniCount: number;
   readonly locale: SupportedLocale;
+  readonly onboardingSettings: OnboardingSettings;
+  readonly onCompleteOnboarding: (topic: OnboardingTopic) => void;
   readonly onCreate: (draft: CreationDraft) => void;
+  readonly onSkipAllOnboarding: () => void;
 }
 
 interface ImperialHeightFieldsProps {
@@ -152,8 +166,13 @@ function ImperialWeightField({
 export function CreationScreen({
   busy,
   issues,
+  latestAlumnusName,
+  legacyAlumniCount,
   locale,
+  onboardingSettings,
+  onCompleteOnboarding,
   onCreate,
+  onSkipAllOnboarding,
 }: CreationScreenProps): React.JSX.Element {
   const { t } = useAppTranslation(locale);
   const [draft, setDraft] = useState<CreationDraft>(createDefaultCreationDraft);
@@ -176,6 +195,27 @@ export function CreationScreen({
         <p className="eyebrow">{t('career.creation.eyebrow')}</p>
         <h1 id="creation-title">{t('career.creation.title')}</h1>
         <p>{t('career.creation.intro')}</p>
+        {legacyAlumniCount > 0 && latestAlumnusName !== null && (
+          <aside
+            aria-labelledby="returning-legacy-title"
+            className="creation-legacy"
+            data-testid="creation-legacy"
+          >
+            <p className="step-mark">{t('career.creation.legacy.eyebrow')}</p>
+            <h2 id="returning-legacy-title">
+              {t('career.creation.legacy.title', { count: legacyAlumniCount })}
+            </h2>
+            <p>{t('career.creation.legacy.help', { name: latestAlumnusName })}</p>
+          </aside>
+        )}
+        {!isOnboardingComplete(onboardingSettings, CREATION_ONBOARDING_TOPIC) && (
+          <OnboardingGuide
+            locale={locale}
+            topic={CREATION_ONBOARDING_TOPIC}
+            onComplete={onCompleteOnboarding}
+            onSkipAll={onSkipAllOnboarding}
+          />
+        )}
       </section>
 
       <form
@@ -323,6 +363,21 @@ export function CreationScreen({
             <p className="step-mark">{t('career.creation.steps.appearance')}</p>
             <h2 id="appearance-heading">{t('career.creation.appearance.title')}</h2>
             <p>{t('career.creation.appearance.help')}</p>
+          </div>
+          <div className="creation-preview">
+            <div>
+              <h3>{t('career.creation.preview.title')}</h3>
+              <p>{t('career.creation.preview.help')}</p>
+            </div>
+            <div className="athlete-portrait-host" data-testid="athletePortraitCreation">
+              <AthletePortrait
+                appearance={draft.appearance}
+                label={t('career.player.portraitLabel', {
+                  name: draft.displayName.trim() || t('career.creation.preview.unnamed'),
+                })}
+                size={PROFILE_PORTRAIT_SIZE}
+              />
+            </div>
           </div>
           <div className="select-grid">
             {APPEARANCE_FIELD_ORDER.map((field) => {

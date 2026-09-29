@@ -15,6 +15,23 @@ The designer disliked that character identity was comparatively shallow: aside f
 
 **Important:** the prior game is inspiration for design lessons only. Project Saturday must not copy its code, assets, text, UI, event content, data, or proprietary implementation.
 
+`docs/references/THE_ROOKIE_BEHAVIORAL_REFERENCE.md` exists only to make the designer's behavioral comparisons legible without relying on chat memory. It is subordinate to Project Saturday's product specs and `REFERENCE_USE_POLICY.md`; it is never an implementation/content source.
+
+## August 31 experience correction
+
+The M3 playtest established that a technically complete weekly/depth loop was not yet the intended product experience. Before live M4 game commands, M3.5 must make the athlete, choices, development, and path to playing time legible:
+
+- weekly strategy uses Body, Preparation, and Confidence rather than Body-only optimization;
+- the user chooses three discretionary focus blocks over an implicit mandatory team schedule;
+- attribute XP, proficiency, Practice Grade, Coach Trust, depth rank, and projected snaps explain both progress and the next useful action;
+- Home / Week / Team / Skills / Player provide purpose-based mobile navigation;
+- the saved appearance renders as a persistent graphical athlete;
+- skills affect development, role/coach behavior, game day, mindset, body, life systems, and event decisions, with anticipated Breakthrough rewards;
+- every depth role receives truthful football participation or learning feedback;
+- contextual help teaches real consequences, and accessible keyboard focus uses modality-aware `:focus-visible` presentation.
+
+This is a product-foundation correction, not a request to skin the existing long page. The authoritative details live in the affected product specs and `docs/exec-plans/active/m3-5-experience-foundation.md`.
+
 ## New setting
 
 The new game is about **American college football** because the ecosystem offers a larger world and more career drama:

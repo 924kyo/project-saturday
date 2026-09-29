@@ -10,6 +10,8 @@ function bounds(min: number, max: number): NumericBounds {
 export const ATTRIBUTE_RATING_BOUNDS = bounds(0, 100);
 export const ATTRIBUTE_PROGRESS_XP_BOUNDS = bounds(0, 99);
 export const BODY_BOUNDS = bounds(0, 100);
+export const PREPARATION_BOUNDS = bounds(0, 100);
+export const INITIAL_PREPARATION = 50 as const;
 export const CONFIDENCE_BOUNDS = bounds(0, 100);
 export const COACH_TRUST_BOUNDS = bounds(0, 100);
 export const BRAND_BOUNDS = bounds(0, 100);

@@ -6,9 +6,9 @@ These are product invariants. A feature that violates them needs an explicit des
 
 A normal week should feel like:
 
-> context → 3 meaningful actions → event when relevant → game/key snaps → consequences → next week
+> context → 3 meaningful focus choices → event when relevant → game/key snaps → consequences → next week
 
-Do not make the player visit eight management screens to keep systems healthy.
+The mandatory team schedule is implicit. Body, Preparation, and Confidence create choices, not three recurring chores. Do not make the player visit eight management screens to keep systems healthy.
 
 ## 2. Skill builds should alter decisions
 
@@ -21,6 +21,8 @@ Depth rank, projected snaps, role, coach trust, awards, brand, and draft stock a
 ## 4. Careers need identity
 
 Background, personality, appearance, program, skills, relationships, and tags should alter available events and strategic choices.
+
+The athlete must also be visually present. Creation choices produce a persistent graphical identity used throughout the career, not only a list of saved text fields.
 
 ## 5. Simulate deeply; expose selectively
 
@@ -41,3 +43,7 @@ Culture and identity should emerge from program attributes, traits, recruiting f
 ## 9. Bilingual quality is product quality
 
 Korean and English are not separate projects. Every screen and content item is complete only when both supported locales are valid.
+
+## 10. Every role participates
+
+Playing time remains scarce and earned, but a bench athlete is not a spectator to an empty screen. Every scheduled game should produce truthful role-appropriate participation, learning, or feedback without fabricating offensive stats.

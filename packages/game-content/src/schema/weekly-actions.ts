@@ -193,10 +193,13 @@ export const weeklyActionDefinitionSchema = z
   .object({
     attributeXp: z.array(attributeXpEntrySchema).max(3),
     bodyDelta: z.number().int().min(-40).max(40),
+    confidenceDelta: z.number().int().min(-25).max(25),
     descriptionKey: messageKeyFormatSchema,
     gpaDelta: z.number().finite().min(-0.5).max(0.5),
     id: weeklyActionIdSchema,
     nameKey: messageKeyFormatSchema,
+    practiceImpact: z.number().int().min(-25).max(25),
+    preparationDelta: z.number().int().min(-25).max(25),
     proficiencyId: trainingProficiencyIdSchema.nullable(),
     requirements: weeklyActionRequirementsSchema,
     tags: weeklyActionTagsSchema,
@@ -215,6 +218,8 @@ export const weeklyActionDefinitionSchema = z
     if (
       definition.attributeXp.length === 0 &&
       definition.bodyDelta === 0 &&
+      definition.confidenceDelta === 0 &&
+      definition.preparationDelta === 0 &&
       definition.gpaDelta === 0
     ) {
       context.addIssue({
@@ -261,8 +266,11 @@ export type WeeklyActionDefinition = DeepReadonly<z.infer<typeof weeklyActionDef
 export type WeeklyActionMechanicsDefinition = Readonly<{
   attributeXp: WeeklyActionDefinition['attributeXp'];
   bodyDelta: WeeklyActionDefinition['bodyDelta'];
+  confidenceDelta: WeeklyActionDefinition['confidenceDelta'];
   gpaDelta: WeeklyActionDefinition['gpaDelta'];
   id: WeeklyActionDefinition['id'];
+  practiceImpact: WeeklyActionDefinition['practiceImpact'];
+  preparationDelta: WeeklyActionDefinition['preparationDelta'];
   proficiencyId: WeeklyActionDefinition['proficiencyId'];
   tagIds: readonly WeeklyActionTagId[];
 }>;

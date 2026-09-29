@@ -10,3 +10,6 @@ test-results/
 *.tsbuildinfo
 .DS_Store
 Thumbs.db
+.desktop-tools/
+apps/desktop/src-tauri/target/
+apps/desktop/src-tauri/gen/

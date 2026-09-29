@@ -38,3 +38,13 @@ For each fictional program ask:
 - Is the archetype legible?
 - Is it an original composite rather than a renamed real school?
 - Does its gameplay profile create a distinctive career decision?
+
+## Game-pattern review
+
+For each key-snap batch ask:
+
+- Does every pattern present exactly three athlete-level choices from its owning family?
+- Do paired contexts reverse the best fit instead of creating one universal answer?
+- Do coverage and leverage clues describe the persisted hidden context exactly?
+- Are Body, Preparation, Confidence, role scarcity, and risk represented through named mechanics rather than copy-only claims?
+- Are names, situations, writing, rules, and mechanics original rather than traced from a reference game or real program?

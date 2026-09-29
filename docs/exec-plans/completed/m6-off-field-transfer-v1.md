@@ -1,0 +1,123 @@
+# M6 Off-field, Relationships, and Transfer v1 Execution Plan
+
+## Status
+
+Completed and aggregate-verified on 2026-09-01. All twelve atomic steps, the repeatable engine profile, production code split, full automated/content/simulation/browser/build gate, and focused high/medium review are green. Completed M1–M5 reports remain byte-stable, and the checked M6 artifact retains SHA-256 `ce2dbfd44a317ba52370196cb4fea3a6b07c1b772bf887c2c2e1e8075b09354a`. This plan preserved the durable M10 target and delivered the first compact off-field and offseason branch without weakening deterministic RNG, save migration, bilingual delivery, accessibility, content validation, PWA, or original-implementation guarantees.
+
+## Goal
+
+Make the athlete's life beyond practice matter through concise weekly tradeoffs and one meaningful offseason decision. Brand/NIL, academics, position-room relationships, coach/scheme changes, and transfer interest must alter football opportunity and career context without creating mandatory management dashboards. A new v6 career must be able to finish its first season, compare staying with a curated transfer shortlist, persist the choice, and begin the next season with prior statistics/history intact and the new program context applied truthfully.
+
+## Scope
+
+- Add a versioned v6 career/session migration for compact academics, relationships, NIL obligations, program history, and offseason state. Exact v1–v5 phases/evidence/RNG remain valid migration inputs; completed M5 alumni remain completed rather than being reopened.
+- Keep GPA and Brand as existing player state, but add explicit fictional academic eligibility evidence and bounded offer/obligation history so their consequences are reload-safe and legible.
+- Model a small relationship set relevant to one athlete: position coach, a teammate/room leader, and the nearest depth competitor. Relationship changes come through ordinary actions/events/game/offseason evidence, not free-form chat simulation.
+- Define 8–12 original bilingual NIL offer templates with requirements, bounded benefits, duration/expiration, and time/Body/Preparation/academics/reputation tradeoffs. Money or benefits cannot directly purchase large attribute gains.
+- Add only the weekly/offseason actions and contextual events needed to make academics, relationships, media/campus life, Brand, and obligations live. Existing M5 events/IDs remain stable.
+- Add deterministic offseason roster churn, incoming-player pressure, and bounded coach/scheme-change hooks sufficient to create a truthful next-season projection.
+- Add a curated stay-versus-transfer decision with projected role/snap band, Scheme Fit, development, program outlook, NIL, academics, relationships/familiarity, and uncertainty evidence. Transfer is an offseason branch, never a routine weekly menu.
+- Persist program history and cumulative career statistics across the decision, rebuild the destination room through exported commands, and bootstrap the next season without rewriting the completed first-season record.
+- Add public-command deterministic reports, complete bilingual mobile UI/onboarding, exact storage/reload/offline coverage, and native mobile/desktop plus 320 px browser gates.
+- Establish route/content code splitting before M7 adds positions and a larger world.
+
+## Non-goals
+
+- Real NIL law, real academic eligibility rules, real schools/collectives/brands/currencies beyond a fictional USD-denominated economy, or legal/financial advice.
+- A contract negotiation simulator, bank ledger, social-media feed, free-form relationship dialogue, or four permanent off-field dashboards.
+- Transfer access every week, unlimited program shopping, guaranteed promised roles, or silent rerolls of offers/projections.
+- Draft declaration depth, awards, six positions, 32 programs, conference realignment, cloud sync, or public deployment; those remain later milestones.
+- Reopening an already completed M5 `CAREER_COMPLETE` alumnus or changing any shipped M0–M5 stable content ID without migration/alias handling.
+
+## Relevant specs
+
+- `AGENTS.md`, `ARCHITECTURE.md`, and package-scoped `AGENTS.md`
+- `docs/00-project/PROJECT_CONTEXT.md`
+- `docs/product-specs/CORE_BELIEFS.md`
+- `docs/product-specs/CORE_LOOP.md`
+- `docs/product-specs/PLAYER_MODEL.md`
+- `docs/product-specs/NIL_AND_OFF_FIELD.md`
+- `docs/product-specs/TRANSFER_AND_OFFSEASON.md`
+- `docs/product-specs/PROGRAM_WORLD.md`
+- `docs/product-specs/EVENT_SYSTEM.md`
+- `docs/product-specs/SKILL_SYSTEM.md`
+- `docs/product-specs/INJURY_AND_RECOVERY.md`
+- `docs/product-specs/META_PROGRESSION.md`
+- `docs/product-specs/SAVE_SYSTEM.md`
+- `docs/product-specs/CONTENT_DENSITY.md`
+- `docs/product-specs/BALANCE_PHILOSOPHY.md`
+- `docs/product-specs/LOCALIZATION.md`
+- `docs/product-specs/UX_AND_FLOW.md`
+- `docs/engineering/CONTENT_ARCHITECTURE.md`
+- `docs/engineering/TEST_STRATEGY.md`
+- `docs/engineering/PERFORMANCE_AND_PWA.md`
+- `docs/qa/ACCEPTANCE_SCENARIOS.md`
+- `docs/qa/BALANCE_TARGETS.md`
+- `docs/qa/CONTENT_QA.md`
+- `docs/execution/AUTONOMOUS_EXECUTION_PROTOCOL.md`
+- `docs/execution/DEFINITION_OF_DONE.md`
+
+## Conservative M6 baseline
+
+- One athlete has three relationship tracks: position coach, teammate leader, and direct competitor. Values and changes are bounded, stable-ID keyed, and persisted with source evidence. They influence information, trust/opportunity context, and event eligibility; they do not replace talent or depth rules.
+- Academic eligibility uses an explicitly fictional, tuneable term checkpoint derived from saved GPA and obligation evidence. Primary UI shows safe/warning/ineligible status plus the next threshold. Any game restriction is phase-owned, saved, and explained before Game Day.
+- The first NIL catalog contains exactly 10 original bilingual templates across local business, campus/community, apparel/equipment, media, and regional visibility archetypes. At most one primary obligation is active at once; offers expire, and acceptance/decline plus every fulfillment/default consequence is an immutable command.
+- NIL rewards emphasize Brand, bounded fictional funds/benefits, recovery/training access, cosmetics, information, or future offer quality. They never directly grant a large rating, depth rank, or starting role.
+- Off-field interaction remains embedded in the existing Home/Week/Team/Player purposes. M6 may add a concise Career destination only if offseason comparison cannot remain legible within those purposes; it may not create separate NIL, academics, media, and relationship dashboards.
+- Offseason projection freezes the completed season summary, then applies deterministic departures/incoming pressure and at most one coach/scheme-change result per program. The career/world RNG domains and draw order remain separate and persisted.
+- The transfer surface shows Stay plus three curated offers. Every option persists a projection range and confidence tier rather than a guarantee. Staying retains familiarity/relationship/Coach Trust value; transferring resets only explicitly documented context and retains all career stats, identity, skills, injuries, and program history.
+- M6 proves one offseason and the start of season two, including at least one completed next-season week/game in deterministic and browser coverage. It does not require simulating a four-year career before M8's declaration system exists.
+
+## Atomic delivery steps
+
+1. [completed 2026-09-01] Reconcile the M6 product/QA contracts and implement the v6 persistence skeleton only: strict off-field/relationship/academic/NIL/offseason types, neutral v5-to-v6 migration for every v5 phase, exact v1-to-v6 convergence, browser envelope/session migration, future protection, and literal completed-M5 compatibility. Do not activate live off-field commands yet.
+2. [completed 2026-09-01] Define and validate the mechanics/content contracts for relationship actors and sources, academic status/checkpoints, fictional funds/benefits, NIL offers/requirements/obligations/expiration, offseason projections, coach/scheme changes, and transfer comparisons. Add simultaneous ko-KR/en-US presentation and stable IDs before engines consume them.
+3. [completed 2026-09-01] Implement deterministic academic and relationship commands with bounded evidence, rejection immutability, stable ordering, event-context tags, and explicit effects on existing weekly/coach/opportunity systems. Add only the minimum weekly actions and skill hooks needed to make the model live.
+4. [completed 2026-09-01] Implement the NIL/Brand offer and obligation engine plus the 10-template original bilingual catalog: eligibility, canonical weighted selection, expiration, accept/decline, fulfillment/default, rewards/costs, fictional-funds ledger, supported effect registry, and save/reload proof.
+5. [completed 2026-09-01] Integrate academics, relationships, media/campus context, Brand, NIL obligations, and relevant skills into the weekly event/action/game boundary without adding dashboard chores. Validate consequence previews, required focus use, Game Day restrictions, and truthful post-action evidence in both locales.
+6. [completed 2026-09-01] Implement deterministic offseason world projection: freeze season one, advance term/year, resolve departures/incoming pressure and bounded coach/scheme hooks, preserve prior world/career history, and generate uncertainty-aware stay/transfer inputs with separate RNG evidence.
+7. [completed 2026-09-01] Implement the explicit offseason decision flow: Stay plus three curated offers, comparison evidence, preserved stay value, transfer commitment, destination room/program/scheme/trust/event-tag updates, retained stats/identity/skills/injuries/history, and zero-reroll reload semantics.
+8. [completed 2026-09-01] Bootstrap and play the start of season two from either stay or transfer, proving schedule/program linkage, accumulated career totals, relationship/academic/NIL carryover, legacy visibility, and exact world/career RNG separation across JSON and IndexedDB.
+9. [completed 2026-09-01] Add public-command off-field/offseason builders and checked content-version-pinned reports. Cross recruit tier, archetype, program band, academic risk, relationship direction, NIL policy, stay/transfer, coach/scheme change, and next-season role; protect the exact M1–M5 report hashes and enforce bounded runtime.
+10. [completed 2026-09-01] Build the complete bilingual mobile UI/onboarding: concise Home status, weekly offer/obligation/event consequences, academic threshold, relationship context, offseason projection, Stay/transfer comparison, commitment, and next-season return. Preserve keyboard/touch semantics, `:focus-visible`, saved portraits, purpose navigation, and 320 px containment.
+11. [completed 2026-09-01] Add Korean/English production-browser journeys on native mobile/desktop plus 320 px for low/high academic risk, NIL accept/decline/fulfillment, relationship consequences, failed-save exact retry, offseason stay and transfer, reload/offline, distinct destination room, and next-season play. Inspect exact session/meta storage without developer-only commands.
+12. [completed 2026-09-01] Split the production bundle by purpose/content boundary, profile weekly/offseason/world operations, run the complete M6 gate and available high/medium review, synchronize all affected specs/QA/execution docs, archive this plan, and activate M7 immediately.
+
+## Acceptance criteria
+
+- Every checksum-valid v1–v5 career/session migrates to strict v6 without changing identity, appearance, existing stats/history, phase evidence, revisions, RNG, completed-season outcome, or alumni/meta data. Already completed M5 careers remain completed.
+- GPA/eligibility, Brand/NIL, and three relationship tracks create visible but bounded weekly and football consequences. None becomes a mandatory multi-dashboard chore or a universal dominant strategy.
+- Ten original bilingual NIL templates have validated requirements, rewards, obligations, expiration, and meaningful tradeoffs. No reward trivially buys ratings, role, or depth rank.
+- Academic risk and any restriction are understandable from saved evidence and use a fictional tuneable model rather than claiming real-world regulatory accuracy.
+- Offseason projection and transfer offers are deterministic, reload-safe, curated, uncertainty-aware, and show genuine stay value. The same seed/session/choices reproduce the same roster, coach/scheme, offers, room, and next-season state.
+- A transfer changes program, room, scheme/trust context, schedule, and event eligibility while preserving player identity, skills, injuries, career statistics, prior program/season history, and meta/alumni integrity.
+- Both stay and transfer paths can begin season two and complete a representative week/game through public production commands and shipping UI.
+- Every visible string and content item ships together in ko-KR and en-US; missing keys/interpolation fail validation. Mobile/desktop keyboard/touch and 320 px flows remain unclipped and save-aware.
+- The production bundle is code-split before M7 expansion, M0–M5 reports remain byte-stable, and all required automated/content/simulation/browser/build gates pass.
+
+## Verification plan
+
+- Literal v5 fixtures for every weekly/event/injury/game/review/complete phase; exact v1–v6 convergence; malformed state matrices; checksum, lazy migration, freeze/caller isolation, revision, recovery, retention, transaction, and future-version tests.
+- Content validation for stable/global IDs, references, 10 NIL templates, relationship/academic/offseason/transfer mechanics, supported effects, reachable eligibility, paired locale keys/interpolation, and originality review.
+- Core command tests for canonical draw budgets, rejection immutability, academic/relationship bounds, obligation lifecycle, offseason roster/coach/scheme projection, transfer shortlist/uncertainty, stay value, commitment, multi-season history, and next-season bootstrap.
+- Public-command deterministic reports with JSON round trips after every requested transition, segmented distributions, runtime bounds, and exact M1–M5 hash protection.
+- Web component/integration tests for every saved surface, bilingual consequence parity, load/failure/retry/focus/lockout, purpose navigation, and exact aggregate/meta persistence.
+- Playwright shipping paths in both locales on mobile/desktop and true 320 px, including online/offline resumes, exact IndexedDB inspection, stay/transfer branches, next-season play, PWA artifacts, and code-split production chunks.
+
+## Risks and reversible assumptions
+
+- Extending active careers beyond M5's one-season ending requires a v6 phase/state boundary, not mutation of completed v5 alumni. The smallest safe path preserves completed M5 saves and changes only new/active v6 season-review progression.
+- Three relationship actors and one active primary NIL obligation are deliberate flow constraints. They can expand after simulation/playtest evidence without changing the stable actor/offer IDs already shipped.
+- Stay plus three transfer offers is enough to make the branch meaningful without exposing the full 12-program matrix. Offer count and projection confidence are tuneable content.
+- The fictional academic threshold and funds scale are gameplay abstractions. UI copy must identify them as in-world rules and avoid medical, legal, or financial claims.
+- A Career destination is optional, not presumed. First attempt to fit concise off-field/offseason status into existing purpose navigation; add a destination only when accessibility/legibility evidence requires it.
+
+## Progress notes
+
+- 2026-09-01 — Step 12 and M6 complete. The first complete gate exposed one production-browser fixture race: the UI had reached the saved recruiting surface while its immediate read-only IndexedDB inspection could still observe the earlier envelope. The fixture now polls for the exact persisted v6 `CHOOSING` predicate instead of adding a delay; all five focused M6 executions then passed, followed by a complete post-fix gate with 559 workspace tests across 55 files, 125 content tests, 266 game-core/testkit tests across 27 files, 46 applicable Playwright executions and two intentional desktop skips, every package build/export, and all PWA artifacts. `git diff --check` has no whitespace error. Focused review found no remaining high/medium issue. The production split remains 0.71/62.22/94.55/285.52/361.65/458.03 kB for runtime/entry/Career/vendor/core/content; all JavaScript chunks are below 500 kB, and the 17-entry offline precache remains valid.
+- 2026-09-01 — Step 12 performance checkpoint complete. The Career screen is now a genuine dynamic purpose import, while supported Rolldown groups own vendor-runtime, deterministic game-core, and bilingual game-content boundaries. The production entry fell from the pre-split 1,255.27 kB monolith to 62.22 kB; the remaining runtime/Career/vendor/core/content JavaScript chunks are 0.71/94.55/285.52/361.65/458.03 kB, so every chunk is below the 500 kB advisory threshold. The PWA precaches 17 entries totaling 1,301.84 KiB. A testkit-only operation observer and `profile:m6` command measure two built-package public-command branches across three repetitions without changing deterministic state or checked report bytes: 117 weekly samples peak at 32.847 ms, 117 world-round samples at 7.705 ms, and six each of offseason projection, decision, and next-season bootstrap at 5.047, 4.925, and 5.450 ms. Web typecheck, all 168 web tests, web ESLint, testkit typecheck, all 59 testkit tests, production build, and the 1,000 ms per-operation guard pass. Step 12 remains active for the complete gate, focused review, final synchronization/archive, and M7 activation.
+- 2026-09-01 — Step 11 complete. A fixed production-valid UUID and social identity now drive a real Brand-building event to Brand 14 and the first saved NIL offer in week 5 without test-only product commands or seeded state mutation. Korean low-risk careers use the visible Study Hall tradeoff, accept one offer, survive an intentionally aborted IndexedDB transaction with the complete checksummed envelope unchanged, retry the exact offer once, fulfill every due obligation, Stay, and complete the season-two opening game. English higher-risk careers decline the saved offers, preserve lower GPA relative to the supported threshold display, transfer through the first saved shortlist option, prove a different program and receiver room, and complete the selected program's season-two opening game. Both branches run on native Pixel 7 and desktop Chromium; the full Korean transfer branch also runs at 320×760. All journeys verify two academic checkpoints, changed relationship tracks and their Team presentation, exact v6 session payload/checksum metadata, unchanged meta storage, offline review reload, four saved offseason options, zero-reroll commitment reload, completed-world history, and retained cumulative games. The M1–M3 browser expectations now include the explicit off-field activation revision, and the preserved M5 full-season browser paths end at the authoritative v6 offseason handoff while completed-v5 terminal/alumni compatibility remains covered by exact migration/storage tests. Focused M6 Playwright passed 5 executions with 1 intentional project skip in 1.5 minutes; the complete gate passed 46 executions with 2 intentional 320 px desktop skips in 3.0 minutes. Root typecheck, lint/boundaries/localized-copy, formatting, production build/PWA verification, and `git diff --check` pass; the 260-module build retains the expected step-12 code-splitting warning at 1,255.27 kB.
+- 2026-09-01 — Step 10 complete. Home and Team now project the saved fictional academic status/GPA/threshold, three relationship tracks and their trust/information/opportunity consequences, Brand, fictional USD, and waiting NIL state without adding a dashboard destination. Week presents saved offer rewards, commitment duration/focus, fulfillment/default effects, and blocks the ordinary three-action plan only when a due obligation requires a command. Season Review retains the completed portrait/summary, publishes a saved Stay-plus-three comparison with role/rank/snap range, uncertainty, staff/scheme result, and nine-factor detail, then persists one commitment and an explicit season-two return through the established after-save shell. Contextual Week/Team help now teaches academic/NIL/relationship consequences in ko-KR and en-US; nested decisions change focus evidence while pointer focus remains governed by `:focus-visible`. The shipping adapter attempts new offers only in camp and the first nine regular-season rounds, leaving deterministic planning runway for every authored obligation before offseason and consuming no late/postseason offer RNG. Root typecheck, lint/boundaries/localized-copy, formatting, 559 workspace tests across 55 files, 125 focused content tests, 168 focused web tests, build/export/PWA verification, and `git diff --check` pass; the 260-module build retains the expected step-12 code-splitting warning at 1,255.27 kB.
+- 2026-09-01 — Step 9 complete. The exported `executeWrOffFieldCareer` builder drives only public creation, recruiting, commitment, season, practice, event, injury, academic/relationship settlement, NIL, offseason, transfer, and scheduled-game commands. Six literal fully reloaded careers perform 295–399 exact round trips each and cross all three recruit tiers, archetypes, and program bands; safe/ineligible academic inputs and all three resulting statuses; three relationship strategies and up/flat/down directions; accept+fulfill, accept+default, and decline NIL policies; three Stay/three transfer paths; all staff outcomes including a selected scheme shift; and developmental/reserve/starter next-season roles. The 20,208-byte checked report has SHA-256 `ce2dbfd44a317ba52370196cb4fea3a6b07c1b772bf887c2c2e1e8075b09354a`, reproduces in 8,151.29 ms from built packages, and embeds exact M1–M5 hashes. Root typecheck, lint/boundaries/localized-copy, formatting, 544 workspace tests across 54 files, 125 focused content tests, 266 deterministic core/testkit tests across 27 files, build/export/PWA verification, and `git diff --check` pass.
+- 2026-09-01 — Step 8 complete. `bootstrapNextSeason` archives the immutable completed calendar with its historical player-program identity, activates a distinct stable-ID season-two calendar for the selected current program, advances the fictional academic term, and resets only per-active-season event/injury/game/role ledgers. It consumes zero career/world draws while preserving the offseason RNG tail, relationships, NIL, academic checkpoint history, identity/appearance, skills, injuries, cumulative games, first-season summary, and program history. Strict validation derives the world stream as completed calendar → offseason tail → current calendar and treats decision trust/relationship evidence as a historical boundary snapshot after live season-two systems begin changing. Stay and transfer fixtures both complete three camp weeks and the opening scheduled game, survive JSON parsing, and the transfer path round-trips through real IndexedDB. Root typecheck, lint/boundaries/localized-copy, formatting, 537 workspace tests, 125 focused content tests, 259 deterministic core/testkit tests, build/export/PWA verification, and `git diff --check` pass; the build contains 257 modules and retains the expected non-fatal 1,207.19 kB main-chunk warning.
+- 2026-09-01 — Step 7 complete. `decideOffseason` commits only the exact persisted Stay or one of the three saved transfer options; it never rerolls the comparison. Both paths consume exactly 35 career draws to build the committed eight-player destination room through the same canonical room generator used by initial commitment, while world RNG and the completed first-season calendar remain unchanged. Stay keeps program history, relationship values except for explicitly authored staff resets, and retained Coach Trust; transfer changes current program/context/style/rotation, resets the three destination relationships to neutral, applies an evidenced destination-plus-retained-trust equation, and opens the second program-history stint while preserving recruiting origin, identity, appearance, skills, injuries, academics/NIL, cumulative games, and completed-season evidence. Strict validation recomputes every equation and rejects option, history, relationship, trust, RNG, or room tampering. Root typecheck, lint/boundaries/localized-copy, formatting, 536 workspace tests, 125 focused content tests, and 259 deterministic core/testkit tests pass.

@@ -1,11 +1,17 @@
 import {
+  ATTRIBUTE_XP_PER_RATING,
   MENTAL_ATTRIBUTE_IDS,
   PHYSICAL_ATTRIBUTE_IDS,
   PLAYER_ATTRIBUTE_IDS,
+  TRAINING_PROFICIENCY_LEVEL_BOUNDS,
   advanceDevelopmentWeek,
+  beginRecruiting,
+  commitProgramChoice,
   commitWeeklyActionPlan,
   createWrCareer,
+  deriveTrainingProficiencyLevel,
   deriveWrOverall,
+  getTrainingProficiencyXpMultiplierPermille,
   resolveNextWeeklyAction,
   type AttributeProgress,
   type CareerRun,
@@ -14,26 +20,39 @@ import {
   type PlayerAttributeId,
   type RecruitingBackgroundId,
   type RngSeed,
+  type TrainingProficiencyId,
+  type TrainingProficiencyLevel,
   type WeeklyActionId,
   type WeeklyActionResult,
   type WeeklyCommandResult,
+  type KeySnapDecisionId,
   type WrArchetypeId,
   type WrAttributeId,
 } from '@project-saturday/game-core';
 import {
   appearanceCatalog,
   buildWrCreationMechanics,
+  creationContent,
   defaultWrAppearance,
   defaultWrCreationIdentity,
   developmentWeekConfig,
   getAvailableWeeklyActionEntries,
   isCompatiblePersonalitySelection,
+  offenseStyleMechanicsDefinitions,
+  prepareNextShippedGame,
+  programMechanicsDefinitions,
+  recruitingMechanicsConfig,
+  rosterNameMechanicsPool,
+  rotationPolicyMechanicsDefinitions,
+  resolveShippedKeySnap,
   skillMechanicsDefinitions,
+  startShippedGame,
   weeklyActionDefinitions,
   wrBodyMeasurementOptions,
   type AvailableWeeklyActionEntry,
 } from '@project-saturday/game-content/content';
 import type { MessageKey } from '@project-saturday/game-content/locales';
+import type { WrCareerSurface } from './wr-view';
 
 export const APPEARANCE_FIELD_ORDER = [
   'skinToneId',
@@ -100,6 +119,28 @@ export interface AppearanceSummaryRow {
   readonly field: keyof PlayerAppearance;
   readonly labelKey: string;
   readonly nameKey: string;
+}
+
+export interface AttributeProgressPresentation {
+  readonly currentXp: number;
+  readonly progressPermille: number;
+  readonly remainingXp: number;
+  readonly requiredXp: number;
+  readonly nextRating: number | null;
+}
+
+export interface TrainingProficiencyProgressPresentation {
+  readonly actionId: WeeklyActionId;
+  readonly currentMultiplierPermille: number;
+  readonly currentThreshold: number;
+  readonly level: TrainingProficiencyLevel;
+  readonly nextLevel: TrainingProficiencyLevel | null;
+  readonly nextMultiplierPermille: number | null;
+  readonly nextThreshold: number | null;
+  readonly proficiencyId: TrainingProficiencyId;
+  readonly progressPermille: number;
+  readonly remainingUses: number;
+  readonly uses: number;
 }
 
 export function createDefaultCreationDraft(): CreationDraft {
@@ -202,9 +243,18 @@ export function createCareerFromDraft(
     },
     mechanics: mechanics.mechanics,
   });
-  return created.ok
-    ? { career: created.career, issues: [], ok: true }
-    : { issues: ['creation-ui.player-failed'], ok: false };
+  if (!created.ok) {
+    return { issues: ['creation-ui.player-failed'], ok: false };
+  }
+  const recruiting = beginRecruiting(
+    created.career,
+    recruitingMechanicsConfig,
+    programMechanicsDefinitions,
+    offenseStyleMechanicsDefinitions,
+  );
+  return recruiting.ok
+    ? { career: recruiting.career, issues: [], ok: true }
+    : { issues: ['creation-ui.mechanics-failed'], ok: false };
 }
 
 export function addDraftAction(
@@ -244,7 +294,9 @@ export function moveDraftAction(
   return moved;
 }
 
-export function getCareerWeeklyEntries(career: CareerRun): readonly AvailableWeeklyActionEntry[] {
+export function getCareerWeeklyEntries(
+  career: WrCareerSurface,
+): readonly AvailableWeeklyActionEntry[] {
   return getAvailableWeeklyActionEntries(career.player.positionId);
 }
 
@@ -254,6 +306,26 @@ export function commitCareerActionDraft(
 ): WeeklyCommandResult {
   const availableIds = getCareerWeeklyEntries(career).map(({ definition }) => definition.id);
   return commitWeeklyActionPlan(career, draft, availableIds);
+}
+
+export function commitCareerProgramChoice(career: CareerRun, selectedProgramId: string) {
+  return commitProgramChoice(
+    career,
+    selectedProgramId,
+    programMechanicsDefinitions,
+    offenseStyleMechanicsDefinitions,
+    rotationPolicyMechanicsDefinitions,
+    rosterNameMechanicsPool,
+  );
+}
+
+export function beginCareerRecruiting(career: CareerRun) {
+  return beginRecruiting(
+    career,
+    recruitingMechanicsConfig,
+    programMechanicsDefinitions,
+    offenseStyleMechanicsDefinitions,
+  );
 }
 
 export function resolveCareerNextAction(career: CareerRun): WeeklyCommandResult {
@@ -266,26 +338,61 @@ export function resolveCareerNextAction(career: CareerRun): WeeklyCommandResult 
   )?.definition;
   return definition === undefined
     ? { career, ok: false, reason: 'weekly.action_definition_mismatch' }
-    : resolveNextWeeklyAction(career, definition, developmentWeekConfig, skillMechanicsDefinitions);
+    : resolveNextWeeklyAction(
+        career,
+        definition,
+        developmentWeekConfig,
+        skillMechanicsDefinitions,
+        offenseStyleMechanicsDefinitions,
+        rotationPolicyMechanicsDefinitions,
+      );
 }
 
 export function advanceCareerWeek(career: CareerRun): WeeklyCommandResult {
-  return advanceDevelopmentWeek(
+  const advanced = advanceDevelopmentWeek(
     career,
     developmentWeekConfig,
     skillMechanicsDefinitions,
     weeklyActionDefinitions,
   );
+  if (
+    !advanced.ok ||
+    advanced.career.phase.type !== 'PLAN_ACTIONS' ||
+    advanced.career.recruitingState.type !== 'NOT_STARTED'
+  ) {
+    return advanced;
+  }
+  const recruiting = beginRecruiting(
+    advanced.career,
+    recruitingMechanicsConfig,
+    programMechanicsDefinitions,
+    offenseStyleMechanicsDefinitions,
+  );
+  return recruiting.ok
+    ? { career: recruiting.career, ok: true }
+    : { career, ok: false, reason: 'weekly.internal_invariant_failure' };
 }
 
-export function latestWeeklyResult(career: CareerRun): WeeklyActionResult | undefined {
+export function prepareCareerGame(career: CareerRun) {
+  return prepareNextShippedGame(career);
+}
+
+export function startCareerGame(career: CareerRun) {
+  return startShippedGame(career);
+}
+
+export function resolveCareerKeySnap(career: CareerRun, decisionId: KeySnapDecisionId) {
+  return resolveShippedKeySnap(career, decisionId);
+}
+
+export function latestWeeklyResult(career: WrCareerSurface): WeeklyActionResult | undefined {
   return career.phase.type === 'RESOLVE_ACTIONS' || career.phase.type === 'WEEK_END'
     ? career.phase.results.at(-1)
     : undefined;
 }
 
 function readAttributeProgress(
-  career: CareerRun,
+  career: WrCareerSurface,
   attributeId: PlayerAttributeId,
 ): AttributeProgress {
   if (PHYSICAL_ATTRIBUTE_IDS.some((id) => id === attributeId)) {
@@ -299,11 +406,98 @@ function readAttributeProgress(
   return career.player.attributes.wr[attributeId as WrAttributeId];
 }
 
-export function getAttributeSummary(career: CareerRun): readonly AttributeSummaryRow[] {
+export function getAttributeSummary(career: WrCareerSurface): readonly AttributeSummaryRow[] {
   return PLAYER_ATTRIBUTE_IDS.map((attributeId) => ({
     attributeId,
     progress: readAttributeProgress(career, attributeId),
   }));
+}
+
+export function getAttributeProgressPresentation(
+  progress: AttributeProgress,
+): AttributeProgressPresentation {
+  if (progress.rating >= 100) {
+    return {
+      currentXp: ATTRIBUTE_XP_PER_RATING,
+      nextRating: null,
+      progressPermille: 1000,
+      remainingXp: 0,
+      requiredXp: ATTRIBUTE_XP_PER_RATING,
+    };
+  }
+  return {
+    currentXp: progress.xp,
+    nextRating: progress.rating + 1,
+    progressPermille: Math.floor((progress.xp * 1000) / ATTRIBUTE_XP_PER_RATING),
+    remainingXp: ATTRIBUTE_XP_PER_RATING - progress.xp,
+    requiredXp: ATTRIBUTE_XP_PER_RATING,
+  };
+}
+
+export function getArchetypeEmphasisAttributeIds(
+  career: WrCareerSurface,
+): readonly PlayerAttributeId[] {
+  const archetype = creationContent.wrArchetypes.find(({ id }) => id === career.player.archetypeId);
+  if (archetype === undefined) {
+    throw new Error(`Missing archetype presentation for ${career.player.archetypeId}.`);
+  }
+  return archetype.attributeModifiers
+    .filter(({ delta }) => delta > 0)
+    .map(({ attributeId }) => attributeId);
+}
+
+export function getTrainingProficiencyProgress(
+  actionId: WeeklyActionId,
+  proficiencyId: TrainingProficiencyId,
+  uses: number,
+): TrainingProficiencyProgressPresentation {
+  const level = deriveTrainingProficiencyLevel(uses, developmentWeekConfig);
+  const currentThreshold = developmentWeekConfig.proficiencyUseThresholds[level];
+  const nextLevel =
+    level >= TRAINING_PROFICIENCY_LEVEL_BOUNDS.max
+      ? null
+      : ((level + 1) as TrainingProficiencyLevel);
+  const nextThreshold =
+    nextLevel === null ? null : developmentWeekConfig.proficiencyUseThresholds[nextLevel];
+  const span = nextThreshold === null ? 0 : nextThreshold - currentThreshold;
+  return {
+    actionId,
+    currentMultiplierPermille: getTrainingProficiencyXpMultiplierPermille(
+      level,
+      developmentWeekConfig,
+    ),
+    currentThreshold,
+    level,
+    nextLevel,
+    nextMultiplierPermille:
+      nextLevel === null
+        ? null
+        : getTrainingProficiencyXpMultiplierPermille(nextLevel, developmentWeekConfig),
+    nextThreshold,
+    proficiencyId,
+    progressPermille:
+      nextThreshold === null ? 1000 : Math.floor(((uses - currentThreshold) * 1000) / span),
+    remainingUses: nextThreshold === null ? 0 : nextThreshold - uses,
+    uses,
+  };
+}
+
+export function getTrainingProficiencySummary(
+  career: WrCareerSurface,
+): readonly TrainingProficiencyProgressPresentation[] {
+  const summaries: TrainingProficiencyProgressPresentation[] = [];
+  for (const definition of weeklyActionDefinitions) {
+    if (definition.proficiencyId !== null) {
+      summaries.push(
+        getTrainingProficiencyProgress(
+          definition.id,
+          definition.proficiencyId,
+          career.player.trainingProficiencyUses[definition.proficiencyId],
+        ),
+      );
+    }
+  }
+  return summaries;
 }
 
 export function getAppearanceSummary(
@@ -332,6 +526,6 @@ export function getActionPresentation(
   return presentation;
 }
 
-export function getCareerOverall(career: CareerRun): number {
+export function getCareerOverall(career: WrCareerSurface): number {
   return deriveWrOverall(career);
 }
