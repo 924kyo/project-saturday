@@ -1,6 +1,9 @@
 import { useState, type CSSProperties } from 'react';
 import {
+  projectGameStakesVNext,
   projectSnapBoardFrame,
+  type CareerVNextMechanics,
+  type GameStakesVNext,
   type CareerVNext,
   type SnapBoardFrame,
   type VNextPositionId,
@@ -26,6 +29,12 @@ function clock(seconds: number): string {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 }
 
+const OUTLOOK_KEYS = {
+  ADVANTAGE: 'v2.stakes.advantage',
+  BALANCED: 'v2.stakes.balanced',
+  CHALLENGE: 'v2.stakes.challenge',
+} as const satisfies Record<GameStakesVNext['outlook'], MessageKey>;
+
 function downText(t: AppTranslate, frame: Extract<SnapBoardFrame, { kind: 'LIVE' }>): string {
   const s = frame.situation;
   const down = t(DOWN_KEYS[s.down]);
@@ -36,6 +45,7 @@ function downText(t: AppTranslate, frame: Extract<SnapBoardFrame, { kind: 'LIVE'
 
 export function GameDayScreen({
   career,
+  mechanics,
   blocked,
   reducedMotion,
   onKickoff,
@@ -43,6 +53,7 @@ export function GameDayScreen({
   onContinue,
 }: {
   readonly career: CareerVNext;
+  readonly mechanics: CareerVNextMechanics;
   readonly blocked: boolean;
   readonly reducedMotion: boolean;
   readonly onKickoff: () => void;
@@ -66,6 +77,7 @@ export function GameDayScreen({
   if (game.stage === 'PREGAME') {
     const projection = career.program.room.projection;
     const state = career.athlete.profile.state;
+    const stakes = projectGameStakesVNext(career, game.opponentProgramId, game.isHome, mechanics);
     return (
       <section aria-labelledby="s2-pregame" className="s2-gd">
         <div className="s2-final" style={style}>
@@ -81,6 +93,27 @@ export function GameDayScreen({
           <h1 className="s2-display s2-size-h2" id="s2-pregame">
             {t(key(us.shortNameKey))} {t('v2.gd.versus')} {t(key(them.shortNameKey))}
           </h1>
+          {stakes !== null && (
+            <div className="s2-stakes" aria-label={t('v2.stakes.title')}>
+              <span className={`s2-stakes__chip s2-stakes__chip--${stakes.outlook.toLowerCase()}`}>
+                {t(OUTLOOK_KEYS[stakes.outlook])}
+              </span>
+              {stakes.rivalry && (
+                <span className="s2-stakes__chip s2-stakes__chip--rivalry">
+                  {t('v2.stakes.rivalry')}
+                </span>
+              )}
+              <span className="s2-stakes__team">
+                {stakes.playerRank !== null && t('v2.stakes.ranked', { rank: stakes.playerRank })}{' '}
+                {t(key(us.shortNameKey))} {t('v2.stakes.record', stakes.playerRecord)}
+              </span>
+              <span className="s2-stakes__team">
+                {stakes.opponentRank !== null &&
+                  t('v2.stakes.ranked', { rank: stakes.opponentRank })}{' '}
+                {t(key(them.shortNameKey))} {t('v2.stakes.record', stakes.opponentRecord)}
+              </span>
+            </div>
+          )}
         </div>
         <div className="s2-grid-2">
           <div className="s2-panel s2-stack">
@@ -217,6 +250,18 @@ export function GameDayScreen({
         </div>
       </div>
 
+      {live !== null &&
+        game.stage === 'SNAP' &&
+        (live.meanwhile.playerTeam > 0 || live.meanwhile.opponent > 0) && (
+          <p className="s2-ticker" role="status">
+            {t('v2.gd.meanwhile', {
+              us: us.monogram,
+              a: live.meanwhile.playerTeam,
+              them: them.monogram,
+              b: live.meanwhile.opponent,
+            })}
+          </p>
+        )}
       <div className="s2-grid-2">
         <div className="s2-stack">
           <TacticalBoard

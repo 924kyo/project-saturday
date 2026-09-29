@@ -59,6 +59,8 @@ export type SnapBoardFrame =
       readonly decisionIds: readonly string[];
       readonly revealedClueIds: readonly string[];
       readonly situation: SnapSituationFrame;
+      /** Points both teams scored in the background since the athlete's previous live snap. */
+      readonly meanwhile: { readonly playerTeam: number; readonly opponent: number };
       /** Authored defensive look when the owning content records it (WR coverage/leverage). */
       readonly look: { readonly coverageId: string; readonly leverageId: string } | null;
       readonly result: LivePlayFrame | null;
@@ -166,6 +168,19 @@ export function livePlayFrame(positionId: VNextPositionId, play: AnyPlay): LiveP
   };
 }
 
+function meanwhile(
+  log: readonly AnyPlay[],
+  snapIndex: number,
+  score: { readonly playerTeam: number; readonly opponent: number },
+) {
+  const previous = snapIndex > 0 ? log[snapIndex - 1]?.tacticalResult?.scoreAfter : undefined;
+  const base = previous ?? { playerTeam: 0, opponent: 0 };
+  return {
+    playerTeam: Math.max(0, score.playerTeam - base.playerTeam),
+    opponent: Math.max(0, score.opponent - base.opponent),
+  };
+}
+
 function lookOf(source: unknown): { coverageId: string; leverageId: string } | null {
   const record = source as { coverageId?: unknown; leverageId?: unknown };
   return typeof record.coverageId === 'string' && typeof record.leverageId === 'string'
@@ -239,6 +254,7 @@ export function projectSnapBoardFrame(career: CareerVNext): SnapBoardFrame | nul
       decisionIds: pending.decisionIds,
       revealedClueIds: pending.revealedClueIds,
       situation: situation(pending.tacticalContext),
+      meanwhile: meanwhile(log, slot.snapIndex, pending.tacticalContext.score),
       look: lookOf(pending),
       result: null,
     });
@@ -257,6 +273,7 @@ export function projectSnapBoardFrame(career: CareerVNext): SnapBoardFrame | nul
     decisionIds: before.decisionIds,
     revealedClueIds: before.revealedClueIds,
     situation: situation(before),
+    meanwhile: meanwhile(log, slot.snapIndex, before.score),
     look: lookOf(play),
     result: livePlayFrame(positionId, play),
   });

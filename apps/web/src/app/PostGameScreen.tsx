@@ -17,6 +17,7 @@ import {
   program,
 } from './content';
 import { Nameplate } from './Nameplate';
+import { SPEAKER_KEYS, selectReactions } from './reactions';
 import { Crest, Meter, Panel } from './ui';
 import { METER_COLORS } from './theme';
 
@@ -86,6 +87,7 @@ export function PostGameScreen({
     .sort((a, b) => b.awardedXp - a.awardedXp)
     .slice(0, 3);
   const sharp = recap.sideline.filter(({ grade }) => grade === 'SHARP').length;
+  const reactions = selectReactions(recap, positionId);
   const style = { '--left': us.primary, '--right': them.primary } as CSSProperties;
 
   return (
@@ -191,6 +193,18 @@ export function PostGameScreen({
               </p>
             </div>
           </Panel>
+          {reactions.length > 0 && (
+            <Panel id="s2-reactions" title={t('v2.post.reactions')}>
+              <ul className="s2-reactions">
+                {reactions.map((reaction) => (
+                  <li className="s2-reaction" key={reaction.id}>
+                    <span className="s2-reaction__who">{t(SPEAKER_KEYS[reaction.speaker])}</span>
+                    <span>{t(reaction.key, reaction.params)}</span>
+                  </li>
+                ))}
+              </ul>
+            </Panel>
+          )}
           <Panel id="s2-changes" title={t('v2.post.changes')}>
             <div className="s2-meters">
               <Meter

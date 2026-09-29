@@ -30,6 +30,7 @@ import {
   derivePositionPracticeGrade,
 } from '../weekly/position-training.js';
 import { projectVNextWorldResult, resolveVNextSnap, startVNextGame } from './game.js';
+import { projectGameStakesVNext } from './stakes.js';
 import { createSidelineReps, resolveSidelineRep, sidelineCreditFor } from './sideline.js';
 import {
   CAREER_VNEXT_MIN_GAME_DECISIONS,
@@ -551,6 +552,7 @@ function settleGame(
   );
   const rank = worldAfter.rankings.find(({ programId }) => programId === career.program!.programId);
   const profile = career.athlete.profile;
+  const stakes = projectGameStakesVNext(career, game.opponentProgramId, game.isHome, mechanics);
   const recap: GameRecapVNext = {
     weekIndex: game.weekIndex,
     opponentProgramId: game.opponentProgramId,
@@ -566,6 +568,7 @@ function settleGame(
     confidence: { before: growth.confidenceBefore, after: growth.confidenceAfter },
     recordAfter: { wins: record?.wins ?? 0, losses: record?.losses ?? 0, ties: record?.ties ?? 0 },
     rankAfter: rank?.rank ?? null,
+    stakes,
   };
   return publish(career, {
     ...career,

@@ -1251,3 +1251,70 @@
   background: color-mix(in srgb, var(--info) 14%, var(--surface));
   border-color: var(--info);
 }
+
+.s2-stakes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 14px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+}
+.s2-stakes__chip {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: rgba(7, 9, 13, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+.s2-stakes__chip--advantage {
+  border-color: var(--win);
+  color: var(--win);
+}
+.s2-stakes__chip--challenge {
+  border-color: var(--loss);
+  color: var(--loss);
+}
+.s2-stakes__chip--rivalry {
+  background: var(--gold);
+  color: #16120a;
+  border-color: var(--gold);
+}
+.s2-stakes__team {
+  white-space: nowrap;
+}
+.s2-ticker {
+  margin: 0;
+  padding: 6px 10px;
+  background: var(--surface);
+  border-left: 3px solid var(--gold);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-2);
+}
+.s2-reactions {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.s2-reaction {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border-left: 3px solid var(--info);
+}
+.s2-reaction__who {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}

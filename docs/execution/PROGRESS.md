@@ -34,11 +34,11 @@ WR adapter plus the four-position parity checkpoint (2026-09-29).
 
 V4 continues in the new stack, in priority order:
 
-1. **Game Day depth:**
-   - pregame keys from preparation and film;
-   - on-board clue markers;
-   - crowd/stakes tone and a drive ticker;
-   - a post-game reaction feed.
+1. **Game Day depth:** done 2026-09-29.
+   - Pregame stakes: matchup outlook, rivalry, rankings and records.
+   - A "meanwhile" ticker for background scoring.
+   - Authored trigger-based post-game reactions.
+   - Still open: on-board clue markers and pregame preparation keys.
 2. **Weekly lifecycle:**
    - contextual events and injuries as scene cards;
    - off-field alerts only when actionable;

@@ -68,11 +68,7 @@ export function buildScene(
   const leverage = look?.leverageId ?? '';
   const cb = {
     x: press ? los + 6 : off ? los + 48 : los + 36,
-    y: leverage.includes('inside')
-      ? wr.y + 14
-      : leverage.includes('outside')
-        ? wr.y - 10
-        : wr.y,
+    y: leverage.includes('inside') ? wr.y + 14 : leverage.includes('outside') ? wr.y - 10 : wr.y,
   };
   const singleHigh = look?.coverageId.includes('single_high') ?? false;
   const safeties = singleHigh

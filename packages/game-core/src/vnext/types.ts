@@ -13,6 +13,7 @@ import type {
   PositionAlphaSessionCommandMechanics,
 } from '../season/position-alpha-session.js';
 import type { WorldAlphaSeasonState } from '../season/world-alpha.js';
+import type { GameStakesVNext } from './stakes.js';
 import type { WrAlphaGameState } from '../games/wr-alpha.js';
 import type {
   KeySnapFamilyMechanicsDefinition,
@@ -143,6 +144,8 @@ export interface GameRecapVNext {
   readonly confidence: { readonly before: number; readonly after: number };
   readonly recordAfter: { readonly wins: number; readonly losses: number; readonly ties: number };
   readonly rankAfter: number | null;
+  /** Stakes as they stood at kickoff (rivalry and rankings before this result). */
+  readonly stakes: GameStakesVNext | null;
 }
 
 export type FlowVNext =

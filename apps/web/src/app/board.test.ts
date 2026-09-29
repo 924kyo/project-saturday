@@ -36,6 +36,7 @@ function frame(positionId: VNextPositionId, decisionIds: readonly string[]): Sna
       firstDownYards: 49,
       score: { playerTeam: 7, opponent: 3 },
     },
+    meanwhile: { playerTeam: 0, opponent: 0 },
     look:
       positionId === 'position_wr'
         ? { coverageId: 'game_coverage_press_man', leverageId: 'game_leverage_inside' }
