@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import {
   projectGameStakesVNext,
   projectSnapBoardFrame,
@@ -7,6 +7,7 @@ import {
   type CareerVNext,
   type SnapBoardFrame,
   type VNextPositionId,
+  kickoffVNext,
 } from '@project-saturday/game-core';
 import type { MessageKey } from '@project-saturday/game-content/locales';
 
@@ -65,6 +66,22 @@ export function GameDayScreen({
   const [preview, setPreview] = useState<string | null>(null);
   const [replay, setReplay] = useState(0);
   const compact = globalThis.matchMedia?.('(max-width: 719px)').matches ?? false;
+  // Kickoff is a pure command, so its result is an exact game plan: the live snaps and sideline
+  // reads this Saturday holds, and what the first read will reveal.
+  const plan = useMemo(() => {
+    if (career.flow.type !== 'GAME' || career.flow.game.stage !== 'PREGAME') return null;
+    const kicked = kickoffVNext(career, mechanics);
+    if (!kicked.ok || kicked.career.flow.type !== 'GAME') return null;
+    const slots = kicked.career.flow.game.slots;
+    const live = slots.filter(({ kind }) => kind === 'LIVE').length;
+    const frame = projectSnapBoardFrame(kicked.career);
+    return {
+      live,
+      reps: slots.length - live,
+      clues: frame?.revealedClueIds.length ?? 0,
+      patternId: frame?.patternId ?? null,
+    };
+  }, [career, mechanics]);
   if (career.flow.type !== 'GAME' || career.program === null) return null;
   const game = career.flow.game;
   const positionId = career.athlete.profile.positionId as VNextPositionId;
@@ -139,14 +156,38 @@ export function GameDayScreen({
               {abbr}
               {projection.rank} · {t(ROLE_KEYS[projection.roleId])}
             </p>
-            <p className="s2-note">
-              {projection.interactiveSnapMaximum >= 2
-                ? t('v2.gd.expectSnaps', {
-                    min: projection.interactiveSnapMinimum,
-                    max: projection.interactiveSnapMaximum,
-                  })
-                : t('v2.gd.expectSideline')}
-            </p>
+            {plan === null ? (
+              <p className="s2-note">
+                {projection.interactiveSnapMaximum >= 2
+                  ? t('v2.gd.expectSnaps', {
+                      min: projection.interactiveSnapMinimum,
+                      max: projection.interactiveSnapMaximum,
+                    })
+                  : t('v2.gd.expectSideline')}
+              </p>
+            ) : (
+              <ul className="s2-bullets" id="s2-gameplan">
+                <li>
+                  <span className="s2-num">
+                    {t('v2.gd.planSnaps', { live: plan.live, reps: plan.reps })}
+                  </span>
+                </li>
+                <li>
+                  <span>
+                    {t('v2.gd.planClues', { prep: state.preparation, count: plan.clues })}
+                  </span>
+                </li>
+                {plan.patternId !== null && (
+                  <li>
+                    <span>
+                      {t('v2.gd.planFirst', {
+                        look: t(gameText.pattern(positionId, plan.patternId).nameKey as MessageKey),
+                      })}
+                    </span>
+                  </li>
+                )}
+              </ul>
+            )}
           </div>
           <div className="s2-panel">
             <div className="s2-meters">

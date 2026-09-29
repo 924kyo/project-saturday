@@ -621,3 +621,4 @@ Append concise implementation/product decisions that do not warrant their own AD
   - the career overall is the position-weighted ability score (`overallVNext` = the depth model's `abilityScore`).
 
   Kernel outputs and historical replays are unchanged.
+- 2026-09-30 (R2/R4): the self-hosted Barlow Condensed (Latin, OFL) is now precached for offline use, and the build check requires every built font to be precached once. Hangul uses the platform CJK stack; a self-hosted Hangul face would cost megabytes of precache. The pregame game plan is the kickoff command previewed purely, so it states exact counts rather than role bands. On-board clue markers are not planned because clue content has no authored board anchor.

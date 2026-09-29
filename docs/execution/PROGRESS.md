@@ -92,7 +92,8 @@ V4 continues in the new stack, in priority order:
    - Pregame stakes: matchup outlook, rivalry, rankings and records.
    - A "meanwhile" ticker for background scoring.
    - Authored trigger-based post-game reactions.
-   - Still open: on-board clue markers and pregame preparation keys.
+   - Pregame game plan (2026-09-30): an exact kickoff preview (live snaps, sideline reads, clues on the first read, first look).
+   - Not planned: on-board clue markers. Clues carry no authored board anchor, so markers would invent positions.
 2. **Weekly lifecycle:**
    - contextual events and injuries as scene cards: done 2026-09-29;
    - breakthrough card offers on the Build screen: done 2026-09-29;

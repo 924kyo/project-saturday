@@ -350,6 +350,15 @@ const screen = {
   'v2.alumni.empty': ['No alumni yet.', '아직 졸업생이 없습니다.'],
   'v2.alumni.new': ['Start a new career', '새 커리어 시작'],
   'v2.alumni.wall': ['Alumni Wall ({count})', '명예의 전당 ({count})'],
+  'v2.gd.planSnaps': [
+    'Live snaps: {live} · Sideline reads: {reps}',
+    '라이브 스냅: {live}회 · 사이드라인 판단: {reps}회',
+  ],
+  'v2.gd.planClues': [
+    'Clues on your first read: {count} (Preparation {prep})',
+    '첫 판단의 단서: {count}개 (준비 {prep})',
+  ],
+  'v2.gd.planFirst': ['First look: {look}', '첫 장면: {look}'],
   'v2.stat.brand': ['Brand', '브랜드'],
   'v2.stat.gauge': ['Breakthrough', '브레이크스루'],
   'v2.inj.eyebrow': ['Pregame medical check', '경기 전 메디컬 체크'],

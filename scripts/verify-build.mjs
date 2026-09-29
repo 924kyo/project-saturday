@@ -83,6 +83,16 @@ for (const assetName of ['pwa-192x192.png', 'pwa-512x512.png', 'maskable-icon-51
   }
 }
 
+// Offline must keep the self-hosted display face: every built font is precached exactly once.
+const fontAssets = assets.filter(({ name }) => name.endsWith('.woff2'));
+if (fontAssets.length === 0) throw new Error('Built app should include its self-hosted fonts.');
+for (const { name } of fontAssets) {
+  const occurrences = serviceWorker.split(name).length - 1;
+  if (occurrences !== 1) {
+    throw new Error(`Service worker should precache ${name} exactly once; found ${occurrences}.`);
+  }
+}
+
 const manifestOccurrences = serviceWorker.split('manifest.webmanifest').length - 1;
 if (manifestOccurrences !== 1) {
   throw new Error(
