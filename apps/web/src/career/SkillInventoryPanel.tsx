@@ -1,12 +1,13 @@
-import type { CareerRun, SkillId } from '@project-saturday/game-core';
+import type { SkillId } from '@project-saturday/game-core';
 import type { SupportedLocale } from '@project-saturday/game-content/locales';
 
 import { useAppTranslation } from '../i18n/i18n';
 import { getEquippedSkillSlots, getOwnedSkillInventory } from './skill-ui';
 import { SkillCard } from './SkillCard';
+import type { WrCareerSurface } from './wr-view';
 
 export interface SkillInventoryPanelProps {
-  readonly career: CareerRun;
+  readonly career: WrCareerSurface;
   readonly controlsDisabled: boolean;
   readonly locale: SupportedLocale;
   readonly onSetSlot: (slotIndex: number, skillId: SkillId | null) => void;

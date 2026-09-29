@@ -303,7 +303,8 @@ Mandatory before M8 under `docs/exec-plans/active/m7-5-playtest-correction.md`. 
           - [x] Shared WR engine codec boundary and unselected v8 facade: 388 web/static gate, exact previous proofs, current game transaction/retry/recovery and foreign-snapshot isolation.
           - [x] Staged atomic v8 session/meta/detail/snapshot/recovery publication: 390 web/final 11-case sentinel/static/PWA gate; actual memory/IndexedDB abort/retry, two current retirements and literal legacy migration pass.
           - [x] Stage WR aggregate frontend command dispatcher and bounded read-only Hub history port; two full current command paths and 12 storage/history tests plus scoped static gate pass.
-          - [ ] Shared WR v7/v8 presentation, resolved/terminal panels and App/Hub wiring; added-position retained-current aggregate integration, then coordinated activation and required production browser coverage.
+          - [x] Shared read-only WR v7/v8 presentation plus explicit resolved-snap continuation and two-season review/completion panels; 404 web/363 content/322 core, repo static and build/PWA green (2026-09-29). App shell still selects v7.
+          - [ ] App/Hub wiring over the staged dispatcher/storage; added-position retained-current aggregate integration, then coordinated activation and required production browser coverage.
   - [ ] Map every current position into detached public/earned-information frames with original schematic geometry, truthful historical fallback and no hidden probabilities or future outcome leakage.
 - [ ] Ship the responsive accessible 2D Tactical Snap Board, plain-language-first decision preview, deterministic resolved play, score/drive atmosphere, and post-game story/reactions.
 - [ ] Pass both locales, mobile/desktop/320 px, keyboard/screen-reader, reduced-motion, online/offline, failure/retry, transfer, historical compatibility, PWA, and full aggregate gates.

@@ -1,13 +1,13 @@
-import type { CareerSession } from '@project-saturday/game-core';
 import { deriveShippedOffFieldWeekProjection } from '@project-saturday/game-content/content';
+import type { WrSessionSurface } from './wr-view';
 
-export function hasBlockingOffFieldDecision(session: CareerSession): boolean {
+export function hasBlockingOffFieldDecision(session: WrSessionSurface): boolean {
   return (
     deriveShippedOffFieldWeekProjection(session)?.nil.activeObligation?.resolutionRequired === true
   );
 }
 
-export function hasBlockingSeasonDecision(session: CareerSession): boolean {
+export function hasBlockingSeasonDecision(session: WrSessionSurface): boolean {
   const phase = session.career.phase;
   if (
     phase.type === 'EVENT_CHOICE' ||

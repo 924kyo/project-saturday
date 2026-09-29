@@ -406,6 +406,7 @@ export {
   decideNilOffer,
   deriveRelationshipContextProjection,
   deriveRelationshipFootballEffects,
+  projectRelationshipContextV1,
   expireNilOffers,
   resolveAcademicCheckpoint,
   resolveNilObligation,

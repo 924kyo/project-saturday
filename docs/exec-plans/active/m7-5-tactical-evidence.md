@@ -1,6 +1,6 @@
 # M7.5 B1 — Versioned Tactical Evidence
 
-Status: B1a/B1b staged and verified, B1c active, 2026-09-14. Parent: `m7-5-playtest-correction.md`. M10 unchanged.
+Status: B1a/B1b staged and verified, B1c active (shared presentation verified 2026-09-29). Parent: `m7-5-playtest-correction.md`. M10 unchanged.
 
 The bounded desktop snapshot detour is complete (`../completed/m7-5-desktop-snapshot.md`): actual executable/NSIS built, application offline Game Day/Hub/exact relaunch verified. Resume the WR v8 prerequisite below. Apply `TEST_GATE_TIERS.md`; prior full non-browser evidence remains valid until relevant inputs change. The new mandatory B6 actual-UI four-position parity pass follows B2–B5 and precedes Phase C/M8; do not interrupt or roll back B1 for it.
 
@@ -16,6 +16,8 @@ Give the existing owning football engines sufficient retained evidence for a sha
 4. **B1d — public frames.** Map real four-position source evidence into detached immutable frames with explicit historical/untracked-data reasons, original schematic geometry and no presentation RNG. Extensible position IDs include LB/EDGE, but neither is advertised as playable early.
 
 ## Acceptance and verification
+
+Shared presentation checkpoint verified (2026-09-29): WR Career/Season/Game/Program/Off-field/Skill surfaces accept read-only v7|v8 unions without changing any parser, alias or command signature. `SNAP_RESOLVED` renders only saved evidence (score after, pattern, choice, result/yards, drive-finish flag) and continues through a separate explicit command; without a handler the button is disabled. Tagged second-season review renders both retained seasons (season-scoped production), career totals and explicit retirement with no offseason controls; current `CAREER_COMPLETE` renders the athlete from the retained review. Neutral v8 reuses only a marker-only v7 view (null whenever current evidence exists). Off-field projection validates v7 or full-source v8 (frozen v8 objects are memoized per object) and reads relationship state through a new phase-independent core projection. New paired ko-KR/en-US copy. A shared real v8 auto-player drives one transfer path through 11 new presentation cases plus both original command paths. 404 web/31 files, 363 content, 322 core, repo typecheck/lint/boundary/localized-copy/format/whitespace and build/export/PWA pass (360 modules, 21 entries/1847.98 KiB, football 429.31 kB). No App activation; B6 not claimed. Next: App/Hub ports and equivalent added-position current retention, then coordinated activation with full browser coverage.
 
 Frontend command/history checkpoint verified (2026-09-14, approximately 21:29 KST): two full Korean-name Stay/English-name transfer command paths reach two-season retirement with exact per-command reload; 12 wire/atomic/history cases and web typecheck/scoped lint/format pass. The eight-entry history port is read-only, uses the common lock, does not scan all alumni and rejects stale pagination/mismatched detail. No App/visual activation. Next adapt shared read-only WR presentation inputs and explicit saved-result/terminal panels, then App/Hub and added-position current retention together.
 

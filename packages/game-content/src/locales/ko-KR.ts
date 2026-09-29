@@ -8,6 +8,7 @@ import { koKRM7RbMessages } from './m7-rb.js';
 import { koKRM7CbMessages } from './m7-cb.js';
 import { koKROffFieldBatchMessages } from './off-field-batch-ko-KR.js';
 import { koKRHubMessages } from './m7-hub.js';
+import { koKRWrTerminalMessages } from './m75-wr-terminal.js';
 import { m7BuildKo } from './m7-builds.js';
 import { m7DirectKo } from './m7-direct.js';
 import { m7GameDayKo } from './m7-game-day.js';
@@ -19,6 +20,7 @@ export const koKRMessages = {
   ...m7DirectKo,
   ...m7BuildKo,
   ...koKRHubMessages,
+  ...koKRWrTerminalMessages,
   ...koKREventBatchMessages,
   ...koKRInjuryBatchMessages,
   ...koKRM6UiMessages,

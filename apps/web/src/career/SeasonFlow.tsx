@@ -1,7 +1,7 @@
 import {
   projectCompletedSeasonSummary,
   selectCurrentProgramId,
-  type CareerSession,
+  type CompletedSeasonSummary,
   type DepthRoleId,
   type EventChoiceId,
   type InjuryChoiceId,
@@ -21,12 +21,13 @@ import type { MessageKey, SupportedLocale } from '@project-saturday/game-content
 
 import { useAppTranslation, type AppTranslate } from '../i18n/i18n';
 import { AthletePortrait } from './AthletePortrait';
+import { neutralWrSessionView, wrTerminalReview, type WrSessionSurface } from './wr-view';
 
 const CARD_PORTRAIT_SIZE = 'card' as const;
 
 export interface SeasonOverviewProps {
   readonly locale: SupportedLocale;
-  readonly session: CareerSession;
+  readonly session: WrSessionSurface;
 }
 
 export interface SeasonDecisionPanelProps extends SeasonOverviewProps {
@@ -86,7 +87,7 @@ function formatSnapRange(
 
 function offseasonOptionContent(
   option: TransferOptionProjectionV1,
-  session: CareerSession,
+  session: WrSessionSurface,
   locale: SupportedLocale,
   t: AppTranslate,
   controlsDisabled: boolean,
@@ -194,7 +195,7 @@ function offseasonOptionContent(
   );
 }
 
-function nextOpponentId(session: CareerSession): ProgramId | null {
+function nextOpponentId(session: WrSessionSurface): ProgramId | null {
   const currentProgramId = selectCurrentProgramId(session.career);
   if (session.world.calendar.type !== 'ACTIVE' || currentProgramId === null) {
     return null;
@@ -226,7 +227,7 @@ function nextOpponentId(session: CareerSession): ProgramId | null {
   return null;
 }
 
-function stageProgress(session: CareerSession, t: AppTranslate): string {
+function stageProgress(session: WrSessionSurface, t: AppTranslate): string {
   if (session.world.calendar.type !== 'ACTIVE') return t('career.season.progress.pending');
   const calendar = session.world.calendar;
   if (calendar.stage === 'CAMP') {
@@ -253,7 +254,7 @@ function stageProgress(session: CareerSession, t: AppTranslate): string {
   return t('career.season.progress.complete');
 }
 
-function activeRecord(session: CareerSession) {
+function activeRecord(session: WrSessionSurface) {
   const currentProgramId = selectCurrentProgramId(session.career);
   if (session.world.calendar.type !== 'ACTIVE' || currentProgramId === null) return null;
   return (
@@ -262,7 +263,7 @@ function activeRecord(session: CareerSession) {
   );
 }
 
-function activeStanding(session: CareerSession) {
+function activeStanding(session: WrSessionSurface) {
   const currentProgramId = selectCurrentProgramId(session.career);
   if (session.world.calendar.type !== 'ACTIVE' || currentProgramId === null) return null;
   return (
@@ -270,7 +271,7 @@ function activeStanding(session: CareerSession) {
   );
 }
 
-function riskPermille(session: CareerSession): number | null {
+function riskPermille(session: WrSessionSurface): number | null {
   if (session.career.seasonCareerState.bootstrapStatus !== 'ACTIVE') return null;
   const assessment = session.career.seasonCareerState.injuryState.lastAssessment;
   return assessment?.outcome === 'INJURY' || assessment?.outcome === 'NO_INJURY'
@@ -278,7 +279,7 @@ function riskPermille(session: CareerSession): number | null {
     : null;
 }
 
-function currentInjuryName(session: CareerSession, t: AppTranslate): string {
+function currentInjuryName(session: WrSessionSurface, t: AppTranslate): string {
   if (session.career.seasonCareerState.bootstrapStatus !== 'ACTIVE') {
     return t('career.season.availability.full');
   }
@@ -484,44 +485,18 @@ function InjuryChoicePanel({
   );
 }
 
-function SeasonReviewPanel({
-  onBootstrapNextSeason,
-  controlsDisabled,
-  locale,
-  onCompleteCareer,
-  onDecideOffseason,
-  onProjectOffseason,
-  session,
-}: SeasonDecisionPanelProps): React.JSX.Element | null {
-  const { t } = useAppTranslation(locale);
-  if (session.career.phase.type !== 'SEASON_REVIEW') return null;
-  const summary =
-    session.career.seasonCareerState.bootstrapStatus === 'COMPLETE'
-      ? session.career.seasonCareerState.lastCompletedSeason
-      : projectCompletedSeasonSummary(session);
-  if (summary === null) throw new Error('Season review is missing its authoritative summary.');
-  const offseason = session.career.offFieldCareerState.offseason;
-  const offFieldActive = session.career.offFieldCareerState.academics.bootstrapStatus === 'ACTIVE';
+function SeasonSummaryDetails({
+  seasonProduction = false,
+  summary,
+  t,
+}: {
+  /** Current two-season review separates season production from career totals. */
+  readonly seasonProduction?: boolean;
+  readonly summary: CompletedSeasonSummary;
+  readonly t: AppTranslate;
+}): React.JSX.Element {
   return (
-    <article className="season-review" data-testid="season-review">
-      <div className="season-review__identity">
-        <AthletePortrait
-          appearance={session.career.player.appearance}
-          label={t('career.player.portraitLabel', { name: session.career.player.displayName })}
-          size={CARD_PORTRAIT_SIZE}
-        />
-        <div>
-          <p className="step-mark">{t('career.season.phase.review')}</p>
-          <h3>{outcomeName(t, summary.outcomeId)}</h3>
-          <p>
-            {t('career.season.review.record', {
-              losses: summary.programLosses,
-              ties: summary.programTies,
-              wins: summary.programWins,
-            })}
-          </p>
-        </div>
-      </div>
+    <>
       <dl className="season-review-grid">
         <div>
           <dt>{t('career.season.review.rank')}</dt>
@@ -536,7 +511,13 @@ function SeasonReviewPanel({
           <dd>{summary.averagePerformanceGrade}</dd>
         </div>
         <div>
-          <dt>{t('career.season.review.receiving')}</dt>
+          <dt>
+            {t(
+              seasonProduction
+                ? 'career.season.finalReview.seasonProduction'
+                : 'career.season.review.receiving',
+            )}
+          </dt>
           <dd>
             {t('career.season.review.receivingValue', {
               catches: summary.cumulativeStats.receptions,
@@ -572,6 +553,52 @@ function SeasonReviewPanel({
           })}
         </p>
       )}
+    </>
+  );
+}
+
+function SeasonReviewPanel({
+  onBootstrapNextSeason,
+  controlsDisabled,
+  locale,
+  onCompleteCareer,
+  onDecideOffseason,
+  onProjectOffseason,
+  session,
+}: SeasonDecisionPanelProps): React.JSX.Element | null {
+  const { t } = useAppTranslation(locale);
+  if (session.career.phase.type !== 'SEASON_REVIEW') return null;
+  const neutralSession = neutralWrSessionView(session);
+  const summary =
+    session.career.seasonCareerState.bootstrapStatus === 'COMPLETE'
+      ? session.career.seasonCareerState.lastCompletedSeason
+      : neutralSession === null
+        ? null
+        : projectCompletedSeasonSummary(neutralSession);
+  if (summary === null) throw new Error('Season review is missing its authoritative summary.');
+  const offseason = session.career.offFieldCareerState.offseason;
+  const offFieldActive = session.career.offFieldCareerState.academics.bootstrapStatus === 'ACTIVE';
+  return (
+    <article className="season-review" data-testid="season-review">
+      <div className="season-review__identity">
+        <AthletePortrait
+          appearance={session.career.player.appearance}
+          label={t('career.player.portraitLabel', { name: session.career.player.displayName })}
+          size={CARD_PORTRAIT_SIZE}
+        />
+        <div>
+          <p className="step-mark">{t('career.season.phase.review')}</p>
+          <h3>{outcomeName(t, summary.outcomeId)}</h3>
+          <p>
+            {t('career.season.review.record', {
+              losses: summary.programLosses,
+              ties: summary.programTies,
+              wins: summary.programWins,
+            })}
+          </p>
+        </div>
+      </div>
+      <SeasonSummaryDetails summary={summary} t={t} />
       {!offFieldActive && (
         <button
           className="primary-action"
@@ -684,6 +711,90 @@ function SeasonReviewPanel({
   );
 }
 
+/** Current v8 terminal review: both seasons come from the retained source-validated record. */
+function TwoSeasonReviewPanel({
+  controlsDisabled,
+  locale,
+  onCompleteCareer,
+  session,
+}: SeasonDecisionPanelProps): React.JSX.Element | null {
+  const { t } = useAppTranslation(locale);
+  const review = wrTerminalReview(session.career);
+  if (review === null || session.career.phase.type !== 'SEASON_REVIEW') return null;
+  const totals = review.careerTotals;
+  return (
+    <article className="season-review" data-testid="season-review-final">
+      <div className="season-review__identity">
+        <AthletePortrait
+          appearance={session.career.player.appearance}
+          label={t('career.player.portraitLabel', { name: session.career.player.displayName })}
+          size={CARD_PORTRAIT_SIZE}
+        />
+        <div>
+          <p className="step-mark">{t('career.season.phase.review')}</p>
+          <h3>{t('career.season.finalReview.title')}</h3>
+          <p>{t('career.season.finalReview.help')}</p>
+        </div>
+      </div>
+      {review.seasons.map((season) => (
+        <section
+          aria-labelledby={`final-review-season-${season.seasonIndex}`}
+          className="season-review__season"
+          data-testid={`final-review-season-${season.seasonIndex}`}
+          key={season.seasonIndex}
+        >
+          <h4 id={`final-review-season-${season.seasonIndex}`}>
+            {t('career.season.finalReview.season', {
+              number: season.seasonIndex + 1,
+              program: programName(t, season.programId),
+            })}
+          </h4>
+          <p>
+            <strong>{outcomeName(t, season.summary.outcomeId)}</strong>{' '}
+            {t('career.season.review.record', {
+              losses: season.summary.programLosses,
+              ties: season.summary.programTies,
+              wins: season.summary.programWins,
+            })}
+          </p>
+          <SeasonSummaryDetails seasonProduction summary={season.summary} t={t} />
+        </section>
+      ))}
+      <section
+        aria-labelledby="final-review-totals"
+        className="season-review__totals"
+        data-testid="final-review-totals"
+      >
+        <h4 id="final-review-totals">{t('career.season.finalReview.totals')}</h4>
+        <p>
+          {t('career.season.finalReview.totalRecord', {
+            games: totals.gamesPlayed,
+            losses: totals.losses,
+            ties: totals.ties,
+            wins: totals.wins,
+          })}
+        </p>
+        <p>
+          {t('career.season.review.receivingValue', {
+            catches: totals.cumulativeStats.receptions,
+            touchdowns: totals.cumulativeStats.receivingTouchdowns,
+            yards: totals.cumulativeStats.receivingYards,
+          })}
+        </p>
+      </section>
+      <button
+        className="primary-action"
+        data-testid="retire-career"
+        disabled={controlsDisabled}
+        type="button"
+        onClick={onCompleteCareer}
+      >
+        {t('career.season.finalReview.retire')}
+      </button>
+    </article>
+  );
+}
+
 function AlumniPanel({
   controlsDisabled,
   locale,
@@ -694,12 +805,42 @@ function AlumniPanel({
   const { t } = useAppTranslation(locale);
   if (session.career.phase.type !== 'CAREER_COMPLETE') return null;
   const currentAlumnus = meta.alumni.find(({ careerId }) => careerId === session.career.id);
+  const terminalReview = wrTerminalReview(session.career);
   return (
     <article className="alumni-legacy" data-testid="career-complete">
       <p className="step-mark">{t('career.season.phase.complete')}</p>
       <h3>{t('career.season.complete.heading', { name: session.career.player.displayName })}</h3>
       <p>{t('career.season.complete.help')}</p>
-      {currentAlumnus !== undefined && (
+      {terminalReview !== null && (
+        <div className="alumni-feature" data-testid="career-complete-current">
+          <AthletePortrait
+            appearance={session.career.player.appearance}
+            label={t('career.player.portraitLabel', { name: session.career.player.displayName })}
+            size={CARD_PORTRAIT_SIZE}
+          />
+          <div>
+            <strong>{outcomeName(t, terminalReview.seasons[1].summary.outcomeId)}</strong>
+            <span>
+              {t('career.season.complete.seasons', { count: terminalReview.seasons.length })}
+            </span>
+            <span>
+              {t('career.season.complete.programs', {
+                programs: [...new Set(terminalReview.seasons.map(({ programId }) => programId))]
+                  .map((programId) => programName(t, programId))
+                  .join(' · '),
+              })}
+            </span>
+            <span>
+              {t('career.season.complete.statLine', {
+                catches: terminalReview.careerTotals.cumulativeStats.receptions,
+                touchdowns: terminalReview.careerTotals.cumulativeStats.receivingTouchdowns,
+                yards: terminalReview.careerTotals.cumulativeStats.receivingYards,
+              })}
+            </span>
+          </div>
+        </div>
+      )}
+      {terminalReview === null && currentAlumnus !== undefined && (
         <div className="alumni-feature">
           <AthletePortrait
             appearance={currentAlumnus.appearance}
@@ -773,7 +914,12 @@ export function SeasonDecisionPanel(props: SeasonDecisionPanelProps): React.JSX.
   }
   if (career.phase.type === 'EVENT_CHOICE') return <EventChoicePanel {...props} />;
   if (career.phase.type === 'INJURY_CHOICE') return <InjuryChoicePanel {...props} />;
-  if (career.phase.type === 'SEASON_REVIEW') return <SeasonReviewPanel {...props} />;
+  if (career.phase.type === 'SEASON_REVIEW')
+    return wrTerminalReview(career) === null ? (
+      <SeasonReviewPanel {...props} />
+    ) : (
+      <TwoSeasonReviewPanel {...props} />
+    );
   if (career.phase.type === 'CAREER_COMPLETE') return <AlumniPanel {...props} />;
   if (
     career.phase.type === 'PLAN_ACTIONS' &&

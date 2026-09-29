@@ -1,7 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import type {
-  CareerRun,
-  CareerSession,
   DepthRoleId,
   EventChoiceId,
   InjuryChoiceId,
@@ -68,11 +66,12 @@ import {
   type PassiveRecoverySkillEffectPresentation,
 } from './skill-ui';
 import { formatHeight, formatSignedNumber, formatWeight } from './units';
+import type { WrCareerSurface, WrSessionSurface } from './wr-view';
 
 export interface CareerScreenProps {
   readonly busy: boolean;
-  readonly career: CareerRun;
-  readonly session: CareerSession;
+  readonly career: WrCareerSurface;
+  readonly session: WrSessionSurface;
   readonly meta: MetaProfileV1;
   readonly locale: SupportedLocale;
   readonly onboardingSettings: OnboardingSettings;
@@ -80,6 +79,8 @@ export interface CareerScreenProps {
   readonly onBeginRecruiting: () => void;
   readonly onChooseProgram: (programId: ProgramId) => void;
   readonly onChooseGameDecision: (decisionId: KeySnapDecisionId) => void;
+  /** Current-rules WR only; historical v7 careers never enter SNAP_RESOLVED. */
+  readonly onContinueSnap?: () => void;
   readonly onChooseEvent: (choiceId: EventChoiceId) => void;
   readonly onChooseInjury: (choiceId: InjuryChoiceId) => void;
   readonly onChooseSkill: (skillId: SkillId) => void;
@@ -144,14 +145,17 @@ interface NavigationSelection {
   readonly surface: string;
 }
 
-function recommendedDestination(career: CareerRun, recruitingDecision: boolean): CareerDestination {
+function recommendedDestination(
+  career: WrCareerSurface,
+  recruitingDecision: boolean,
+): CareerDestination {
   if (recruitingDecision) {
     return 'team';
   }
   return career.phase.type === 'SKILL_BREAKTHROUGH' ? 'skills' : 'week';
 }
 
-function nestedDecisionSurface(career: CareerRun): string | null {
+function nestedDecisionSurface(career: WrCareerSurface): string | null {
   if (career.phase.type === 'SEASON_REVIEW') {
     return `SEASON_REVIEW:${career.offFieldCareerState.offseason.status}`;
   }
@@ -171,7 +175,7 @@ function assertNeverPhase(phase: never): never {
   throw new Error(`Unsupported career phase: ${JSON.stringify(phase)}`);
 }
 
-function getPhaseCopy(phase: CareerRun['phase']): PhaseCopy {
+function getPhaseCopy(phase: WrCareerSurface['phase']): PhaseCopy {
   switch (phase.type) {
     case 'PLAN_ACTIONS':
       return { pillKey: 'career.week.phase.plan', titleKey: 'career.week.plan.title' };
@@ -188,6 +192,8 @@ function getPhaseCopy(phase: CareerRun['phase']): PhaseCopy {
       return { pillKey: 'career.game.phase.preview', titleKey: 'career.game.preview.title' };
     case 'KEY_SNAP':
       return { pillKey: 'career.game.phase.keySnap', titleKey: 'career.game.keySnap.title' };
+    case 'SNAP_RESOLVED':
+      return { pillKey: 'career.game.phase.resolved', titleKey: 'career.game.resolved.title' };
     case 'POST_GAME':
       return { pillKey: 'career.game.phase.postGame', titleKey: 'career.game.postGame.title' };
     case 'EVENT_CHOICE':
@@ -563,6 +569,7 @@ export function CareerScreen({
   onBeginRecruiting,
   onChooseProgram,
   onChooseGameDecision,
+  onContinueSnap,
   onChooseEvent,
   onChooseInjury,
   onChooseSkill,
@@ -1013,12 +1020,14 @@ export function CareerScreen({
 
             {(career.phase.type === 'GAME_PREVIEW' ||
               career.phase.type === 'KEY_SNAP' ||
+              career.phase.type === 'SNAP_RESOLVED' ||
               career.phase.type === 'POST_GAME') && (
               <GameFlow
                 career={career}
                 controlsDisabled={controlsDisabled}
                 locale={locale}
                 onChooseDecision={onChooseGameDecision}
+                onContinueSnap={onContinueSnap}
                 onStartGame={onStartGame}
               />
             )}

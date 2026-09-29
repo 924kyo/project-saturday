@@ -1,5 +1,4 @@
 import type {
-  CareerSession,
   NilEffect,
   NilObligationResolutionId,
   NilOfferDecisionId,
@@ -12,10 +11,11 @@ import {
 import type { MessageKey, SupportedLocale } from '@project-saturday/game-content/locales';
 
 import { useAppTranslation, type AppTranslate } from '../i18n/i18n';
+import type { WrSessionSurface } from './wr-view';
 
 export interface OffFieldOverviewProps {
   readonly locale: SupportedLocale;
-  readonly session: CareerSession;
+  readonly session: WrSessionSurface;
   readonly detailed?: boolean;
 }
 

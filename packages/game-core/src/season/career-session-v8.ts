@@ -165,7 +165,7 @@ export function parseCareerSessionV8(
       ? deepFreeze({ ok: true, session: snapshot as CareerSessionV8 })
       : deepFreeze({
           ok: false,
-          reason: 'session_parse.invalid_session',
+          reason: 'session_parse.invalid_session' as const,
           issues: validation.issues,
         });
   }

@@ -1,5 +1,4 @@
 import type {
-  CareerRun,
   DepthRoleId,
   GameInformationTierId,
   GamePlayResultId,
@@ -14,6 +13,7 @@ import type { MessageKey, SupportedLocale } from '@project-saturday/game-content
 import { useAppTranslation, type AppTranslate } from '../i18n/i18n';
 import { ATTRIBUTE_LABEL_KEYS } from './career-ui';
 import { formatSignedNumber } from './units';
+import { wrResolvedSnap, wrTacticalGame, type WrCareerSurface } from './wr-view';
 
 const ROLE_LABEL_KEYS = {
   depth_role_starter: 'career.program.role.starter',
@@ -52,10 +52,11 @@ const PLAY_RESULT_LABEL_KEYS = {
 } as const satisfies Readonly<Record<GamePlayResultId, MessageKey>>;
 
 export interface GameFlowProps {
-  readonly career: CareerRun;
+  readonly career: WrCareerSurface;
   readonly controlsDisabled: boolean;
   readonly locale: SupportedLocale;
   readonly onChooseDecision: (decisionId: KeySnapDecisionId) => void;
+  readonly onContinueSnap?: (() => void) | undefined;
   readonly onStartGame: () => void;
 }
 
@@ -287,6 +288,66 @@ function GameKeySnap({
   );
 }
 
+/** Saved current-rules result; continuing is a separate explicit command, never automatic. */
+function GameResolvedSnap({
+  career,
+  controlsDisabled,
+  locale,
+  onContinueSnap,
+}: Pick<GameFlowProps, 'career' | 'controlsDisabled' | 'locale' | 'onContinueSnap'>) {
+  const { t } = useAppTranslation(locale);
+  const resolved = wrResolvedSnap(career);
+  const preview = wrTacticalGame(career)?.source.phase;
+  if (resolved === null || preview?.type !== 'GAME_PREVIEW') return null;
+  const { play } = resolved;
+  const pattern = gameContent.patterns.find(({ id }) => id === play.patternId);
+  const decision = gameContent.decisions.find(({ id }) => id === play.decisionId);
+  if (pattern === undefined || decision === undefined) {
+    throw new Error(`Missing play presentation for ${play.keySnapId}.`);
+  }
+  const { matchup } = preview;
+
+  return (
+    <div className="game-flow resolved-snap-flow" data-testid="game-snap-resolved">
+      {scoreBoard(
+        t,
+        matchup.playerProgramId,
+        matchup.opponentProgramId,
+        play.scoreAfter.playerTeam,
+        play.scoreAfter.opponent,
+      )}
+      <section
+        className="resolved-snap"
+        aria-labelledby="resolved-snap-heading"
+        data-result={play.resultId}
+        role="status"
+      >
+        <p className="step-mark">{contentMessage(t, pattern.nameKey)}</p>
+        <h3 id="resolved-snap-heading">
+          {t('career.game.resolved.outcome', {
+            result: t(PLAY_RESULT_LABEL_KEYS[play.resultId]),
+            yards: play.receivingYardsDelta,
+          })}
+        </h3>
+        <p>{t('career.game.resolved.choice', { decision: contentMessage(t, decision.nameKey) })}</p>
+        <p className="game-flow__note">{t('career.game.resolved.help')}</p>
+        {resolved.finishPlayerDrive && (
+          <p className="game-flow__note">{t('career.game.resolved.driveFinish')}</p>
+        )}
+      </section>
+      <button
+        className="primary-action"
+        data-testid="continue-snap"
+        disabled={controlsDisabled || onContinueSnap === undefined}
+        type="button"
+        onClick={onContinueSnap}
+      >
+        {t(controlsDisabled ? 'career.game.saving' : 'career.game.resolved.continue')}
+      </button>
+    </div>
+  );
+}
+
 function GamePostGame({ career, locale }: Pick<GameFlowProps, 'career' | 'locale'>) {
   const { t } = useAppTranslation(locale);
   if (career.phase.type !== 'POST_GAME') return null;
@@ -426,6 +487,8 @@ export function GameFlow(props: GameFlowProps): React.JSX.Element | null {
       return <GamePreview {...props} />;
     case 'KEY_SNAP':
       return <GameKeySnap {...props} />;
+    case 'SNAP_RESOLVED':
+      return <GameResolvedSnap {...props} />;
     case 'POST_GAME':
       return <GamePostGame {...props} />;
     default:

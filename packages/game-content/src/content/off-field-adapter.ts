@@ -1,14 +1,15 @@
 import {
   bootstrapOffFieldSystems,
   decideNilOffer,
-  deriveRelationshipContextProjection,
   expireNilOffers,
   resolveAcademicCheckpoint,
   resolveNilObligation,
   resolveWeeklyRelationships,
+  projectRelationshipContextV1,
   selectNilOffer,
   validateCareerSession,
   type CareerSession,
+  type CareerSessionV8,
   type NilObligationResolutionId,
   type NilOfferDecisionId,
   type NilOfferId,
@@ -24,6 +25,7 @@ import { offFieldMechanicsCatalog } from './off-field.js';
 import { deriveShippedEventContextTagIds } from './event-adapter.js';
 import { programMechanicsDefinitions } from './programs.js';
 import { skillMechanicsDefinitions } from './skills.js';
+import { isValidShippedWrSession } from './wr-tactical-mechanics.js';
 
 export type OffFieldSessionCommandResult =
   | { readonly ok: true; readonly session: CareerSession }
@@ -76,9 +78,9 @@ function invalid(session: CareerSession): OffFieldSessionCommandResult {
 }
 
 export function deriveShippedOffFieldWeekProjection(
-  session: CareerSession,
+  session: CareerSession | CareerSessionV8,
 ): ShippedOffFieldWeekProjection | null {
-  if (!validateCareerSession(session).ok) return null;
+  if (!isValidShippedWrSession(session)) return null;
   const academics = session.career.offFieldCareerState.academics;
   const relationships = session.career.offFieldCareerState.relationships;
   const nil = session.career.offFieldCareerState.nil;
@@ -90,8 +92,8 @@ export function deriveShippedOffFieldWeekProjection(
   ) {
     return null;
   }
-  const relationshipProjection = deriveRelationshipContextProjection(
-    session.career,
+  const relationshipProjection = projectRelationshipContextV1(
+    relationships,
     offFieldMechanicsCatalog,
   );
   if (relationshipProjection === null) return null;

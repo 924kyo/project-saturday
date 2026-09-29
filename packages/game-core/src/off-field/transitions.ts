@@ -578,6 +578,17 @@ export function deriveRelationshipContextProjection(
   if (!validateCareerRun(career).ok) return null;
   const relationships = career.offFieldCareerState.relationships;
   if (relationships.bootstrapStatus !== 'ACTIVE') return null;
+  return projectRelationshipContextV1(relationships, definitions);
+}
+
+/**
+ * Phase-independent read of already validated relationship state. Callers own whole-career
+ * validation (v7 or v8); this only checks the catalog/track pairing it reads.
+ */
+export function projectRelationshipContextV1(
+  relationships: ActiveRelationshipCareerStateV1,
+  definitions: OffFieldMechanicsCatalog,
+): RelationshipContextProjectionV1 | null {
   const footballEffects = deriveRelationshipFootballEffects(relationships, definitions);
   if (footballEffects === null) return null;
   const tagIds: RelationshipContextTagId[] = [];

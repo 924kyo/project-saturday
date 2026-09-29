@@ -12,15 +12,15 @@ M7.5 — Career operations and Game Day experience.
 
 ## Status
 
-IN PROGRESS. M7 and M7.5 Phase A complete; B1 tactical evidence staged, not live. Bounded efficiency/desktop snapshot detour complete. B6 Four-position UX Parity Pass is mandatory after B2–B5, before Phase C and M8. M10 unchanged.
+IN PROGRESS. M7 and M7.5 Phase A complete; B1 tactical evidence staged, not live; B1c shared WR presentation verified 2026-09-29 (App still v7). Bounded efficiency/desktop snapshot detour complete. B6 Four-position UX Parity Pass is mandatory after B2–B5, before Phase C and M8. M10 unchanged.
 
 ## Last completed task
 
-Staged aggregate WR frontend command dispatcher completes Korean-name Stay and English-name transfer paths through both seasons and retirement with exact reload after every command. Read-only Hub history port loads eight details per page, rejects stale pagination and separates corrupt details without scanning all history. Two full command-path and 12 wire/storage/history tests plus web static/scoped format pass. Prior 390-web/PWA atomic gate retained. No App activation or actual B6 UI claim.
+Shared read-only WR v7/v8 presentation (2026-09-29, Claude handoff session). Career/Season/Game/Program/Off-field/Skill surfaces accept both saved versions; explicit saved `SNAP_RESOLVED` panel with separate continuation; tagged two-season review (both retained seasons, career totals, explicit retirement) and current two-season completion panel. Off-field projection validates v7 or full-source v8 and reads relationships via new pure `projectRelationshipContextV1`. Paired ko-KR/en-US copy. Shared real v8 auto-player test helper; 11 new presentation cases. No App activation or B6 claim.
 
 ## Current / next task
 
-B1c: adapt shared WR presentation to read-only v7/v8 surfaces, including explicit resolved-snap continuation and two-season terminal panels; then connect App/Hub ports alongside equivalent added-position current aggregate retention before coordinated activation. Preserve original proofs and bounded per-envelope/command budgets. B1d/B2–B6/Phase C still precede M8.
+B1c: connect App/Hub ports to the staged v8 dispatcher, atomic storage and eight-entry history page alongside equivalent added-position current aggregate retention; then coordinated activation (browser save writer change ⇒ full production browser matrix trigger). Preserve original proofs and bounded per-envelope/command budgets. B1d/B2–B6/Phase C still precede M8.
 
 ## Active exec plan
 
@@ -38,6 +38,7 @@ B1c: adapt shared WR presentation to read-only v7/v8 surfaces, including explici
 
 ## Latest green verification
 
+- Presentation scope (2026-09-29 ~16:30 KST): 404 web cases/31 files, 363 content, 322 core; repo typecheck, lint/boundary/localized-copy, scoped format/whitespace; build/export/PWA (360 modules, 21 entries/1847.98 KiB, football 429.31 kB, all JS < 500 kB). No browser run (no writer/codec/shell change). Handoff re-check before edits: repo typecheck/lint and 14 focused v8 command/wire cases green.
 - Tier: Tier 1 unselected save-8 codec atomic gate; terminal non-browser integration green, full B1 and live writer/browser integration pending.
 - Date: 2026-09-14, approximately 20:41 KST (registry); codec 20:23; full domain/workspace/build 20:15; native build 17:59, actual offline smoke approximately 18:07.
 - Static: repository typecheck, lint, architecture/localized-copy checks, scoped format and whitespace pass.
@@ -61,7 +62,8 @@ B1c: adapt shared WR presentation to read-only v7/v8 surfaces, including explici
 
 ## Recent checkpoints
 
-1. 2026-09-14 — Four full WR playing paths expose second-season review failure; harness 68 cases/static/build green, full-life profile exits 1. Peak estimate 319,644 bytes, max command/parse 99.237/42.149 ms. Versioned terminal fix next.
+1. 2026-09-29 — Claude handoff. Repository matched PROGRESS except: git history is squashed (two checkpoint commits, no per-task trail); pure selectors in `career-ui`/`program-ui`/`skill-ui` already accepted v7|v8 via `wr-view.ts` (unrecorded start of this task). Shared presentation then completed as above.
+2. 2026-09-14 — Four full WR playing paths expose second-season review failure; harness 68 cases/static/build green, full-life profile exits 1. Peak estimate 319,644 bytes, max command/parse 99.237/42.149 ms. Versioned terminal fix next.
    Follow-up: explicit v8 review and full source-replayed records now pass 386 core/testkit + ten season content; all four paths reload the new review. Retirement is next, with no full-life completion claim.
    Terminal follow-up: explicit retirement/lossless alumni/mixed meta now pass four full domain profiles and 1,126 workspace/ten script cases plus build/PWA. Browser codec/persistence/activation remains next.
    Codec follow-up: unselected save-8 decoder/creator passes 52 storage cases and scoped static checks; original proofs remain literal. Meta capacity/registry and atomic engine integration next.
@@ -70,10 +72,9 @@ B1c: adapt shared WR presentation to read-only v7/v8 surfaces, including explici
    Engine follow-up: 388 web cases plus repo static/whitespace pass; staged v8 uses the existing locking/conflict/recovery engine, original proofs retained and foreign snapshots excluded. Atomic retirement/meta publication next.
    Atomic follow-up: 390 web/final 11-case sentinel/static/build gate passes; actual memory/IndexedDB rollback/retry, legacy migration and two successive current alumni persist exactly. Frontend/Hub and equivalent four-position current aggregate integration remain next.
    Frontend-port follow-up: two complete Stay/transfer command paths and 12 wire/atomic/history cases plus scoped static gate pass. Shared view types/resolved and two-season panels/App wiring remain next.
-2. 2026-09-14 — WR v8 explicit commands and lifecycle bridge: 316 core/38 focused/ten season content, repo static/core build green. Complete current-life profiles/persistence next.
-3. 2026-09-14 — WR v8 current career/session integration: 1,117 workspace/ten script cases, static/build/PWA green. Prior 379-case whole-game and 376-case resolved-boundary gates retained in archive.
-4. 2026-09-14 — WR owning-drive/context staging: 375 core/testkit, ten season content and static/format green; 64 current seeded games, shipping still historical.
-5. 2026-09-14 — WR owning-kernel physical/context staging: 373 core/testkit, ten season content and static/format green; shipping calls remain historical.
+3. 2026-09-14 — WR v8 explicit commands and lifecycle bridge: 316 core/38 focused/ten season content, repo static/core build green. Complete current-life profiles/persistence next.
+4. 2026-09-14 — WR v8 current career/session integration: 1,117 workspace/ten script cases, static/build/PWA green. Prior 379-case whole-game and 376-case resolved-boundary gates retained in archive.
+5. 2026-09-14 — WR owning-drive/context staging: 375 core/testkit, ten season content and static/format green; 64 current seeded games, shipping still historical.
 
 ## Milestone ledger
 

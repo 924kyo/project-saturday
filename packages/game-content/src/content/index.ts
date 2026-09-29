@@ -149,3 +149,4 @@ export {
 } from './weekly-actions.js';
 export { positionFocusInjuryPolicies, positionCommonFocusDefinitions } from './position-focus.js';
 export { positionSkillBuilds, positionSkillActionTags } from './position-skill-builds.js';
+export { isValidShippedWrSession, shippedWrTacticalMechanicsV1 } from './wr-tactical-mechanics.js';

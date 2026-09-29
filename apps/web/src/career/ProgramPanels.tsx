@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import type {
-  CareerRun,
   DepthMovement,
   DepthRoleId,
   DepthUpdateEvidence,
@@ -21,6 +20,7 @@ import {
   type DepthOpportunitySuggestionId,
   type ProgramDepthParticipantPresentation,
 } from './program-ui';
+import type { WrCareerSurface } from './wr-view';
 
 const RECRUIT_TIER_KEYS = {
   recruit_tier_national: 'career.program.recruiting.tier.national',
@@ -94,7 +94,7 @@ function formatSnapRange(
 }
 
 function formatParticipantName(
-  career: CareerRun,
+  career: WrCareerSurface,
   participant: ProgramDepthParticipantPresentation,
   t: AppTranslate,
 ): string {
@@ -150,7 +150,7 @@ export function RecruitingStartPanel({
 
 interface ProgramRecruitingPanelProps {
   readonly busy: boolean;
-  readonly career: CareerRun;
+  readonly career: WrCareerSurface;
   readonly controlsDisabled: boolean;
   readonly headingRef: React.RefObject<HTMLHeadingElement | null>;
   readonly locale: SupportedLocale;
@@ -267,7 +267,7 @@ export function ProgramRecruitingPanel({
 }
 
 interface ProgramDepthPanelProps {
-  readonly career: CareerRun;
+  readonly career: WrCareerSurface;
   readonly locale: SupportedLocale;
 }
 
