@@ -159,6 +159,12 @@
 .s2-topbar__actions {
   display: flex;
   gap: 6px;
+  flex: none;
+}
+@media (max-width: 379px) {
+  .s2-brand__word {
+    display: none;
+  }
 }
 .s2-chipbtn {
   white-space: nowrap;
@@ -835,8 +841,12 @@
   flex-wrap: nowrap;
   white-space: nowrap;
   align-items: center;
-  gap: clamp(8px, 3vw, 18px);
-  font-size: clamp(56px, 16vw, 104px);
+  gap: clamp(6px, 3vw, 18px);
+  font-size: clamp(38px, 12vw, 104px);
+}
+.s2-final__score .s2-crest {
+  width: clamp(36px, 13vw, 96px);
+  height: auto;
 }
 .s2-result-w {
   color: var(--win);
@@ -1234,4 +1244,9 @@
   margin-left: 10px;
   padding-left: 10px;
   border-left: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.s2-banner--info {
+  background: color-mix(in srgb, var(--info) 14%, var(--surface));
+  border-color: var(--info);
 }

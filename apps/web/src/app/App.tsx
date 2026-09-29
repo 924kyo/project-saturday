@@ -25,17 +25,23 @@ import { useAppTranslation } from '../i18n/i18n';
 import { persistLocale } from '../i18n/locale';
 import { PwaUpdatePrompt } from '../pwa/PwaUpdatePrompt';
 import type { StorageAdapter } from '../storage';
-import './app2.css';
+import './app.css';
 import { program } from './content';
 import { CreateScreen } from './CreateScreen';
 import { GameDayScreen } from './GameDayScreen';
 import { clearCareerVNext, loadCareerVNext, saveCareerVNext } from './persistence';
+import {
+  dismissPrototypeNotice,
+  downloadJson,
+  exportPrototypeData,
+  hasPrototypeData,
+} from './prototype';
 import { PostGameScreen, SeasonEndScreen } from './PostGameScreen';
 import { RecruitScreen } from './RecruitScreen';
 import { teamStyle } from './theme';
 import { WeekScreen } from './WeekScreen';
 
-export interface App2Props {
+export interface AppProps {
   readonly storage: StorageAdapter;
   readonly seedFactory?: () => string;
 }
@@ -46,7 +52,7 @@ function browserSeed(): string {
   return `career-seed:${globalThis.crypto?.randomUUID?.() ?? Date.now().toString(36)}`;
 }
 
-export function App2({ storage, seedFactory = browserSeed }: App2Props): React.JSX.Element {
+export function App({ storage, seedFactory = browserSeed }: AppProps): React.JSX.Element {
   const { i18n, t } = useAppTranslation();
   const locale = (i18n.resolvedLanguage ?? DEFAULT_LOCALE) as SupportedLocale;
   const [career, setCareer] = useState<CareerVNext | null>(null);
@@ -55,6 +61,7 @@ export function App2({ storage, seedFactory = browserSeed }: App2Props): React.J
   const [pending, setPending] = useState<CareerVNext | null>(null);
   const [saving, setSaving] = useState(false);
   const [confirmNew, setConfirmNew] = useState(false);
+  const [prototype, setPrototype] = useState(false);
   const inFlight = useRef(false);
   const reducedMotion = useMemo(
     () => globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false,
@@ -73,6 +80,11 @@ export function App2({ storage, seedFactory = browserSeed }: App2Props): React.J
       if (loaded.status === 'corrupt') setNotice('corrupt');
       setBooting(false);
     });
+    void hasPrototypeData(storage)
+      .then((found) => {
+        if (active) setPrototype(found);
+      })
+      .catch(() => undefined);
     return () => {
       active = false;
     };
@@ -139,7 +151,7 @@ export function App2({ storage, seedFactory = browserSeed }: App2Props): React.J
         <header className="s2-topbar">
           <div className="s2-brand">
             <span aria-hidden="true" className="s2-brand__mark" />
-            <span>{t('app.title')}</span>
+            <span className="s2-brand__word">{t('app.title')}</span>
           </div>
           <div className="s2-topbar__actions">
             <button
@@ -176,6 +188,34 @@ export function App2({ storage, seedFactory = browserSeed }: App2Props): React.J
                 type="button"
               >
                 {t('v2.hub.confirmNewAction')}
+              </button>
+            </div>
+          </div>
+        )}
+        {prototype && (
+          <div className="s2-banner s2-banner--info" role="status">
+            <p>{t('v2.prototype.notice')}</p>
+            <div className="s2-row">
+              <button
+                className="s2-btn s2-btn--ghost"
+                onClick={() =>
+                  void exportPrototypeData(storage).then((json) =>
+                    downloadJson('project-saturday-prototype.json', json),
+                  )
+                }
+                type="button"
+              >
+                {t('v2.prototype.export')}
+              </button>
+              <button
+                className="s2-btn s2-btn--ghost"
+                onClick={() => {
+                  setPrototype(false);
+                  void dismissPrototypeNotice(storage);
+                }}
+                type="button"
+              >
+                {t('v2.prototype.dismiss')}
               </button>
             </div>
           </div>

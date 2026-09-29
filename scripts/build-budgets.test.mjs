@@ -4,8 +4,8 @@ import { verifyJavaScriptBudgets } from './build-budgets.mjs';
 
 const assets = [
   { name: 'index-a.js', bytes: 100_000 },
-  { name: 'CareerScreen-b.js', bytes: 500_000 },
-  { name: 'PositionAlphaCareerV2-c.js', bytes: 50_000 },
+  { name: 'App-b.js', bytes: 500_000 },
+  { name: 'vendor-c.js', bytes: 50_000 },
 ];
 const worker = assets.map(({ name }) => name).join(',');
 describe('production JavaScript budgets', () => {
@@ -25,8 +25,16 @@ describe('production JavaScript budgets', () => {
     assert.throws(() => verifyJavaScriptBudgets(assets, '', worker + worker), /precached/);
   });
   it('rejects missing or creation-preloaded career screens', () => {
-    assert.throws(() => verifyJavaScriptBudgets(assets.slice(0, 2), '', worker), /Missing lazy/);
-    for (const screen of assets.slice(1))
+    assert.throws(
+      () =>
+        verifyJavaScriptBudgets(
+          assets.filter(({ name }) => !name.startsWith('App-')),
+          '',
+          worker,
+        ),
+      /Missing lazy/,
+    );
+    for (const screen of assets.slice(1, 2))
       assert.throws(
         () =>
           verifyJavaScriptBudgets(

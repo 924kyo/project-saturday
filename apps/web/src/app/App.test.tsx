@@ -5,7 +5,7 @@ import { beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { createAppI18n } from '../i18n/i18n';
 import { MemoryStorageAdapter, type StorageStoreName } from '../storage';
-import { App2 } from './App2';
+import { App } from './App';
 import { VNEXT_CAREER_ID, loadCareerVNext, saveCareerVNext } from './persistence';
 
 vi.mock('virtual:pwa-register/react', () => ({
@@ -44,12 +44,12 @@ async function renderApp(storage: MemoryStorageAdapter) {
   const i18n = await createAppI18n('en-US');
   render(
     <I18nextProvider i18n={i18n}>
-      <App2 seedFactory={seedFactory} storage={storage} />
+      <App seedFactory={seedFactory} storage={storage} />
     </I18nextProvider>,
   );
 }
 
-describe('App2 vertical slice', () => {
+describe('App vertical slice', () => {
   it('plays create → recruit → week → Game Day → post-game → next week with retryable saves', async () => {
     const user = userEvent.setup();
     const storage = new FlakyStorage();

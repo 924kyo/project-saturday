@@ -14,9 +14,9 @@ Authoritative inputs: `docs/product-reconciliation/` (the audit, rebaseline, fro
 
 ## Sequence (revised)
 
-1. **V1 — Contract** (done: the contract document).
-2. **V2 — Vertical slice, QB:** Create → Recruit → This Week → Practice → Game Day tactical board → snap animation → Post-game → Next week, polished in the real browser.
-3. **V3 — Cutover:** meet the contract criterion, then delete the old UI and career presentation.
+1. **V1 — Contract** (done 2026-09-29).
+2. **V2 — Vertical slice, QB (done 2026-09-29; RB/CB also run in core and UI):** Create → Recruit → This Week → Practice → Game Day tactical board → snap animation → Post-game → Next week, polished in the real browser.
+3. **V3 — Cutover (done 2026-09-29; criterion evidence in PROGRESS):** meet the contract criterion, then delete the old UI and career presentation.
 4. **V4 — Expansion:** RB/CB/WR adapters; events, injuries, NIL alerts; season review, offseason/transfer, season two, retirement, Alumni Wall and Hub.
 5. **V5 — Release-boundary gate** for R.
 

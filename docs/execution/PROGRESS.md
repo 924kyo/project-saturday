@@ -1,6 +1,6 @@
 # Project Progress
 
-> Primary resume checkpoint. Historical detail is preserved under `docs/execution/progress-archive/`.
+> Primary resume checkpoint. Historical detail is preserved under `docs/execution/progress-archive/` (pre-rebuild state: `2026-09-29-pre-rebuild.md`).
 
 ## Target
 
@@ -8,101 +8,120 @@ M10 — 1.0 Release Candidate (unchanged).
 
 ## Current milestone
 
-R — Product Reconciliation & Frontend Rebuild (inserted before M8 on 2026-09-29; absorbs unfinished M7.5 B1c–B6/Phase C).
+R — Product Reconciliation & Frontend Rebuild (inserted before M8 on 2026-09-29; absorbs unfinished M7.5 Game Day work).
 
 ## Status
 
-IN PROGRESS. R0 audit/rebaseline complete: `docs/product-reconciliation/` (CURRENT_PRODUCT_AUDIT, PRODUCT_REBASELINE, FRONTEND_REBUILD_PLAN, GAMEPLAY_RECONCILIATION). M7.5 Phase A complete; staged WR v8 presentation (`3565ae1`) and unselected added-position current-rules selection (`00632f9`) are recoverable history, not continued as compatibility layers. M10 unchanged.
+IN PROGRESS. The following steps are done:
+
+- R0 audit/rebaseline.
+- V1 Career VNext contract.
+- V2 QB/RB/CB vertical slice.
+- V3 cutover (2026-09-29): the rebuilt "Saturday Broadcast" app on Career VNext is now the only app. The old frontend, the old web career/storage facades and the M1–M7 browser specs are deleted; they are recoverable at tag `pre-cutover` (and `pre-rebuild`).
+
+Prototype saves are left untouched on the device, with a one-tap JSON export notice. M8 stays blocked until R closes.
 
 ## Last completed task
 
-R0 Product Reconciliation audit (2026-09-29): real-app Playwright review of WR/QB journeys at 390/1440, code/doc volume analysis, four reconciliation documents, roadmap phase R and plan `docs/exec-plans/active/r-product-reconciliation.md`. Key decisions: one position-generic career model and save line; single prototype save boundary (export + alumni import); frontend rebuilt from shell on an original "Saturday Broadcast" design system; sideline reps so every role plays Saturday; metric consolidation into Coach's view/rival gap/alerts.
+V3 cutover. The following changes landed:
+
+- `apps/web/src/app/` is the app, with a lazy `App` chunk and budgets retargeted to it.
+- The prototype boundary is `app/prototype.ts`: it detects old records, offers an export, and never reads or deletes them.
+- A new orthogonal browser suite, `e2e/slice.spec.ts`, covers:
+  - the journey on mobile and desktop, with reload resume;
+  - offline resume (mobile only);
+  - true 320 px with no horizontal overflow.
+- The 320 px check found and fixed two overflows (the top bar and the final score).
 
 ## Current / next task
 
-R1 step 1: define detached view-model contracts; then unified CareerV1 core (WR engine adapter, recruiting for all positions, tactical rules mandatory, sideline reps) with a balance harness. R2 design system/gallery may start once view-model contracts exist. Tag `pre-rebuild` before structural rewrites.
+V4 expansion in the new stack. Priority order is Flow and Game Day first, then build expression, depth climb and identity:
+
+1. A WR engine adapter behind the VNext game interface; restore WR in creation.
+2. Weekly lifecycle depth:
+   - contextual events and injuries as scene cards, with off-field alerts only when actionable;
+   - breakthrough card offers (Build screen);
+   - a Team depth-board screen and a Profile screen.
+3. Season arc:
+   - postseason, season review, offseason Stay/transfer board, season two, retirement;
+   - Alumni Wall and Career Hub (includes a lightweight import of prototype alumni).
+4. Board overlays per position (RB gaps/protection, CB leverage/ball), a post-game reaction feed, and a balance pass (Body/recovery currently near-binary; QB trust erosion after poor grades).
 
 ## Active exec plan
 
-- Active: `docs/exec-plans/active/r-product-reconciliation.md`.
+- Active: `docs/exec-plans/active/r-product-reconciliation.md` (product-owner corrections and revised sequence V1–V5).
+- Contract: `docs/product-reconciliation/CAREER_VNEXT_CONTRACT.md` (cutover criterion met, see below).
 - Evidence/decisions: `docs/product-reconciliation/`.
-- Superseded sequencing (reference only): `m7-5-tactical-evidence.md`, `m7-5-playtest-correction.md`, `m7-5-four-position-ux-parity.md`.
+- Superseded M7.5 plans remain for reference only.
 
 ## Current compatibility boundary
 
-- Rebaseline: these prototype save lines stay live and unchanged until R5, when one deliberate boundary (JSON export + alumni import) replaces them with the unified save line. No further compatibility layers are added to them.
-- WR shipping: CareerRunV7 / CareerSessionV7 / envelope 7 / MetaProfileV1. Staged v8 supports neutral migration, source-replayed current games and explicit two-season review/completion; staged WrMetaProfileV2 preserves literal legacy alumni plus archived-source current alumni. No browser alias/writer activation.
-- QB/RB/CB: PositionAlphaSessionV2; current wire/envelope 3 and PositionAlphaPersistenceV3 writer; history pages max four records, 30 snapshots, atomic pruning.
-- Shipping checkpoint: completed M7 four-position game flow, M7.5 Phase A hotfixes and Career Hub. Staged `tactical_game_v1` QB/RB/CB paths have no shipping caller.
-- No gameplay rules or RNG may move to React/native packaging. Historical abstract outcomes remain literal.
+- Live save line: `career_vnext` v1 in store `currentCareer`, id `career-vnext`. It is a checksummed JSON envelope with lean structural validation and a 1 MB bound, published only after a successful save, with exact retry.
+- Every future schema change needs an explicit version and a migration test.
+- Prototype records (WR CareerRun v1–v8, position aggregate v1–v3, meta/alumni, snapshots) stay on the device, unread. The only obligations are the export and a later lightweight alumni import.
+- Core still contains the old WR and position-alpha aggregates. VNext reuses their kernels (engines, room/depth, focus, practice grade, creation, world). Removing the unused aggregates is an R cleanup task after the WR adapter lands.
+- Deterministic seeded RNG: the career stream plus purpose-named derived streams (offer preview room == committed room; sideline reps); world RNG inside the world state. No RNG in presentation.
 
-## Latest green verification
+## Cutover criterion evidence (all met 2026-09-29)
 
-- Presentation scope (2026-09-29 ~16:30 KST): 404 web cases/31 files, 363 content, 322 core; repo typecheck, lint/boundary/localized-copy, scoped format/whitespace; build/export/PWA (360 modules, 21 entries/1847.98 KiB, football 429.31 kB, all JS < 500 kB). No browser run (no writer/codec/shell change). Handoff re-check before edits: repo typecheck/lint and 14 focused v8 command/wire cases green.
-- Tier: Tier 1 unselected save-8 codec atomic gate; terminal non-browser integration green, full B1 and live writer/browser integration pending.
-- Date: 2026-09-14, approximately 20:41 KST (registry); codec 20:23; full domain/workspace/build 20:15; native build 17:59, actual offline smoke approximately 18:07.
-- Static: repository typecheck, lint, architecture/localized-copy checks, scoped format and whitespace pass.
-- Latest frontend-port scope (approximately 21:29 KST): two full two-season command paths pass (41.84 seconds); 12 wire/atomic/history cases pass (13.24 seconds), web typecheck and scoped lint/format pass. Historical registry details remain literal; eight-entry pages do not call store-wide history scans. Shared visual/App integration remains next; none of these adapter tests establish B6 parity.
-- Latest atomic scope (approximately 21:11 KST): 390 web cases/29 files plus final 11-case missing-manifest sentinel regression pass. Real two-season retirement/retry and exact cross-store rollback pass on both adapters, each measured retirement below 1,000 ms. Repo static, final scoped lint/typecheck/format/whitespace and production/export/PWA pass. Details: `docs/qa/M7_5_WR_V8_STORAGE.md`.
-- Shared-engine scope (approximately 20:59 KST): all 388 web tests/29 files, repo static and whitespace pass. Legacy v7 facade remains selected. Staged v8 actual Game Day save/failure/retry/reload and every original-version proof/recovery pass through the same conflict/locking engine. Atomic alumni completion still pending; no live writer/browser matrix claim.
-- Latest wire scope (approximately 20:50 KST): 61 affected storage cases, four core registry cases, repo static/core export/format/whitespace pass. Fixed 256-entry pages and constant-size checksum-bound manifest reject missing/reordered/duplicate/mixed-revision/same-revision mixtures; actual legacy/current detail identity/source and terminal envelopes pass. No storage writer selected yet.
-- Registry scope: 390 core/testkit and ten real-season content cases pass; all four updated actual-life profiles exit 0 with identical 2,394 reloads/100 games/four alumni. Maximum operation/assertion batch 600.910 ms and parse 50.258 ms. Synthetic 1,000-reference indices plus actual new retirement use 140,360–140,962 bytes and 89.914–106.630 ms; not a claim of 1,000 played/stored careers. Wire/transaction verification next.
-- Latest codec scope: 52 storage/IndexedDB regression cases, web typecheck, focused lint/format, boundary/localized-copy and whitespace pass. Original v1–v7 proofs and all current Game Day saved boundaries covered; no storage engine or active writer changed.
-- Tests: full workspace 1,126 cases/117 files plus ten script cases pass in 94.33 seconds; final focused comparator regression passes. Four full domain profiles exit 0: 2,394 session reloads, 100 games/389 snaps/82 events/five injury choices, four preserved alumni plus genuine mixed-legacy tests. Peak envelope estimate 339,307 bytes; meta 313,774 bytes at four alumni; max operation/assertion-batch 543.705 ms and session parse 45.623 ms. Static/format/whitespace and export builds pass. No actual storage/UI retirement claim.
-- Desktop-focused checks: two new configuration tests, focused lint/format, architecture/localized-copy and whitespace pass. No new gameplay changes; unchanged green game suites not rerun.
-- Browser: last shipping M7 matrix `test-results/m7-v3-final`: 88 passed / two intentional mobile-only skips; all twelve native two-season careers including transfer/Team/retry/retirement/Hub passed. No new browser run claimed for staged-only engine changes.
-- Build/PWA: production/export/PWA passes: 357 modules, 21 precached resources / 1829.63 KiB, football chunk 419.82 kB, all JS below 500 kB, both career screens lazy. Shipping v7 writer semantics/rules remain unchanged; new v8 facade is unselected. Desktop executable remains the earlier verified snapshot, not rebuilt for this staged-only update.
-- Desktop: actual executable and NSIS produced; app launch/key snap/post-game/Hub/both locales/offline/exact relaunch pass, zero page errors. Installer installation/uninstallation not exercised. Full details/hashes in `apps/desktop/README.md`.
+- **Journey:** a full 12-game QB regular season in the production browser (390 px en-US) with no dead ends. The QB climbed to QB2.
+- **Visual review:** ko-KR at 390 px and en-US at 1440 px, reviewed against the audit failure list, with fixes applied:
+  - inverted rival comparison
+  - button specificity
+  - top-bar wrap
+  - figure margin
+  - clock glyph
+  - Hangul letter-spacing
+- **Save/reload/offline:** save → reload → offline reload (service worker) resumes exactly; a failed write shows a banner and the exact retry succeeds (unit + App test).
+- **Keyboard:** keyboard-only play from creation through a snap result; focus draws the route preview; the board has an aria text equivalent.
+
+## Latest green verification (2026-09-29, post-cutover)
+
+- Repo typecheck, lint, boundary and localized-copy checks.
+- Web: 30 tests in 4 files (storage adapter, i18n, portrait, app journey).
+- Core: 322. Content: 368, including 5 VNext full-season/determinism/phase-guard tests.
+- Scripts: build-budget tests 4/4. The copy checker now resolves JSX attribute elements.
+- Production build/export/PWA verified: 19 precache entries / 1136.17 KiB, lazy `App` chunk, all JS < 500 kB.
+- Playwright `e2e/slice.spec.ts`: 4 passed / 2 intentional skips in 23.5 s.
 
 ## Desktop artifacts
 
-- Application: `C:\project-saturday\apps\desktop\src-tauri\target\x86_64-pc-windows-msvc\release\project-saturday.exe` (8,762,368 bytes).
-- NSIS: `C:\project-saturday\apps\desktop\src-tauri\target\x86_64-pc-windows-msvc\release\bundle\nsis\Project Saturday_0.7.5_x64-setup.exe` (217,762,512 bytes).
-- Commands: `pnpm desktop:dev`, `pnpm desktop:build`, `pnpm desktop:smoke`. Unsigned local snapshot, not M10 release. Rust local tooling installed; sandbox Schannel required a permitted unsandboxed native build/launch. Never disable TLS checks.
+- The previous unsigned Tauri snapshot (0.7.5) packaged the old UI.
+- `scripts/desktop-smoke.mjs` still drives old selectors and must be ported to the new slice at the next desktop build. It has not been run against the new app.
 
 ## Recent checkpoints
 
-1. 2026-09-29 — Claude handoff. Repository matched PROGRESS except: git history is squashed (two checkpoint commits, no per-task trail); pure selectors in `career-ui`/`program-ui`/`skill-ui` already accepted v7|v8 via `wr-view.ts` (unrecorded start of this task). Shared presentation then completed as above.
-2. 2026-09-14 — Four full WR playing paths expose second-season review failure; harness 68 cases/static/build green, full-life profile exits 1. Peak estimate 319,644 bytes, max command/parse 99.237/42.149 ms. Versioned terminal fix next.
-   Follow-up: explicit v8 review and full source-replayed records now pass 386 core/testkit + ten season content; all four paths reload the new review. Retirement is next, with no full-life completion claim.
-   Terminal follow-up: explicit retirement/lossless alumni/mixed meta now pass four full domain profiles and 1,126 workspace/ten script cases plus build/PWA. Browser codec/persistence/activation remains next.
-   Codec follow-up: unselected save-8 decoder/creator passes 52 storage cases and scoped static checks; original proofs remain literal. Meta capacity/registry and atomic engine integration next.
-   Registry follow-up: 390 core/testkit + ten content/static/export/format checks and four actual-life/capacity profiles pass; paged wire/detail authentication and actual atomic storage remain next.
-   Wire follow-up: 61 storage/four focused core plus repo static/export/format checks pass; 8,000-entry paging and real terminal/detail envelopes verified. Shared engine/atomic transaction integration next.
-   Engine follow-up: 388 web cases plus repo static/whitespace pass; staged v8 uses the existing locking/conflict/recovery engine, original proofs retained and foreign snapshots excluded. Atomic retirement/meta publication next.
-   Atomic follow-up: 390 web/final 11-case sentinel/static/build gate passes; actual memory/IndexedDB rollback/retry, legacy migration and two successive current alumni persist exactly. Frontend/Hub and equivalent four-position current aggregate integration remain next.
-   Frontend-port follow-up: two complete Stay/transfer command paths and 12 wire/atomic/history cases plus scoped static gate pass. Shared view types/resolved and two-season panels/App wiring remain next.
-3. 2026-09-14 — WR v8 explicit commands and lifecycle bridge: 316 core/38 focused/ten season content, repo static/core build green. Complete current-life profiles/persistence next.
-4. 2026-09-14 — WR v8 current career/session integration: 1,117 workspace/ten script cases, static/build/PWA green. Prior 379-case whole-game and 376-case resolved-boundary gates retained in archive.
-5. 2026-09-14 — WR owning-drive/context staging: 375 core/testkit, ten season content and static/format green; 64 current seeded games, shipping still historical.
+1. 2026-09-29 — V3 cutover: old frontend deleted, new e2e suite green, 320 px overflow fixes (`pre-cutover` tag before deletion).
+2. 2026-09-29 — V2 slice frontend (`90ee242`, `acadba4`): creation, recruiting, week, practice report, Game Day board/animation, post-game. Typed message keys.
+3. 2026-09-29 — V2 core (`2fc3a71`): Career VNext aggregate, stratified recruiting with an exact depth preview, sideline reps, board frames, lean codec, relative room tuning.
+4. 2026-09-29 — Contract and corrections (`7a6fd6c`, tag `pre-rebuild`); R0 audit (`2609ad9`).
+5. 2026-09-29 — Handoff: WR v8 shared presentation (`3565ae1`) and staged position rules (`00632f9`), now superseded history.
 
 ## Milestone ledger
 
-- M0–M3 complete.
-- M3.5 complete.
-- M4–M7 complete.
-- M7.5 Phase A complete; remaining B/C work reconciled into R.
-- R active (R0 complete).
-- M8, M9, M10 not started; unchanged roadmap order.
+- M0–M7 complete; M7.5 Phase A complete.
+- R active: R0, V1, V2 and V3 done; V4 expansion and V5 gate pending.
+- M8, M9, M10 not started.
 
-## Known failures
+## Known issues
 
-The shipping WR v7 second-season terminal gap remains until coordinated v8 UI activation. Staged v8 domain and atomic storage now pass, but frontend/Hub integration and actual B6 UI acceptance remain pending. Missing/corrupt meta pages fail closed; primary manifest loss recovers from its shadow, and a persistent initialization marker prevents both missing copies from being misread as a new empty profile. Signed zero is explicitly JSON-equivalent; other evidence comparisons remain exact.
-
-Desktop functional gate is green. Actual screenshots expose existing added-position portrait/name/program overlap and unlabeled visible CB Home meters; recorded in B6 plan for integration/parity repair. Native computer-use screenshot helper failed (`foreground window did not report a process id`); actual WebView2 screenshots were inspected instead. Installer-wizard install/uninstall verification remains pending. These do not block B1; they are not waived from eventual product acceptance.
+- WR is temporarily absent from creation until its VNext adapter lands.
+- Balance:
+  - Body/recovery tension is near-binary: one recovery restores Body to 100.
+  - QB coach trust can erode after weak game grades.
+  - A balance pass is part of V4.
+- Unused prototype locale keys and core aggregates are still present (cleanup after WR adapter).
+- The desktop smoke has not been ported.
+- Installer install/uninstall is still unexercised.
 
 ## Hard blockers
 
 None.
 
-## Historical evidence
-
-- Complete pre-compaction record, including M0–M7 and early M7.5: `docs/execution/progress-archive/2026-09-14-pre-compaction.md`.
-- Completed milestone plans: `docs/exec-plans/completed/`.
-- Compacted M7.5 checkpoints: `docs/execution/progress-archive/M7.5-checkpoints.md`.
-- Detailed current evidence: active tactical plan and `docs/execution/DECISION_LOG.md`.
-- Routine continuation does not reread archives unless compatibility investigation requires them.
-
 ## Resume note
 
-Continue B1c with WR frontend/Hub command/meta integration and equivalent added-position current aggregate retention before coordinated activation. Staged WR atomic storage, all four terminal domain profiles and 1,000-reference capacity/8,000-reference wire probes pass; shipping aliases still v7/meta1. Preserve all detail records and original migration proofs. Desktop detour finished; no heavy processes running. B6 requires actual full UI journeys after B2–B5, and Phase C follows before M8. M10 stays active.
+Start V4 with the WR adapter (the rest of V4 is listed under "Current / next task"). Use the tiered protocol:
+
+- Focused core/content tests plus App tests for the edit loop.
+- The Playwright slice suite at feature boundaries.
+- Real-browser screenshots (ko-KR 390 px, en-US 1440 px) for every new surface.

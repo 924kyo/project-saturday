@@ -12,7 +12,7 @@ export function verifyJavaScriptBudgets(assets, html, serviceWorker) {
     if (serviceWorker.split(name).length - 1 !== 1)
       throw new Error(`JavaScript chunk must be precached exactly once: ${name}.`);
   }
-  for (const prefix of ['CareerScreen-', 'PositionAlphaCareerV2-']) {
+  for (const prefix of ['App-']) {
     const screen = scripts.find(({ name }) => name.startsWith(prefix));
     if (screen === undefined) throw new Error(`Missing lazy career screen: ${prefix}.`);
     if (html.includes(screen.name))
