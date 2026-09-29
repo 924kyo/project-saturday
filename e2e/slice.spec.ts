@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { createCareer, playWeek, primaryAction } from './support/slice';
+import { advanceToPregame, createCareer, playWeek, primaryAction } from './support/slice';
 
 test.describe('career slice journey', () => {
   test('create, recruit, practice, play Saturday and reach the next week, then resume after reload', async ({
@@ -35,7 +35,9 @@ test.describe('offline resume', () => {
       });
     await page.locator('.s2-panel__head .s2-chipbtn').first().click();
     await primaryAction(page).click();
+    await expect(page.locator('.s2-grade')).toBeVisible();
     await primaryAction(page).click();
+    await advanceToPregame(page);
     await primaryAction(page).click();
     await expect(page.locator('.s2-scorebug')).toBeVisible();
     await context.setOffline(true);

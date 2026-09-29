@@ -11,6 +11,7 @@ import { enUSOffFieldBatchMessages } from './off-field-batch-en-US.js';
 import { enUSHubMessages } from './m7-hub.js';
 import { enUSWrTerminalMessages } from './m75-wr-terminal.js';
 import { enUSVNextMessages } from './r-vnext.js';
+import { enUSVNextWeekMessages } from './r-vnext-week.js';
 import { m7BuildEn } from './m7-builds.js';
 import { m7DirectEn } from './m7-direct.js';
 import { m7GameDayEn } from './m7-game-day.js';
@@ -24,6 +25,7 @@ export const enUSMessages = {
   ...enUSHubMessages,
   ...enUSWrTerminalMessages,
   ...enUSVNextMessages,
+  ...enUSVNextWeekMessages,
   ...enUSEventBatchMessages,
   ...enUSInjuryBatchMessages,
   ...enUSM6UiMessages,

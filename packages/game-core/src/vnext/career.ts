@@ -33,6 +33,17 @@ import { projectVNextWorldResult, resolveVNextSnap, startVNextGame } from './gam
 import { projectGameStakesVNext } from './stakes.js';
 import { createSidelineReps, resolveSidelineRep, sidelineCreditFor } from './sideline.js';
 import {
+  assessInjuryWeekVNext,
+  attemptWeeklyEventVNext,
+  createConditionVNext,
+  injuryChoiceAvailabilityVNext,
+  NEUTRAL_GAME_MODIFIERS,
+  recoverConditionVNext,
+  rememberEventVNext,
+  resolveWeeklyEventChoiceVNext,
+} from './weekly.js';
+import type { InjuryAvailabilityEvidence } from '../injuries/types.js';
+import {
   CAREER_VNEXT_MIN_GAME_DECISIONS,
   CAREER_VNEXT_MODEL,
   CAREER_VNEXT_REGULAR_SEASON_WEEKS,
@@ -250,6 +261,7 @@ export function createCareerVNext(
     recruiting: { offers, committedProgramId: null },
     program: null,
     season: { index: 0, weekIndex: 0, world: null, sidelineCredit: 0 },
+    condition: createConditionVNext(),
     flow: { type: 'RECRUITING' },
     log: [],
   });
@@ -331,7 +343,7 @@ export function planWeekVNext(
       state,
       definition,
       mechanics.trainingConfig,
-      null,
+      career.condition.injury,
       mechanics.focusInjuryPolicies,
     );
     if (!resolved.ok) return fail('career_vnext.invalid_choice');
@@ -405,14 +417,150 @@ export function scheduledFixtureVNext(
   );
 }
 
+/**
+ * Advances the week toward kickoff: practice report -> optional event -> injury check -> Game Day.
+ * Each step stops only where the player has something to read or decide.
+ */
 export function toGameDayVNext(
   career: CareerVNext,
   mechanics: CareerVNextMechanics,
 ): CareerVNextResult {
-  if (career.flow.type !== 'PRACTICE_REPORT' || career.program === null)
+  if (career.program === null) return fail('career_vnext.invalid_phase');
+  const flow = career.flow;
+  if (flow.type === 'PRACTICE_REPORT') {
+    if (scheduledFixtureVNext(career, mechanics) === null) return advanceWeek(career, mechanics);
+    const [first, , third] = flow.report.focuses;
+    const trainingLoad = Math.max(0, first.bodyBefore - third.bodyAfter);
+    const event = attemptWeeklyEventVNext(career, mechanics);
+    if (event !== null)
+      return publish(career, { ...career, flow: { type: 'EVENT', event, trainingLoad } });
+    return injuryStep(career, trainingLoad, mechanics);
+  }
+  if (flow.type === 'EVENT') {
+    if (flow.event.chosenChoiceId === null) return fail('career_vnext.invalid_phase');
+    return injuryStep(career, flow.trainingLoad, mechanics);
+  }
+  if (flow.type === 'INJURY') {
+    if (flow.report.availability === null) return fail('career_vnext.invalid_phase');
+    return gameStep(career, mechanics);
+  }
+  return fail('career_vnext.invalid_phase');
+}
+
+export function chooseEventVNext(
+  career: CareerVNext,
+  choiceId: string,
+  mechanics: CareerVNextMechanics,
+): CareerVNextResult {
+  if (career.flow.type !== 'EVENT' || career.flow.event.chosenChoiceId !== null)
     return fail('career_vnext.invalid_phase');
+  const resolved = resolveWeeklyEventChoiceVNext(career, career.flow.event, choiceId, mechanics);
+  if (resolved === null) return fail('career_vnext.invalid_choice');
+  const profile = career.athlete.profile;
+  return publish(career, {
+    ...career,
+    athlete: {
+      ...career.athlete,
+      profile: { ...profile, state: resolved.state },
+      breakthroughGauge: resolved.gaugeAfter,
+    },
+    program:
+      career.program === null
+        ? null
+        : {
+            ...career.program,
+            room: { ...career.program.room, playerCoachTrust: resolved.state.coachTrust },
+          },
+    condition: rememberEventVNext(career.condition, resolved.event, resolved.modifiers),
+    flow: { ...career.flow, event: resolved.event },
+  });
+}
+
+function withAvailability(career: CareerVNext, availability: InjuryAvailabilityEvidence) {
+  const profile = career.athlete.profile;
+  return {
+    athlete: {
+      ...career.athlete,
+      profile: {
+        ...profile,
+        state: {
+          ...profile.state,
+          body: availability.bodyAfter,
+          confidence: availability.confidenceAfter,
+          coachTrust: availability.coachTrustAfter,
+        },
+      },
+    },
+    program:
+      career.program === null
+        ? null
+        : {
+            ...career.program,
+            room: { ...career.program.room, playerCoachTrust: availability.coachTrustAfter },
+          },
+    condition: { ...career.condition, availability },
+  };
+}
+
+function injuryStep(
+  career: CareerVNext,
+  trainingLoad: number,
+  mechanics: CareerVNextMechanics,
+): CareerVNextResult {
+  const week = assessInjuryWeekVNext(career, trainingLoad, mechanics);
+  if (week === null) return fail('career_vnext.engine_failed');
+  if (week.outcome === 'NO_INJURY' || week.injury === null)
+    return gameStep(
+      { ...career, condition: { ...career.condition, availability: null } },
+      mechanics,
+    );
+  const injury = week.injury;
+  const next: CareerVNext = {
+    ...career,
+    condition: {
+      ...career.condition,
+      injury,
+      injuryHistory:
+        week.outcome === 'INJURY'
+          ? [...career.condition.injuryHistory, injury]
+          : career.condition.injuryHistory,
+      availability: null,
+    },
+  };
+  return publish(career, {
+    ...next,
+    ...(week.availability === null ? {} : withAvailability(next, week.availability)),
+    flow: {
+      type: 'INJURY',
+      report: {
+        weekIndex: career.season.weekIndex,
+        outcome: week.outcome,
+        injury,
+        availability: week.availability,
+      },
+    },
+  });
+}
+
+export function chooseInjuryVNext(
+  career: CareerVNext,
+  choiceId: string,
+  mechanics: CareerVNextMechanics,
+): CareerVNextResult {
+  if (career.flow.type !== 'INJURY' || career.flow.report.availability !== null)
+    return fail('career_vnext.invalid_phase');
+  const availability = injuryChoiceAvailabilityVNext(career, choiceId, mechanics);
+  if (availability === null) return fail('career_vnext.invalid_choice');
+  return publish(career, {
+    ...career,
+    ...withAvailability(career, availability),
+    flow: { type: 'INJURY', report: { ...career.flow.report, availability } },
+  });
+}
+
+function gameStep(career: CareerVNext, mechanics: CareerVNextMechanics): CareerVNextResult {
   const fixture = scheduledFixtureVNext(career, mechanics);
-  if (fixture === null) return advanceWeek(career, mechanics);
+  if (fixture === null || career.program === null) return fail('career_vnext.engine_failed');
   const isHome = fixture.homeProgramId === career.program.programId;
   return publish(career, {
     ...career,
@@ -569,6 +717,7 @@ function settleGame(
     recordAfter: { wins: record?.wins ?? 0, losses: record?.losses ?? 0, ties: record?.ties ?? 0 },
     rankAfter: rank?.rank ?? null,
     stakes,
+    availabilityId: career.condition.availability?.availabilityId ?? 'injury_availability_full',
   };
   return publish(career, {
     ...career,
@@ -594,6 +743,7 @@ function settleGame(
       world: worldAfter,
       sidelineCredit: sidelineCreditFor(game.sideline),
     },
+    condition: { ...career.condition, nextGameModifiers: NEUTRAL_GAME_MODIFIERS },
     flow: { type: 'POST_GAME', recap },
     log: [...career.log, recap],
   });
@@ -624,6 +774,7 @@ function advanceWeek(career: CareerVNext, mechanics: CareerVNextMechanics): Care
       },
     },
     season: { ...career.season, weekIndex },
+    condition: recoverConditionVNext(career.condition),
     flow:
       weekIndex >= CAREER_VNEXT_REGULAR_SEASON_WEEKS
         ? { type: 'SEASON_END' }

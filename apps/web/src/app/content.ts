@@ -9,6 +9,8 @@ import {
   weeklyActions,
 } from '@project-saturday/game-content';
 import {
+  eventContent,
+  injuryContent,
   programIdentityVNext,
   type ProgramIdentityVNext,
 } from '@project-saturday/game-content/content';
@@ -297,4 +299,72 @@ export function playHeadlineKey(positionId: VNextPositionId, playResultId: strin
   if (found === undefined)
     throw new Error(`Missing play headline for ${positionId}:${playResultId}.`);
   return found;
+}
+
+interface EventText extends Named {
+  readonly choices: readonly Named[];
+}
+const EVENT_TEXT = new Map<string, EventText>(
+  [
+    ...qbAlphaContent.events,
+    ...rbAlphaContent.events,
+    ...cbAlphaContent.events,
+    ...eventContent.events,
+  ].map((event) => [event.id, event as EventText]),
+);
+
+export function eventText(id: string): {
+  readonly nameKey: MessageKey;
+  readonly descriptionKey: MessageKey;
+} {
+  const found = EVENT_TEXT.get(id);
+  if (found === undefined) throw new Error(`Missing event presentation for ${id}.`);
+  return { nameKey: key(found.nameKey), descriptionKey: key(found.descriptionKey) };
+}
+
+const camel = (value: string) =>
+  value.replace(/_([a-z0-9])/g, (_, letter: string) => letter.toUpperCase());
+
+/**
+ * QB/RB/CB shipped choice names are generic ("Commit fully"), so VNext authors a label per event
+ * choice; WR events already carry specific authored choice copy.
+ */
+export function eventChoiceKey(eventId: string, choiceId: string): MessageKey {
+  const shared = /^event_((?:qb|rb|cb)_[a-z0-9_]+)$/.exec(eventId);
+  if (shared !== null) return key(`v2.evt.${camel(shared[1]!)}.${choiceId.split('_').at(-1)!}`);
+  const choice = EVENT_TEXT.get(eventId)?.choices.find(({ id }) => id === choiceId);
+  if (choice === undefined) throw new Error(`Missing event choice presentation for ${choiceId}.`);
+  return key(choice.nameKey);
+}
+
+export const EXPOSURE_KEYS = {
+  position_qb: 'v2.evt.modExposure.qb',
+  position_rb: 'v2.evt.modExposure.rb',
+  position_wr: 'v2.evt.modExposure.wr',
+  position_cb: 'v2.evt.modExposure.cb',
+} as const satisfies Record<VNextPositionId, MessageKey>;
+
+const INJURY_TEXT = new Map<string, Named>(
+  [...injuryContent.outcomes, ...injuryContent.choices].map((entry) => [entry.id, entry]),
+);
+
+export function injuryText(id: string): {
+  readonly nameKey: MessageKey;
+  readonly descriptionKey: MessageKey;
+} {
+  const found = INJURY_TEXT.get(id);
+  if (found === undefined) throw new Error(`Missing injury presentation for ${id}.`);
+  return { nameKey: key(found.nameKey), descriptionKey: key(found.descriptionKey) };
+}
+
+export type RiskBand = 'low' | 'elevated' | 'high';
+export const RISK_KEYS = {
+  low: 'v2.risk.low',
+  elevated: 'v2.risk.elevated',
+  high: 'v2.risk.high',
+} as const satisfies Record<RiskBand, MessageKey>;
+
+/** Qualitative band over the exact core risk; thresholds are presentation-only labels. */
+export function riskBand(riskPermille: number): RiskBand {
+  return riskPermille < 60 ? 'low' : riskPermille < 150 ? 'elevated' : 'high';
 }

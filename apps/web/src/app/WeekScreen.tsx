@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import {
   focusDefinitionsVNext,
+  injuryRiskVNext,
+  isFocusAvailableVNext,
   planWeekVNext,
   scheduledFixtureVNext,
   type CareerVNext,
@@ -15,13 +17,16 @@ import {
   DEPTH_COMPONENT_KEYS,
   MOVEMENT_KEYS,
   POSITION_ABBR_KEYS,
+  RISK_KEYS,
   ROLE_KEYS,
   attributeNameKey,
   focusText,
+  injuryText,
   key,
   participantName,
   practiceBand,
   program,
+  riskBand,
 } from './content';
 import { Nameplate } from './Nameplate';
 import { Crest, Delta, Meter, Panel } from './ui';
@@ -30,6 +35,7 @@ import { METER_COLORS } from './theme';
 interface FocusView {
   readonly id: string;
   readonly position: boolean;
+  readonly open: boolean;
   readonly body: number;
   readonly preparation: number;
   readonly confidence: number;
@@ -57,6 +63,50 @@ function effects(t: AppTranslate, focus: FocusView): React.JSX.Element {
           </span>
         ))}
     </span>
+  );
+}
+
+/** Pregame injury risk band for a practice load; silent while an injury is already running. */
+function RiskLine({
+  career,
+  trainingLoad,
+  mechanics,
+}: {
+  readonly career: CareerVNext;
+  readonly trainingLoad: number;
+  readonly mechanics: CareerVNextMechanics;
+}): React.JSX.Element | null {
+  const { t } = useAppTranslation();
+  if (career.condition.injury !== null) return null;
+  const risk = injuryRiskVNext(career, trainingLoad, mechanics);
+  if (risk === null) return null;
+  const band = riskBand(risk);
+  return (
+    <p className="s2-risk" title={t('v2.risk.help')}>
+      <span>{t('v2.risk.label')}</span>
+      <strong className={band === 'low' ? 's2-up' : band === 'high' ? 's2-down' : ''}>
+        {t(RISK_KEYS[band])}
+      </strong>
+    </p>
+  );
+}
+
+function InjuryBanner({ career }: { readonly career: CareerVNext }): React.JSX.Element | null {
+  const { t } = useAppTranslation();
+  const injury = career.condition.injury;
+  if (injury === null) return null;
+  const name = t(injuryText(injury.outcomeId).nameKey);
+  return (
+    <div className="s2-banner" role="status">
+      <p>
+        {t(
+          injury.defaultAvailabilityId === 'injury_availability_out'
+            ? 'v2.inj.planOut'
+            : 'v2.inj.planLimited',
+          { name, count: injury.remainingWeeks },
+        )}
+      </p>
+    </div>
   );
 }
 
@@ -288,6 +338,11 @@ function Report({
               after={depth.coachTrust.after}
             />
           </div>
+          <RiskLine
+            career={career}
+            mechanics={mechanics}
+            trainingLoad={Math.max(0, first.bodyBefore - last.bodyAfter)}
+          />
         </Panel>
         <DepthSlice career={career} />
       </div>
@@ -330,6 +385,7 @@ export function WeekScreen({
       focusDefinitionsVNext(career, mechanics).map((definition) => ({
         id: definition.id,
         position: 'positionId' in definition,
+        open: isFocusAvailableVNext(career, definition.id, mechanics),
         body: definition.bodyDelta,
         preparation: definition.preparationDelta,
         confidence: definition.confidenceDelta,
@@ -338,13 +394,14 @@ export function WeekScreen({
     [career, mechanics],
   );
   // The planning command is pure and deterministic, so its result is an exact preview.
-  const projected = useMemo(() => {
+  const planned = useMemo(() => {
     if (picks.length !== 3) return null;
     const result = planWeekVNext(career, picks, mechanics);
     return result.ok && result.career.flow.type === 'PRACTICE_REPORT'
-      ? result.career.flow.report
+      ? { career: result.career, report: result.career.flow.report }
       : null;
   }, [career, mechanics, picks]);
+  const projected = planned?.report ?? null;
 
   if (career.flow.type === 'PRACTICE_REPORT')
     return (
@@ -364,17 +421,24 @@ export function WeekScreen({
   const add = (id: string) => picks.length < 3 && setPicks([...picks, id]);
   const removeAt = (index: number) => setPicks(picks.filter((_, i) => i !== index));
   function coachPlan(): void {
-    const positionFocuses = focuses.filter(({ position }) => position);
-    const plan = [positionFocuses[0]!.id, 'action_film_study'];
-    const bodyAfter = state.body + positionFocuses[0]!.body - 3;
-    plan.push(bodyAfter < 60 ? 'action_recovery' : positionFocuses[1]!.id);
-    setPicks(plan.filter((id) => focuses.some((focus) => focus.id === id)));
+    const open = focuses.filter((focus) => focus.open);
+    const positionFocuses = open.filter(({ position }) => position);
+    const lead = positionFocuses[0] ?? open[0]!;
+    const plan = [lead.id, 'action_film_study'];
+    const bodyAfter = state.body + lead.body - 3;
+    plan.push(
+      bodyAfter < 60 || positionFocuses[1] === undefined
+        ? 'action_recovery'
+        : positionFocuses[1].id,
+    );
+    setPicks(plan.filter((id) => open.some((focus) => focus.id === id)));
   }
   const last = projected?.focuses[2];
 
   return (
     <div className="s2-stack">
       <Nameplate career={career} />
+      <InjuryBanner career={career} />
       <div className="s2-next">
         <p className="s2-eyebrow">{t('v2.week.nextUp')}</p>
         <h2 className="s2-display s2-next__title">{t('v2.week.planTitle')}</h2>
@@ -420,14 +484,16 @@ export function WeekScreen({
               return (
                 <button
                   className={`s2-focus ${focus.position ? 's2-focus--position' : ''}`}
-                  disabled={picks.length >= 3}
+                  disabled={picks.length >= 3 || !focus.open}
                   key={focus.id}
                   onClick={() => add(focus.id)}
                   title={t(focusText(focus.id).descriptionKey)}
                   type="button"
                 >
                   <span className="s2-focus__kind">
-                    {t(focus.position ? 'v2.week.positionWork' : 'v2.week.sharedWork')}
+                    {focus.open
+                      ? t(focus.position ? 'v2.week.positionWork' : 'v2.week.sharedWork')
+                      : t('v2.inj.restricted')}
                   </span>
                   <span className="s2-focus__name">{t(focusText(focus.id).nameKey)}</span>
                   {effects(t, focus)}
@@ -474,6 +540,16 @@ export function WeekScreen({
                 value={state.coachTrust}
               />
             </div>
+            {planned !== null && (
+              <RiskLine
+                career={planned.career}
+                mechanics={mechanics}
+                trainingLoad={Math.max(
+                  0,
+                  planned.report.focuses[0].bodyBefore - planned.report.focuses[2].bodyAfter,
+                )}
+              />
+            )}
             {state.body < 35 && (
               <p className="s2-note" style={{ marginTop: 10 }}>
                 {t('v2.readiness.lowBody')}

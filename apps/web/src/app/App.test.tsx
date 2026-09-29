@@ -88,6 +88,15 @@ describe('App vertical slice', () => {
 
     expect(await screen.findByText('Practice report')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /Game Day/ }));
+    // Optional midweek event and medical check stop only for a decision, then continue.
+    for (let guard = 0; guard < 4; guard += 1) {
+      const kickoff = screen.queryByRole('button', { name: 'Kick off' });
+      if (kickoff !== null) break;
+      await waitFor(() => expect(document.querySelector('#s2-event, #s2-injury')).not.toBeNull());
+      const choices = screen.queryByRole('group');
+      if (choices !== null) await user.click(within(choices).getAllByRole('button')[0]!);
+      await user.click(await screen.findByRole('button', { name: /Continue|To Game Day/ }));
+    }
     await user.click(await screen.findByRole('button', { name: 'Kick off' }));
 
     let decisions = 0;

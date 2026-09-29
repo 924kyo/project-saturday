@@ -18,6 +18,28 @@ export async function createCareer(page: Page, name: string): Promise<void> {
   await expect(page.locator('.s2-nameplate')).toBeVisible({ timeout: 10_000 });
 }
 
+/** Passes the optional weekly scenes (midweek event, medical check); each stops only to decide. */
+export async function advanceToPregame(
+  page: Page,
+  onScreen?: (label: string) => Promise<void>,
+): Promise<void> {
+  for (let guard = 0; guard < 4; guard += 1) {
+    await expect(page.locator('#s2-pregame, #s2-event, #s2-injury').first()).toBeVisible();
+    if ((await page.locator('#s2-pregame').count()) > 0) break;
+    const scene = (await page.locator('#s2-event').count()) > 0 ? 'event' : 'injury';
+    if ((await page.locator('.s2-choice').count()) > 0) {
+      await onScreen?.(scene);
+      await page.locator('.s2-choice').first().click();
+    }
+    await expect(primaryAction(page)).toBeEnabled();
+    await onScreen?.(`${scene}-outcome`);
+    await primaryAction(page).click();
+    // The scene stays mounted while the save lands; wait for it to leave before re-reading.
+    await expect(page.locator(`#s2-${scene}`)).toHaveCount(0);
+  }
+  await expect(page.locator('#s2-pregame')).toBeVisible();
+}
+
 /** Plans with the coach's plan and plays Saturday through to the next week's planner. */
 export async function playWeek(
   page: Page,
@@ -29,7 +51,7 @@ export async function playWeek(
   await expect(page.locator('.s2-grade')).toBeVisible();
   await onScreen?.('report');
   await primaryAction(page).click();
-  await expect(page.locator('#s2-pregame')).toBeVisible();
+  await advanceToPregame(page, onScreen);
   await onScreen?.('pregame');
   await primaryAction(page).click();
   let decisions = 0;

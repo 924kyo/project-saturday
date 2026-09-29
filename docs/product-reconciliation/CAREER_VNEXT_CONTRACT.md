@@ -18,11 +18,11 @@ Career VNext is a new, canonical, position-generic career model designed from th
    - `world`: every other program's results.
    Per-purpose derived streams (e.g. an offer preview room) are named by seed + purpose, so a preview is identical to the committed result.
 
-## Aggregate (`career_vnext` v1)
+## Aggregate (`career_vnext` v2)
 
 ```text
 CareerVNext
-  model 'career_vnext', version 1, careerId, seed, revision, contentVersion
+  model 'career_vnext', version 2, careerId, seed, revision, contentVersion
   rng { career, world }
   athlete   identity (name, position, archetype, background, traits, appearance, measurables)
             attributes (position attribute progress), readiness { body, preparation, confidence }
@@ -31,6 +31,8 @@ CareerVNext
   recruiting { offers: RecruitOffer[] (3–5), committedProgramId | null }
   program   { programId, room: PositionRoomContext } | null
   season    { index, weekIndex, world: WorldAlphaSeasonState, record }
+  condition { injury | null, injuryHistory[], availability | null,
+              recentEvents[], eventHistory[], nextGameModifiers }   (v2)
   flow      FlowPhase (below)
   log       GameRecap[]  (per season, bounded)
 ```
@@ -41,7 +43,9 @@ CareerVNext
 |---|---|---|
 | `RECRUITING` | 3–5 offers with an honest depth preview | `commitProgram(programId)` |
 | `WEEK_PLAN` | Week header, readiness, rival, focus planner | `planWeek([f1,f2,f3])` |
-| `PRACTICE_REPORT` | Practice grade band, readiness/XP/trust change, depth movement | `toGameDay()` |
+| `PRACTICE_REPORT` | Practice grade band, readiness/XP/trust change, depth movement, pregame injury-risk band | `toGameDay()` |
+| `EVENT` (optional) | Midweek scene card: authored situation, choices with exact consequence previews, then the applied outcome | `chooseEvent(choiceId)`, then `toGameDay()` |
+| `INJURY` (only when injured) | Pregame medical check: injury, weeks left; rest vs. play-limited when the injury is limiting | `chooseInjury(choiceId)`, then `toGameDay()` |
 | `GAME` | Sub-state below | `kickoff()`, `chooseSnap(id)`, `continue()` |
 | `POST_GAME` | Recap story | `nextWeek()` |
 
@@ -52,7 +56,9 @@ CareerVNext
 3. `RESULT`: the last resolved snap, waiting for an explicit continue. Animation replays only this saved result.
 4. `FINAL`: the final score before the recap.
 
-Events, injuries, NIL, season review, offseason, transfer and retirement join as additional phases after the slice. The table and view contracts are designed so they slot in without changing the shape of existing phases.
+`toGameDay()` walks report → optional event → injury check → `PREGAME`, stopping only where the player reads or decides. The event and the injury check each draw from their own named stream (`:vnext:event:<season>:<week>`, `:vnext:injury:<season>:<week>`), never the career stream. Event game modifiers apply to the next kickoff only; injury availability caps live snaps (OUT still gets the sideline reps); weekly rollover advances recovery. Injury risk is VNext pacing (`VNEXT_INJURY_TUNING`, convex in Body) over the shared exposure components and the shared outcome catalog.
+
+NIL, season review, offseason, transfer and retirement join as additional phases later. The table and view contracts are designed so they slot in without changing the shape of existing phases.
 
 ## Game adapter interface (core)
 
@@ -83,7 +89,7 @@ Core owns the football frames. The web app owns layout and localization.
 ## Save line and prototype boundary
 
 - The new store keys are separate from prototype keys, and the envelope carries a checksum.
-- Every future change gets an explicit version and migration, starting from v1.
+- Every future change gets an explicit version and migration, starting from v1. v1 → v2 (weekly condition) migrates in `parseCareerVNext`: the empty condition, and recaps at full availability.
 - **Prototype data:** best-effort detection of old keys, a one-tap JSON export, and a lightweight alumni import (name, position, programs, headline stats) where it parses. Nothing more.
 
 ## Cutover criterion (ends the parallel app2 period)

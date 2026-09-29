@@ -5,6 +5,7 @@ import type {
 } from '@project-saturday/game-core';
 
 import { keySnapFamilyMechanicsDefinitions, keySnapPatternMechanicsDefinitions } from './games.js';
+import { eventMechanicsDefinitions } from './events.js';
 import { buildShippedPositionAlphaSessionCommandMechanics } from './position-alpha-session.js';
 
 /** VNext reuses the shipped catalogs; creation mechanics depend on the chosen identity. */
@@ -29,6 +30,7 @@ export function buildCareerVNextMechanics(
   return {
     ...shared,
     wr: {
+      events: eventMechanicsDefinitions,
       families: keySnapFamilyMechanicsDefinitions,
       patterns: keySnapPatternMechanicsDefinitions,
     },

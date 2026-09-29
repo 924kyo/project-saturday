@@ -1,3 +1,5 @@
+import type { InjuryAvailabilityEvidence, NewInjuryEvidence } from '../injuries/types.js';
+import type { EventMechanicsDefinition } from '../events/types.js';
 import type { ProgramId } from '../player/ids.js';
 import type { CreatedPositionPlayerProfile } from '../player/position-creation.js';
 import type { DepthRoleId } from '../programs/ids.js';
@@ -30,7 +32,7 @@ import type {
 } from '../weekly/position-training.js';
 
 export const CAREER_VNEXT_MODEL = 'career_vnext' as const;
-export const CAREER_VNEXT_VERSION = 1 as const;
+export const CAREER_VNEXT_VERSION = 2 as const;
 export const CAREER_VNEXT_REGULAR_SEASON_WEEKS = 12 as const;
 /** Every role gets at least this many Saturday decisions; sideline reps fill the gap. */
 export const CAREER_VNEXT_MIN_GAME_DECISIONS = 2 as const;
@@ -41,6 +43,7 @@ export type VNextPositionId = 'position_qb' | 'position_rb' | 'position_wr' | 'p
 /** The shipped content bundle; VNext reuses catalogs, not the old aggregate. */
 export type CareerVNextMechanics = PositionAlphaSessionCommandMechanics & {
   readonly wr: {
+    readonly events: readonly EventMechanicsDefinition[];
     readonly families: readonly KeySnapFamilyMechanicsDefinition[];
     readonly patterns: readonly KeySnapPatternMechanicsDefinition[];
   };
@@ -128,6 +131,56 @@ export interface GameDayVNext {
   readonly cursor: number;
 }
 
+/** Carried from a weekly event choice into the next kickoff only. */
+export interface GameModifiersVNext {
+  readonly clueBonus: number;
+  readonly decisionScoreFlat: number;
+  readonly exposureReductionPermille: number;
+}
+
+/** Applied (post-clamp) consequences of an event choice, for truthful presentation. */
+export interface EventEffectsVNext {
+  readonly body: number;
+  readonly preparation: number;
+  readonly confidence: number;
+  readonly coachTrust: number;
+  readonly brand: number;
+  readonly gpaMilli: number;
+  readonly gauge: number;
+  readonly modifiers: GameModifiersVNext;
+}
+
+export interface WeeklyEventVNext {
+  readonly weekIndex: number;
+  readonly eventId: string;
+  readonly choiceIds: readonly string[];
+  readonly chosenChoiceId: string | null;
+  readonly effects: EventEffectsVNext | null;
+}
+
+export interface InjuryReportVNext {
+  readonly weekIndex: number;
+  readonly outcome: 'INJURY' | 'ONGOING';
+  readonly injury: NewInjuryEvidence;
+  /** Null until the player picks rest or play-limited for a limiting injury. */
+  readonly availability: InjuryAvailabilityEvidence | null;
+}
+
+/** Health and off-field carry-over between weeks. */
+export interface ConditionVNext {
+  readonly injury: NewInjuryEvidence | null;
+  readonly injuryHistory: readonly NewInjuryEvidence[];
+  /** This week's settled availability; null means fully available. */
+  readonly availability: InjuryAvailabilityEvidence | null;
+  readonly recentEvents: readonly { readonly eventId: string; readonly weekIndex: number }[];
+  readonly eventHistory: readonly {
+    readonly eventId: string;
+    readonly choiceId: string;
+    readonly weekIndex: number;
+  }[];
+  readonly nextGameModifiers: GameModifiersVNext;
+}
+
 export interface GameRecapVNext {
   readonly weekIndex: number;
   readonly opponentProgramId: ProgramId;
@@ -146,12 +199,21 @@ export interface GameRecapVNext {
   readonly rankAfter: number | null;
   /** Stakes as they stood at kickoff (rivalry and rankings before this result). */
   readonly stakes: GameStakesVNext | null;
+  readonly availabilityId:
+    'injury_availability_full' | 'injury_availability_limited' | 'injury_availability_out';
 }
 
 export type FlowVNext =
   | { readonly type: 'RECRUITING' }
   | { readonly type: 'WEEK_PLAN' }
   | { readonly type: 'PRACTICE_REPORT'; readonly report: PracticeReportVNext }
+  | {
+      readonly type: 'EVENT';
+      readonly event: WeeklyEventVNext;
+      /** Practice load carried into the pregame injury check. */
+      readonly trainingLoad: number;
+    }
+  | { readonly type: 'INJURY'; readonly report: InjuryReportVNext }
   | { readonly type: 'GAME'; readonly game: GameDayVNext }
   | { readonly type: 'POST_GAME'; readonly recap: GameRecapVNext }
   | { readonly type: 'SEASON_END' };
@@ -178,6 +240,7 @@ export interface CareerVNext {
     /** Sideline credit earned last Saturday, consumed by the next practice week. */
     readonly sidelineCredit: number;
   };
+  readonly condition: ConditionVNext;
   readonly flow: FlowVNext;
   readonly log: readonly GameRecapVNext[];
 }

@@ -134,6 +134,15 @@ export function PostGameScreen({
                 {t('v2.post.sideline', { sharp, total: recap.sideline.length })}
               </p>
             )}
+            {recap.availabilityId !== 'injury_availability_full' && (
+              <p className="s2-note" style={{ marginTop: 10 }}>
+                {t(
+                  recap.availabilityId === 'injury_availability_out'
+                    ? 'v2.post.satOut'
+                    : 'v2.post.playedLimited',
+                )}
+              </p>
+            )}
           </Panel>
           {plays.length > 0 && (
             <Panel id="s2-plays" title={t('v2.post.definingPlays')}>

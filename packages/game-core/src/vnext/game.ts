@@ -33,9 +33,7 @@ function sharedContext(career: CareerVNext): PositionAlphaGameContext {
     },
     room: career.program!.room,
     careerRng: career.rng.career,
-    events: {
-      nextGameModifiers: { clueBonus: 0, decisionScoreFlat: 0, exposureReductionPermille: 0 },
-    },
+    events: { nextGameModifiers: career.condition.nextGameModifiers },
     skills: { equippedSkillIds: career.build.equippedSkillIds },
   } as unknown as PositionAlphaGameContext;
 }
@@ -54,7 +52,7 @@ export function startVNextGame(
       fixture,
       weekIndex,
       mechanics,
-      null,
+      career.condition.availability,
       5,
       TACTICAL_GAME_RULES_VERSION,
     );
@@ -76,7 +74,11 @@ export function startVNextGame(
     playerProgramId: programId,
     opponentProgramId,
     isHome,
-    opportunityCount: Math.min(5, career.program.room.projection.interactiveSnapMaximum),
+    opportunityCount: Math.min(
+      5,
+      career.program.room.projection.interactiveSnapMaximum,
+      career.condition.availability?.opportunityCap ?? 12,
+    ),
     playerTeamRating: matchup.supportingUnitRating,
     opponentDefenseRating: matchup.opponentPrimaryRating,
     opponentOffenseRating: matchup.opponentSecondaryRating,

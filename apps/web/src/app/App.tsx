@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  chooseEventVNext,
+  chooseInjuryVNext,
   chooseSnapVNext,
   commitProgramVNext,
   continueGameVNext,
@@ -39,6 +41,7 @@ import {
 import { PostGameScreen, SeasonEndScreen } from './PostGameScreen';
 import { RecruitScreen } from './RecruitScreen';
 import { teamStyle } from './theme';
+import { EventScreen, InjuryScreen } from './WeeklyScene';
 import { WeekScreen } from './WeekScreen';
 
 export interface AppProps {
@@ -259,6 +262,22 @@ export function App({ storage, seedFactory = browserSeed }: AppProps): React.JSX
               mechanics={mechanics}
               onGameDay={() => run(toGameDayVNext)}
               onPlan={(ids) => run((c, m) => planWeekVNext(c, ids, m))}
+            />
+          ) : flow === 'EVENT' ? (
+            <EventScreen
+              blocked={blocked}
+              career={career}
+              mechanics={mechanics}
+              onChoose={(id) => run((c, m) => chooseEventVNext(c, id, m))}
+              onContinue={() => run(toGameDayVNext)}
+            />
+          ) : flow === 'INJURY' ? (
+            <InjuryScreen
+              blocked={blocked}
+              career={career}
+              mechanics={mechanics}
+              onChoose={(id) => run((c, m) => chooseInjuryVNext(c, id, m))}
+              onContinue={() => run(toGameDayVNext)}
             />
           ) : flow === 'GAME' ? (
             <GameDayScreen

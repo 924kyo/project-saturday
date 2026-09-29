@@ -103,6 +103,15 @@ export function GameDayScreen({
                   {t('v2.stakes.rivalry')}
                 </span>
               )}
+              {career.condition.availability !== null && (
+                <span className="s2-stakes__chip s2-stakes__chip--challenge">
+                  {t(
+                    career.condition.availability.opportunityCap === 0
+                      ? 'v2.gd.availOut'
+                      : 'v2.gd.availLimited',
+                  )}
+                </span>
+              )}
               <span className="s2-stakes__team">
                 {stakes.playerRank !== null && t('v2.stakes.ranked', { rank: stakes.playerRank })}{' '}
                 {t(key(us.shortNameKey))} {t('v2.stakes.record', stakes.playerRecord)}

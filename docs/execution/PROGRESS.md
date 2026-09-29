@@ -23,7 +23,15 @@ Prototype saves are left untouched on the device, with a one-tap JSON export not
 
 ## Last completed task
 
-WR adapter plus the four-position parity checkpoint (2026-09-29).
+Weekly lifecycle, part 1: events and injuries as scene cards (2026-09-29).
+
+- **Core (`vnext/weekly.ts`):** `toGameDay()` now walks report → optional midweek event → pregame injury check → Game Day. QB/RB/CB events reuse their position selectors and choice rules; WR uses the shipped WR catalog with the same eligibility semantics. Event modifiers reach the next kickoff only. Injury availability caps live snaps; OUT still gets sideline reps; rollover advances recovery; drills follow the shipped injury workload policy.
+- **Pacing:** `VNEXT_INJURY_TUNING` is convex in Body. A test locks the contrast: a balanced plan sees about 0.5 injuries per season, grinding Body to zero about 2.5.
+- **Save:** `career_vnext` v2 with a v1 → v2 migration test.
+- **UI:** event and medical scene cards with exact consequence previews; restricted drills and an injury banner in the planner; a pregame injury-risk band; availability on the pregame strip and in the recap. Per-event choice labels for QB/RB/CB (the shipped names were generic) in both locales, with a coverage test.
+- **Verified:** real browser at ko-KR 390/320 and en-US 1440 on injected deterministic saves.
+
+Before that: WR adapter plus the four-position parity checkpoint (2026-09-29).
 
 - **WR kernel:** a standalone WR kernel on the authored WR content and the shared tactical rules, reached through the VNext game seam.
 - **WR training and creation:** WR position training (3 actions and 3 proficiencies, with paired copy); WR is restored in creation.
@@ -40,12 +48,12 @@ V4 continues in the new stack, in priority order:
    - Authored trigger-based post-game reactions.
    - Still open: on-board clue markers and pregame preparation keys.
 2. **Weekly lifecycle:**
-   - contextual events and injuries as scene cards;
+   - contextual events and injuries as scene cards: done 2026-09-29;
    - off-field alerts only when actionable;
    - breakthrough card offers on the Build screen;
    - Team depth-board and Profile screens.
 3. **Season arc:** postseason, season review, offseason Stay/transfer, season two, retirement, Alumni Wall and Career Hub (with the lightweight import of prototype alumni).
-4. **Balance pass:** Body/recovery near-binary; coach verdict harsh on low-volume games; QB trust erosion.
+4. **Balance pass:** Body/recovery near-binary (three heavy drills pin Body at 0; the injury curve now punishes that); coach verdict harsh on low-volume games; QB trust erosion; rest credit on a one-week injury is inert.
 
 ## Active exec plan
 
@@ -56,11 +64,11 @@ V4 continues in the new stack, in priority order:
 
 ## Current compatibility boundary
 
-- Live save line: `career_vnext` v1 in store `currentCareer`, id `career-vnext`. It is a checksummed JSON envelope with lean structural validation and a 1 MB bound, published only after a successful save, with exact retry.
+- Live save line: `career_vnext` v2 (v1 migrates on load) in store `currentCareer`, id `career-vnext`. It is a checksummed JSON envelope with lean structural validation and a 1 MB bound, published only after a successful save, with exact retry.
 - Every future schema change needs an explicit version and a migration test.
 - Prototype records (WR CareerRun v1–v8, position aggregate v1–v3, meta/alumni, snapshots) stay on the device, unread. The only obligations are the export and a later lightweight alumni import.
 - Core still contains the old WR and position-alpha aggregates. VNext reuses their kernels (engines, room/depth, focus, practice grade, creation, world). Removing the unused aggregates is an R cleanup task after the WR adapter lands.
-- Deterministic seeded RNG: the career stream plus purpose-named derived streams (offer preview room == committed room; sideline reps); world RNG inside the world state. No RNG in presentation.
+- Deterministic seeded RNG: the career stream plus purpose-named derived streams (offer preview room == committed room; sideline reps; weekly event; pregame injury); world RNG inside the world state. No RNG in presentation.
 
 ## Cutover criterion evidence (all met 2026-09-29)
 
@@ -75,7 +83,14 @@ V4 continues in the new stack, in priority order:
 - **Save/reload/offline:** save → reload → offline reload (service worker) resumes exactly; a failed write shows a banner and the exact retry succeeds (unit + App test).
 - **Keyboard:** keyboard-only play from creation through a snap result; focus draws the route preview; the board has an aria text equivalent.
 
-## Latest green verification (2026-09-29, parity checkpoint)
+## Latest green verification (2026-09-29, weekly lifecycle part 1)
+
+- Repo typecheck in all 4 packages; lint, boundary and localized-copy checks.
+- 805 tests in 98 files (core, content, web, testkit), including 10 VNext season/lifecycle tests and the weekly-copy coverage test.
+- Build/PWA: 19 entries / 1257.45 KiB.
+- Playwright: 4 passed / 2 intentional skips (the driver passes the optional weekly scenes).
+
+## Earlier verification (2026-09-29, parity checkpoint)
 
 - Repo typecheck in all 4 packages; lint, boundary and localized-copy checks.
 - 726 tests in 78 files (core, content and web), including 6 VNext season tests and board geometry tests. Testkit 68.
