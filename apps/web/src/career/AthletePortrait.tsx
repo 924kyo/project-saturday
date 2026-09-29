@@ -1,3 +1,4 @@
+import './athlete-portrait.css';
 import type { PlayerAppearance } from '@project-saturday/game-core';
 
 export interface AthletePortraitProps {

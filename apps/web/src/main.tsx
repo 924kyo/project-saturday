@@ -1,11 +1,23 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
-import { App } from './App';
 import { createAppI18n } from './i18n/i18n';
 import { resolveInitialLocale } from './i18n/locale';
 import { createStorageAdapter } from './storage';
-import './styles.css';
+
+const APP_FLAG = 'project-saturday:app';
+
+/** Short parallel period: `?next` opts into the rebuilt app until cutover makes it the default. */
+function wantsNextApp(): boolean {
+  try {
+    const params = new URLSearchParams(globalThis.location.search);
+    if (params.has('next')) globalThis.localStorage.setItem(APP_FLAG, 'next');
+    if (params.has('legacy')) globalThis.localStorage.removeItem(APP_FLAG);
+    return globalThis.localStorage.getItem(APP_FLAG) === 'next';
+  } catch {
+    return false;
+  }
+}
 
 async function bootstrap(): Promise<void> {
   const rootElement = document.querySelector<HTMLElement>('#root');
@@ -17,12 +29,13 @@ async function bootstrap(): Promise<void> {
   const storage = await createStorageAdapter();
   const locale = await resolveInitialLocale(storage);
   const i18n = await createAppI18n(locale);
+  const content = wantsNextApp()
+    ? await import('./app2/App2').then(({ App2 }) => <App2 storage={storage} />)
+    : await import('./App').then(({ App }) => <App storage={storage} />);
 
   createRoot(rootElement).render(
     <StrictMode>
-      <I18nextProvider i18n={i18n}>
-        <App storage={storage} />
-      </I18nextProvider>
+      <I18nextProvider i18n={i18n}>{content}</I18nextProvider>
     </StrictMode>,
   );
 }

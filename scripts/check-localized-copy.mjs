@@ -146,10 +146,12 @@ function isIntrinsicJsxElement(tagName) {
 }
 
 function jsxTagName(node) {
-  const tagName = ts.isJsxElement(node.parent)
-    ? node.parent.openingElement.tagName
-    : ts.isJsxSelfClosingElement(node.parent)
-      ? node.parent.tagName
+  // An attribute's parent is JsxAttributes; its parent is the opening/self-closing element.
+  const element = ts.isJsxAttributes(node.parent) ? node.parent.parent : node.parent;
+  const tagName = ts.isJsxElement(element)
+    ? element.openingElement.tagName
+    : ts.isJsxOpeningElement(element) || ts.isJsxSelfClosingElement(element)
+      ? element.tagName
       : undefined;
 
   return tagName?.getText() ?? '';

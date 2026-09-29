@@ -1,0 +1,413 @@
+/* Persistent athlete portrait (retained across the frontend rebuild). */
+.athlete-portrait {
+  --hair: #171716;
+  --portrait-height: 7rem;
+  --portrait-width: 5.25rem;
+  --skin: #b97e58;
+  --torso-width: 72%;
+  position: relative;
+  flex: 0 0 auto;
+  align-self: end;
+  width: var(--portrait-width);
+  height: var(--portrait-height);
+  margin: 0;
+}
+
+.athlete-portrait-host {
+  display: grid;
+  min-width: 0;
+  place-items: center;
+}
+
+.athlete-portrait[data-size='compact'] {
+  --portrait-height: 3.4rem;
+  --portrait-width: 2.6rem;
+}
+
+.athlete-portrait[data-size='profile'] {
+  --portrait-height: 13rem;
+  --portrait-width: 9.5rem;
+}
+
+.athlete-portrait[data-skin-tone='skin_tone_light'] {
+  --skin: #edc6a3;
+}
+
+.athlete-portrait[data-skin-tone='skin_tone_light_medium'] {
+  --skin: #d6a276;
+}
+
+.athlete-portrait[data-skin-tone='skin_tone_medium_deep'] {
+  --skin: #916044;
+}
+
+.athlete-portrait[data-skin-tone='skin_tone_deep'] {
+  --skin: #6e4634;
+}
+
+.athlete-portrait[data-skin-tone='skin_tone_dark'] {
+  --skin: #4c3229;
+}
+
+.athlete-portrait[data-hair-color='hair_color_dark_brown'] {
+  --hair: #2c1c17;
+}
+
+.athlete-portrait[data-hair-color='hair_color_brown'] {
+  --hair: #5b3828;
+}
+
+.athlete-portrait[data-hair-color='hair_color_light_brown'] {
+  --hair: #9a6845;
+}
+
+.athlete-portrait[data-body-type='body_type_lean'] {
+  --torso-width: 64%;
+}
+
+.athlete-portrait[data-body-type='body_type_broad'] {
+  --torso-width: 82%;
+}
+
+.athlete-portrait__stage,
+.athlete-portrait__stage > span,
+.athlete-portrait__head > span,
+.athlete-portrait__arm > span,
+.athlete-portrait__leg > span,
+.athlete-portrait__torso > span {
+  position: absolute;
+  display: block;
+}
+
+.athlete-portrait__stage {
+  inset: 0;
+  overflow: hidden;
+}
+
+.athlete-portrait__shadow {
+  right: 10%;
+  bottom: 0;
+  left: 10%;
+  height: 7%;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 30%);
+}
+
+.athlete-portrait__head {
+  z-index: 5;
+  top: 7%;
+  left: 50%;
+  width: 34%;
+  height: 29%;
+  transform: translateX(-50%);
+  border-radius: 48% 48% 43% 43%;
+  background: var(--skin);
+}
+
+.athlete-portrait[data-face='face_round'] .athlete-portrait__head {
+  width: 37%;
+  border-radius: 50%;
+}
+
+.athlete-portrait[data-face='face_square'] .athlete-portrait__head {
+  width: 36%;
+  border-radius: 36% 36% 28% 28%;
+}
+
+.athlete-portrait[data-face='face_angular'] .athlete-portrait__head {
+  clip-path: polygon(14% 0, 86% 0, 100% 58%, 72% 100%, 28% 100%, 0 58%);
+}
+
+.athlete-portrait__ears {
+  z-index: -1;
+  top: 45%;
+  right: -8%;
+  left: -8%;
+  height: 20%;
+  border-radius: 40%;
+  background: var(--skin);
+}
+
+.athlete-portrait__eyes {
+  top: 48%;
+  right: 22%;
+  left: 22%;
+  height: 5%;
+  border-right: 0.11em solid #161b1e;
+  border-left: 0.11em solid #161b1e;
+}
+
+.athlete-portrait__hair {
+  z-index: 3;
+  top: -5%;
+  left: 6%;
+  width: 88%;
+  height: 32%;
+  border-radius: 50% 50% 34% 34%;
+  background: var(--hair);
+}
+
+.athlete-portrait[data-hair-style='hair_style_shaved'] .athlete-portrait__hair {
+  top: 0;
+  height: 12%;
+  opacity: 0.72;
+}
+
+.athlete-portrait[data-hair-style='hair_style_close_crop'] .athlete-portrait__hair {
+  height: 20%;
+}
+
+.athlete-portrait[data-hair-style='hair_style_short_curls'] .athlete-portrait__hair {
+  top: -10%;
+  height: 31%;
+  border-radius: 48% 48% 30% 30%;
+  box-shadow: 0 -0.12em 0 0.05em var(--hair);
+}
+
+.athlete-portrait[data-hair-style='hair_style_medium_curls'] .athlete-portrait__hair {
+  top: -16%;
+  left: -3%;
+  width: 106%;
+  height: 42%;
+  border-radius: 50% 50% 32% 32%;
+}
+
+.athlete-portrait[data-hair-style='hair_style_braids'] .athlete-portrait__hair,
+.athlete-portrait[data-hair-style='hair_style_locs'] .athlete-portrait__hair {
+  top: -5%;
+  left: 9%;
+  width: 82%;
+  height: 34%;
+  background: repeating-linear-gradient(90deg, var(--hair) 0 12%, transparent 12% 20%);
+}
+
+.athlete-portrait[data-hair-style='hair_style_locs'] .athlete-portrait__hair {
+  height: 58%;
+  background: repeating-linear-gradient(90deg, var(--hair) 0 15%, transparent 15% 24%);
+}
+
+.athlete-portrait__eye-black,
+.athlete-portrait__visor {
+  display: none !important;
+}
+
+.athlete-portrait[data-eye-black='eye_black_stripes'] .athlete-portrait__eye-black,
+.athlete-portrait[data-eye-black='eye_black_wide'] .athlete-portrait__eye-black {
+  display: block !important;
+  top: 54%;
+  right: 7%;
+  left: 7%;
+  height: 5%;
+  border-right: 0.35em solid #1b1c1d;
+  border-left: 0.35em solid #1b1c1d;
+}
+
+.athlete-portrait[data-eye-black='eye_black_wide'] .athlete-portrait__eye-black {
+  right: 2%;
+  left: 2%;
+  height: 8%;
+  border: 0;
+  background: rgb(23 24 25 / 82%);
+}
+
+.athlete-portrait[data-visor='visor_clear'] .athlete-portrait__visor,
+.athlete-portrait[data-visor='visor_smoke'] .athlete-portrait__visor {
+  display: block !important;
+  top: 38%;
+  right: 5%;
+  left: 5%;
+  height: 28%;
+  transform: skewX(-5deg);
+  border: 1px solid rgb(224 241 244 / 76%);
+  border-radius: 40% 40% 30% 30%;
+  background: rgb(186 223 228 / 26%);
+}
+
+.athlete-portrait[data-visor='visor_smoke'] .athlete-portrait__visor {
+  border-color: rgb(122 148 159 / 70%);
+  background: rgb(12 29 39 / 68%);
+}
+
+.athlete-portrait__neck {
+  z-index: 3;
+  top: 31%;
+  left: 42%;
+  width: 16%;
+  height: 15%;
+  background: var(--skin);
+}
+
+.athlete-portrait__torso {
+  z-index: 2;
+  top: 39%;
+  left: 50%;
+  width: var(--torso-width);
+  height: 43%;
+  transform: translateX(-50%);
+  border-radius: 42% 42% 12% 12%;
+  background: linear-gradient(90deg, #e8ede9 0 16%, #183a4d 16% 84%, #e8ede9 84%);
+  clip-path: polygon(14% 0, 86% 0, 100% 22%, 88% 100%, 12% 100%, 0 22%);
+}
+
+.athlete-portrait[data-jersey-fit='jersey_fit_tight'] .athlete-portrait__torso {
+  width: calc(var(--torso-width) - 5%);
+}
+
+.athlete-portrait[data-jersey-fit='jersey_fit_loose'] .athlete-portrait__torso {
+  width: calc(var(--torso-width) + 6%);
+  border-radius: 48% 48% 18% 18%;
+}
+
+.athlete-portrait__chest-mark {
+  top: 26%;
+  left: 50%;
+  width: 18%;
+  height: 24%;
+  transform: translateX(-50%);
+  border-top: max(1px, calc(var(--portrait-width) * 0.025)) solid #f2b137;
+  border-bottom: max(1px, calc(var(--portrait-width) * 0.025)) solid #f2b137;
+}
+
+.athlete-portrait__arm {
+  z-index: 1;
+  top: 43%;
+  width: 16%;
+  height: 42%;
+  transform-origin: top center;
+  border-radius: 45%;
+  background: var(--skin);
+}
+
+.athlete-portrait__arm--left {
+  left: 8%;
+  transform: rotate(8deg);
+}
+
+.athlete-portrait__arm--right {
+  right: 8%;
+  transform: rotate(-8deg);
+}
+
+.athlete-portrait__sleeve,
+.athlete-portrait__wrist,
+.athlete-portrait__glove {
+  display: none !important;
+  right: 0;
+  left: 0;
+}
+
+.athlete-portrait__sleeve {
+  top: 2%;
+  height: 62%;
+  border-radius: 40%;
+  background: #dce5e0;
+}
+
+.athlete-portrait[data-arm-sleeves='arm_sleeves_left']
+  .athlete-portrait__arm--left
+  .athlete-portrait__sleeve,
+.athlete-portrait[data-arm-sleeves='arm_sleeves_right']
+  .athlete-portrait__arm--right
+  .athlete-portrait__sleeve,
+.athlete-portrait[data-arm-sleeves='arm_sleeves_both'] .athlete-portrait__sleeve {
+  display: block !important;
+}
+
+.athlete-portrait__wrist {
+  bottom: 17%;
+  height: 12%;
+  background: #f3f0df;
+}
+
+.athlete-portrait[data-wrist-tape='wrist_tape_left']
+  .athlete-portrait__arm--left
+  .athlete-portrait__wrist,
+.athlete-portrait[data-wrist-tape='wrist_tape_right']
+  .athlete-portrait__arm--right
+  .athlete-portrait__wrist,
+.athlete-portrait[data-wrist-tape='wrist_tape_both'] .athlete-portrait__wrist {
+  display: block !important;
+}
+
+.athlete-portrait__glove {
+  bottom: 0;
+  height: 20%;
+  border-radius: 35% 35% 50% 50%;
+}
+
+.athlete-portrait[data-gloves='gloves_light'] .athlete-portrait__glove,
+.athlete-portrait[data-gloves='gloves_dark'] .athlete-portrait__glove,
+.athlete-portrait[data-gloves='gloves_accent'] .athlete-portrait__glove {
+  display: block !important;
+  background: #edf4ef;
+}
+
+.athlete-portrait[data-gloves='gloves_dark'] .athlete-portrait__glove {
+  background: #152633;
+}
+
+.athlete-portrait[data-gloves='gloves_accent'] .athlete-portrait__glove {
+  background: #f2b137;
+}
+
+.athlete-portrait__leg {
+  z-index: 1;
+  bottom: 4%;
+  width: 24%;
+  height: 30%;
+  background: #e8ede9;
+}
+
+.athlete-portrait__leg--left {
+  left: 25%;
+}
+
+.athlete-portrait__leg--right {
+  right: 25%;
+}
+
+.athlete-portrait__foot {
+  right: -6%;
+  bottom: 0;
+  left: -6%;
+  height: 16%;
+  border-radius: 55% 55% 25% 25%;
+  background: #f2b137;
+}
+
+.athlete-portrait[data-footwear='footwear_mid'] .athlete-portrait__foot {
+  height: 23%;
+}
+
+.athlete-portrait[data-footwear='footwear_high'] .athlete-portrait__foot {
+  height: 31%;
+  border-radius: 25% 25% 18% 18%;
+}
+
+.athlete-portrait__towel {
+  display: none !important;
+  z-index: 4;
+  bottom: -18%;
+  width: 17%;
+  height: 38%;
+  border-radius: 0 0 40% 40%;
+  background: #f5f2e7;
+}
+
+.athlete-portrait[data-towel='towel_center'] .athlete-portrait__towel,
+.athlete-portrait[data-towel='towel_left'] .athlete-portrait__towel,
+.athlete-portrait[data-towel='towel_right'] .athlete-portrait__towel {
+  display: block !important;
+}
+
+.athlete-portrait[data-towel='towel_center'] .athlete-portrait__towel {
+  left: 42%;
+}
+
+.athlete-portrait[data-towel='towel_left'] .athlete-portrait__towel {
+  left: 20%;
+}
+
+.athlete-portrait[data-towel='towel_right'] .athlete-portrait__towel {
+  right: 20%;
+}

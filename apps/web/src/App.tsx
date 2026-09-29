@@ -1,3 +1,4 @@
+import './styles.css';
 import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type {
   CareerRun,

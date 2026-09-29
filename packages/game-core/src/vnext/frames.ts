@@ -39,6 +39,13 @@ export interface LivePlayFrame {
   readonly ballOutcome: TacticalSnapResultV1['ball']['outcome'];
   readonly scoreAfter: { readonly playerTeam: number; readonly opponent: number };
   readonly appliedSkillIds: readonly string[];
+  /** Post-snap qualitative read feedback from the saved decision fit; never shown before choice. */
+  readonly readQuality: SidelineRepGradeVNext;
+}
+
+/** Same bands as sideline grading: authored best reads sit around 85–95, weak ones below 65. */
+export function readQuality(fit: number): SidelineRepGradeVNext {
+  return fit >= 85 ? 'SHARP' : fit >= 65 ? 'SOLID' : 'MISSED';
 }
 
 export type SnapBoardFrame =
@@ -147,6 +154,7 @@ export function livePlayFrame(positionId: VNextPositionId, play: AnyPlay): LiveP
     ballOutcome: tactical.ball.outcome,
     scoreAfter: tactical.scoreAfter,
     appliedSkillIds: play.appliedSkillIds ?? [],
+    readQuality: readQuality(num(play, 'decisionFit')),
   };
 }
 

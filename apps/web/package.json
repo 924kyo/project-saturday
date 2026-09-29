@@ -13,6 +13,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@fontsource/barlow-condensed": "5.3.0",
     "@project-saturday/game-content": "workspace:*",
     "@project-saturday/game-core": "workspace:*",
     "i18next": "26.4.0",
