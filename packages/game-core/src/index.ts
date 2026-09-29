@@ -1308,3 +1308,4 @@ export {
   type WrMetaRegistryV1,
   type WrMetaRegistryEntryV1,
 } from './season/wr-meta-registry.js';
+export * from './vnext/index.js';
