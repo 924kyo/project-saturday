@@ -4,6 +4,24 @@ Status: active 2026-09-29. Supersedes the remaining M7.5 B1c–B6/Phase C sequen
 
 Authoritative inputs: `docs/product-reconciliation/` (the audit, rebaseline, frontend plan and gameplay reconciliation), `PRODUCT_VISION.md` and `CORE_BELIEFS.md`.
 
+## Product-owner corrections (2026-09-29, authoritative)
+
+1. Implementation priority: **Flow and Game Day first**, then build expression, depth climb and identity. Game Day is the payoff of the whole loop.
+2. Build a new canonical position-generic **Career VNext** from first principles (`docs/product-reconciliation/CAREER_VNEXT_CONTRACT.md`), reusing the best kernels from both stacks. It is not a promotion of either aggregate.
+3. Keep the parallel app2 period short. Cutover happens at the concrete criterion in the contract, after which the old frontend and career presentation stacks are deleted.
+4. No combinatorial test burden. Journeys, locales, viewports, accessibility and offline are orthogonal; Cartesian coverage runs only at release boundaries.
+5. Prototype saves: best-effort export plus lightweight alumni import only.
+
+## Sequence (revised)
+
+1. **V1 — Contract** (done: the contract document).
+2. **V2 — Vertical slice, QB:** Create → Recruit → This Week → Practice → Game Day tactical board → snap animation → Post-game → Next week, polished in the real browser.
+3. **V3 — Cutover:** meet the contract criterion, then delete the old UI and career presentation.
+4. **V4 — Expansion:** RB/CB/WR adapters; events, injuries, NIL alerts; season review, offseason/transfer, season two, retirement, Alumni Wall and Hub.
+5. **V5 — Release-boundary gate** for R.
+
+Phases R1–R5 below remain the topical breakdown; execution follows this sequence.
+
 ## Guardrails
 
 - Deterministic seeded RNG, career/world separation, stable IDs, both locales, accessibility, PWA/offline.
