@@ -22,9 +22,17 @@ import {
 } from '../season/world-alpha.js';
 import {
   createCommonPositionProficiencyUses,
-  resolvePositionFocus,
   type PositionFocusEvidenceV2,
+  type PositionFocusId,
 } from '../weekly/position-focus.js';
+import { resolvePositionFocusWithSkills } from '../weekly/position-focus-skills.js';
+import {
+  attemptBreakthroughVNext,
+  loadoutVNext,
+  skillDefinitionsVNext,
+  VNEXT_BREAKTHROUGH_THRESHOLD,
+  VNEXT_BUILD_SLOTS,
+} from './build.js';
 import {
   createPositionTrainingProficiencyUses,
   derivePositionPracticeGrade,
@@ -336,15 +344,35 @@ export function planWeekVNext(
     gpa: profile.state.gpa,
   };
   const evidence: PositionFocusEvidenceV2[] = [];
-  for (const focusId of focusIds) {
+  // Equipped cards shape each focus through the shared skill-aware resolver.
+  const loadout = loadoutVNext(career, mechanics);
+  const cards = skillDefinitionsVNext(mechanics);
+  for (const [index, focusId] of focusIds.entries()) {
     const definition = definitions.find(({ id }) => id === focusId);
-    if (definition === undefined) return fail('career_vnext.invalid_choice');
-    const resolved = resolvePositionFocus(
+    const tagIds = mechanics.skillBuilds.actionTags[focusId as PositionFocusId];
+    if (definition === undefined || tagIds === undefined)
+      return fail('career_vnext.invalid_choice');
+    const resolved = resolvePositionFocusWithSkills(
       state,
       definition,
       mechanics.trainingConfig,
       career.condition.injury,
       mechanics.focusInjuryPolicies,
+      loadout,
+      cards,
+      {
+        id: definition.id,
+        bodyDelta: definition.bodyDelta,
+        attributeXp: definition.attributeXp,
+        tagIds,
+      } as never,
+      {
+        body: state.training.state.body,
+        actionId: definition.id,
+        actionIndex: index as 0 | 1 | 2,
+        planActionIds: focusIds,
+        previousActionId: index === 0 ? null : focusIds[index - 1]!,
+      } as never,
     );
     if (!resolved.ok) return fail('career_vnext.invalid_choice');
     state = resolved.next;
@@ -431,10 +459,14 @@ export function toGameDayVNext(
     if (scheduledFixtureVNext(career, mechanics) === null) return advanceWeek(career, mechanics);
     const [first, , third] = flow.report.focuses;
     const trainingLoad = Math.max(0, first.bodyBefore - third.bodyAfter);
-    const event = attemptWeeklyEventVNext(career, mechanics);
-    if (event !== null)
-      return publish(career, { ...career, flow: { type: 'EVENT', event, trainingLoad } });
-    return injuryStep(career, trainingLoad, mechanics);
+    const offer = attemptBreakthroughVNext(career, mechanics);
+    if (offer !== null)
+      return publish(career, { ...career, flow: { type: 'BREAKTHROUGH', offer, trainingLoad } });
+    return eventStep(career, trainingLoad, mechanics);
+  }
+  if (flow.type === 'BREAKTHROUGH') {
+    if (flow.offer.chosenSkillId === null) return fail('career_vnext.invalid_phase');
+    return eventStep(career, flow.trainingLoad, mechanics);
   }
   if (flow.type === 'EVENT') {
     if (flow.event.chosenChoiceId === null) return fail('career_vnext.invalid_phase');
@@ -445,6 +477,67 @@ export function toGameDayVNext(
     return gameStep(career, mechanics);
   }
   return fail('career_vnext.invalid_phase');
+}
+
+function eventStep(
+  career: CareerVNext,
+  trainingLoad: number,
+  mechanics: CareerVNextMechanics,
+): CareerVNextResult {
+  const event = attemptWeeklyEventVNext(career, mechanics);
+  if (event !== null)
+    return publish(career, { ...career, flow: { type: 'EVENT', event, trainingLoad } });
+  return injuryStep(career, trainingLoad, mechanics);
+}
+
+/** Takes one offered card: it joins the collection and fills the first open slot, if any. */
+export function chooseBreakthroughVNext(career: CareerVNext, skillId: string): CareerVNextResult {
+  if (career.flow.type !== 'BREAKTHROUGH' || career.flow.offer.chosenSkillId !== null)
+    return fail('career_vnext.invalid_phase');
+  const offer = career.flow.offer;
+  if (!offer.skillIds.includes(skillId) || career.build.ownedSkillIds.includes(skillId as SkillId))
+    return fail('career_vnext.invalid_choice');
+  const equipped = [...career.build.equippedSkillIds];
+  const open = equipped.indexOf(null);
+  if (open >= 0) equipped[open] = skillId as SkillId;
+  return publish(career, {
+    ...career,
+    athlete: {
+      ...career.athlete,
+      breakthroughGauge: career.athlete.breakthroughGauge - VNEXT_BREAKTHROUGH_THRESHOLD,
+    },
+    build: {
+      equippedSkillIds: equipped as unknown as CareerVNext['build']['equippedSkillIds'],
+      ownedSkillIds: [...career.build.ownedSkillIds, skillId as SkillId],
+    },
+    flow: {
+      ...career.flow,
+      offer: { ...offer, chosenSkillId: skillId, slotIndex: open >= 0 ? open : null },
+    },
+  });
+}
+
+/** Build edits happen while planning the week: put an owned card in a slot, or clear a slot. */
+export function equipSkillVNext(
+  career: CareerVNext,
+  slotIndex: number,
+  skillId: string | null,
+): CareerVNextResult {
+  if (career.flow.type !== 'WEEK_PLAN') return fail('career_vnext.invalid_phase');
+  if (!Number.isInteger(slotIndex) || slotIndex < 0 || slotIndex >= VNEXT_BUILD_SLOTS)
+    return fail('career_vnext.invalid_choice');
+  if (skillId !== null && !career.build.ownedSkillIds.includes(skillId as SkillId))
+    return fail('career_vnext.invalid_choice');
+  // A card lives in one slot: equipping it elsewhere moves it.
+  const equipped = career.build.equippedSkillIds.map((id) => (id === skillId ? null : id));
+  equipped[slotIndex] = skillId as SkillId | null;
+  return publish(career, {
+    ...career,
+    build: {
+      ...career.build,
+      equippedSkillIds: equipped as unknown as CareerVNext['build']['equippedSkillIds'],
+    },
+  });
 }
 
 export function chooseEventVNext(

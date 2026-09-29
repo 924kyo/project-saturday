@@ -1,11 +1,13 @@
 export * from './types.js';
 export {
+  chooseBreakthroughVNext,
   chooseEventVNext,
   chooseInjuryVNext,
   chooseSnapVNext,
   commitProgramVNext,
   continueGameVNext,
   createCareerVNext,
+  equipSkillVNext,
   focusDefinitionsVNext,
   isVNextPositionId,
   kickoffVNext,
@@ -16,6 +18,12 @@ export {
   type CreateCareerVNextInput,
 } from './career.js';
 export { sidelineClueCount, sidelineCreditFor } from './sideline.js';
+export {
+  offerCandidatesVNext,
+  skillDefinitionsVNext,
+  VNEXT_BREAKTHROUGH_THRESHOLD,
+  VNEXT_BUILD_SLOTS,
+} from './build.js';
 export {
   careerWeekIndexVNext,
   injuryRiskVNext,

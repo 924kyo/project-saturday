@@ -44,6 +44,7 @@ CareerVNext
 | `RECRUITING` | 3–5 offers with an honest depth preview | `commitProgram(programId)` |
 | `WEEK_PLAN` | Week header, readiness, rival, focus planner | `planWeek([f1,f2,f3])` |
 | `PRACTICE_REPORT` | Practice grade band, readiness/XP/trust change, depth movement, pregame injury-risk band | `toGameDay()` |
+| `BREAKTHROUGH` (gauge ≥ 80) | Three weighted, unowned cards; the pick joins the collection and fills the first open slot | `chooseBreakthrough(skillId)`, then `toGameDay()` |
 | `EVENT` (optional) | Midweek scene card: authored situation, choices with exact consequence previews, then the applied outcome | `chooseEvent(choiceId)`, then `toGameDay()` |
 | `INJURY` (only when injured) | Pregame medical check: injury, weeks left; rest vs. play-limited when the injury is limiting | `chooseInjury(choiceId)`, then `toGameDay()` |
 | `GAME` | Sub-state below | `kickoff()`, `chooseSnap(id)`, `continue()` |
@@ -56,7 +57,9 @@ CareerVNext
 3. `RESULT`: the last resolved snap, waiting for an explicit continue. Animation replays only this saved result.
 4. `FINAL`: the final score before the recap.
 
-`toGameDay()` walks report → optional event → injury check → `PREGAME`, stopping only where the player reads or decides. The event and the injury check each draw from their own named stream (`:vnext:event:<season>:<week>`, `:vnext:injury:<season>:<week>`), never the career stream. Event game modifiers apply to the next kickoff only; injury availability caps live snaps (OUT still gets the sideline reps); weekly rollover advances recovery. Injury risk is VNext pacing (`VNEXT_INJURY_TUNING`, convex in Body) over the shared exposure components and the shared outcome catalog.
+`toGameDay()` walks report → breakthrough (when the gauge is full) → optional event → injury check → `PREGAME`, stopping only where the player reads or decides. The event and the injury check each draw from their own named stream (`:vnext:event:<season>:<week>`, `:vnext:injury:<season>:<week>`), never the career stream. Event game modifiers apply to the next kickoff only; injury availability caps live snaps (OUT still gets the sideline reps); weekly rollover advances recovery. Injury risk is VNext pacing (`VNEXT_INJURY_TUNING`, convex in Body) over the shared exposure components and the shared outcome catalog.
+
+Build: `equipSkill(slot, skillId | null)` during `WEEK_PLAN` only; a card occupies one slot. Equipped cards reach every owning rule: skill-aware focus resolution, weekly rollover (passive recovery), pregame injury risk, the position game kernels (QB/RB/CB card effects; WR game hooks in the WR kernel, including package snaps) and event choices (unlocks, WR option access). Offers draw from `:vnext:breakthrough:<season>:<week>`.
 
 NIL, season review, offseason, transfer and retirement join as additional phases later. The table and view contracts are designed so they slot in without changing the shape of existing phases.
 

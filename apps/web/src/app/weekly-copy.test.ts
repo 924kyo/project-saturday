@@ -1,9 +1,14 @@
-import { cbAlphaContent, qbAlphaContent, rbAlphaContent } from '@project-saturday/game-content';
+import {
+  cbAlphaContent,
+  qbAlphaContent,
+  rbAlphaContent,
+  skills as wrSkills,
+} from '@project-saturday/game-content';
 import { eventContent, injuryContent } from '@project-saturday/game-content/content';
 import { enUSMessages, koKRMessages } from '@project-saturday/game-content/locales';
 import { describe, expect, it } from 'vitest';
 
-import { eventChoiceKey, eventText, injuryText, riskBand } from './content';
+import { cardView, eventChoiceKey, eventText, injuryText, riskBand } from './content';
 
 const catalogs = [
   qbAlphaContent.events,
@@ -50,5 +55,22 @@ describe('weekly scene copy', () => {
     expect(riskBand(20)).toBe('low');
     expect(riskBand(90)).toBe('elevated');
     expect(riskBand(200)).toBe('high');
+  });
+
+  it('presents every build card of every position in both locales', () => {
+    const cards = [
+      ...qbAlphaContent.skills,
+      ...rbAlphaContent.skills,
+      ...cbAlphaContent.skills,
+      ...wrSkills,
+    ];
+    expect(cards.length).toBe(76);
+    for (const card of cards) {
+      const view = cardView(card.id);
+      for (const messageKey of [view.nameKey, view.descriptionKey, view.gradeKey, view.familyKey])
+        inBothLocales(messageKey);
+      if (view.weeklyKey !== null) inBothLocales(view.weeklyKey);
+      expect(['C', 'B', 'A', 'S']).toContain(view.gradeLetter);
+    }
   });
 });

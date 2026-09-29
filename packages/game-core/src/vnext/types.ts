@@ -158,6 +158,14 @@ export interface WeeklyEventVNext {
   readonly effects: EventEffectsVNext | null;
 }
 
+export interface BreakthroughOfferVNext {
+  readonly weekIndex: number;
+  readonly skillIds: readonly string[];
+  readonly chosenSkillId: string | null;
+  /** Slot the new card went into, or null when every slot was full (it waits in the collection). */
+  readonly slotIndex: number | null;
+}
+
 export interface InjuryReportVNext {
   readonly weekIndex: number;
   readonly outcome: 'INJURY' | 'ONGOING';
@@ -207,6 +215,11 @@ export type FlowVNext =
   | { readonly type: 'RECRUITING' }
   | { readonly type: 'WEEK_PLAN' }
   | { readonly type: 'PRACTICE_REPORT'; readonly report: PracticeReportVNext }
+  | {
+      readonly type: 'BREAKTHROUGH';
+      readonly offer: BreakthroughOfferVNext;
+      readonly trainingLoad: number;
+    }
   | {
       readonly type: 'EVENT';
       readonly event: WeeklyEventVNext;

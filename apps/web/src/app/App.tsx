@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  chooseBreakthroughVNext,
   chooseEventVNext,
   chooseInjuryVNext,
   chooseSnapVNext,
   commitProgramVNext,
   continueGameVNext,
   createCareerVNext,
+  equipSkillVNext,
   kickoffVNext,
   nextWeekVNext,
   planWeekVNext,
@@ -41,6 +43,7 @@ import {
 import { PostGameScreen, SeasonEndScreen } from './PostGameScreen';
 import { RecruitScreen } from './RecruitScreen';
 import { teamStyle } from './theme';
+import { BreakthroughScreen } from './BuildView';
 import { EventScreen, InjuryScreen } from './WeeklyScene';
 import { WeekScreen } from './WeekScreen';
 
@@ -260,8 +263,16 @@ export function App({ storage, seedFactory = browserSeed }: AppProps): React.JSX
               blocked={blocked}
               career={career}
               mechanics={mechanics}
+              onEquip={(slot, id) => run((c) => equipSkillVNext(c, slot, id))}
               onGameDay={() => run(toGameDayVNext)}
               onPlan={(ids) => run((c, m) => planWeekVNext(c, ids, m))}
+            />
+          ) : flow === 'BREAKTHROUGH' ? (
+            <BreakthroughScreen
+              blocked={blocked}
+              career={career}
+              onChoose={(id) => run((c) => chooseBreakthroughVNext(c, id))}
+              onContinue={() => run(toGameDayVNext)}
             />
           ) : flow === 'EVENT' ? (
             <EventScreen

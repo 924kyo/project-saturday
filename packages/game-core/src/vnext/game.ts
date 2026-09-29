@@ -17,6 +17,7 @@ import {
   type WorldAlphaFixtureMechanics,
   type WorldAlphaPlayerGameResult,
 } from '../season/world-alpha.js';
+import { gameHooksVNext, packageSnapBonusVNext } from './build.js';
 import type { CareerVNext, CareerVNextMechanics, VNextGameState } from './types.js';
 
 /**
@@ -67,6 +68,8 @@ export function startVNextGame(
     isHome,
   );
   if (matchup === undefined) return null;
+  const gameHooks = gameHooksVNext(career, mechanics);
+  const maximum = career.program.room.projection.interactiveSnapMaximum;
   const started = startWrAlphaGame({
     rulesVersion: TACTICAL_GAME_RULES_VERSION,
     gameId: `game_wr_alpha_${career.season.index}_${weekIndex}`,
@@ -74,9 +77,10 @@ export function startVNextGame(
     playerProgramId: programId,
     opponentProgramId,
     isHome,
+    // Package cards add live snaps to a role that already has some; they never create a role.
     opportunityCount: Math.min(
       5,
-      career.program.room.projection.interactiveSnapMaximum,
+      maximum + (maximum > 0 ? packageSnapBonusVNext(gameHooks) : 0),
       career.condition.availability?.opportunityCap ?? 12,
     ),
     playerTeamRating: matchup.supportingUnitRating,
@@ -95,6 +99,7 @@ export function startVNextGame(
     },
     families: mechanics.wr.families,
     patterns: mechanics.wr.patterns,
+    gameHooks,
     rng: career.rng.career,
   });
   return started.ok ? { positionId: 'position_wr', game: started.state } : null;

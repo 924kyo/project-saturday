@@ -13,6 +13,7 @@ const FLOW_TYPES = new Set([
   'RECRUITING',
   'WEEK_PLAN',
   'PRACTICE_REPORT',
+  'BREAKTHROUGH',
   'EVENT',
   'INJURY',
   'GAME',

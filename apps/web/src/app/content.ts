@@ -3,9 +3,11 @@ import {
   creationContent,
   gameContent,
   positionAlphaContent,
+  positionSkillBuilds,
   programContent,
   qbAlphaContent,
   rbAlphaContent,
+  skills as wrSkills,
   weeklyActions,
 } from '@project-saturday/game-content';
 import {
@@ -367,4 +369,60 @@ export const RISK_KEYS = {
 /** Qualitative band over the exact core risk; thresholds are presentation-only labels. */
 export function riskBand(riskPermille: number): RiskBand {
   return riskPermille < 60 ? 'low' : riskPermille < 150 ? 'elevated' : 'high';
+}
+
+export const GRADE_KEYS = {
+  skill_grade_c: 'skills.grade.c',
+  skill_grade_b: 'skills.grade.b',
+  skill_grade_a: 'skills.grade.a',
+  skill_grade_s: 'skills.grade.s',
+} as const satisfies Record<string, MessageKey>;
+export const FAMILY_KEYS = {
+  skill_family_development: 'skills.family.development',
+  skill_family_role_coach: 'skills.family.roleCoach',
+  skill_family_game_day: 'skills.family.gameDay',
+  skill_family_body: 'skills.family.body',
+  skill_family_mindset: 'skills.family.mindset',
+  skill_family_life: 'skills.family.life',
+} as const satisfies Record<string, MessageKey>;
+
+export interface CardView {
+  readonly id: string;
+  readonly nameKey: MessageKey;
+  readonly descriptionKey: MessageKey;
+  readonly gradeKey: MessageKey;
+  readonly gradeLetter: string;
+  readonly familyKey: MessageKey;
+  /** The card's weekly build effect, when it has one VNext actually applies. */
+  readonly weeklyKey: MessageKey | null;
+}
+
+// NIL and relationships are not in Career VNext yet, so their build lines would promise nothing.
+const LIVE_BUILDS = new Set(['film', 'repetition', 'body', 'mindset', 'role']);
+const WEEKLY_KEYS = new Map(
+  positionSkillBuilds
+    .filter(({ buildId }) => LIVE_BUILDS.has(buildId))
+    .map(({ skillId, descriptionKey }) => [skillId as string, key(descriptionKey)]),
+);
+const CARD_TEXT = new Map<string, CardView>(
+  [...qbAlphaContent.skills, ...rbAlphaContent.skills, ...cbAlphaContent.skills, ...wrSkills].map(
+    (card) => [
+      card.id,
+      {
+        id: card.id,
+        nameKey: key(card.nameKey),
+        descriptionKey: key(card.descriptionKey),
+        gradeKey: GRADE_KEYS[card.gradeId as keyof typeof GRADE_KEYS],
+        gradeLetter: card.gradeId.slice(-1).toUpperCase(),
+        familyKey: FAMILY_KEYS[card.familyId as keyof typeof FAMILY_KEYS],
+        weeklyKey: WEEKLY_KEYS.get(card.id) ?? null,
+      },
+    ],
+  ),
+);
+
+export function cardView(id: string): CardView {
+  const found = CARD_TEXT.get(id);
+  if (found === undefined) throw new Error(`Missing card presentation for ${id}.`);
+  return found;
 }

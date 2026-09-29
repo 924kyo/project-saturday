@@ -5,6 +5,7 @@ import {
   isFocusAvailableVNext,
   planWeekVNext,
   scheduledFixtureVNext,
+  VNEXT_BREAKTHROUGH_THRESHOLD,
   type CareerVNext,
   type CareerVNextMechanics,
   type PracticeReportVNext,
@@ -28,6 +29,7 @@ import {
   program,
   riskBand,
 } from './content';
+import { BuildPanel } from './BuildView';
 import { Nameplate } from './Nameplate';
 import { Crest, Delta, Meter, Panel } from './ui';
 import { METER_COLORS } from './theme';
@@ -304,6 +306,7 @@ function Report({
             <span>
               {t('v2.report.gauge', {
                 value: report.gaugeAfter,
+                threshold: VNEXT_BREAKTHROUGH_THRESHOLD,
                 gain: report.gaugeAfter - report.gaugeBefore,
               })}
             </span>
@@ -371,15 +374,18 @@ export function WeekScreen({
   blocked,
   onPlan,
   onGameDay,
+  onEquip,
 }: {
   readonly career: CareerVNext;
   readonly mechanics: CareerVNextMechanics;
   readonly blocked: boolean;
   readonly onPlan: (ids: readonly string[]) => void;
   readonly onGameDay: () => void;
+  readonly onEquip: (slotIndex: number, skillId: string | null) => void;
 }): React.JSX.Element {
   const { t } = useAppTranslation();
   const [picks, setPicks] = useState<readonly string[]>([]);
+  const [tab, setTab] = useState<'week' | 'build'>('week');
   const focuses: readonly FocusView[] = useMemo(
     () =>
       focusDefinitionsVNext(career, mechanics).map((definition) => ({
@@ -434,10 +440,42 @@ export function WeekScreen({
     setPicks(plan.filter((id) => open.some((focus) => focus.id === id)));
   }
   const last = projected?.focuses[2];
+  const tabs = (
+    <div aria-label={t('v2.build.nav')} className="s2-tabs" role="tablist">
+      <button
+        aria-selected={tab === 'week'}
+        className="s2-tab"
+        onClick={() => setTab('week')}
+        role="tab"
+        type="button"
+      >
+        {t('v2.build.tabWeek')}
+      </button>
+      <button
+        aria-selected={tab === 'build'}
+        className="s2-tab"
+        onClick={() => setTab('build')}
+        role="tab"
+        type="button"
+      >
+        {t('v2.build.tabBuild', { count: career.build.ownedSkillIds.length })}
+      </button>
+    </div>
+  );
+
+  if (tab === 'build')
+    return (
+      <div className="s2-stack">
+        <Nameplate career={career} />
+        {tabs}
+        <BuildPanel blocked={blocked} career={career} onEquip={onEquip} />
+      </div>
+    );
 
   return (
     <div className="s2-stack">
       <Nameplate career={career} />
+      {tabs}
       <InjuryBanner career={career} />
       <div className="s2-next">
         <p className="s2-eyebrow">{t('v2.week.nextUp')}</p>

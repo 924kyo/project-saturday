@@ -2,11 +2,81 @@ import type {
   CareerVNextMechanics,
   PositionPlayerCreationIdentity,
   ProgramId,
+  SkillMechanicsDefinition,
 } from '@project-saturday/game-core';
 
 import { keySnapFamilyMechanicsDefinitions, keySnapPatternMechanicsDefinitions } from './games.js';
 import { eventMechanicsDefinitions } from './events.js';
 import { buildShippedPositionAlphaSessionCommandMechanics } from './position-alpha-session.js';
+import { skillMechanicsDefinitions } from './skills.js';
+
+/**
+ * The shipped WR card catalog on VNext's WR drills. Skill scopes may only name weekly actions, so a
+ * scope that names an old WR drill becomes the equivalent focus-tag scope: route, release and
+ * catch drills map to the three VNext WR drills' focus tags, and extra practice (the multi-skill
+ * session) to every WR position drill. Card IDs, grades, weights, hooks and copy are unchanged.
+ */
+const WR_SCOPE_TAGS: Readonly<Record<string, string>> = {
+  action_route_drills: 'action_focus_route_running',
+  action_release_drills: 'action_focus_release',
+  action_hands_catch_work: 'action_focus_catching',
+  action_extra_practice: 'action_skill_position_training',
+  action_film_study: 'action_focus_film_study',
+  action_recovery: 'action_focus_body',
+  action_speed_work: 'action_focus_speed',
+  action_study_hall: 'action_focus_gpa',
+  action_weight_room: 'action_focus_strength',
+};
+const OLD_WR_DRILLS = new Set([
+  'action_route_drills',
+  'action_release_drills',
+  'action_hands_catch_work',
+  'action_extra_practice',
+]);
+
+function remapWrScope<T>(value: T): T {
+  if (typeof value !== 'object' || value === null) return value;
+  if (Array.isArray(value)) return value.map(remapWrScope) as T;
+  const record = value as Record<string, unknown>;
+  const ids = record['actionIds'];
+  if (
+    record['type'] === 'action_ids' &&
+    Array.isArray(ids) &&
+    ids.some((id: string) => OLD_WR_DRILLS.has(id))
+  )
+    return {
+      type: 'action_tags',
+      actionTagIds: [...new Set(ids.map((id: string) => WR_SCOPE_TAGS[id]!))],
+    } as T;
+  return Object.fromEntries(
+    Object.entries(record).map(([key, entry]) => [key, remapWrScope(entry)]),
+  ) as T;
+}
+
+/** WR drills carry the training family and focus tags the WR cards are authored against. */
+const WR_DRILL_TAGS = {
+  action_wr_route_craft: [
+    'action_family_training',
+    'action_focus_route_running',
+    'action_skill_training',
+    'action_skill_position_training',
+  ],
+  action_wr_separation: [
+    'action_family_training',
+    'action_focus_release',
+    'action_skill_training',
+    'action_skill_position_training',
+  ],
+  action_wr_catch_point: [
+    'action_family_training',
+    'action_focus_catching',
+    'action_skill_training',
+    'action_skill_position_training',
+  ],
+} as const;
+
+export const wrVNextSkillDefinitions: readonly SkillMechanicsDefinition[] =
+  skillMechanicsDefinitions.map((definition) => remapWrScope(definition));
 
 /** VNext reuses the shipped catalogs; creation mechanics depend on the chosen identity. */
 export function buildCareerVNextMechanics(
@@ -29,6 +99,15 @@ export function buildCareerVNextMechanics(
   if (shared === null) return null;
   return {
     ...shared,
+    // WR builds use the shipped WR cards; QB/RB/CB keep their position build catalogs.
+    ...(positionId === 'position_wr'
+      ? {
+          skillBuilds: {
+            definitions: wrVNextSkillDefinitions,
+            actionTags: { ...shared.skillBuilds.actionTags, ...WR_DRILL_TAGS },
+          },
+        }
+      : {}),
     wr: {
       events: eventMechanicsDefinitions,
       families: keySnapFamilyMechanicsDefinitions,

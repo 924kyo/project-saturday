@@ -23,7 +23,16 @@ Prototype saves are left untouched on the device, with a one-tap JSON export not
 
 ## Last completed task
 
-Weekly lifecycle, part 1: events and injuries as scene cards (2026-09-29).
+Weekly lifecycle, part 2: breakthrough cards and the Build screen (2026-09-29).
+
+- **Core (`vnext/build.ts`):** a full gauge (80) opens a `BREAKTHROUGH` scene after the practice report with three weighted, unowned cards on a named stream. The pick joins the collection and fills the first open slot. `equipSkillVNext` edits the four slots while planning.
+- **Rules consume every live card effect:** skill-aware focus resolution, rollover recovery, the injury-risk multiplier, QB/RB/CB kernel card effects, event unlocks. The WR kernel now consumes the shipped WR game hooks with the old WR semantics (clue, reliability, pressure composure, contested catch and tipped risk, YAC and fumble risk, package snaps).
+- **WR card set:** the 40 shipped WR cards, with old drill scopes mapped onto focus tags of the VNext WR drills.
+- **UI:** a card face (grade, family, Saturday effect, live weekly effect), the "This week / Build" tabs, a slot and collection editor, and the breakthrough scene. NIL and relationship build lines are hidden until those systems exist.
+- **Also fixed:** the nameplate at 320 px (the portrait yields its column).
+- **Tests:** every card of every position equips and plays; WR cards measurably change the Saturday; about two to three cards per season on a balanced plan.
+
+Before that: weekly lifecycle part 1 (events and injuries as scene cards, `career_vnext` v2).
 
 - **Core (`vnext/weekly.ts`):** `toGameDay()` now walks report → optional midweek event → pregame injury check → Game Day. QB/RB/CB events reuse their position selectors and choice rules; WR uses the shipped WR catalog with the same eligibility semantics. Event modifiers reach the next kickoff only. Injury availability caps live snaps; OUT still gets sideline reps; rollover advances recovery; drills follow the shipped injury workload policy.
 - **Pacing:** `VNEXT_INJURY_TUNING` is convex in Body. A test locks the contrast: a balanced plan sees about 0.5 injuries per season, grinding Body to zero about 2.5.
@@ -49,8 +58,8 @@ V4 continues in the new stack, in priority order:
    - Still open: on-board clue markers and pregame preparation keys.
 2. **Weekly lifecycle:**
    - contextual events and injuries as scene cards: done 2026-09-29;
-   - off-field alerts only when actionable;
-   - breakthrough card offers on the Build screen;
+   - breakthrough card offers on the Build screen: done 2026-09-29;
+   - off-field alerts only when actionable (NIL and relationships would make the dormant life cards live);
    - Team depth-board and Profile screens.
 3. **Season arc:** postseason, season review, offseason Stay/transfer, season two, retirement, Alumni Wall and Career Hub (with the lightweight import of prototype alumni).
 4. **Balance pass:** Body/recovery near-binary (three heavy drills pin Body at 0; the injury curve now punishes that); coach verdict harsh on low-volume games; QB trust erosion; rest credit on a one-week injury is inert.
@@ -83,12 +92,13 @@ V4 continues in the new stack, in priority order:
 - **Save/reload/offline:** save → reload → offline reload (service worker) resumes exactly; a failed write shows a banner and the exact retry succeeds (unit + App test).
 - **Keyboard:** keyboard-only play from creation through a snap result; focus draws the route preview; the board has an aria text equivalent.
 
-## Latest green verification (2026-09-29, weekly lifecycle part 1)
+## Latest green verification (2026-09-29, weekly lifecycle part 2)
 
 - Repo typecheck in all 4 packages; lint, boundary and localized-copy checks.
-- 805 tests in 98 files (core, content, web, testkit), including 10 VNext season/lifecycle tests and the weekly-copy coverage test.
-- Build/PWA: 19 entries / 1257.45 KiB.
-- Playwright: 4 passed / 2 intentional skips (the driver passes the optional weekly scenes).
+- 812 tests in 98 files (core, content, web, testkit), including 16 VNext season/lifecycle/build tests and the weekly and card copy coverage tests.
+- Build/PWA: 19 entries / 1300.99 KiB.
+- Playwright: 4 passed / 2 intentional skips (the driver passes the optional weekly scenes, breakthrough included).
+- Real browser: breakthrough and Build at ko-KR 390/320 and en-US 1440 on injected deterministic saves.
 
 ## Earlier verification (2026-09-29, parity checkpoint)
 

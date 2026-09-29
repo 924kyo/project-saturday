@@ -15,6 +15,7 @@ import { selectRbEvent, getAvailableRbEventChoices } from '../games/rb-events.js
 import { resolvePositionAlphaEventChoiceResult } from '../season/position-alpha-session.js';
 import { derivePositionInjuryExposure } from '../season/position-lifecycle.js';
 import { isPositionFocusAvailable, type PositionFocusId } from '../weekly/position-focus.js';
+import { hasLifeHookVNext, injuryRiskMultiplierVNext } from './build.js';
 import type {
   CareerVNext,
   CareerVNextMechanics,
@@ -139,8 +140,13 @@ function mappedDraw(rng: RngState, maximumExclusive: number) {
 function selectWrEvent(
   career: CareerVNext,
   catalog: readonly EventMechanicsDefinition[],
+  optionAccess: boolean,
 ): EventMechanicsDefinition | null {
-  const tags = new Set<string>([...career.athlete.profile.tagIds, 'tag_season_regular']);
+  const tags = new Set<string>([
+    ...career.athlete.profile.tagIds,
+    'tag_season_regular',
+    ...(optionAccess ? ['tag_skill_event_option_access'] : []),
+  ]);
   const eligible = catalog
     .filter((event) => wrEligible(career, event, tags))
     .sort((left, right) => (left.id < right.id ? -1 : left.id > right.id ? 1 : 0));
@@ -171,7 +177,11 @@ export function attemptWeeklyEventVNext(
     effects: null,
   });
   if (profile.positionId === 'position_wr') {
-    const event = selectWrEvent(career, mechanics.wr.events);
+    const event = selectWrEvent(
+      career,
+      mechanics.wr.events,
+      hasLifeHookVNext(career, mechanics, 'life_hook_event_option_access'),
+    );
     return event === null
       ? null
       : pending(
@@ -393,13 +403,16 @@ export function injuryRiskVNext(
   const tuning = VNEXT_INJURY_TUNING;
   const weighted = (value: number, permille: number) => Math.floor((value * permille) / 1_000);
   const deficit = 100 - profile.state.body;
-  return clamp(
+  const base =
     tuning.basePermille +
-      Math.floor((deficit * deficit) / tuning.bodyCurveDivisor) +
-      weighted(exposure.durabilityRiskPermille, tuning.durabilityWeightPermille) +
-      weighted(exposure.workloadRiskPermille, tuning.workloadWeightPermille) +
-      weighted(exposure.trainingRiskPermille, tuning.trainingWeightPermille) +
-      weighted(exposure.positionExposurePermille, tuning.positionWeightPermille),
+    Math.floor((deficit * deficit) / tuning.bodyCurveDivisor) +
+    weighted(exposure.durabilityRiskPermille, tuning.durabilityWeightPermille) +
+    weighted(exposure.workloadRiskPermille, tuning.workloadWeightPermille) +
+    weighted(exposure.trainingRiskPermille, tuning.trainingWeightPermille) +
+    weighted(exposure.positionExposurePermille, tuning.positionWeightPermille);
+  // Body cards with an injury-risk multiplier scale the whole pregame risk.
+  return clamp(
+    Math.round((base * injuryRiskMultiplierVNext(career, mechanics)) / 1_000),
     0,
     tuning.maximumPermille,
   );

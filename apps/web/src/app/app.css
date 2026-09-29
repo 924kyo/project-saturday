@@ -375,6 +375,15 @@
   gap: 6px;
   padding-bottom: 14px;
 }
+/* Narrow phones: the portrait yields its column so the name and role line never break per glyph. */
+@media (max-width: 359px) {
+  .s2-nameplate {
+    grid-template-columns: 1fr auto;
+  }
+  .s2-nameplate__portrait {
+    display: none;
+  }
+}
 .s2-rankchip {
   display: inline-flex;
   align-items: baseline;
@@ -1378,4 +1387,147 @@
   border-top: 1px solid var(--line);
   font-size: 14px;
   color: var(--ink-2);
+}
+
+/* Build: tabs, card faces, slots and the breakthrough offer. */
+.s2-tabs {
+  display: flex;
+  gap: 6px;
+  border-bottom: 1px solid var(--line);
+}
+.s2-tab {
+  padding: 10px 14px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: none;
+  color: var(--ink-2);
+  font-weight: 700;
+  cursor: pointer;
+}
+.s2-tab[aria-selected='true'] {
+  color: var(--ink);
+  border-bottom-color: var(--gold);
+}
+.s2-card {
+  display: grid;
+  gap: 6px;
+  text-align: left;
+}
+.s2-card__top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.s2-card__grade {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  background: var(--gold);
+  color: var(--night);
+  font-family: var(--display);
+  font-weight: 800;
+}
+.s2-card__family {
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.s2-card__name {
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+.s2-card__desc {
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+.s2-card__weekly {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--info);
+}
+.s2-cardgrid {
+  display: grid;
+  gap: 10px;
+}
+@media (min-width: 720px) {
+  .s2-cardgrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .s2-cardgrid--offer {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+.s2-cardbtn {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-top: 4px solid var(--gold);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+.s2-cardbtn:hover:not(:disabled),
+.s2-cardbtn:focus-visible {
+  background: var(--surface-3);
+  border-color: var(--gold);
+}
+.s2-cardbtn--static {
+  cursor: default;
+}
+.s2-cardbtn > .s2-effect {
+  justify-self: start;
+}
+.s2-buildslots {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+@media (min-width: 720px) {
+  .s2-buildslots {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.s2-buildslot {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  padding: 10px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+}
+.s2-buildslot--on {
+  border: 1px solid var(--gold);
+  background: color-mix(in srgb, var(--gold) 8%, transparent);
+}
+.s2-buildslot__pick {
+  display: grid;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+.s2-buildslot > .s2-chipbtn {
+  justify-self: start;
+}
+.s2-scene--breakthrough {
+  border-left-color: var(--gold);
+  border-color: color-mix(in srgb, var(--gold) 45%, var(--line));
+  background:
+    linear-gradient(120deg, color-mix(in srgb, var(--gold) 16%, transparent), transparent 65%),
+    var(--surface-2);
+}
+.s2 .s2-bt-note {
+  margin-top: 12px;
 }

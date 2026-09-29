@@ -4,6 +4,7 @@ import {
   validatePositionAttributeProgress,
   type PositionAttributeProgress,
 } from '../player/progression.js';
+import type { CollectedGameHook } from '../skills/types.js';
 import { ATTRIBUTE_XP_PER_RATING } from '../weekly/tuning.js';
 import { isRngState, nextUint32, type RngState } from '../random/rng.js';
 import type {
@@ -51,6 +52,8 @@ export interface WrAlphaGameStartInput {
   readonly player: WrAlphaPlayerState;
   readonly families: readonly KeySnapFamilyMechanicsDefinition[];
   readonly patterns: readonly KeySnapPatternMechanicsDefinition[];
+  /** Equipped WR card hooks (collected by the owning command); empty means no build. */
+  readonly gameHooks?: readonly CollectedGameHook[];
   readonly rng: RngState;
 }
 
@@ -204,7 +207,11 @@ function withPendingSnap(active: ActiveBase, snapIndex: number): ActiveWrAlphaGa
     0,
     100,
   );
-  const clueCount = informationScore >= 62 ? 2 : informationScore >= 42 ? 1 : 0;
+  // Coverage-clue cards add whole clues on top of the information tier (the shipped WR rule).
+  const clueBonus = (active.input.gameHooks ?? [])
+    .filter(({ hookId }) => hookId === 'game_hook_coverage_clue_bonus')
+    .reduce((sum, { valueMilli }) => sum + Math.trunc(valueMilli / 1_000), 0);
+  const clueCount = (informationScore >= 62 ? 2 : informationScore >= 42 ? 1 : 0) + clueBonus;
   const revealedClueIds = pattern.clueIds.slice(0, clueCount);
   const prepared = prepareTacticalAlphaSnapV1({
     gameId: active.input.gameId,
@@ -444,6 +451,29 @@ export function resolveWrAlphaSnap(
       0,
     ) / 1_000,
   );
+  // Card hooks follow the shipped WR semantics: reliability always, composure on pressure snaps,
+  // contested catch and tipped risk on the high-point attack, YAC and fumble risk on aggressive YAC.
+  const hooks = active.input.gameHooks ?? [];
+  const context = pending.tacticalContext;
+  const pressureSnap =
+    context.clock.period === 4 ||
+    context.field.down >= 3 ||
+    context.field.distanceYards >= 8 ||
+    Math.abs(context.score.playerTeam - context.score.opponent) <= 8;
+  const contestedHighPoint =
+    family.id === 'key_snap_family_catch' && decisionId === 'key_snap_decision_attack_high_point';
+  const aggressiveYac =
+    family.id === 'key_snap_family_yac' && decisionId !== 'key_snap_decision_protect_ball';
+  const applied = new Set<string>();
+  let skillAdjustment = 0;
+  for (const hook of hooks)
+    if (
+      hook.hookId === 'game_hook_assignment_reliability_bonus' ||
+      (hook.hookId === 'game_hook_pressure_composure_bonus' && pressureSnap)
+    ) {
+      skillAdjustment += Math.round(hook.valueMilli / 10);
+      applied.add(hook.skillId);
+    }
   const finalScore = clamp(
     Math.round(
       (attributeScore * 300 +
@@ -454,7 +484,7 @@ export function resolveWrAlphaSnap(
         player.state.confidence * 50 +
         active.input.playerTeamRating * 100) /
         1_000,
-    ),
+    ) + skillAdjustment,
     0,
     100,
   );
@@ -464,16 +494,32 @@ export function resolveWrAlphaSnap(
     80,
     950,
   );
-  const turnoverRisk = clamp(
+  let turnoverRisk = clamp(
     outcome.turnoverRiskPermille + (50 - finalScore) * 2 + (60 - fit),
     0,
     450,
   );
-  const catchChance = clamp(
+  let catchChance = clamp(
     outcome.baseCatchPermille + (finalScore - 50) * 6 + (fit - 60) * 3,
     100,
     950,
   );
+  let yacMultiplierMilli = 1_000;
+  for (const hook of hooks) {
+    if (contestedHighPoint && hook.hookId === 'game_hook_contested_catch_success_bonus') {
+      catchChance = clamp(catchChance + hook.valueMilli, 0, 1_000);
+      applied.add(hook.skillId);
+    } else if (contestedHighPoint && hook.hookId === 'game_hook_tipped_turnover_risk_bonus') {
+      turnoverRisk = clamp(turnoverRisk + hook.valueMilli, 0, 1_000);
+      applied.add(hook.skillId);
+    } else if (aggressiveYac && hook.hookId === 'game_hook_yac_yardage_multiplier') {
+      yacMultiplierMilli = Math.round((yacMultiplierMilli * hook.valueMilli) / 1_000);
+      applied.add(hook.skillId);
+    } else if (aggressiveYac && hook.hookId === 'game_hook_fumble_risk_multiplier') {
+      turnoverRisk = clamp(Math.round((turnoverRisk * hook.valueMilli) / 1_000), 0, 1_000);
+      applied.add(hook.skillId);
+    }
+  }
   const dropRisk = clamp(
     outcome.dropRiskPermille - (rating(player.attributes, 'attribute_wr_hands') - 50) * 3,
     0,
@@ -495,7 +541,11 @@ export function resolveWrAlphaSnap(
     playResult = 'RECEPTION';
     yards = Math.max(
       1,
-      outcome.baseReceivingYards + Math.round((finalScore - 50) / 6) + yardDraw.value,
+      Math.round(
+        ((outcome.baseReceivingYards + Math.round((finalScore - 50) / 6) + yardDraw.value) *
+          yacMultiplierMilli) /
+          1_000,
+      ),
     );
     touchdown = touchdownDraw.value < touchdownChance ? 1 : 0;
   }
@@ -531,7 +581,7 @@ export function resolveWrAlphaSnap(
     receivingTouchdownDelta: scored,
     decisionFit: fit,
     finalScore,
-    appliedSkillIds: [],
+    appliedSkillIds: [...applied].sort(),
     rngDrawCountBefore: before,
     rngDrawCountAfter: yardDraw.rng.drawCount,
   };

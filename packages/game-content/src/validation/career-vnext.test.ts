@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import {
+  chooseBreakthroughVNext,
   chooseEventVNext,
   chooseInjuryVNext,
   chooseSnapVNext,
   commitProgramVNext,
   continueGameVNext,
   createCareerVNext,
+  equipSkillVNext,
   focusDefinitionsVNext,
+  offerCandidatesVNext,
   isFocusAvailableVNext,
   kickoffVNext,
   nextWeekVNext,
@@ -15,6 +18,7 @@ import {
   projectSnapBoardFrame,
   serializeCareerVNext,
   toGameDayVNext,
+  VNEXT_BREAKTHROUGH_THRESHOLD,
   type CareerVNext,
   type CareerVNextResult,
   type PositionPlayerCreationIdentity,
@@ -58,6 +62,7 @@ function playSeason(
   const decisionsPerGame: number[] = [];
   const events: string[] = [];
   const injuries: string[] = [];
+  const cards: string[] = [];
   let reloads = 0;
   const adopt = (result: CareerVNextResult): CareerVNext => {
     if (!result.ok) throw new Error(result.reason);
@@ -90,6 +95,16 @@ function playSeason(
       career = adopt(planWeekVNext(career, plan, mechanics));
     } else if (career.flow.type === 'PRACTICE_REPORT') {
       career = adopt(toGameDayVNext(career, mechanics));
+    } else if (career.flow.type === 'BREAKTHROUGH') {
+      const offer = career.flow.offer;
+      if (offer.chosenSkillId === null) {
+        expect(new Set(offer.skillIds).size).toBe(3);
+        expect(chooseBreakthroughVNext(career, 'skill_unknown').ok).toBe(false);
+        const gauge = career.athlete.breakthroughGauge;
+        career = adopt(chooseBreakthroughVNext(career, offer.skillIds[0]!));
+        expect(career.athlete.breakthroughGauge).toBe(gauge - VNEXT_BREAKTHROUGH_THRESHOLD);
+        cards.push(offer.skillIds[0]!);
+      } else career = adopt(toGameDayVNext(career, mechanics));
     } else if (career.flow.type === 'EVENT') {
       const event = career.flow.event;
       if (event.chosenChoiceId === null) {
@@ -140,7 +155,7 @@ function playSeason(
       career = adopt(nextWeekVNext(career, mechanics));
     }
   }
-  return { career, decisionsPerGame, reloads, events, injuries };
+  return { career, decisionsPerGame, reloads, events, injuries, cards };
 }
 
 describe('Career VNext vertical slice core', () => {
@@ -278,5 +293,152 @@ describe('Career VNext weekly lifecycle', () => {
     expect(
       migrated!.log.every(({ availabilityId }) => availabilityId === 'injury_availability_full'),
     ).toBe(true);
+  }, 60_000);
+});
+
+describe('Career VNext build', () => {
+  it('turns practice into breakthrough offers and equips the chosen card', () => {
+    const perSeason: number[] = [];
+    for (const [positionId, archetypeId] of identities) {
+      const { career, cards } = playSeason(
+        identityFor(positionId, archetypeId),
+        `vnext-build-${positionId}`,
+        false,
+        'injury_choice_rest_rehab',
+        'balanced',
+      );
+      perSeason.push(cards.length);
+      expect(career.build.ownedSkillIds).toEqual(cards);
+      const equipped = career.build.equippedSkillIds.filter((id) => id !== null);
+      expect(equipped).toEqual(cards.slice(0, 4));
+    }
+    (
+      globalThis as unknown as { process: { stdout: { write: (text: string) => void } } }
+    ).process.stdout.write(
+      `CARDS ${perSeason.join(',')}
+`,
+    );
+    expect(Math.min(...perSeason)).toBeGreaterThanOrEqual(1);
+  }, 120_000);
+
+  it.each(identities)(
+    '%s can equip and play every card in its catalog',
+    (positionId, archetypeId) => {
+      const identity = identityFor(positionId, archetypeId);
+      const mechanics = buildCareerVNextMechanics(identity)!;
+      const created = createCareerVNext(
+        { seed: `vnext-catalog-${positionId}`, identity },
+        mechanics,
+      );
+      if (!created.ok) throw new Error(created.reason);
+      const committed = commitProgramVNext(
+        created.career,
+        created.career.recruiting.offers[0]!.programId,
+        mechanics,
+      );
+      if (!committed.ok) throw new Error(committed.reason);
+      const catalog = offerCandidatesVNext(committed.career, mechanics).map(
+        ({ skillId }) => skillId,
+      );
+      expect(catalog.length).toBeGreaterThanOrEqual(12);
+      const owning: CareerVNext = {
+        ...committed.career,
+        build: { ...committed.career.build, ownedSkillIds: catalog },
+      };
+      const focusIds = focusDefinitionsVNext(owning, mechanics).map(({ id }) => id);
+      for (let start = 0; start < catalog.length; start += 4) {
+        let career = owning;
+        for (const [slot, skillId] of catalog.slice(start, start + 4).entries()) {
+          const equipped = equipSkillVNext(career, slot, skillId);
+          if (!equipped.ok) throw new Error(`${skillId}: ${equipped.reason}`);
+          career = equipped.career;
+        }
+        const planned = planWeekVNext(
+          career,
+          [focusIds[0]!, focusIds[3]!, focusIds[5]!],
+          mechanics,
+        );
+        if (!planned.ok)
+          throw new Error(`${catalog.slice(start, start + 4).join(',')}: ${planned.reason}`);
+        let next = planned.career;
+        while (next.flow.type !== 'GAME') {
+          const flow = next.flow;
+          const step =
+            flow.type === 'EVENT' && flow.event.chosenChoiceId === null
+              ? chooseEventVNext(next, flow.event.choiceIds[0]!, mechanics)
+              : flow.type === 'INJURY' && flow.report.availability === null
+                ? chooseInjuryVNext(next, 'injury_choice_play_limited', mechanics)
+                : flow.type === 'BREAKTHROUGH' && flow.offer.chosenSkillId === null
+                  ? chooseBreakthroughVNext(next, flow.offer.skillIds[0]!)
+                  : toGameDayVNext(next, mechanics);
+          if (!step.ok) throw new Error(step.reason);
+          next = step.career;
+        }
+        expect(kickoffVNext(next, mechanics).ok).toBe(true);
+      }
+      // Build edits are planning-only and a card occupies one slot.
+      const moved = equipSkillVNext(owning, 0, catalog[0]!);
+      if (!moved.ok) throw new Error(moved.reason);
+      const again = equipSkillVNext(moved.career, 2, catalog[0]!);
+      if (!again.ok) throw new Error(again.reason);
+      expect(again.career.build.equippedSkillIds).toEqual([null, null, catalog[0], null]);
+      expect(equipSkillVNext(owning, 4, catalog[0]!).ok).toBe(false);
+      expect(equipSkillVNext(committed.career, 0, catalog[0]!).ok).toBe(false);
+    },
+    60_000,
+  );
+
+  it('makes WR cards change the Saturday: clues, reliability and package snaps', () => {
+    const identity = identityFor('position_wr', 'archetype_wr_deep_threat');
+    const mechanics = buildCareerVNextMechanics(identity)!;
+    const created = createCareerVNext({ seed: 'vnext-wr-hooks', identity }, mechanics);
+    if (!created.ok) throw new Error(created.reason);
+    const committed = commitProgramVNext(
+      created.career,
+      created.career.recruiting.offers[0]!.programId,
+      mechanics,
+    );
+    if (!committed.ok) throw new Error(committed.reason);
+    const kickoff = (equipped: readonly (string | null)[]) => {
+      let career: CareerVNext = {
+        ...committed.career,
+        build: {
+          ownedSkillIds: equipped.filter((id): id is string => id !== null) as never,
+          equippedSkillIds: equipped as never,
+        },
+      };
+      const focusIds = focusDefinitionsVNext(career, mechanics).map(({ id }) => id);
+      const planned = planWeekVNext(career, [focusIds[0]!, focusIds[5]!, focusIds[6]!], mechanics);
+      if (!planned.ok) throw new Error(planned.reason);
+      career = planned.career;
+      while (career.flow.type !== 'GAME') {
+        const flow = career.flow;
+        const step =
+          flow.type === 'EVENT' && flow.event.chosenChoiceId === null
+            ? chooseEventVNext(career, flow.event.choiceIds[0]!, mechanics)
+            : flow.type === 'INJURY' && flow.report.availability === null
+              ? chooseInjuryVNext(career, 'injury_choice_play_limited', mechanics)
+              : toGameDayVNext(career, mechanics);
+        if (!step.ok) throw new Error(step.reason);
+        career = step.career;
+      }
+      const started = kickoffVNext(career, mechanics);
+      if (!started.ok || started.career.flow.type !== 'GAME') throw new Error('kickoff');
+      return started.career.flow.game.engine!;
+    };
+    const plain = kickoff([null, null, null, null]);
+    const built = kickoff([
+      'skill_leverage_snapshot_c',
+      'skill_signal_reader_a',
+      'skill_coaches_key_s',
+      null,
+    ]);
+    if (plain.game.type !== 'ACTIVE' || built.game.type !== 'ACTIVE') throw new Error('inactive');
+    expect(built.game.pendingSnap.revealedClueIds.length).toBeGreaterThan(
+      plain.game.pendingSnap.revealedClueIds.length,
+    );
+    expect(built.game.input.opportunityCount).toBe(
+      Math.min(5, plain.game.input.opportunityCount + 1),
+    );
   }, 60_000);
 });

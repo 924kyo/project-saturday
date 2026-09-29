@@ -24,12 +24,20 @@ export async function advanceToPregame(
   onScreen?: (label: string) => Promise<void>,
 ): Promise<void> {
   for (let guard = 0; guard < 4; guard += 1) {
-    await expect(page.locator('#s2-pregame, #s2-event, #s2-injury').first()).toBeVisible();
+    await expect(
+      page.locator('#s2-pregame, #s2-breakthrough, #s2-event, #s2-injury').first(),
+    ).toBeVisible();
     if ((await page.locator('#s2-pregame').count()) > 0) break;
-    const scene = (await page.locator('#s2-event').count()) > 0 ? 'event' : 'injury';
-    if ((await page.locator('.s2-choice').count()) > 0) {
+    const scene =
+      (await page.locator('#s2-breakthrough').count()) > 0
+        ? 'breakthrough'
+        : (await page.locator('#s2-event').count()) > 0
+          ? 'event'
+          : 'injury';
+    const choice = page.locator('.s2-choice, #s2-breakthrough button.s2-cardbtn');
+    if ((await choice.count()) > 0) {
       await onScreen?.(scene);
-      await page.locator('.s2-choice').first().click();
+      await choice.first().click();
     }
     await expect(primaryAction(page)).toBeEnabled();
     await onScreen?.(`${scene}-outcome`);
