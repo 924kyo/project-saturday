@@ -75,7 +75,9 @@ import {
   validatePositionInjuryWeek,
   type PositionInjuryWeekV1,
 } from './position-injury.js';
+import { TACTICAL_GAME_RULES_VERSION } from '../games/tactical-alpha-v1.js';
 import {
+  recordedPositionAlphaRulesVersion,
   startPositionAlphaGame,
   resolvePositionAlphaSnap,
   validatePositionAlphaSession,
@@ -105,6 +107,8 @@ import {
 } from './position-alpha-week-evidence-v2.js';
 
 export const POSITION_ALPHA_SESSION_SCHEMA_VERSION_V2 = 2 as const;
+/** Current-rules aggregate: identical shape, explicit schema/model markers (see session-v3). */
+export const POSITION_ALPHA_SESSION_SCHEMA_VERSION_V3 = 3 as const;
 
 /** Action-time snapshots may differ from today's slots, but cannot borrow future/unowned cards. */
 function ownsNilPlanningLoadouts(
@@ -454,6 +458,13 @@ function validateGameDay(
     injury,
   );
   if (gameContext === null) return false;
+  const rulesVersion = recordedPositionAlphaRulesVersion(day['game']);
+  if (
+    rulesVersion === null ||
+    (rulesVersion !== undefined &&
+      value['schemaVersion'] !== POSITION_ALPHA_SESSION_SCHEMA_VERSION_V3)
+  )
+    return false;
   let expected = startPositionAlphaGame(
     { ...gameContext, careerRng: nil.rng },
     fixture,
@@ -461,6 +472,7 @@ function validateGameDay(
     positionAlphaActiveMechanicsV2(session, mechanics),
     injury.availability,
     academics.maximumOpportunities,
+    rulesVersion,
   );
   for (const decisionId of day['decisionIds']) {
     if (expected === null) return false;
@@ -481,16 +493,38 @@ export function validatePositionAlphaSessionV2(
   value: unknown,
   mechanics: PositionAlphaSessionFoundationMechanics,
 ): value is PositionAlphaSessionV2 {
+  return (
+    isRecord(value) &&
+    value['schemaVersion'] === POSITION_ALPHA_SESSION_SCHEMA_VERSION_V2 &&
+    validatePositionAlphaAggregate(value, mechanics)
+  );
+}
+
+/**
+ * Shared v2/v3 aggregate validator. The two versions have one shape; only v3 may retain games
+ * played under the explicitly selected current rules. Runtime values keep their own version, so
+ * this is internal to the owning session modules and never a reader alias.
+ */
+export function validatePositionAlphaAggregate(
+  value: unknown,
+  mechanics: PositionAlphaSessionFoundationMechanics,
+): value is PositionAlphaSessionV2 {
   if (
     !isRecord(value) ||
-    value['schemaVersion'] !== POSITION_ALPHA_SESSION_SCHEMA_VERSION_V2 ||
-    value['model'] !== 'position_alpha_session_v2' ||
+    !(
+      (value['schemaVersion'] === POSITION_ALPHA_SESSION_SCHEMA_VERSION_V2 &&
+        value['model'] === 'position_alpha_session_v2') ||
+      (value['schemaVersion'] === POSITION_ALPHA_SESSION_SCHEMA_VERSION_V3 &&
+        value['model'] === 'position_alpha_session_v3')
+    ) ||
     !isRecord(value['gameDay']) ||
     value['gameDay']['model'] !== 'position_alpha_game_day_v2' ||
     !isRecord(value['skills'])
   )
     return false;
   const originalMechanics = mechanics;
+  const currentRules = value['schemaVersion'] === POSITION_ALPHA_SESSION_SCHEMA_VERSION_V3;
+  let priorSeasonCurrentRules = false;
   let seasonBaseline: PositionAlphaSessionV2 | null = null;
   if (Object.hasOwn(value, 'seasonStart')) {
     const start = value['seasonStart'];
@@ -505,9 +539,12 @@ export function validatePositionAlphaSessionV2(
       !prior.ok ||
       !isRecord(prior.value) ||
       Object.hasOwn(prior.value, 'seasonStart') ||
-      !validatePositionAlphaSessionV2(prior.value, mechanics)
+      !validatePositionAlphaAggregate(prior.value, mechanics) ||
+      // A v2 aggregate can only archive a v2 season; v3 may archive either version.
+      (!currentRules && prior.value.schemaVersion !== POSITION_ALPHA_SESSION_SCHEMA_VERSION_V2)
     )
       return false;
+    priorSeasonCurrentRules = playedCurrentRules(prior.value).includes(true);
     seasonBaseline = derivePositionAlphaSeasonStartV2(
       prior.value,
       start['selectedProgramId'] as ProgramId,
@@ -577,7 +614,7 @@ export function validatePositionAlphaSessionV2(
     (entry, index) =>
       validatePositionAlphaWeekSummaryV1(entry, index) ||
       (hasCommandMechanics(mechanics) &&
-        validatePositionAlphaWeekSummaryV2(entry, index, mechanics)),
+        validatePositionAlphaWeekSummaryV2(entry, index, mechanics, undefined, currentRules)),
     directPostseason
       ? {
           validateHistoryEntry: (entry, index) => {
@@ -586,7 +623,13 @@ export function validatePositionAlphaSessionV2(
             const fixture = postseasonFixture(world, 12 + index);
             return (
               fixture !== undefined &&
-              validatePositionAlphaWeekSummaryV2(entry, 12 + index, mechanics, fixture)
+              validatePositionAlphaWeekSummaryV2(
+                entry,
+                12 + index,
+                mechanics,
+                fixture,
+                currentRules,
+              )
             );
           },
           validatePhase: (currentPhase, world, lifecycle) => {
@@ -671,7 +714,7 @@ export function validatePositionAlphaSessionV2(
         },
         phase: { type: 'POSTSEASON_REVIEW', seasonIndex: session.phase.seasonIndex },
       };
-      if (!validatePositionAlphaSessionV2(before, originalMechanics)) return false;
+      if (!validatePositionAlphaAggregate(before, originalMechanics)) return false;
       const derived = derivePositionAlphaSeasonReviewV2(before, mechanics);
       if (derived === null) return false;
       const reviewed: PositionAlphaSessionV2 = {
@@ -929,10 +972,25 @@ export function validatePositionAlphaSessionV2(
         : Object.hasOwn(session, 'academics')
     )
       return false;
-    return validateGameDay(value, mechanics);
+    if (!validateGameDay(value, mechanics)) return false;
+    // Current rules are selected only for new games: once used, no later game may revert.
+    const played = [priorSeasonCurrentRules, ...playedCurrentRules(session)];
+    return played.every((current, index) => current || !played.slice(0, index).includes(true));
   } catch {
     return false;
   }
+}
+
+/** Chronological rules evidence for completed and in-flight games (historical summaries: false). */
+function playedCurrentRules(session: PositionAlphaSessionV2): boolean[] {
+  const inFlight =
+    session.gameDay.type !== 'IDLE' && session.gameDay.game !== null ? [session.gameDay.game] : [];
+  return [
+    ...[...session.weekHistory, ...session.postseasonHistory].map((entry) =>
+      entry.model === 'position_alpha_week_summary_v2' ? entry.completedGame : null,
+    ),
+    ...inFlight,
+  ].map((game) => game !== null && recordedPositionAlphaRulesVersion(game) !== undefined);
 }
 
 export type PositionAlphaCommandResultV2 =
@@ -998,7 +1056,7 @@ function preparePositionAlphaPlanningSourceV2(
   if (
     (session?.phase?.type !== 'WEEK_PLANNING' && session?.phase?.type !== 'POSTSEASON_PLANNING') ||
     session.gameDay?.type !== 'IDLE' ||
-    !validatePositionAlphaSessionV2(session, mechanics) ||
+    !validatePositionAlphaAggregate(session, mechanics) ||
     session.skills.offeredSkillIds !== null ||
     session.events.pending !== null
   )
@@ -1021,7 +1079,7 @@ function preparePositionAlphaPlanningSourceV2(
     );
     if (nil === null) return null;
     session = { ...session, nil };
-    if (!validatePositionAlphaSessionV2(session, mechanics)) return null;
+    if (!validatePositionAlphaAggregate(session, mechanics)) return null;
   }
   if (
     !Object.hasOwn(session, 'seasonClock') &&
@@ -1177,7 +1235,7 @@ export function resolvePositionAlphaEventV2(
   mechanics: PositionAlphaSessionCommandMechanics,
 ): PositionAlphaCommandResultV2 {
   if (session?.gameDay?.type === 'EVENT_CHOICE') {
-    if (!validatePositionAlphaSessionV2(session, mechanics) || session.gameDay.event === null)
+    if (!validatePositionAlphaAggregate(session, mechanics) || session.gameDay.event === null)
       return invalidCommand();
     const event = choosePositionAlphaWeeklyEventV2(
       { ...session, previousStats: previousPositionAlphaFootballStats(session) },
@@ -1191,7 +1249,7 @@ export function resolvePositionAlphaEventV2(
       : publish(session, { ...session.gameDay, event, type: 'EVENT_RESOLVED' }, mechanics);
   }
   if (
-    !validatePositionAlphaSessionV2(session, mechanics) ||
+    !validatePositionAlphaAggregate(session, mechanics) ||
     session.gameDay.type !== 'IDLE' ||
     session.events.pending === null
   )
@@ -1203,7 +1261,7 @@ export function resolvePositionAlphaEventV2(
     ...effects,
     revision: session.revision + 1,
   };
-  return validatePositionAlphaSessionV2(next, mechanics)
+  return validatePositionAlphaAggregate(next, mechanics)
     ? deepFreeze({ ok: true, session: cloneSerializable(next) })
     : invalidCommand();
 }
@@ -1215,7 +1273,7 @@ export function choosePositionAlphaSkillV2(
   mechanics: PositionAlphaSessionCommandMechanics,
 ): PositionAlphaCommandResultV2 {
   if (
-    !validatePositionAlphaSessionV2(session, mechanics) ||
+    !validatePositionAlphaAggregate(session, mechanics) ||
     session.gameDay.type !== 'IDLE' ||
     !['WEEK_PLANNING', 'SEASON_REVIEW', 'POSTSEASON_PLANNING', 'POSTSEASON_REVIEW'].includes(
       session.phase.type,
@@ -1259,7 +1317,7 @@ export function choosePositionAlphaSkillV2(
       ],
     },
   };
-  return validatePositionAlphaSessionV2(next, mechanics)
+  return validatePositionAlphaAggregate(next, mechanics)
     ? deepFreeze({ ok: true, session: next })
     : invalidCommand();
 }
@@ -1272,7 +1330,7 @@ export function equipPositionAlphaSkillV2(
   mechanics: PositionAlphaSessionFoundationMechanics,
 ): PositionAlphaCommandResultV2 {
   if (
-    !validatePositionAlphaSessionV2(session, mechanics) ||
+    !validatePositionAlphaAggregate(session, mechanics) ||
     (session.phase.type !== 'WEEK_PLANNING' && session.phase.type !== 'POSTSEASON_PLANNING') ||
     session.gameDay.type !== 'IDLE' ||
     session.skills.offeredSkillIds !== null ||
@@ -1295,7 +1353,7 @@ export function equipPositionAlphaSkillV2(
     revision: session.revision + 1,
     skills: { ...cloneSerializable(session.skills), equippedSkillIds: equipped },
   };
-  return validatePositionAlphaSessionV2(next, mechanics)
+  return validatePositionAlphaAggregate(next, mechanics)
     ? deepFreeze({ ok: true, session: next })
     : invalidCommand();
 }
@@ -1304,6 +1362,8 @@ export function equipPositionAlphaSkillV2(
 function prepareCurrentGameStartV2(
   session: PositionAlphaSessionV2,
   mechanics: PositionAlphaSessionCommandMechanics,
+  /** Kickoff selects current rules for a v3 aggregate; public previews read rule-independent facts. */
+  selectRules: boolean,
 ) {
   const day = session.gameDay;
   if (session.phase.type !== 'GAME_DAY' || day.type !== 'GAME_PREVIEW') return null;
@@ -1331,6 +1391,9 @@ function prepareCurrentGameStartV2(
     positionAlphaActiveMechanicsV2(session, mechanics),
     day.injury.availability,
     day.academics.maximumOpportunities,
+    selectRules && (session.schemaVersion as number) === POSITION_ALPHA_SESSION_SCHEMA_VERSION_V3
+      ? TACTICAL_GAME_RULES_VERSION
+      : undefined,
   );
   return game === null ? null : { game, context };
 }
@@ -1352,10 +1415,10 @@ export function projectPositionAlphaGamePreviewV2(
 ): PositionAlphaGamePreviewV2 | null {
   if (
     session?.gameDay?.type !== 'GAME_PREVIEW' ||
-    !validatePositionAlphaSessionV2(session, mechanics)
+    !validatePositionAlphaAggregate(session, mechanics)
   )
     return null;
-  const started = prepareCurrentGameStartV2(session, mechanics);
+  const started = prepareCurrentGameStartV2(session, mechanics, false);
   if (started === null || !sameJson(started.game.game.rng, session.careerRng)) return null;
   const game = started.game.game;
   const evidence = game.type === 'ACTIVE' ? game.input : game.summary;
@@ -1389,7 +1452,7 @@ export function advancePositionAlphaGameDayV2(
     ].includes(session?.gameDay?.type)
   )
     return invalidCommand();
-  if (!validatePositionAlphaSessionV2(session, mechanics) || session.phase.type !== 'GAME_DAY')
+  if (!validatePositionAlphaAggregate(session, mechanics) || session.phase.type !== 'GAME_DAY')
     return invalidCommand();
   const day = session.gameDay;
   if (
@@ -1483,7 +1546,7 @@ export function advancePositionAlphaGameDayV2(
       : publish(session, { ...day, nil, type: 'GAME_PREVIEW' }, mechanics);
   }
   if (day.type === 'GAME_PREVIEW') {
-    const game = prepareCurrentGameStartV2(session, mechanics)?.game ?? null;
+    const game = prepareCurrentGameStartV2(session, mechanics, true)?.game ?? null;
     return game === null
       ? invalidCommand()
       : publish(
@@ -1509,7 +1572,7 @@ export function resolvePositionAlphaInjuryChoiceV2(
 ): PositionAlphaCommandResultV2 {
   if (session?.gameDay?.type !== 'INJURY_CHOICE') return invalidCommand();
   if (
-    !validatePositionAlphaSessionV2(session, mechanics) ||
+    !validatePositionAlphaAggregate(session, mechanics) ||
     session.gameDay.type !== 'INJURY_CHOICE' ||
     session.gameDay.injury === null ||
     !isInjuryChoiceId(choiceId)
@@ -1541,7 +1604,7 @@ export function projectPositionAlphaNilChoicesV2(
   if (
     (session?.phase?.type !== 'WEEK_PLANNING' && session?.phase?.type !== 'POSTSEASON_PLANNING') ||
     session.gameDay?.type !== 'IDLE' ||
-    !validatePositionAlphaSessionV2(session, mechanics)
+    !validatePositionAlphaAggregate(session, mechanics)
   )
     return null;
   const careerWeekIndex = positionAlphaSourceCareerWeekIndexV2(session, session.phase.weekIndex);
@@ -1577,7 +1640,7 @@ export function resolvePositionAlphaNilPlanningV2(
   if (
     (session?.phase?.type !== 'WEEK_PLANNING' && session?.phase?.type !== 'POSTSEASON_PLANNING') ||
     session.gameDay?.type !== 'IDLE' ||
-    !validatePositionAlphaSessionV2(session, mechanics)
+    !validatePositionAlphaAggregate(session, mechanics)
   )
     return invalidCommand();
   const careerWeekIndex = positionAlphaSourceCareerWeekIndexV2(session, session.phase.weekIndex);
@@ -1585,7 +1648,7 @@ export function resolvePositionAlphaNilPlanningV2(
   const nil = appendPositionAlphaNilActionV2(session, action, careerWeekIndex, mechanics.nil);
   if (nil === null) return invalidCommand();
   const next: PositionAlphaSessionV2 = { ...session, revision: session.revision + 1, nil };
-  return validatePositionAlphaSessionV2(next, mechanics)
+  return validatePositionAlphaAggregate(next, mechanics)
     ? deepFreeze({ ok: true, session: cloneSerializable(next) })
     : invalidCommand();
 }
@@ -1597,7 +1660,7 @@ export function resolvePositionAlphaGameDaySnapV2(
 ): PositionAlphaCommandResultV2 {
   if (session?.gameDay?.type !== 'ACTIVE_SNAP') return invalidCommand();
   if (
-    !validatePositionAlphaSessionV2(session, mechanics) ||
+    !validatePositionAlphaAggregate(session, mechanics) ||
     session.gameDay.type !== 'ACTIVE_SNAP' ||
     session.gameDay.game === null ||
     typeof decisionId !== 'string'
@@ -1679,7 +1742,7 @@ export function settlePositionAlphaGameDayV2(
 ): PositionAlphaCommandResultV2 {
   if (session?.gameDay?.type !== 'POST_GAME') return invalidCommand();
   if (
-    !validatePositionAlphaSessionV2(session, mechanics) ||
+    !validatePositionAlphaAggregate(session, mechanics) ||
     session.phase.type !== 'GAME_DAY' ||
     session.gameDay.type !== 'POST_GAME' ||
     session.gameDay.game?.game.type !== 'COMPLETE'
@@ -1780,7 +1843,7 @@ export function settlePositionAlphaGameDayV2(
           ? { type: 'SEASON_REVIEW', seasonIndex: session.lifecycle.activeSeasonIndex as 0 | 1 }
           : { type: 'WEEK_PLANNING', weekIndex: session.phase.weekIndex + 1 },
   };
-  return validatePositionAlphaSessionV2(next, mechanics)
+  return validatePositionAlphaAggregate(next, mechanics)
     ? deepFreeze({ ok: true, session: cloneSerializable(next) })
     : invalidCommand();
 }
@@ -1821,7 +1884,7 @@ export function beginPositionAlphaPostseasonV2(
   mechanics: PositionAlphaSessionCommandMechanics,
 ): PositionAlphaCommandResultV2 {
   if (
-    !validatePositionAlphaSessionV2(session, mechanics) ||
+    !validatePositionAlphaAggregate(session, mechanics) ||
     session.phase.type !== 'SEASON_REVIEW' ||
     session.gameDay.type !== 'IDLE' ||
     session.skills.offeredSkillIds !== null ||
@@ -1839,7 +1902,7 @@ export function beginPositionAlphaPostseasonV2(
     world: initialized.value,
     phase: nextPostseasonPhase(initialized.value),
   };
-  return validatePositionAlphaSessionV2(next, mechanics)
+  return validatePositionAlphaAggregate(next, mechanics)
     ? deepFreeze({ ok: true, session: cloneSerializable(next) })
     : invalidCommand();
 }
@@ -1850,7 +1913,7 @@ export function advancePositionAlphaPostseasonRoundV2(
   mechanics: PositionAlphaSessionCommandMechanics,
 ): PositionAlphaCommandResultV2 {
   if (
-    !validatePositionAlphaSessionV2(session, mechanics) ||
+    !validatePositionAlphaAggregate(session, mechanics) ||
     session.phase.type !== 'POSTSEASON_PLANNING' ||
     session.gameDay.type !== 'IDLE' ||
     session.skills.offeredSkillIds !== null ||
@@ -1869,7 +1932,7 @@ export function advancePositionAlphaPostseasonRoundV2(
     world: world.value,
     phase: nextPostseasonPhase(world.value),
   };
-  return validatePositionAlphaSessionV2(next, mechanics)
+  return validatePositionAlphaAggregate(next, mechanics)
     ? deepFreeze({ ok: true, session: cloneSerializable(next) })
     : invalidCommand();
 }
@@ -1880,7 +1943,7 @@ export function reviewPositionAlphaSeasonV2(
   mechanics: PositionAlphaSessionCommandMechanics,
 ): PositionAlphaCommandResultV2 {
   if (
-    !validatePositionAlphaSessionV2(session, mechanics) ||
+    !validatePositionAlphaAggregate(session, mechanics) ||
     session.phase.type !== 'POSTSEASON_REVIEW' ||
     session.gameDay.type !== 'IDLE' ||
     Object.hasOwn(session, 'seasonReview')
@@ -1897,7 +1960,7 @@ export function reviewPositionAlphaSeasonV2(
     revision: session.revision + 1,
     phase: { type: 'OFFSEASON_DECISION', seasonIndex: session.phase.seasonIndex },
   };
-  return validatePositionAlphaSessionV2(next, mechanics)
+  return validatePositionAlphaAggregate(next, mechanics)
     ? deepFreeze({ ok: true, session: cloneSerializable(next) })
     : invalidCommand();
 }
@@ -1910,7 +1973,7 @@ export function commitPositionAlphaOffseasonV2(
 ): PositionAlphaCommandResultV2 {
   if (
     session?.phase?.type !== 'OFFSEASON_DECISION' ||
-    !validatePositionAlphaSessionV2(session, mechanics)
+    !validatePositionAlphaAggregate(session, mechanics)
   )
     return invalidCommand();
   if (!Object.hasOwn(session, 'seasonReview')) {
@@ -1940,7 +2003,7 @@ export function commitPositionAlphaOffseasonV2(
     return migrated === null ? invalidCommand() : deepFreeze({ ok: true, session: migrated });
   }
   const next = derivePositionAlphaSeasonStartV2(session, selectedProgramId, mechanics);
-  return next !== null && validatePositionAlphaSessionV2(next, mechanics)
+  return next !== null && validatePositionAlphaAggregate(next, mechanics)
     ? deepFreeze({ ok: true, session: cloneSerializable(next) })
     : invalidCommand();
 }
@@ -1952,11 +2015,11 @@ export function completePositionAlphaCareerV2(
 ): PositionAlphaCommandResultV2 {
   if (
     session?.phase?.type !== 'OFFSEASON_DECISION' ||
-    !validatePositionAlphaSessionV2(session, mechanics)
+    !validatePositionAlphaAggregate(session, mechanics)
   )
     return invalidCommand();
   const next = derivePositionAlphaCareerCompletionV2(session);
-  return next !== null && validatePositionAlphaSessionV2(next, mechanics)
+  return next !== null && validatePositionAlphaAggregate(next, mechanics)
     ? deepFreeze({ ok: true, session: cloneSerializable(next) })
     : invalidCommand();
 }

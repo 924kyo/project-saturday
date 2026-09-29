@@ -1,4 +1,5 @@
 import { createPositionPlayerProfile } from '../player/position-creation.js';
+import { TACTICAL_GAME_RULES_VERSION } from '../games/tactical-alpha-v1.js';
 import type { PositionSkillOfferDefinitionV2 } from './position-alpha-breakthrough-v2.js';
 import { projectPositionAlphaOpportunityV2 } from './position-alpha-opportunity-v2.js';
 import type { PositionAlphaSkillBuildMechanics } from './position-alpha-skill-builds.js';
@@ -595,6 +596,25 @@ export type PositionAlphaGameState =
   | { readonly positionId: 'position_rb'; readonly game: RbGameState }
   | { readonly positionId: 'position_cb'; readonly game: CbGameState };
 
+/**
+ * Rules recorded by an untrusted saved game (active input or completed summary). Returns null for a
+ * malformed marker; exact replay against the owning engine still proves the whole game.
+ */
+export function recordedPositionAlphaRulesVersion(
+  value: unknown,
+): typeof TACTICAL_GAME_RULES_VERSION | undefined | null {
+  if (typeof value !== 'object' || value === null) return null;
+  const game = (value as Record<string, unknown>)['game'];
+  if (typeof game !== 'object' || game === null) return null;
+  const record = game as Record<string, unknown>;
+  const evidence = record['type'] === 'ACTIVE' ? record['input'] : record['summary'];
+  if (typeof evidence !== 'object' || evidence === null) return null;
+  if (!Object.hasOwn(evidence, 'rulesVersion')) return undefined;
+  return (evidence as Record<string, unknown>)['rulesVersion'] === TACTICAL_GAME_RULES_VERSION
+    ? TACTICAL_GAME_RULES_VERSION
+    : null;
+}
+
 /** Shared engine entry point; accepts all four current slots without a v1 projection. */
 export function startPositionAlphaGame(
   session: PositionAlphaGameContext,
@@ -603,7 +623,11 @@ export function startPositionAlphaGame(
   mechanics: PositionAlphaSessionCommandMechanics,
   availability: InjuryAvailabilityEvidence | null = null,
   maximumOpportunities = 5,
+  /** Explicit new-game selection only; absent reproduces the original historical rules. */
+  rulesVersion?: typeof TACTICAL_GAME_RULES_VERSION,
 ): PositionAlphaGameState | null {
+  if (rulesVersion !== undefined && rulesVersion !== TACTICAL_GAME_RULES_VERSION) return null;
+  const rules = rulesVersion === undefined ? {} : { rulesVersion };
   if (
     !Number.isInteger(maximumOpportunities) ||
     maximumOpportunities < 0 ||
@@ -681,6 +705,7 @@ export function startPositionAlphaGame(
   if (session.player.positionId === 'position_qb') {
     const started = startQbGame(
       cloneSerializable({
+        ...rules,
         gameId: `game_qb_alpha_${session.lifecycle.activeSeasonIndex}_${gameWeekIndex}`,
         ...relationshipInformation,
         weekIndex: gameWeekIndex,
@@ -716,6 +741,7 @@ export function startPositionAlphaGame(
   if (session.player.positionId === 'position_rb') {
     const started = startRbGame(
       cloneSerializable({
+        ...rules,
         gameId: `game_rb_alpha_${session.lifecycle.activeSeasonIndex}_${gameWeekIndex}`,
         ...relationshipInformation,
         weekIndex: gameWeekIndex,
@@ -750,6 +776,7 @@ export function startPositionAlphaGame(
   }
   const started = startCbGame(
     cloneSerializable({
+      ...rules,
       gameId: `game_cb_alpha_${session.lifecycle.activeSeasonIndex}_${gameWeekIndex}`,
       ...relationshipInformation,
       weekIndex: gameWeekIndex,

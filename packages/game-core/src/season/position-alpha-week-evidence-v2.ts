@@ -47,6 +47,7 @@ import {
 import {
   derivePositionAlphaFootballConsequences,
   resolvePositionAlphaSnap,
+  recordedPositionAlphaRulesVersion,
   startPositionAlphaGame,
   type CompletedPositionGame,
   type PositionAlphaGameContext,
@@ -348,6 +349,8 @@ export function validatePositionAlphaWeekSummaryV2(
   weekIndex: number,
   mechanics: PositionAlphaSessionCommandMechanics,
   postseasonFixture?: WorldAlphaFixtureMechanics,
+  /** Only a v3 aggregate may retain games played under the explicit current rules. */
+  allowCurrentRules = false,
 ): value is PositionAlphaWeekSummaryV2 {
   try {
     if (
@@ -490,6 +493,8 @@ export function validatePositionAlphaWeekSummaryV2(
             awayProgramId === source.lifecycle.currentProgramId,
         );
     if (fixture === undefined) return false;
+    const rulesVersion = recordedPositionAlphaRulesVersion(value['completedGame']);
+    if (rulesVersion === null || (rulesVersion !== undefined && !allowCurrentRules)) return false;
     let game = startPositionAlphaGame(
       { ...gameContext, careerRng: nil.rng },
       fixture,
@@ -497,6 +502,7 @@ export function validatePositionAlphaWeekSummaryV2(
       mechanics,
       injury.availability,
       academics.maximumOpportunities,
+      rulesVersion,
     );
     for (const id of value['decisionIds']) {
       if (game === null) return false;
