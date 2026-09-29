@@ -8,22 +8,27 @@ M10 — 1.0 Release Candidate (unchanged).
 
 ## Current milestone
 
-R — Product Reconciliation & Frontend Rebuild (inserted before M8 on 2026-09-29; absorbs unfinished M7.5 Game Day work).
+M8 — Six-position beta and 64-program world (started 2026-09-30). Plan: `docs/exec-plans/active/m8-six-position-beta.md`.
 
 ## Status
 
-IN PROGRESS. The following steps are done:
+R is COMPLETE (2026-09-30). The gate met is:
+- full two-season careers for QB/RB/WR/CB, covering recruit, climb, Saturday decisions, transfer, two reviews, retirement and the Alumni Wall, in the real app;
+- run across both locales × phone/desktop/320 (`E2E_FULL=1 e2e/career.spec.ts`, 24 journeys green);
+- the packaged desktop smoke passes (rebuilt Tauri app, offline, exact save across process exit);
+- `pnpm check` is green.
 
-- R0 audit/rebaseline.
-- V1 Career VNext contract.
-- V2 QB/RB/CB vertical slice.
-- V3 cutover (2026-09-29): the rebuilt "Saturday Broadcast" app on Career VNext is now the only app. The old frontend, the old web career/storage facades and the M1–M7 browser specs are deleted; they are recoverable at tag `pre-cutover` (and `pre-rebuild`).
-
-Prototype saves are left untouched on the device, with a one-tap JSON export notice. M8 stays blocked until R closes.
+The plan is archived at `docs/exec-plans/completed/r-product-reconciliation.md`. M8 starts with step 1, the LB/EDGE position foundation.
 
 ## Last completed task
 
-Balance harness and first balance pass (R1.6, 2026-09-30). `career-vnext-balance.test.ts` simulates a season per position × focus strategy (grind, balanced, coach, study), prints the table and asserts the product bands.
+R5 closeout (2026-09-30):
+- the release-boundary journey suite (`e2e/career.spec.ts` with `e2e/support/career.ts`, a revision-gated command driver);
+- the desktop smoke ported to the new app, with the Tauri app rebuilt;
+- the parity ledger extended to the lifecycle and season arc;
+- a Tier 3 gate.
+
+Before that: balance harness and first balance pass (R1.6, 2026-09-30). `career-vnext-balance.test.ts` simulates a season per position × focus strategy (grind, balanced, coach, study), prints the table and asserts the product bands.
 
 | Measure | Before | After |
 |---|---|---|
@@ -104,7 +109,7 @@ V4 continues in the new stack, in priority order:
 
 ## Active exec plan
 
-- Active: `docs/exec-plans/active/r-product-reconciliation.md` (product-owner corrections and revised sequence V1–V5).
+- Active: `docs/exec-plans/active/m8-six-position-beta.md`. R is complete: `docs/exec-plans/completed/r-product-reconciliation.md`.
 - Contract: `docs/product-reconciliation/CAREER_VNEXT_CONTRACT.md` (cutover criterion met, see below).
 - Evidence/decisions: `docs/product-reconciliation/`.
 - Superseded M7.5 plans remain for reference only.
@@ -130,7 +135,13 @@ V4 continues in the new stack, in priority order:
 - **Save/reload/offline:** save → reload → offline reload (service worker) resumes exactly; a failed write shows a banner and the exact retry succeeds (unit + App test).
 - **Keyboard:** keyboard-only play from creation through a snap result; focus draws the route preview; the board has an aria text equivalent.
 
-## Latest green verification (2026-09-30, balance pass)
+## Latest green verification (2026-09-30, R closeout — Tier 3)
+
+- `pnpm check`: typecheck, lint/boundaries/localized copy, format, node script tests (10), vitest 821/100 files, content 386, sim 390, e2e 8 passed / 6 skips, and build/PWA (22 entries / 1406 KiB).
+- The full matrix `E2E_FULL=1`: 28 passed (24 two-season journeys).
+- The packaged desktop smoke passed.
+
+## Earlier verification (2026-09-30, balance pass)
 
 - Typecheck, lint, boundary and localized-copy checks.
 - 821 tests in 100 files, including the balance harness.

@@ -1,5 +1,7 @@
 # M7.5 — Career Operations and Game Day Experience
 
+Status: superseded 2026-09-29 by R (`r-product-reconciliation.md`), which absorbed its intent; closed with R on 2026-09-30.
+
 Status: active at Phase B1 on 2026-09-14; Phase A (A1–A3) verified, complete M7 gate green  
 M10 target is unchanged.
 

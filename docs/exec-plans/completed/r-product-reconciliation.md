@@ -1,6 +1,7 @@
 # R — Product Reconciliation & Frontend Rebuild
 
-Status: active 2026-09-29. Supersedes the remaining M7.5 B1c–B6/Phase C sequencing, whose intent (tactical evidence, board, choice comprehension, payoff, four-position parity, full validation) is absorbed below. M8 does not start until R closes. M10 is unchanged as the target.
+Status: complete 2026-09-30. The R gate is met: full two-season careers pass for all four positions × both locales × phone/desktop/320 in the real app, including recruit, climb, Saturdays, transfer, review and the Alumni Wall. The packaged desktop smoke passes, and `pnpm check` is green. Deferred to M10 hardening: removing the unused pre-R aggregates and locale keys.
+Originally activated 2026-09-29. Supersedes the remaining M7.5 B1c–B6/Phase C sequencing, whose intent (tactical evidence, board, choice comprehension, payoff, four-position parity, full validation) is absorbed below. M8 does not start until R closes. M10 is unchanged as the target.
 
 Authoritative inputs: `docs/product-reconciliation/` (the audit, rebaseline, frontend plan and gameplay reconciliation), `PRODUCT_VISION.md` and `CORE_BELIEFS.md`.
 

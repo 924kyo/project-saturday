@@ -1,5 +1,7 @@
 # M7.5 B6 — Four-position UX Parity Pass
 
+Status: superseded 2026-09-29 by R (`r-product-reconciliation.md`), which absorbed its intent; closed with R on 2026-09-30.
+
 Status: required, queued after B2–B5; 2026-09-14. B1 remains active. M10 unchanged.
 
 ## Purpose and ordering

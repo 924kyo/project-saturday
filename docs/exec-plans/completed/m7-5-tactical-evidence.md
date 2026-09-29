@@ -1,5 +1,7 @@
 # M7.5 B1 — Versioned Tactical Evidence
 
+Status: superseded 2026-09-29 by R (`r-product-reconciliation.md`), which absorbed its intent; closed with R on 2026-09-30.
+
 Status: B1a/B1b staged and verified, B1c active (shared presentation verified 2026-09-29). Parent: `m7-5-playtest-correction.md`. M10 unchanged.
 
 The bounded desktop snapshot detour is complete (`../completed/m7-5-desktop-snapshot.md`): actual executable/NSIS built, application offline Game Day/Hub/exact relaunch verified. Resume the WR v8 prerequisite below. Apply `TEST_GATE_TIERS.md`; prior full non-browser evidence remains valid until relevant inputs change. The new mandatory B6 actual-UI four-position parity pass follows B2–B5 and precedes Phase C/M8; do not interrupt or roll back B1 for it.

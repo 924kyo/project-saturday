@@ -34,7 +34,7 @@ export async function advanceToPregame(
         : (await page.locator('#s2-event').count()) > 0
           ? 'event'
           : 'injury';
-    const choice = page.locator('.s2-choice, #s2-breakthrough button.s2-cardbtn');
+    const choice = page.locator('.s2-choice, .s2-cardgrid--offer button.s2-cardbtn');
     if ((await choice.count()) > 0) {
       await onScreen?.(scene);
       await choice.first().click();

@@ -53,3 +53,24 @@ All authored decisions for all four positions draw a distinct technique (`app/bo
 - The coach verdict can read harsh on low-volume games, where a single play dominates the grade. Handled in the balance pass.
 - Clue text has no on-board markers yet (text list only).
 - Pregame "keys" and crowd/stakes tone are not implemented yet (V4 Game Day depth).
+
+## Lifecycle and season-arc parity (2026-09-30)
+
+**Method:** the same real Chromium review, on deterministic saves injected per screen (all four positions generated through core commands), at ko-KR 390/320 and en-US 1440. The release-boundary journey suite (`e2e/career.spec.ts`) plays a full two-season life, transfer included, for every position.
+
+| Surface | QB | RB | WR | CB |
+|---|---|---|---|---|
+| Midweek events | 12 position events with authored per-choice labels | 12 | the shipped WR catalog (authored choices) | 12 |
+| Medical check / restricted drills | shared injury catalog; position exposure | same | same | same |
+| Breakthrough cards | 12 position cards | 12 | 40 WR cards; WR game hooks now live in the WR kernel | 12 |
+| Team / Profile | full room, schedule, rankings, ratings, season line | same | same | same |
+| Postseason, review, offseason, Alumni Wall | shared | shared | shared | shared |
+
+**Findings fixed here:**
+- the nameplate squeezed its role line at 320 px;
+- the nameplate showed "Week 15" after the season (it now names the stage);
+- offer cards in grey program colours looked narrow (they now have a tinted border);
+- the pregame snap band disagreed with injury/academic/package caps (it now shows the exact kickoff plan);
+- "1 live snaps" plurals (the copy is now label-style).
+
+**Open, shared:** confidence saturates high on sensible plans; see PROGRESS.

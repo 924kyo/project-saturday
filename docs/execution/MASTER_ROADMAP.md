@@ -188,7 +188,7 @@ Gate: users can repeatedly manage careers without clearing storage, transferred 
 
 ## R — Product Reconciliation & Frontend Rebuild
 
-Inserted 2026-09-29 by product-owner direction. It precedes M8 and absorbs the unfinished M7.5 Game Day work (B1c–B6, Phase C). Plan: `docs/exec-plans/active/r-product-reconciliation.md`. Evidence and decisions: `docs/product-reconciliation/`.
+Complete 2026-09-30 (plan: `docs/exec-plans/completed/r-product-reconciliation.md`). Inserted 2026-09-29 by product-owner direction. It precedes M8 and absorbs the unfinished M7.5 Game Day work (B1c–B6, Phase C). Evidence and decisions: `docs/product-reconciliation/`.
 
 Deliver:
 
