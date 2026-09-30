@@ -22,8 +22,8 @@
     "test:sim": "vitest run --project game-core --project testkit",
     "e2e": "corepack pnpm e2e:prepare && cross-env PLAYWRIGHT_BROWSERS_PATH=.playwright-browsers playwright test",
     "e2e:prepare": "corepack pnpm --filter @project-saturday/game-content build && corepack pnpm --filter @project-saturday/web build",
-    "e2e:install": "cross-env PLAYWRIGHT_BROWSERS_PATH=.playwright-browsers playwright install chromium",
-    "e2e:install:ci": "cross-env PLAYWRIGHT_BROWSERS_PATH=.playwright-browsers playwright install --with-deps chromium",
+    "e2e:install": "cross-env PLAYWRIGHT_BROWSERS_PATH=.playwright-browsers playwright install chromium webkit",
+    "e2e:install:ci": "cross-env PLAYWRIGHT_BROWSERS_PATH=.playwright-browsers playwright install --with-deps chromium webkit",
     "check": "corepack pnpm typecheck && corepack pnpm lint && corepack pnpm format:check && corepack pnpm test && corepack pnpm test:content && corepack pnpm test:sim && corepack pnpm e2e && corepack pnpm build"
   },
   "devDependencies": {

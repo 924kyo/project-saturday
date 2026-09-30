@@ -83,3 +83,35 @@ test.describe('mobile responsiveness', () => {
     await session.send('Emulation.setCPUThrottlingRate', { rate: 1 });
   });
 });
+
+// M10: the production build is installable: a complete manifest and a controlling service worker.
+test.describe('PWA installability', () => {
+  test.skip(({ isMobile }) => !isMobile, 'checked once');
+  test('ships an installable manifest and a service worker that takes control', async ({
+    page,
+    request,
+  }) => {
+    const manifest = (await (await request.get('/manifest.webmanifest')).json()) as {
+      name: string;
+      start_url: string;
+      display: string;
+      icons: { sizes: string; purpose: string }[];
+    };
+    expect(manifest.name).toBeTruthy();
+    expect(manifest.start_url).toBe('/');
+    expect(manifest.display).toBe('standalone');
+    expect(manifest.icons.map(({ sizes }) => sizes)).toEqual(
+      expect.arrayContaining(['192x192', '512x512']),
+    );
+    expect(manifest.icons.some(({ purpose }) => purpose === 'maskable')).toBe(true);
+    await page.goto('/');
+    await page
+      .waitForFunction(() => navigator.serviceWorker?.controller != null, null, { timeout: 20_000 })
+      .catch(async () => {
+        await page.reload();
+        await page.waitForFunction(() => navigator.serviceWorker?.controller != null, null, {
+          timeout: 20_000,
+        });
+      });
+  });
+});

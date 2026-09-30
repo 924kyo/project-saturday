@@ -17,23 +17,21 @@ export function PwaUpdatePrompt({ locale }: PwaUpdatePromptProps): React.JSX.Ele
     return null;
   }
 
+  // A new version waits for the player: updating reloads the app shell; saves live in IndexedDB,
+  // separate from the service-worker caches, so an update never touches the career.
   return (
-    <aside className="update-prompt" aria-live="polite">
+    <aside className="s2-banner" role="status" aria-live="polite">
       <p>{t('pwa.updateAvailable')}</p>
-      <div className="update-prompt__actions">
+      <div className="s2-row">
         <button
-          className="button button--primary"
-          type="button"
-          onClick={() => void updateServiceWorker(true)}
-        >
-          {t('pwa.updateAction')}
-        </button>
-        <button
-          className="button button--quiet"
+          className="s2-btn s2-btn--ghost"
           type="button"
           onClick={() => setNeedRefresh(false)}
         >
           {t('pwa.dismissAction')}
+        </button>
+        <button className="s2-btn" type="button" onClick={() => void updateServiceWorker(true)}>
+          {t('pwa.updateAction')}
         </button>
       </div>
     </aside>

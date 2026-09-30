@@ -28,5 +28,13 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
       },
     },
+    // M10: mobile Safari engine smoke (iPhone profile); a focused subset, not the whole matrix.
+    {
+      name: 'mobile-webkit',
+      grep: /career slice journey|accessibility scan \(ko-KR\)/,
+      use: {
+        ...devices['iPhone 14'],
+      },
+    },
   ],
 });

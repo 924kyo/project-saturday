@@ -22,6 +22,15 @@ M8 is COMPLETE (2026-09-30): see `docs/exec-plans/completed/m8-six-position-beta
 
 ## Last completed task
 
+M10 step 5, the browser and PWA matrix (2026-09-30):
+- a `mobile-webkit` Playwright project (iPhone 14, WebKit 26.5) for the slice journey and the ko-KR accessibility scan;
+- the install scripts include WebKit;
+- a PWA installability e2e: a complete manifest and a controlling service worker;
+- the update prompt, which had no styles since the rebuild, is restyled on the design system and tested (updates apply only when the player chooses; saves live in IndexedDB, separate from caches);
+- offline resume stays covered;
+- verified: `pnpm check` (869 + 418 + 397, e2e 19, build).
+
+
 M10 step 4, accessibility (2026-09-30):
 - axe WCAG 2.0–2.2 A/AA scans (including target size) of every week screen in both locales;
 - a keyboard-only Saturday, and a reduced-motion board with no animation;
@@ -97,7 +106,7 @@ The M8 closeout, 2026-09-30:
 
 ## Current / next task
 
-M10 step 5: the browser/PWA matrix (WebKit where available, service-worker update, offline). Then localization QA, hygiene and docs, and the gate.
+M10 step 6: localization QA (formatting, full career in both locales, mobile layouts). Then hygiene and docs, and the gate.
 
 ## Active exec plan
 
