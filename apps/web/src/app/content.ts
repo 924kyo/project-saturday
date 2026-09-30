@@ -31,6 +31,7 @@ import {
   type CareerVNext,
   type PositionRoomContext,
   type PostseasonRoundVNext,
+  type AwardIdVNext,
   type ProgramId,
   type VNextPositionId,
 } from '@project-saturday/game-core';
@@ -253,6 +254,22 @@ export function positionOverall(profile: CreatedPositionPlayerProfile): number {
 export function currentOverall(career: CareerVNext): number {
   return positionOverall(career.athlete.profile);
 }
+
+/** Award presentation keys by stable award ID. */
+export const AWARD_KEYS = {
+  award_position_qb: 'v2.award.positionQb',
+  award_position_rb: 'v2.award.positionRb',
+  award_position_wr: 'v2.award.positionWr',
+  award_position_cb: 'v2.award.positionCb',
+  award_position_lb: 'v2.award.positionLb',
+  award_position_edge: 'v2.award.positionEdge',
+  award_conference_player_of_year: 'v2.award.conferencePlayerOfYear',
+  award_all_american: 'v2.award.allAmerican',
+  award_all_conference_first: 'v2.award.allConferenceFirst',
+  award_all_conference_second: 'v2.award.allConferenceSecond',
+  award_freshman_all_american: 'v2.award.freshmanAllAmerican',
+  award_title_game_mvp: 'v2.award.titleGameMvp',
+} as const satisfies Record<AwardIdVNext, MessageKey>;
 
 export const ROUND_KEYS = {
   FIRST_ROUND: 'v2.round.firstRound',

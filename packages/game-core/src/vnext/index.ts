@@ -88,3 +88,9 @@ export {
   relationshipTagsVNext,
   VNEXT_NIL_TUNING,
 } from './nil.js';
+export {
+  awardStockPointsVNext,
+  POSITION_AWARD_IDS,
+  seasonAwardsVNext,
+  VNEXT_AWARD_TUNING,
+} from './awards.js';

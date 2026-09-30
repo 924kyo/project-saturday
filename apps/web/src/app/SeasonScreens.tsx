@@ -23,6 +23,7 @@ import {
   key,
   conferenceOf,
   program,
+  AWARD_KEYS,
 } from './content';
 import { Nameplate } from './Nameplate';
 import type { PrototypeAlumniView } from './prototype';
@@ -40,6 +41,23 @@ const ENDING_KEYS = {
   DECLARED: 'v2.draft.ending.declared',
   RETIRED: 'v2.draft.ending.retired',
 } as const satisfies Record<CareerEndingVNext, MessageKey>;
+
+/** Awards and conference titles on the permanent record (absent on pre-M9 plaques). */
+function HonorsLine({ alumni }: { readonly alumni: AlumniVNext }): React.JSX.Element | null {
+  const { t } = useAppTranslation();
+  const awards = alumni.awards ?? [];
+  const titles = alumni.conferenceTitles ?? 0;
+  if (awards.length === 0 && titles === 0) return null;
+  const top = awards[0];
+  return (
+    <span className="s2-note s2-num">
+      {awards.length > 0 && t('v2.alumni.awards', { count: awards.length })}
+      {top !== undefined && <> ({t(AWARD_KEYS[top])})</>}
+      {awards.length > 0 && titles > 0 && ' · '}
+      {titles > 0 && t('v2.alumni.conferenceTitles', { count: titles })}
+    </span>
+  );
+}
 
 /** How the college career ended, and the Pro Draft outcome when there was one. */
 function EndingLine({ alumni }: { readonly alumni: AlumniVNext }): React.JSX.Element | null {
@@ -172,11 +190,32 @@ export function SeasonReviewScreen({
           <Panel id="s2-review-draft" title={t('v2.draft.stock')}>
             <p className="s2-display s2-size-h2">{t(DRAFT_BAND_KEYS[review.draftStock.band])}</p>
             <p className="s2-note s2-num">{t('v2.draft.factors', review.draftStock.factors)}</p>
+            {(review.draftStock.factors.awards ?? 0) > 0 && (
+              <p className="s2-note s2-num">
+                {t('v2.draft.awardsFactor', { value: review.draftStock.factors.awards! })}
+              </p>
+            )}
             <p className="s2-note" style={{ marginTop: 8 }}>
               {t('v2.draft.stockHelp')}
             </p>
           </Panel>
         )}
+        <Panel id="s2-review-awards" title={t('v2.awards.title')}>
+          {(review.awards ?? []).length === 0 ? (
+            <p className="s2-note">{t('v2.awards.none')}</p>
+          ) : (
+            <ul className="s2-bullets">
+              {(review.awards ?? []).map((award) => (
+                <li key={award}>
+                  <strong>{t(AWARD_KEYS[award])}</strong>
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="s2-note" style={{ marginTop: 8 }}>
+            {t('v2.awards.help')}
+          </p>
+        </Panel>
         <Panel id="s2-review-notes" title={t('v2.review.team')}>
           <ul className="s2-bullets">
             <li>
@@ -399,6 +438,7 @@ function AlumniPlaque({ alumni }: { readonly alumni: AlumniVNext }): React.JSX.E
             <> · {t('v2.alumni.titles', { count: alumni.championships })}</>
           )}
         </span>
+        <HonorsLine alumni={alumni} />
         <EndingLine alumni={alumni} />
       </span>
     </li>
@@ -480,6 +520,9 @@ export function CareerCompleteScreen({
             position: t(POSITION_ABBR_KEYS[mine.positionId]),
             rank: mine.bestDepthRank,
           })}
+        </p>
+        <p>
+          <HonorsLine alumni={mine} />
         </p>
         <p>
           <EndingLine alumni={mine} />

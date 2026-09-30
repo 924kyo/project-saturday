@@ -23,9 +23,11 @@ export default defineConfig({
               priority: 40,
             },
             {
+              // Paired ko-KR/en-US copy grows with content; keep each chunk inside the budget.
               name: 'locales',
               test: /[\\/]packages[\\/]game-content[\\/]src[\\/]locales[\\/]/,
               priority: 50,
+              maxSize: 400_000,
             },
             {
               name: 'game-content',

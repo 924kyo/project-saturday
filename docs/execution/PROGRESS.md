@@ -21,6 +21,14 @@ M8 is COMPLETE (2026-09-30), and its Tier 3 gate is met:
 
 ## Last completed task
 
+M9 step 2, awards and championships (2026-09-30):
+- `vnext/awards.ts` covers All-Conference first and second team, Freshman All-American, All-American, per-position awards, Conference Player of the Year and Title Game MVP;
+- awards appear on the review, the alumni plaque and completion (awards and conference titles), and as a draft-stock credit;
+- the harness asserts awards are earned in some seasons but under 40%;
+- the locales chunk is split by size, and the slice e2e driver handles NIL scenes;
+- verified: `pnpm check` (850 + 408 + 394, e2e 10, build verified).
+
+
 M9 step 1, the 96-program world (2026-09-30): 32 more original programs (4 per conference, with paired copy), eight conferences of 12, three early non-conference rounds and then nine conference games, the same bracket and stride, and a `worldId` on new conference seasons. A 64-program season in progress finishes there, which is tested. Verified with `pnpm check` (846 + 408 + 390, e2e 10, build).
 
 Before that:
@@ -33,7 +41,7 @@ The M8 closeout, 2026-09-30:
 
 ## Current / next task
 
-M9 step 2: awards and championships. Then legacy history, the event library, the editorial pass, and the gate.
+M9 step 3: legacy history (alumni snapshot, record book, familiarity, mentors, cameos). Then the event library, the editorial pass, and the gate.
 
 ## Active exec plan
 

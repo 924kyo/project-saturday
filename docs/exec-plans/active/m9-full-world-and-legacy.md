@@ -35,7 +35,7 @@ Repeated careers show strong variation and persistent history:
    - a 12-game schedule: 9 conference games from a 12-team round robin, plus 3 non-conference games over distinct conference matchings;
    - the same 12-team bracket and the same 16-week stride;
    - `world_vnext_96_program`; a 64-program season in progress finishes there.
-2. **Awards and championships:**
+2. **Awards and championships:** (done 2026-09-30)
    - deterministic fictional season awards from saved facts, including all-conference, a position award, player of the year and a freshman award;
    - conference and national titles in the review and on the Alumni Wall;
    - awards feed draft stock (the spec's "awards" dimension).

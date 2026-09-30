@@ -9,6 +9,7 @@ import type {
   VNextPositionId,
 } from './types.js';
 import { programRating } from './common.js';
+import { awardStockPointsVNext } from './awards.js';
 
 /**
  * Pro Draft stock (fictional pro framing). Stock is a transparent weighted blend of saved facts,
@@ -102,6 +103,7 @@ export function draftStockVNext(
     0,
     100,
   );
+  const awards = awardStockPointsVNext(reviews);
   const injuries = reviews.reduce((sum, { injuries: count }) => sum + count, 0);
   const durability = -Math.min(
     VNEXT_DRAFT_TUNING.maximumInjuryPenalty,
@@ -116,14 +118,16 @@ export function draftStockVNext(
         experience * weights.experience +
         bigGames * weights.bigGames) /
         1000,
-    ) + durability,
+    ) +
+      durability +
+      awards,
     0,
     100,
   );
   return {
     score,
     band: draftBandVNext(score),
-    factors: { ability, production, exposure, experience, bigGames, durability },
+    factors: { ability, production, exposure, experience, bigGames, durability, awards },
   };
 }
 

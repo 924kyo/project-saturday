@@ -328,7 +328,23 @@ export interface SeasonReviewVNext {
   readonly averageGrade?: number | null;
   /** Pro Draft stock after this season (absent before M8). */
   readonly draftStock?: DraftStockVNext;
+  /** Fictional season awards from saved facts (absent before M9). */
+  readonly awards?: readonly AwardIdVNext[];
 }
+
+export type AwardIdVNext =
+  | 'award_position_qb'
+  | 'award_position_rb'
+  | 'award_position_wr'
+  | 'award_position_cb'
+  | 'award_position_lb'
+  | 'award_position_edge'
+  | 'award_conference_player_of_year'
+  | 'award_all_american'
+  | 'award_all_conference_first'
+  | 'award_all_conference_second'
+  | 'award_freshman_all_american'
+  | 'award_title_game_mvp';
 
 export type DraftStockBandVNext = 'ROUND_1' | 'ROUNDS_2_3' | 'ROUNDS_4_7' | 'UNDRAFTED';
 
@@ -343,6 +359,8 @@ export interface DraftStockVNext {
     readonly experience: number;
     readonly bigGames: number;
     readonly durability: number;
+    /** Awards credit (absent before M9). */
+    readonly awards?: number;
   };
 }
 
@@ -377,6 +395,10 @@ export interface AlumniVNext {
   readonly statTotals: readonly StatTotalVNext[];
   readonly finalOverall: number;
   readonly bestDepthRank: number;
+  /** Every season award, in season order (absent before M9). */
+  readonly awards?: readonly AwardIdVNext[];
+  /** Conference titles won (absent before M9). */
+  readonly conferenceTitles?: number;
   /** How the college career ended and the Pro Draft outcome (absent before M8). */
   readonly ending?: CareerEndingVNext;
   readonly draft?: DraftResultVNext;

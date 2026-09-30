@@ -23,9 +23,9 @@ export async function advanceToPregame(
   page: Page,
   onScreen?: (label: string) => Promise<void>,
 ): Promise<void> {
-  for (let guard = 0; guard < 4; guard += 1) {
+  for (let guard = 0; guard < 5; guard += 1) {
     await expect(
-      page.locator('#s2-pregame, #s2-breakthrough, #s2-event, #s2-injury').first(),
+      page.locator('#s2-pregame, #s2-breakthrough, #s2-event, #s2-nil, #s2-injury').first(),
     ).toBeVisible();
     if ((await page.locator('#s2-pregame').count()) > 0) break;
     const scene =
@@ -33,9 +33,16 @@ export async function advanceToPregame(
         ? 'breakthrough'
         : (await page.locator('#s2-event').count()) > 0
           ? 'event'
-          : 'injury';
+          : (await page.locator('#s2-nil').count()) > 0
+            ? 'nil'
+            : 'injury';
     const choice = page.locator('.s2-choice, .s2-cardgrid--offer button.s2-cardbtn');
-    if ((await choice.count()) > 0) {
+    if (scene === 'nil') {
+      // A NIL offer: take the deal (the primary action), then continue.
+      await onScreen?.(scene);
+      await primaryAction(page).click();
+      await expect(page.locator('main [role=status]').first()).toBeVisible();
+    } else if ((await choice.count()) > 0) {
       await onScreen?.(scene);
       await choice.first().click();
     }

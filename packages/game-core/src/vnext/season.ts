@@ -36,6 +36,7 @@ import {
 } from './types.js';
 import { createConditionVNext, VNEXT_CAREER_WEEK_STRIDE } from './weekly.js';
 import { canDeclareVNext, draftStockVNext, runDraftVNext } from './draft.js';
+import { seasonAwardsVNext } from './awards.js';
 import { VNEXT_NIL_TUNING } from './nil.js';
 import {
   activePostseasonRoundVNext,
@@ -171,9 +172,13 @@ function seasonReview(
         ? null
         : Math.round(grades.reduce((sum, grade) => sum + grade, 0) / grades.length),
   };
-  return {
+  const awarded: SeasonReviewVNext = {
     ...review,
-    draftStock: draftStockVNext(career, [...career.history, review], mechanics),
+    awards: seasonAwardsVNext(review, career.athlete.profile.positionId as VNextPositionId, games),
+  };
+  return {
+    ...awarded,
+    draftStock: draftStockVNext(career, [...career.history, awarded], mechanics),
   };
 }
 
@@ -397,6 +402,9 @@ function alumniFor(career: CareerVNext, ending: CareerEndingVNext): AlumniVNext 
       .map(([field, value]) => ({ field, value })),
     finalOverall: history.at(-1)?.overall.end ?? profile.overall,
     bestDepthRank: Math.min(...history.map(({ depthRank }) => depthRank.end), 8),
+    awards: history.flatMap(({ awards = [] }) => awards),
+    conferenceTitles: history.filter(({ conferenceChampion }) => conferenceChampion === true)
+      .length,
     ending,
     // Retiring leaves football; graduating or declaring goes through the Pro Draft.
     ...(ending === 'RETIRED' ? {} : { draft: runDraftVNext(career) }),

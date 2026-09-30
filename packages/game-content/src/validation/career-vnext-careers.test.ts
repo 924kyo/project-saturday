@@ -48,6 +48,9 @@ it('plays full six-position careers inside the product bands', () => {
     nilCareers: 0,
     drafted: 0,
     stockScores: [] as number[],
+    awardSeasons: 0,
+    awards: [] as string[],
+    grades: [] as number[],
     finalOverall: [] as number[],
   };
   for (const [positionId, archetypeId] of identities)
@@ -125,6 +128,9 @@ it('plays full six-position careers inside the product bands', () => {
         outcome.nilCareers += 1;
       if (alumni.draft?.round !== null && alumni.draft !== undefined) outcome.drafted += 1;
       outcome.stockScores.push(career.history.at(-1)!.draftStock!.score);
+      outcome.awardSeasons += career.history.filter(({ awards = [] }) => awards.length > 0).length;
+      outcome.awards.push(...(alumni.awards ?? []));
+      outcome.grades.push(...career.history.map(({ averageGrade }) => averageGrade ?? 0));
       outcome.finalOverall.push(alumni.finalOverall);
       rows.push(
         `${positionId.padEnd(13)} ${attempt} | ${career.history
@@ -149,6 +155,9 @@ it('plays full six-position careers inside the product bands', () => {
   expect(outcome.postseasonSeasons).toBeLessThan(outcome.seasons * 0.6);
   // NIL reaches most careers that play.
   expect(outcome.nilCareers).toBeGreaterThanOrEqual(6);
+  // Awards are earned, not handed out: some seasons, far from all.
+  expect(outcome.awardSeasons).toBeGreaterThan(0);
+  expect(outcome.awardSeasons).toBeLessThan(outcome.seasons * 0.4);
   // The draft is a real outcome for some, not all.
   expect(outcome.drafted).toBeGreaterThan(0);
   expect(outcome.drafted).toBeLessThan(12);
