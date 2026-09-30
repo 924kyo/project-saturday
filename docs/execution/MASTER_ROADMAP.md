@@ -202,6 +202,8 @@ Gate: a first-time player completes a full two-season career in any position, in
 
 ## M8 — Six-position beta and 64-program world
 
+Complete 2026-09-30 (plan: `docs/exec-plans/completed/m8-six-position-beta.md`; parity: `docs/qa/M8_SIX_POSITION_PARITY.md`).
+
 Deliver:
 
 - LB and EDGE;
@@ -215,6 +217,8 @@ Deliver:
 Gate: full multi-season careers complete across all six positions.
 
 ## M9 — Full world/content and legacy history
+
+Active from 2026-09-30 (plan: `docs/exec-plans/active/m9-full-world-and-legacy.md`).
 
 Deliver:
 
