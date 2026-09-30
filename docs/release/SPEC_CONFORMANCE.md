@@ -1,6 +1,6 @@
 # Spec conformance — 1.0 release candidate
 
-Date: 2026-09-30.
+Date: 2026-09-30, updated for rc.2 (M11).
 
 The shipped game is **Career VNext**. `docs/product-reconciliation/CAREER_VNEXT_CONTRACT.md` describes it (updated for the RC) and wins over older spec text where they differ (`PRODUCT_REBASELINE.md`).
 
@@ -35,7 +35,7 @@ Status key:
 | TRAINING_AND_BODY | Met, adapted | Focus XP ×3, Recovery +20 Body, practice grade, confidence reverts toward 60 (M10) |
 | DEPTH_CHART | Met | Room evaluation and snap-share projection; each new season is a fresh depth competition |
 | GAME_SIMULATION | Met, adapted | Every Saturday plays through key snaps on the Tactical Board. The world simulates in aggregate; overtime decides ties (M8) |
-| GAME_DAY_PRESENTATION | Met | Pure snap-board frames from saved results; animation replays saved results only; reduced motion removes animation |
+| GAME_DAY_PRESENTATION | Met | Pure snap-board frames from the snap's look and saved result. Before the call, look movers act out the movements the tells revealed; after it, the whole field plays toward the saved ball spot (M11). Animation never invents outcomes; reduced motion removes it |
 | EVENT_SYSTEM | Met | 254 events with eligibility by position, tags and context, on per-week named streams |
 | NIL_AND_OFF_FIELD | Partial | NIL deals pay, raise brand and cost practice time. Academics use the checkpoint rule. The team-relations and media tracks are folded into brand and the locker room. 10 deal templates |
 | INJURY_AND_RECOVERY | Partial | Convex risk in Body, rest or play-limited choices, truthful rest credit (M10); 8 outcomes |
@@ -50,7 +50,7 @@ Status key:
 | SAVE_SYSTEM | Met, adapted | Lean integrity: a checksummed envelope with structural validation, a last-good backup with recovery, checked migration fixtures, persistent storage requested. The M7.5 registry and replay contracts apply to historical data only |
 | UX_AND_FLOW | Met | One focal action per screen, Week/Build/Team/Profile tabs, contextual help |
 | LOCALIZATION | Met | ko-KR and en-US in every change; Intl USD currency formatting in the app language; en-US ft-in/lb |
-| ART_AND_PRESENTATION | Met | Original "Saturday Broadcast" design system, generated crests, program palettes with contrast-safe ink |
+| ART_AND_PRESENTATION | Met | Original "Night Game" design system (M11; it replaced "Saturday Broadcast"), generated crests, program palettes with contrast-safe ink; optional art slots with CSS fallbacks (`docs/design/ASSET_LIST.md`) |
 | CONTENT_DENSITY | Partial | See the table in `KNOWN_LIMITATIONS.md` |
 | BALANCE_PHILOSOPHY | Met | Checked 36-career report with bands (`docs/qa/BALANCE_TARGETS.md`) |
 

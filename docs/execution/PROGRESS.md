@@ -4,11 +4,11 @@
 
 ## Target
 
-M10 — 1.0 Release Candidate: **reached** (2026-09-30).
+M10 — 1.0 Release Candidate: **reached** (2026-09-30). Current build: `1.0.0-rc.2` (M11, post-RC).
 
 ## Current milestone
 
-None active. M10 is complete. Plan: `docs/exec-plans/completed/m10-release-candidate.md`.
+None active. M10 is complete (plan: `docs/exec-plans/completed/m10-release-candidate.md`), and the M11 follow-ups are complete.
 
 ## Status
 
@@ -26,6 +26,12 @@ M9 is COMPLETE (2026-09-30), and its Tier 3 gate is met (`docs/qa/M9_GATE.md`):
 M8 is COMPLETE (2026-09-30): see `docs/exec-plans/completed/m8-six-position-beta.md`.
 
 ## Last completed task
+
+M11 follow-up and the rc.2 gate (2026-09-30):
+- the living Tactical Board: players act out the look's revealed movements before the call, and the whole field plays toward the saved ball spot after it (presentation only; reduced motion stays still). The board remounts when a result arrives, so its animation starts at 0 instead of jumping to the end;
+- the Korean register: 72 shipped QB/RB/CB tell lines now use -다, and 17 M11 look strings were rephrased; a content test guards the register of every tell;
+- docs brought up to date: `docs/release/` (notes, readiness, limitations, conformance), the Career VNext contract (look stream, looks, grade curve), DECISION_LOG and this file;
+- the desktop is `1.0.0-rc.2`, with the Tier 3 gate below.
 
 M11 (post-RC, 2026-09-30):
 - snap looks: 120 hidden looks across 24 decision families. Tells from preparation, board arrows for how opponents stand and move, and a post-snap reveal of the real look and its answer;
@@ -138,7 +144,11 @@ The M8 closeout, 2026-09-30:
 
 ## Current / next task
 
-None required: the durable target (M10) is reached. Optional follow-ups before a public 1.0 are the manual items in `docs/release/KNOWN_LIMITATIONS.md`: screen-reader and native-speaker passes, real devices, trademark clearance, and desktop signing and the installer wizard. The content-depth growth there (NIL, injuries, patterns, awards) and the pre-R code cleanup (BACKLOG) are also optional.
+None required: the durable target (M10) is reached, and rc.2 is gated. Optional follow-ups before a public 1.0:
+- the manual items in `docs/release/KNOWN_LIMITATIONS.md`: screen-reader and native-speaker passes, real devices, play-testing the snap looks, trademark clearance, and desktop signing and the installer wizard;
+- the art assets;
+- content depth (NIL, injuries, awards);
+- the pre-R code cleanup (BACKLOG).
 
 ## Active exec plan
 
@@ -154,13 +164,14 @@ None. M8, M9 and M10 are archived in `docs/exec-plans/completed/`.
 
 ## Latest green verification
 
-- Tier 3, 2026-09-30 (M9 closeout).
-- `pnpm check`: typecheck, lint, boundaries, localized copy and format; node scripts (10); vitest 857/107 files; content 414; sim 394; e2e 10; build and PWA verified.
-- Browser: `E2E_FULL=1` passed 42 (16 were project-assignment skips).
-- Desktop: `desktop:build` (NSIS) and `desktop:smoke` passed.
+- Tier 3, 2026-09-30 (the rc.2 gate).
+- `pnpm check`: typecheck, lint, boundaries, localized copy and format; vitest 887 (116 files); content 430; sim 397; e2e 20; build and PWA verified.
+- Browser: `E2E_FULL=1` passed 52 (22 were project-assignment skips), including WebKit iPhone 14.
+- Desktop: `desktop:build` (`1.0.0-rc.2`, NSIS) and `desktop:smoke` passed.
 
 ## Recent checkpoints
 
+1. 2026-09-30: M11 and rc.2 (`84dbb93` through the rc.2 gate commit): snap looks, the Night Game redesign, the living board, the Korean register pass.
 1. 2026-09-30: M9 complete (`18ce04f` through the closeout commit): the 96-program world, awards, legacy, the event library and the editorial pass.
 2. 2026-09-30: M8 complete (`98a8a73` through the closeout commit). Steps covered LB/EDGE, the conference world, the draft, NIL, overtime, the life pack, and star impact with pacing.
 3. 2026-09-30: R complete (`f62da91`), with the Career VNext app as the only app.
@@ -168,15 +179,17 @@ None. M8, M9 and M10 are archived in `docs/exec-plans/completed/`.
 
 ## Milestone ledger
 
-- M0 through M7 are complete; M7.5 is absorbed by R; R, M8 and M9 are complete.
-- M9 is complete. M10 is active.
+- M0 through M7 are complete; M7.5 is absorbed by R; R, M8, M9 and M10 are complete.
+- M11 (post-RC: snap looks, the Night Game redesign, the living board) is complete as `1.0.0-rc.2`. It has no exec plan; its decisions are in `DECISION_LOG.md`.
 
 ## Known issues
 
 - Balance: the first round of the Pro Draft needs elite play at a strong program (none in the 36-career harness, by design).
-- The NIL catalog is small (10 deals; M9's content scale grows it).
+- The NIL catalog is small (10 deals).
 - Unused pre-R aggregates and locale keys are still present (cleanup pending).
 - Installer install/uninstall is unexercised.
+- The 14 optional art images (`docs/design/ASSET_LIST.md`) are not supplied yet; CSS fallbacks ship.
+- The snap looks have not been play-tested by people.
 
 ## Hard blockers
 
@@ -184,8 +197,8 @@ None.
 
 ## Resume note
 
-Continue M9 in plan order. Use the tiered protocol:
+No milestone is active. Before new work, confirm the goal with the user. Candidates are the manual items in `docs/release/KNOWN_LIMITATIONS.md`, the art assets, content depth (NIL, injuries, awards) and the pre-R cleanup. Use the tiered protocol:
 - focused core and content tests in the edit loop;
 - the default e2e plan at feature boundaries;
 - real-browser screenshots for new surfaces;
-- the full matrix and desktop only at the M9 gate.
+- the full matrix and desktop only at a release gate.

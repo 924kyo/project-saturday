@@ -1,6 +1,6 @@
 # Career VNext Contract
 
-Date: 2026-09-29, updated for the 1.0 release candidate on 2026-09-30. Status: authoritative for the shipped career (R through M10). Where an older product spec conflicts with this document, this document describes what ships.
+Date: 2026-09-29, updated for the 1.0 release candidate on 2026-09-30 and for M11 (rc.2). Status: authoritative for the shipped career (R through M11). Where an older product spec conflicts with this document, this document describes what ships.
 
 Career VNext is a new, canonical, position-generic career model designed from the player experience inward. It is **not** a promotion of `CareerRun` or `PositionAlphaSession`. It reuses their best proven *kernels*: the position game engines, the room/depth evaluation, focus resolution, practice grade, creation profile, the world simulator and the content catalogs. It does not reuse either aggregate, phase list or save format.
 
@@ -17,7 +17,8 @@ Career VNext is a new, canonical, position-generic career model designed from th
    - `:vnext:recruiting`, `:vnext:room[:<season>]:<program>` (offers and rooms);
    - `:vnext:world:<season>` (every other program's results; the career never reads it);
    - `:vnext:event|injury|life|mentor|nil|sideline|overtime:<season>:<week>` (weekly scenes, sideline reps, overtime);
-   - `:vnext:breakthrough`, `:vnext:transfer:<season>` and `:vnext:draft`.
+   - `:vnext:breakthrough`, `:vnext:transfer:<season>` and `:vnext:draft`;
+   - `:vnext:look:<season>:<week>:<live|rep><index>` (the hidden snap look, M11; derived, never saved).
 
    `Math.random` is never used for gameplay.
 
@@ -70,6 +71,8 @@ Fields added after v3 are optional, so a save written by any earlier release kee
 3. `RESULT`: the last resolved snap, waiting for an explicit continue. Animation replays only this saved result.
 4. `FINAL`: the final score before the recap.
 
+Snap looks (M11): every live snap and sideline rep hides one of five looks for its decision family (two shipped patterns, a new look, two disguises; `snapLookCatalogVNext`, 120 looks). The look sets the fits for that one resolve (`resolveWithLookVNext` hands the owning kernel the look's fits, then restores its pattern), the stance and movements on the board, and the tells. Preparation keeps its role: the kernel's clue count decides how many tells and which movements the athlete sees. Before the call the UI names only the family; `RESULT` reveals the look, its answer and the unseen tells. The staff grade puts every kernel's box score on one curve (`VNEXT_GRADE_CALIBRATION`: QB +11, RB +6, WR −17) before awards and draft stock read it.
+
 `toGameDay()` walks report → breakthrough (when the gauge is full) → optional event → injury check → `PREGAME`, stopping only where the player reads or decides. The event and the injury check each draw from their own named stream (`:vnext:event:<season>:<week>`, `:vnext:injury:<season>:<week>`), never the career stream. Event game modifiers apply to the next kickoff only; injury availability caps live snaps (OUT still gets the sideline reps); weekly rollover advances recovery. Injury risk is VNext pacing (`VNEXT_INJURY_TUNING`, convex in Body) over the shared exposure components and the shared outcome catalog.
 
 Build: `equipSkill(slot, skillId | null)` during `WEEK_PLAN` only; a card occupies one slot. Equipped cards reach every owning rule: skill-aware focus resolution, weekly rollover (passive recovery), pregame injury risk, the position game kernels (QB/RB/CB card effects; WR game hooks in the WR kernel, including package snaps) and event choices (unlocks, WR option access). Offers draw from `:vnext:breakthrough:<season>:<week>`.
@@ -109,7 +112,7 @@ Pure functions return frozen, locale-neutral view models (message keys + params,
 - **Pre-game and planning:** `NextAction`, `WeekHeaderView`, `ReadinessView`, `FocusTileView[]`, `PracticeReportView`.
 - **Team:** `DepthBoardView`, `RivalCompareView`.
 - **Recruiting:** `RecruitOfferView`.
-- **Game Day:** `PregameView`, `SnapBoardFrame` (schematic geometry derived from context and result, no RNG), `PlayResultView`, `PostGameStoryView`.
+- **Game Day:** `PregameView`, `SnapBoardFrame` (schematic geometry derived from context, look and result, no RNG; the board animates players only along the look's revealed movements and toward the saved ball spot), `PlayResultView`, `PostGameStoryView`.
 
 Core owns the football frames. The web app owns layout and localization.
 

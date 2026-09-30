@@ -1,6 +1,6 @@
 # Project Saturday — Windows desktop build
 
-The Tauri 2 shell embeds the same production React/Vite game as the browser/PWA. There is no native gameplay implementation and no Vite server or network requirement for basic play. Version `1.0.0-rc.1` is the **unsigned 1.0 release candidate** build (M10).
+The Tauri 2 shell embeds the same production React/Vite game as the browser/PWA. There is no native gameplay implementation and no Vite server or network requirement for basic play. Version `1.0.0-rc.2` is the **unsigned 1.0 release candidate** build (M11; rc.1 was the M10 gate).
 
 ## Commands
 
@@ -18,10 +18,10 @@ Prerequisites: Node/Corepack/pnpm from the root package, Rust MSVC toolchain, Vi
 
 The NSIS installer contains Korean and English, installs per user, and embeds the offline WebView2 installer. The larger installer size is intentional; it avoids a runtime download during offline installation. See [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) and [Windows installer options](https://v2.tauri.app/distribute/windows-installer/).
 
-## Produced artifacts — 2026-09-30 16:30 KST (M10 gate)
+## Produced artifacts — 2026-09-30 21:41 KST (rc.2 gate)
 
-- Application: `apps/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/project-saturday.exe` — 8,872,960 bytes, SHA-256 `70292901CCEF4ECAE955DA8FCDAA39E4CD3F87D95E00C29640A9C75B166ADA47`.
-- NSIS installer: `apps/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/Project Saturday_1.0.0-rc.1_x64-setup.exe` — 217,493,840 bytes, SHA-256 `8F4934C08BA9EDC17C831CD386C2F74F954E48C433B1B2779C26688335DBA4B7`.
+- Application: `apps/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/project-saturday.exe` — 8,996,352 bytes, SHA-256 `3E8DBA7FDC13FD3F28DE59E26907B00360F29DDEEA585D96CB1EDBA167626543`.
+- NSIS installer: `apps/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/Project Saturday_1.0.0-rc.2_x64-setup.exe` — 217,618,422 bytes, SHA-256 `ABA848BB06EB385C1E1CC5794627FB5E00BCC1F26A79870A4028B7206AD500C8`.
 
 The application executable is launch-tested. The installer was generated, but its install and uninstall wizard has **not** been exercised, and this README makes no claim about it. Outputs are ignored build artifacts and must be rebuilt on another checkout. No signing, publishing or deployment occurred.
 

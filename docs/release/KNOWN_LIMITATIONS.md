@@ -1,6 +1,6 @@
 # Known limitations — 1.0 release candidate
 
-Date: 2026-09-30. None of these is a critical or high defect. Each one is a scope boundary, a deferred polish item, or an external step outside this repository.
+Date: 2026-09-30, updated for rc.2 (M11). None of these is a critical or high defect. Each one is a scope boundary, a deferred polish item, or an external step outside this repository.
 
 ## Content depth versus the long-range direction (`CONTENT_DENSITY.md`)
 
@@ -12,10 +12,10 @@ Date: 2026-09-30. None of these is a critical or high defect. Each one is a scop
 | Authored events | 254 | 250–350 |
 | NIL deal templates | 10 (in 5 categories) | 40–60 |
 | Injury outcomes | 8 | 25–30 |
-| Key-snap patterns | 8 per position (48, plus sideline reps) | 60–80 |
+| Key-snap looks | 120 looks in 24 decision families (5 each, including 48 disguises) | 60–80 patterns |
 | Awards and major honors | 12 awards plus conference titles, the bracket and the Pro Draft | 25+ |
 
-The first four rows meet the direction. NIL, injuries, patterns and awards are functional and tested but thinner, so repeated careers will see these repeat sooner than events or cards.
+The first four rows and the snap looks meet the direction. NIL, injuries and awards are functional and tested but thinner, so repeated careers will see these repeat sooner than events or cards.
 
 ## Design scope
 
@@ -33,12 +33,14 @@ The first four rows meet the direction. NIL, injuries, patterns and awards are f
 ## Quality assurance not yet done by a human
 
 - Screen-reader walkthroughs (NVDA, VoiceOver). The automated axe, keyboard and reduced-motion gates pass (`docs/qa/M10_ACCESSIBILITY.md`).
-- A native-speaker proofread of ko-KR and en-US. The editorial pass and the copy audit are automated or author-reviewed (`docs/qa/M9_EDITORIAL_PASS.md`).
+- A native-speaker proofread of ko-KR and en-US. The editorial pass and the copy audit are automated or author-reviewed (`docs/qa/M9_EDITORIAL_PASS.md`). The M11 look copy (308 strings) had an author pass for register and phrasing, and a test keeps every Korean tell in the plain register; it has not had a native-speaker read.
+- Play-testing of the snap looks by people. The harness confirms every look is readable (its best read grades Sharp for all six positions) and that disguises share their twin's picture, but whether tells feel learnable and disguises fair is untested with players.
 - Real iOS and Android devices. WebKit (iPhone 14 profile) runs a focused subset, and Chromium phone profiles run the full journeys. Firefox is not in the matrix.
 
 ## Distribution
 
 - **Desktop:** the Windows Tauri build is unsigned. The executable is launch-tested, but the installer wizard has not been exercised (`apps/desktop/README.md`). The icon is temporary.
+- **Art:** the Night Game design ships with CSS fallbacks for every art slot. The 14 optional images (`docs/design/ASSET_LIST.md`: backdrops, scene art, position art) are not in the repository yet; each appears without a code change once its file is added.
 - Before commercial distribution:
   - a trademark clearance search for the product name and the program names;
   - the Barlow Condensed OFL notice in the about text or store listing (`docs/qa/M10_ORIGINALITY_REVIEW.md`).
