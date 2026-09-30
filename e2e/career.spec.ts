@@ -115,3 +115,37 @@ test('declares for the Pro Draft after the junior season', async ({ page, isMobi
   await expect(page.locator('.s2-plaque').first()).toContainText('Draft Tester');
   expect(errors).toEqual([]);
 });
+
+// M9: history persists across careers. The first career retires; the landing screen then shows
+// its plaque and the record book; a second career completes and both plaques remain.
+test('a second career sees the first career in the record book and on the wall', async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(!full || isMobile, 'release-boundary matrix only');
+  test.setTimeout(900_000);
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  const retireAtFirstOffseason = async () => {
+    for (let guard = 0; guard < 1_500; guard += 1) {
+      if ((await page.locator('#s2-offseason').count()) > 0) break;
+      await step(page);
+    }
+    await page.locator('#s2-offseason ~ .s2-chipbtn').click();
+    await page.locator('[role=alertdialog] .s2-btn--ghost').last().click();
+    await expect(page.locator('#s2-complete')).toBeVisible();
+  };
+  await createInLocale(page, 4, 'ko-KR', 'First Legend');
+  await retireAtFirstOffseason();
+  await primaryAction(page).click();
+  // The landing screen carries the legacy: the first plaque and the record book.
+  await expect(page.locator('#s2-legacy')).toBeVisible();
+  await expect(page.locator('#s2-legacy .s2-plaque').first()).toContainText('First Legend');
+  await expect(page.locator('#s2-legacy #s2-record-book')).toBeVisible();
+  await createInLocale(page, 2, 'en-US', 'Second Legend');
+  await retireAtFirstOffseason();
+  await expect(page.locator('.s2-plaque')).toHaveCount(2);
+  await page.reload();
+  await expect(page.locator('.s2-plaque')).toHaveCount(2);
+  expect(errors).toEqual([]);
+});

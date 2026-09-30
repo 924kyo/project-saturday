@@ -40,6 +40,11 @@ const identities = [
  */
 it('plays full six-position careers inside the product bands', () => {
   const rows: string[] = [];
+  // Variation evidence across careers (M9 gate).
+  const firstPrograms = new Set<string>();
+  const eventIds = new Set<string>();
+  const records = new Set<string>();
+  const draftOutcomes = new Set<string>();
   const outcome = {
     careers: 0,
     seasons: 0,
@@ -78,6 +83,7 @@ it('plays full six-position careers inside the product bands', () => {
         (a, b) => b.programRating - a.programRating,
       )[0]!;
       career = ok(commitProgramVNext(career, best.programId, mechanics));
+      firstPrograms.add(best.programId);
       for (let guard = 0; guard < 6_000 && career.flow.type !== 'CAREER_COMPLETE'; guard += 1) {
         const flow = career.flow;
         if (flow.type === 'WEEK_PLAN') {
@@ -130,6 +136,9 @@ it('plays full six-position careers inside the product bands', () => {
       outcome.stockScores.push(career.history.at(-1)!.draftStock!.score);
       outcome.awardSeasons += career.history.filter(({ awards = [] }) => awards.length > 0).length;
       outcome.awards.push(...(alumni.awards ?? []));
+      for (const { eventId } of career.condition.eventHistory) eventIds.add(eventId);
+      records.add(JSON.stringify(career.history.map(({ record }) => record)));
+      draftOutcomes.add(String(alumni.draft?.round ?? 'undrafted'));
       outcome.grades.push(...career.history.map(({ averageGrade }) => averageGrade ?? 0));
       outcome.finalOverall.push(alumni.finalOverall);
       rows.push(
@@ -161,4 +170,9 @@ it('plays full six-position careers inside the product bands', () => {
   // The draft is a real outcome for some, not all.
   expect(outcome.drafted).toBeGreaterThan(0);
   expect(outcome.drafted).toBeLessThan(12);
+  // Repeated careers vary: where they start, what happens to them, and how they end.
+  expect(firstPrograms.size).toBeGreaterThanOrEqual(8);
+  expect(records.size).toBe(12);
+  expect(eventIds.size).toBeGreaterThanOrEqual(40);
+  expect(draftOutcomes.size).toBeGreaterThanOrEqual(3);
 }, 900_000);

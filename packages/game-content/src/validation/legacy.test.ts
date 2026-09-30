@@ -85,6 +85,16 @@ describe('M9 legacy history', () => {
     expect(holder('record_best_pick')).toBe('Min-jun Kim');
     expect(holder('record_stat_passingYards')).toBe('Min-jun Kim');
     expect(holder('record_wins')).toBe('Jordan Reyes');
+    // Negative stats and a QB's interceptions thrown are never records.
+    const withBad = [
+      plaque({
+        statTotals: [
+          { field: 'fumbles', value: 9 },
+          { field: 'interceptions', value: 7 },
+        ],
+      }),
+    ];
+    expect(recordBookVNext(withBad).some(({ field }) => field !== undefined)).toBe(false);
     expect(recordBookVNext([])).toEqual([]);
   });
 

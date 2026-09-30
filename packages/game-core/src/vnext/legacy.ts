@@ -113,13 +113,28 @@ export function recordBookVNext(alumni: readonly AlumniVNext[]): readonly Record
   best('record_best_pick', ({ draft }) => draft?.pick ?? null, true);
   best('record_wins', ({ record }) => record.wins);
   best('record_live_games', ({ liveGames }) => liveGames);
+  // Only marks worth celebrating: no negative stats, and interceptions only as takeaways.
+  const negative = new Set([
+    'fumbles',
+    'sacksTaken',
+    'drops',
+    'missedTackles',
+    'yardsAllowed',
+    'touchdownsAllowed',
+    'completionsAllowed',
+    'turnovers',
+  ]);
+  const defenders = new Set(['position_cb', 'position_lb', 'position_edge']);
   const fields = [
     ...new Set(valid.flatMap(({ statTotals }) => statTotals.map(({ field }) => field))),
   ].sort();
-  for (const field of fields)
+  for (const field of fields.filter((name) => !negative.has(name)))
     best(
       `record_stat_${field}`,
-      ({ statTotals }) => statTotals.find((total) => total.field === field)?.value ?? null,
+      ({ statTotals, positionId }) =>
+        field === 'interceptions' && !defenders.has(positionId)
+          ? null
+          : (statTotals.find((total) => total.field === field)?.value ?? null),
       false,
       field,
     );
