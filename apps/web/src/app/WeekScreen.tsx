@@ -10,6 +10,7 @@ import {
   type CareerVNextMechanics,
   type PracticeReportVNext,
   type VNextPositionId,
+  nilOfVNext,
 } from '@project-saturday/game-core';
 
 import { useAppTranslation, type AppTranslate } from '../i18n/i18n';
@@ -30,6 +31,7 @@ import {
   riskBand,
 } from './content';
 import { BuildPanel } from './BuildView';
+import { benefitNameKey, nilOfferText } from './nil';
 import { AcademicAlert, ProfilePanel, TeamPanel } from './TeamProfile';
 import { Nameplate } from './Nameplate';
 import { Crest, Delta, Meter, Panel } from './ui';
@@ -291,6 +293,20 @@ function Report({
               </span>
             </li>
           )}
+          {(report.offFieldDelta ?? 0) !== 0 && (
+            <li>
+              <span className="s2-num">
+                {t('v2.report.offField', {
+                  value: `${report.offFieldDelta! > 0 ? '+' : '−'}${Math.abs(report.offFieldDelta!)}`,
+                })}
+              </span>
+            </li>
+          )}
+          {(report.benefitsUsed ?? []).map((benefitId) => (
+            <li key={benefitId}>
+              <span>{t('v2.report.benefitUsed', { benefit: t(benefitNameKey(benefitId)) })}</span>
+            </li>
+          ))}
           {report.sidelineCredit !== 0 && (
             <li>
               <span>
@@ -500,6 +516,14 @@ export function WeekScreen({
           id="s2-plan"
           title={t('v2.week.focusTitle')}
         >
+          {nilOfVNext(career).obligation !== null && (
+            <p className="s2-note" style={{ marginBottom: 8 }}>
+              {t('v2.nil.active', {
+                offer: t(key(nilOfferText(nilOfVNext(career).obligation!.offerId).nameKey)),
+                weeks: nilOfVNext(career).obligation!.weeksRemaining,
+              })}
+            </p>
+          )}
           <div className="s2-slots" style={{ marginBottom: 12 }}>
             {[0, 1, 2].map((index) => {
               const id = picks[index];

@@ -22,6 +22,7 @@ import {
   type CareerVNextResult,
   type PositionPlayerCreationIdentity,
   type ProgramId,
+  chooseNilVNext,
 } from '@project-saturday/game-core';
 import { buildCareerVNextMechanics } from '@project-saturday/game-content/content';
 import {
@@ -59,6 +60,7 @@ import { RecruitScreen } from './RecruitScreen';
 import { teamStyle } from './theme';
 import { BreakthroughScreen } from './BuildView';
 import { EventScreen, InjuryScreen } from './WeeklyScene';
+import { NilScreen } from './NilScene';
 import { WeekScreen } from './WeekScreen';
 
 export interface AppProps {
@@ -313,6 +315,14 @@ export function App({ storage, seedFactory = browserSeed }: AppProps): React.JSX
               career={career}
               mechanics={mechanics}
               onChoose={(id) => run((c, m) => chooseEventVNext(c, id, m))}
+              onContinue={() => run(toGameDayVNext)}
+            />
+          ) : flow === 'NIL' ? (
+            <NilScreen
+              blocked={blocked}
+              career={career}
+              mechanics={mechanics}
+              onDecide={(accept) => run((c, m) => chooseNilVNext(c, accept, m))}
               onContinue={() => run(toGameDayVNext)}
             />
           ) : flow === 'INJURY' ? (

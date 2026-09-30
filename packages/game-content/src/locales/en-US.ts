@@ -17,6 +17,7 @@ import { enUSDefenderUiMessages } from './m8-defenders-ui.js';
 import { enUSWorldMessages } from './m8-world.js';
 import { enUSWorldUiMessages } from './m8-world-ui.js';
 import { enUSDraftUiMessages } from './m8-draft-ui.js';
+import { enUSNilUiMessages } from './m8-nil-ui.js';
 import { enUSM8PositionMessages } from './m8-positions.js';
 import { m7BuildEn } from './m7-builds.js';
 import { m7DirectEn } from './m7-direct.js';
@@ -38,6 +39,7 @@ export const enUSMessages = {
   ...enUSWorldMessages,
   ...enUSWorldUiMessages,
   ...enUSDraftUiMessages,
+  ...enUSNilUiMessages,
   ...enUSEventBatchMessages,
   ...enUSInjuryBatchMessages,
   ...enUSM6UiMessages,

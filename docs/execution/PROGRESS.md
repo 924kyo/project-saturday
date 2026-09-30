@@ -20,9 +20,18 @@ R is COMPLETE (2026-09-30). The gate met is:
 
 The plan is archived at `docs/exec-plans/completed/r-product-reconciliation.md`.
 
-M8 steps 1–4 are complete (2026-09-30): LB and EDGE are playable end to end, new seasons are played in the 64-program conference world, and careers end through a declaration or graduation into the Pro Draft. Next is step 5, VNext NIL and relationships.
+M8 steps 1–5 are complete (2026-09-30): six positions, the 64-program conference world, the Pro Draft, and NIL with the locker room. Next is step 6, the library and balance at scale.
 
 ## Last completed task
+
+M8 step 5, NIL and relationships in VNext (2026-09-30):
+- `vnext/nil.ts` runs NIL through the shared off-field arithmetic. There is one offer attempt per regular-season week on a `:vnext:nil` stream (never during an obligation), and each offer comes once a career. An accept/decline scene follows. Rewards get the equipped NIL multiplier. An obligation costs practice score (5 per focus of cost) plus its authored weekly effects until it is fulfilled;
+- one-use benefits: recovery access (+6 Body with a recovery focus), training access (+4 Preparation with a position drill), offer visibility (a higher offer chance, spent when an offer arrives), advisor insight (shows the exact draft score), appearance style (cosmetic);
+- the locker room (teammate leader, 0–100) moves the practice score by ±2 and feeds relationship tags to NIL and event eligibility. Position-coach effects land on coach trust. The campus card line amplifies relationship gains;
+- brand now grows on Saturdays (played, won, strong grade, postseason, ranked win) and fades 2 each offseason; the `nil` and `campus` card lines are live;
+- web: the NIL offer scene with the exact reward preview, the obligation line in the week plan, off-field lines in the practice report, and a NIL panel on Profile;
+- verified: `pnpm check` (842 + 404 + 390 tests) and a NIL season test in which offers arrive, deals pay, and obligations are fulfilled.
+
 
 M8 step 4, draft stock and declaration (2026-09-30):
 - `vnext/draft.ts`: each season review carries a Pro Draft stock. It blends ability, production (staff grades), program exposure, starting experience, big games and durability, and the player sees a band, not a pick;

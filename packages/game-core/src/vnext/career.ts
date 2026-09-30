@@ -45,6 +45,12 @@ import {
 } from './season.js';
 import { projectVNextWorldResult, resolveVNextSnap, startVNextGame } from './game.js';
 import { createSeasonWorldVNext } from './world.js';
+import {
+  attemptNilOfferVNext,
+  brandFromGameVNext,
+  decideNilOfferVNext,
+  settleNilWeekVNext,
+} from './nil.js';
 import { projectGameStakesVNext } from './stakes.js';
 import { createSidelineReps, resolveSidelineRep, sidelineCreditFor } from './sideline.js';
 import {
@@ -275,7 +281,23 @@ export function planWeekVNext(
     [evidence[0]!, evidence[1]!, evidence[2]!],
     room.projection.roleId,
   );
-  const practiceScore = Math.max(0, Math.min(100, grade.score + career.season.sidelineCredit));
+  // Off-field week: NIL obligation time and effects, the locker room, one-use benefits.
+  const offField = settleNilWeekVNext(
+    career,
+    {
+      ...profile.state,
+      ...state.training.state,
+      gpa: state.gpa,
+    },
+    focusIds,
+    definitions.filter((entry) => 'positionId' in entry).map(({ id }) => id),
+    mechanics,
+  );
+  if (offField === null) return fail('career_vnext.engine_failed');
+  const practiceScore = Math.max(
+    0,
+    Math.min(100, grade.score + career.season.sidelineCredit + offField.practiceDelta),
+  );
   const updated = updatePositionRoomAfterPractice(
     room,
     state.training.attributes,
@@ -293,9 +315,7 @@ export function planWeekVNext(
         ...profile,
         attributes: state.training.attributes,
         state: {
-          ...profile.state,
-          ...state.training.state,
-          gpa: state.gpa,
+          ...offField.state,
           coachTrust: updated.evidence.coachTrust.after,
         },
       },
@@ -305,6 +325,7 @@ export function planWeekVNext(
     },
     program: { ...career.program, room: updated.context },
     season: { ...career.season, sidelineCredit: 0 },
+    nil: offField.nil,
     flow: {
       type: 'PRACTICE_REPORT',
       report: {
@@ -316,6 +337,9 @@ export function planWeekVNext(
         depth: updated.evidence,
         gaugeBefore,
         gaugeAfter,
+        offFieldDelta: offField.practiceDelta,
+        benefitsUsed: offField.benefitsUsed,
+        obligationApplied: offField.obligationApplied,
       },
     },
   });
@@ -346,6 +370,10 @@ export function toGameDayVNext(
   }
   if (flow.type === 'EVENT') {
     if (flow.event.chosenChoiceId === null) return fail('career_vnext.invalid_phase');
+    return nilStep(career, flow.trainingLoad, mechanics);
+  }
+  if (flow.type === 'NIL') {
+    if (flow.offer.decision === null) return fail('career_vnext.invalid_phase');
     return injuryStep(career, flow.trainingLoad, mechanics);
   }
   if (flow.type === 'INJURY') {
@@ -363,7 +391,48 @@ function eventStep(
   const event = attemptWeeklyEventVNext(career, mechanics);
   if (event !== null)
     return publish(career, { ...career, flow: { type: 'EVENT', event, trainingLoad } });
+  return nilStep(career, trainingLoad, mechanics);
+}
+
+function nilStep(
+  career: CareerVNext,
+  trainingLoad: number,
+  mechanics: CareerVNextMechanics,
+): CareerVNextResult {
+  const attempt = attemptNilOfferVNext(career, mechanics);
+  if (attempt !== null)
+    return publish(career, {
+      ...career,
+      nil: attempt.nil,
+      flow: { type: 'NIL', offer: attempt.scene, trainingLoad },
+    });
   return injuryStep(career, trainingLoad, mechanics);
+}
+
+/** Accepts or declines this week's NIL offer; the week then continues toward kickoff. */
+export function chooseNilVNext(
+  career: CareerVNext,
+  accept: boolean,
+  mechanics: CareerVNextMechanics,
+): CareerVNextResult {
+  if (career.flow.type !== 'NIL' || career.flow.offer.decision !== null)
+    return fail('career_vnext.invalid_phase');
+  if (typeof accept !== 'boolean') return fail('career_vnext.invalid_choice');
+  const decided = decideNilOfferVNext(career, career.flow.offer, accept, mechanics);
+  if (decided === null) return fail('career_vnext.invalid_choice');
+  return publish(career, {
+    ...career,
+    athlete: { ...career.athlete, profile: { ...career.athlete.profile, state: decided.state } },
+    program:
+      career.program === null
+        ? null
+        : {
+            ...career.program,
+            room: { ...career.program.room, playerCoachTrust: decided.state.coachTrust },
+          },
+    nil: decided.nil,
+    flow: { ...career.flow, offer: decided.scene },
+  });
 }
 
 /** Takes one offered card: it joins the collection and fills the first open slot, if any. */
@@ -722,6 +791,18 @@ function settleGame(
           body: next.state.body,
           confidence: next.state.confidence,
           coachTrust: coachTrustAfter,
+          // Saturdays build the name that NIL offers read.
+          brand: Math.min(
+            100,
+            profile.state.brand +
+              brandFromGameVNext({
+                played: summary.opportunityCount > 0,
+                won: summary.resultId === 'game_result_win',
+                coachGrade,
+                postseason: game.round !== undefined,
+                opponentRank: stakes?.opponentRank ?? null,
+              }),
+          ),
         },
       },
     },

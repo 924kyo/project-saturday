@@ -9,6 +9,7 @@ import {
   canDeclareVNext,
   type CareerEndingVNext,
   type DraftStockBandVNext,
+  nilOfVNext,
 } from '@project-saturday/game-core';
 import type { MessageKey } from '@project-saturday/game-content/locales';
 
@@ -296,6 +297,9 @@ export function OffseasonScreen({
           <p className="s2-note">
             {t('v2.draft.declareHelp', { band: t(DRAFT_BAND_KEYS[stock.band]) })}
           </p>
+          {nilOfVNext(career).benefits.some(
+            ({ benefitId }) => benefitId === 'off_field_benefit_advisor_insight',
+          ) && <p className="s2-note s2-num">{t('v2.draft.exactStock', { score: stock.score })}</p>}
           {declaring ? (
             <div className="s2-banner" role="alertdialog" aria-labelledby="s2-declare-confirm">
               <p id="s2-declare-confirm">{t('v2.draft.declareConfirm')}</p>

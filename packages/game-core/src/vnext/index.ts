@@ -5,6 +5,7 @@ export {
   coachTrustDeltaVNext,
   chooseEventVNext,
   chooseInjuryVNext,
+  chooseNilVNext,
   chooseSnapVNext,
   commitProgramVNext,
   continueGameVNext,
@@ -78,3 +79,12 @@ export {
   runDraftVNext,
   VNEXT_DRAFT_TUNING,
 } from './draft.js';
+export {
+  brandFromGameVNext,
+  createNilVNext,
+  lockerRoomPracticeDeltaVNext,
+  nilOfferDefinitionVNext,
+  nilOfVNext,
+  relationshipTagsVNext,
+  VNEXT_NIL_TUNING,
+} from './nil.js';

@@ -19,6 +19,8 @@ import type {
   WorldAlphaSeasonState,
 } from '../season/world-alpha.js';
 import type { WorldVNextSeasonState } from '../season/world-vnext.js';
+import type { NilOfferId, OffFieldBenefitId } from '../off-field/ids.js';
+import type { NilEffectApplicationEvidenceV1 } from '../off-field/types.js';
 import type { GameStakesVNext } from './stakes.js';
 import type { WrAlphaGameState } from '../games/wr-alpha.js';
 import type {
@@ -127,6 +129,41 @@ export interface PracticeReportVNext {
   readonly depth: PositionDepthUpdateEvidence;
   readonly gaugeBefore: number;
   readonly gaugeAfter: number;
+  /** Off-field pull on the practice score: obligation time and the locker room (absent = 0). */
+  readonly offFieldDelta?: number;
+  /** One-use NIL benefits this week's plan used (absent = none). */
+  readonly benefitsUsed?: readonly OffFieldBenefitId[];
+  /** Weekly effects of an active NIL obligation (absent = none). */
+  readonly obligationApplied?: readonly NilEffectApplicationEvidenceV1[];
+}
+
+/** NIL and the locker room in VNext (absent on pre-M8 saves = the empty baseline). */
+export interface NilVNext {
+  readonly fundsUsd: number;
+  readonly benefits: readonly {
+    readonly benefitId: OffFieldBenefitId;
+    readonly quantity: number;
+  }[];
+  /** The teammate-leader relationship, 0-100. */
+  readonly lockerRoom: number;
+  readonly obligation: {
+    readonly offerId: NilOfferId;
+    readonly weeksRemaining: number;
+    readonly focusCost: number;
+  } | null;
+  readonly history: readonly {
+    readonly offerId: NilOfferId;
+    readonly outcome: 'ACCEPTED' | 'DECLINED' | 'FULFILLED';
+    readonly seasonIndex: number;
+    readonly weekIndex: number;
+  }[];
+}
+
+export interface NilOfferSceneVNext {
+  readonly offerId: NilOfferId;
+  readonly weekIndex: number;
+  readonly decision: 'ACCEPTED' | 'DECLINED' | null;
+  readonly applied: readonly NilEffectApplicationEvidenceV1[];
 }
 
 export type SidelineRepGradeVNext = 'SHARP' | 'SOLID' | 'MISSED';
@@ -352,6 +389,11 @@ export type FlowVNext =
       /** Practice load carried into the pregame injury check. */
       readonly trainingLoad: number;
     }
+  | {
+      readonly type: 'NIL';
+      readonly offer: NilOfferSceneVNext;
+      readonly trainingLoad: number;
+    }
   | { readonly type: 'INJURY'; readonly report: InjuryReportVNext }
   | { readonly type: 'GAME'; readonly game: GameDayVNext }
   | { readonly type: 'POST_GAME'; readonly recap: GameRecapVNext }
@@ -388,6 +430,8 @@ export interface CareerVNext {
     readonly startRank: number;
   };
   readonly condition: ConditionVNext;
+  /** NIL, benefits and the locker room (M8; absent on earlier saves). */
+  readonly nil?: NilVNext;
   readonly flow: FlowVNext;
   readonly log: readonly GameRecapVNext[];
   /** One review per completed season. */

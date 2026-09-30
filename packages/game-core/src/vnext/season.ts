@@ -36,6 +36,7 @@ import {
 } from './types.js';
 import { createConditionVNext, VNEXT_CAREER_WEEK_STRIDE } from './weekly.js';
 import { canDeclareVNext, draftStockVNext, runDraftVNext } from './draft.js';
+import { VNEXT_NIL_TUNING } from './nil.js';
 import {
   activePostseasonRoundVNext,
   conferenceChampionVNext,
@@ -458,8 +459,15 @@ export function commitOffseasonVNext(
       ...career.athlete,
       profile: {
         ...profile,
-        // The offseason heals and resets preparation for a new playbook year.
-        state: { ...profile.state, body: 100, preparation: 50, coachTrust: next.coachTrust },
+        // The offseason heals and resets preparation for a new playbook year; the name fades a
+        // little without Saturdays.
+        state: {
+          ...profile.state,
+          body: 100,
+          preparation: 50,
+          coachTrust: next.coachTrust,
+          brand: Math.max(0, profile.state.brand - VNEXT_NIL_TUNING.brand.offseasonFade),
+        },
       },
     },
     program: { programId, room: next.room },

@@ -17,6 +17,7 @@ const FLOW_TYPES = new Set([
   'PRACTICE_REPORT',
   'BREAKTHROUGH',
   'EVENT',
+  'NIL',
   'INJURY',
   'GAME',
   'POST_GAME',

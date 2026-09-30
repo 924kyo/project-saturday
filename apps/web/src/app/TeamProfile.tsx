@@ -6,6 +6,8 @@ import {
   type CareerVNextMechanics,
   type VNextPositionId,
   worldDefinitionVNext,
+  nilOfVNext,
+  VNEXT_NIL_TUNING,
 } from '@project-saturday/game-core';
 import type { MessageKey } from '@project-saturday/game-content/locales';
 
@@ -31,6 +33,7 @@ import {
 } from './content';
 import { METER_COLORS, PORTRAIT } from './theme';
 import { Crest, Meter, Panel } from './ui';
+import { benefitNameKey, nilOfferText } from './nil';
 
 const TOP_RANKINGS = 10;
 
@@ -305,6 +308,50 @@ function seasonTotals(career: CareerVNext): readonly [string, number][] {
 }
 
 /** Profile: who the athlete is, every rating, the season line, and academic/health standing. */
+/** NIL, benefits and the locker room: all saved facts, no hidden numbers. */
+function NilPanel({ career }: { readonly career: CareerVNext }): React.JSX.Element {
+  const { t } = useAppTranslation();
+  const nil = nilOfVNext(career);
+  const room = nil.lockerRoom;
+  return (
+    <Panel id="s2-profile-nil" title={t('v2.nil.title')}>
+      <p className="s2-num">
+        <strong>{t('v2.nil.fundsTotal', { value: nil.fundsUsd.toLocaleString() })}</strong> ·{' '}
+        {t('v2.nil.brand', { value: career.athlete.profile.state.brand })}
+      </p>
+      <p className="s2-note">
+        {nil.obligation === null
+          ? t('v2.nil.noDeal')
+          : t('v2.nil.active', {
+              offer: t(key(nilOfferText(nil.obligation.offerId).nameKey)),
+              weeks: nil.obligation.weeksRemaining,
+            })}
+      </p>
+      <p className="s2-note s2-num">
+        {t('v2.nil.lockerRoomLine', {
+          value: room,
+          effect: t(
+            room >= VNEXT_NIL_TUNING.lockerRoomHigh
+              ? 'v2.nil.lockerRoomHigh'
+              : room <= VNEXT_NIL_TUNING.lockerRoomLow
+                ? 'v2.nil.lockerRoomLow'
+                : 'v2.nil.lockerRoomNeutral',
+          ),
+        })}
+      </p>
+      <p className="s2-note">
+        {nil.benefits.length === 0
+          ? t('v2.nil.noBenefits')
+          : t('v2.nil.benefits', {
+              list: nil.benefits
+                .map(({ benefitId, quantity }) => `${t(benefitNameKey(benefitId))} ×${quantity}`)
+                .join(', '),
+            })}
+      </p>
+    </Panel>
+  );
+}
+
 export function ProfilePanel({
   career,
   mechanics,
@@ -398,6 +445,7 @@ export function ProfilePanel({
               </div>
             )}
           </Panel>
+          <NilPanel career={career} />
           <Panel id="s2-profile-academics" title={t('v2.profile.academics')}>
             <p className="s2-row" style={{ gap: 8, alignItems: 'center' }}>
               <strong className="s2-num">

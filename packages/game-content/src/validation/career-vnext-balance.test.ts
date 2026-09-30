@@ -2,6 +2,7 @@ import { expect, it } from 'vitest';
 import {
   chooseBreakthroughVNext,
   chooseEventVNext,
+  chooseNilVNext,
   chooseInjuryVNext,
   chooseSnapVNext,
   commitProgramVNext,
@@ -146,6 +147,8 @@ it('keeps Body a budget, trust recoverable, growth visible and Saturdays decisiv
             career = ok(chooseBreakthroughVNext(career, flow.offer.skillIds[0]!));
           else if (flow.type === 'EVENT' && flow.event.chosenChoiceId === null)
             career = ok(chooseEventVNext(career, flow.event.choiceIds[0]!, mechanics));
+          else if (flow.type === 'NIL' && flow.offer.decision === null)
+            career = ok(chooseNilVNext(career, true, mechanics));
           else if (flow.type === 'INJURY' && flow.report.availability === null)
             career = ok(chooseInjuryVNext(career, 'injury_choice_rest_rehab', mechanics));
           else if (flow.type === 'GAME') {

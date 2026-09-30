@@ -464,8 +464,8 @@ export interface CardView {
   readonly weeklyKey: MessageKey | null;
 }
 
-// NIL and relationships are not in Career VNext yet, so their build lines would promise nothing.
-const LIVE_BUILDS = new Set(['film', 'repetition', 'body', 'mindset', 'role']);
+// Every build line has a VNext consumer (M8 made the NIL and campus lines live).
+const LIVE_BUILDS = new Set(['film', 'repetition', 'body', 'mindset', 'role', 'campus', 'nil']);
 const WEEKLY_KEYS = new Map(
   positionSkillBuilds
     .filter(({ buildId }) => LIVE_BUILDS.has(buildId))

@@ -1,3 +1,4 @@
+import { relationshipTagsVNext } from './nil.js';
 import type { EventMechanicsDefinition, EventStatePredicate } from '../events/types.js';
 import type { InjuryChoiceId } from '../injuries/ids.js';
 import {
@@ -149,6 +150,7 @@ function selectWrEvent(
 ): EventMechanicsDefinition | null {
   const tags = new Set<string>([
     ...career.athlete.profile.tagIds,
+    ...relationshipTagsVNext(career),
     'tag_season_regular',
     ...(optionAccess ? ['tag_skill_event_option_access'] : []),
   ]);
@@ -227,7 +229,7 @@ export function attemptWeeklyEventVNext(
     coachTrust: state.coachTrust,
     gpaMilli: Math.round(state.gpa * 1_000),
     brand: state.brand,
-    contextTags: [...profile.tagIds].sort(),
+    contextTags: [...profile.tagIds, ...relationshipTagsVNext(career)].sort(),
     recentEvents: career.condition.recentEvents as never,
   };
   const rng = weekStream(career, 'event');
