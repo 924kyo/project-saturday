@@ -160,7 +160,7 @@ export function buildScene(
   positionId: VNextPositionId,
   compact: boolean,
 ): Scene {
-  const window = compact ? 30 : 40;
+  const window = compact ? 24 : 30;
   const width = window * YARD;
   const situation = frame.kind === 'LIVE' ? frame.situation : null;
   const losYards = situation?.lineOfScrimmageYards ?? 35;

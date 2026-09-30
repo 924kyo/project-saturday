@@ -91,7 +91,7 @@ export default defineConfig({
       workbox: {
         cleanupOutdatedCaches: true,
         // Self-hosted display fonts must be precached, or the broadcast face is lost offline.
-        globPatterns: ['**/*.{css,html,ico,js,png,svg,woff2}'],
+        globPatterns: ['**/*.{css,html,ico,js,png,svg,webp,woff2}'],
         navigateFallback: '/index.html',
       },
     }),

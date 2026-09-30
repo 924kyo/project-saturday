@@ -15,7 +15,7 @@ export function CardFace({ id }: { readonly id: string }): React.JSX.Element {
   const { t } = useAppTranslation();
   const card = cardView(id);
   return (
-    <span className="s2-card">
+    <span className="s2-card" data-grade={card.gradeLetter}>
       <span className="s2-card__top">
         <span aria-label={t(card.gradeKey)} className="s2-card__grade" role="img">
           {card.gradeLetter}

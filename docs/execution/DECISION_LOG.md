@@ -638,6 +638,12 @@ Append concise implementation/product decisions that do not warrant their own AD
 
   The record book is a pure projection over plaques, shown on the landing screen and at completion. Legacy never changes the athlete, the offers or ratings (tested).
 - 2026-09-30 (M10 step 2): the save keeps a last-good backup. Each save first copies the previous checksum-valid envelope to `career-vnext-backup`. A current save that fails its checksum or parse restores from the backup, and the player sees a notice. When both fail, the app reports `corrupt` and never guesses. Checked save fixtures (a v1 recruiting save, a pre-M8 v3 alpha-world season, and a current M9 Game Day save with NIL and legacy) must load and keep playing in every future version; they are exact artifacts excluded from formatting. The Alumni Wall loads only plaques whose every displayed field is well-formed.
+- 2026-09-30 (M11 redesign, "Night Game"): the frontend is redesigned from scratch:
+  - floodlit-stadium black with volt-lime (#C8FF2E) actions, italic Barlow Condensed display type (800/900 italic, self-hosted and precached; Hangul stays upright);
+  - cut-corner cards, HUD panels with corner ticks, a jumbotron scorebug, play-call cards (keys 1–3), a VS matchup, stamped grades, and rarity-framed skill cards (S gold, A violet, B cyan);
+  - the Tactical Board: a tighter 30-yard window, turf-readable markers (`readableOn`), glowing lines, and look arrows.
+
+  Visual art is optional. Every art slot (`/art/*.webp`, listed in `docs/design/ASSET_LIST.md`) layers over a CSS fallback, so a missing file changes nothing. Performance: no per-panel backdrop blur. Building for production exposed a chunk-order hazard from the size-split content chunks, so `strictExecutionOrder` is on, and the snap-look catalog also resolves lazily.
 - 2026-09-30 (M11 snap looks): every Saturday decision now hides one of five looks per decision family (120 looks, `scripts/generate-snap-looks.py`):
   - the two shipped patterns;
   - a new look that makes the family's third technique the winning read;

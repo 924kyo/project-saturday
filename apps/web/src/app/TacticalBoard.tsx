@@ -13,6 +13,7 @@ import {
   type Scene,
   isDefense,
 } from './board';
+import { BOARD_TURF, readableOn } from './theme';
 
 const FONT = "'Barlow Condensed', 'Arial Narrow', sans-serif";
 const VOLT = '#c8ff2e';
@@ -178,8 +179,11 @@ export interface TacticalBoardProps {
 export function TacticalBoard(props: TacticalBoardProps): React.JSX.Element {
   const { frame, positionId } = props;
   const scene = buildScene(frame, positionId, props.compact);
-  const offenseColor = scene.playerOnOffense ? props.teamColor : props.opponentColor;
-  const defenseColor = scene.playerOnOffense ? props.opponentColor : props.teamColor;
+  // Program colors can match the turf; markers lift toward white until they read on grass.
+  const team = readableOn(props.teamColor, BOARD_TURF);
+  const opponent = readableOn(props.opponentColor, BOARD_TURF);
+  const offenseColor = scene.playerOnOffense ? team : opponent;
+  const defenseColor = scene.playerOnOffense ? opponent : team;
   const result = frame.kind === 'LIVE' ? frame.result : null;
   const motion = frame.kind === 'LIVE' ? resultMotion(scene, frame, positionId) : null;
   const previewIndex =
@@ -199,13 +203,22 @@ export function TacticalBoard(props: TacticalBoardProps): React.JSX.Element {
     <figure className="s2-board" key={props.replayKey}>
       <svg aria-label={props.summary} role="img" viewBox={`0 0 ${scene.width} ${BOARD_H}`}>
         <defs>
-          <marker id="s2-arrow" markerHeight={8} markerWidth={8} orient="auto" refX={6} refY={4}>
+          <marker
+            id="s2-arrow"
+            markerHeight={9}
+            markerUnits="userSpaceOnUse"
+            markerWidth={9}
+            orient="auto"
+            refX={6}
+            refY={4}
+          >
             <path d="M0 0 L8 4 L0 8 Z" fill={VOLT} />
           </marker>
           <marker
             id="s2-arrow-hot"
-            markerHeight={8}
-            markerWidth={8}
+            markerHeight={10}
+            markerUnits="userSpaceOnUse"
+            markerWidth={10}
             orient="auto"
             refX={6}
             refY={4}
@@ -214,8 +227,9 @@ export function TacticalBoard(props: TacticalBoardProps): React.JSX.Element {
           </marker>
           <marker
             id="s2-arrow-chalk"
-            markerHeight={7}
-            markerWidth={7}
+            markerHeight={8}
+            markerUnits="userSpaceOnUse"
+            markerWidth={8}
             orient="auto"
             refX={5}
             refY={3.5}
@@ -288,6 +302,7 @@ export function TacticalBoard(props: TacticalBoardProps): React.JSX.Element {
                 arrow.kind === 'read' && opponent ? 'url(#s2-arrow-hot)' : 'url(#s2-arrow-chalk)'
               }
               opacity={arrow.kind === 'presnap' ? 0.7 : 0.95}
+              pathLength={arrow.kind === 'read' ? 1 : undefined}
               stroke={stroke}
               strokeDasharray={arrow.kind === 'presnap' ? '5 5' : undefined}
               strokeLinecap="round"
@@ -380,7 +395,7 @@ export function TacticalBoard(props: TacticalBoardProps): React.JSX.Element {
           {animate && motion?.athlete && (
             <animateMotion dur="1.6s" fill="freeze" path={motion.athlete} />
           )}
-          <circle fill={props.teamColor} r={8} stroke={CHALK} strokeWidth={1.6} />
+          <circle fill={team} r={8} stroke={CHALK} strokeWidth={1.6} />
           <circle fill="none" filter="url(#s2-glow)" r={13} stroke={VOLT} strokeWidth={3}>
             {!props.reducedMotion && result === null && (
               <animate attributeName="r" dur="1.4s" repeatCount="indefinite" values="12;15;12" />
@@ -427,7 +442,7 @@ export function TacticalBoard(props: TacticalBoardProps): React.JSX.Element {
         {motion?.tag != null && (
           <g
             opacity={props.reducedMotion ? 1 : 0}
-            transform={`translate(${motion.end.x} ${Math.max(24, motion.end.y - 24)})`}
+            transform={`translate(${Math.min(scene.width - 34, Math.max(34, motion.end.x))} ${Math.max(24, motion.end.y - 24)})`}
           >
             {animate && (
               <animate

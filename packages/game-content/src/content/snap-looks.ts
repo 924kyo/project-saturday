@@ -103,7 +103,12 @@ function resolveLooks(): readonly SnapLookDefinitionVNext[] {
         fits,
         weight: row.weight,
         stance: base.stance,
-        moves: row.moves,
+        // The shared picture: everything a thinly prepared athlete can see (pre-snap and first-tell
+        // movements) is the base look's; only deeper tells expose the disguise's own movements.
+        moves: [
+          ...base.moves.filter(({ reveal }) => reveal <= 1),
+          ...row.moves.filter(({ reveal }) => reveal >= 2),
+        ],
       });
     }
   }

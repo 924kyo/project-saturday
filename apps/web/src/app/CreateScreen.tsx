@@ -12,6 +12,7 @@ import { buildCareerVNextMechanics } from '@project-saturday/game-content/conten
 
 import { AthletePortrait } from '../career/AthletePortrait';
 import { PORTRAIT } from './theme';
+import { PositionGlyph } from './ui';
 import { useAppTranslation, type AppTranslate } from '../i18n/i18n';
 import {
   POSITION_ABBR_KEYS,
@@ -210,13 +211,18 @@ export function CreateScreen({
                 {VNEXT_POSITIONS.map((positionId) => (
                   <button
                     aria-pressed={draft.positionId === positionId}
-                    className="s2-tile"
+                    className="s2-tile s2-tile--position"
+                    data-position={positionId.slice('position_'.length)}
                     key={positionId}
                     onClick={() =>
                       update({ positionId, archetypeId: archetypesFor(positionId)[0]!.id })
                     }
                     type="button"
                   >
+                    <PositionGlyph positionId={positionId} />
+                    <span className="s2-tile__abbr s2-display">
+                      {t(POSITION_ABBR_KEYS[positionId])}
+                    </span>
                     <span className="s2-tile__name">{t(POSITION_NAME_KEYS[positionId])}</span>
                     <span className="s2-tile__desc">{t(POSITION_PITCH_KEYS[positionId])}</span>
                   </button>

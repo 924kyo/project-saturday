@@ -27,6 +27,13 @@ M8 is COMPLETE (2026-09-30): see `docs/exec-plans/completed/m8-six-position-beta
 
 ## Last completed task
 
+M11 (post-RC, 2026-09-30):
+- snap looks: 120 hidden looks across 24 decision families. Tells from preparation, board arrows for how opponents stand and move, and a post-snap reveal of the real look and its answer;
+- the WR fit-scale bug is fixed, so WR reads grade correctly again;
+- staff grades share one curve across positions;
+- the "Night Game" frontend redesign;
+- the art asset list (`docs/design/ASSET_LIST.md`).
+
 M10 step 8, the gate (2026-09-30):
 - NIL money uses Intl USD formatting;
 - the desktop version is `1.0.0-rc.1`, and its README is refreshed with this build's artifacts and hashes;

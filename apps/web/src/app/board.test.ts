@@ -100,7 +100,7 @@ describe('tactical board geometry', () => {
     const base = frame('position_wr', ids);
     const scene = buildScene(base, 'position_wr', true);
     expect(scene.cb.y).toBeGreaterThan(scene.wr.y);
-    expect(scene.width).toBe(300);
+    expect(scene.width).toBe(240);
     const resolved = {
       ...base,
       result: {

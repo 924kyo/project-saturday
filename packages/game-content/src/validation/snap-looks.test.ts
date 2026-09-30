@@ -93,6 +93,10 @@ describe('snap look catalog', () => {
       );
       expect(twin, disguise.id).toBeDefined();
       expect(bestDecisionOfLook(twin!), disguise.id).not.toBe(bestDecisionOfLook(disguise));
+      // One tell or none: the board shows exactly the same movements as the twin.
+      const shallow = (look: typeof disguise) =>
+        JSON.stringify(look.moves.filter(({ reveal }) => reveal <= 1));
+      expect(shallow(disguise), disguise.id).toBe(shallow(twin!));
       // The truth only shows once enough tells are read.
       expect(
         disguise.moves.some(({ reveal }) => reveal >= 2),

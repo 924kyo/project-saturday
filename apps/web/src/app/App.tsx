@@ -63,6 +63,7 @@ import {
 import { PostGameScreen, SeasonEndScreen } from './PostGameScreen';
 import { RecruitScreen } from './RecruitScreen';
 import { teamStyle } from './theme';
+import { LogoMark } from './ui';
 import { BreakthroughScreen } from './BuildView';
 import { EventScreen, InjuryScreen } from './WeeklyScene';
 import { NilScreen } from './NilScene';
@@ -207,11 +208,26 @@ export function App({
   const flow = career?.flow.type;
 
   return (
-    <div className="s2" style={style}>
+    <div
+      className="s2"
+      data-scene={
+        career === null
+          ? 'create'
+          : flow === 'RECRUITING'
+            ? 'recruit'
+            : flow === 'GAME'
+              ? 'gameday'
+              : flow === 'POST_GAME' || flow === 'SEASON_REVIEW' || flow === 'CAREER_COMPLETE'
+                ? 'story'
+                : 'locker'
+      }
+      style={style}
+    >
+      <div aria-hidden="true" className="s2-backdrop" />
       <div className="s2-shell">
         <header className="s2-topbar">
           <div className="s2-brand">
-            <span aria-hidden="true" className="s2-brand__mark" />
+            <LogoMark />
             <span className="s2-brand__word">{t('app.title')}</span>
           </div>
           <div className="s2-topbar__actions">

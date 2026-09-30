@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { programIdentitiesVNext } from '@project-saturday/game-content/content';
 
-import { inkOn } from './theme';
+import { inkOn, readableOn } from './theme';
 
 function luminance(hex: string): number {
   const value = hex.replace('#', '');
@@ -25,5 +25,14 @@ describe('program colors stay readable (M10 accessibility)', () => {
         identity.id,
       ).toBeGreaterThanOrEqual(4.5);
     }
+  });
+
+  it('lifts program colors until board markers read on the turf', () => {
+    for (const color of ['#0e3d25', '#1f5f3a', '#000000', '#ffcc00']) {
+      const lifted = readableOn(color, '#0d3923');
+      expect(lifted).toMatch(/^#[0-9a-f]{6}$/);
+    }
+    expect(readableOn('#ffcc00', '#0d3923')).toBe('#ffcc00');
+    expect(readableOn('#0e3d25', '#0d3923')).not.toBe('#0e3d25');
   });
 });

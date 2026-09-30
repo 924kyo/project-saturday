@@ -5,6 +5,8 @@ export function teamStyle(identity: ProgramIdentityVNext): CSSProperties {
   return {
     '--team': identity.primary,
     '--team-2': identity.secondary,
+    // Text drawn on the program color (the nameplate) picks the ink that reads on it.
+    '--team-ink': inkOn(identity.primary),
   } as CSSProperties;
 }
 
@@ -35,4 +37,27 @@ export function inkOn(background: string): string {
   const withWhite = 1.05 / (light + 0.05);
   const withDark = (light + 0.05) / (luminance(DARK_INK) + 0.05);
   return withWhite >= withDark ? '#fff' : DARK_INK;
+}
+
+function ratio(a: string, b: string): number {
+  const [high, low] = [luminance(a), luminance(b)].sort((x, y) => y - x) as [number, number];
+  return (high + 0.05) / (low + 0.05);
+}
+
+/** The Tactical Board's turf, the background board markers must read on. */
+export const BOARD_TURF = '#0d3923';
+
+/** A program color lifted toward white until it reads against a background (board markers). */
+export function readableOn(color: string, background: string, minimum = 3): string {
+  const value = /^#?([0-9a-f]{6})$/i.exec(color)?.[1];
+  if (value === undefined) return color;
+  const channels = [0, 2, 4].map((offset) => parseInt(value.slice(offset, offset + 2), 16));
+  for (let step = 0; step <= 10; step += 1) {
+    const mixed = `#${channels
+      .map((channel) => Math.round(channel + ((255 - channel) * step) / 10))
+      .map((channel) => channel.toString(16).padStart(2, '0'))
+      .join('')}`;
+    if (ratio(mixed, background) >= minimum) return mixed;
+  }
+  return '#ffffff';
 }
