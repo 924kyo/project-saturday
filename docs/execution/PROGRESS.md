@@ -22,6 +22,14 @@ M8 is COMPLETE (2026-09-30): see `docs/exec-plans/completed/m8-six-position-beta
 
 ## Last completed task
 
+M10 step 4, accessibility (2026-09-30):
+- axe WCAG 2.0–2.2 A/AA scans (including target size) of every week screen in both locales;
+- a keyboard-only Saturday, and a reduced-motion board with no animation;
+- program-color contrast fixed with `inkOn`, and the depth-row tag contrast fixed;
+- the pass is recorded in `docs/qa/M10_ACCESSIBILITY.md`;
+- verified: `pnpm check` (867 + 418 + 397, e2e 16, build).
+
+
 M10 step 3, performance (2026-09-30):
 - `performance.test.ts` sets budgets for every command of a full season (100 ms per command, 60 ms per save round trip, season save under 600 KB). Measured: 2–13 ms per command and 5 ms per round trip;
 - a throttled mobile e2e smoke: a whole week at 4× CPU slowdown with each transition under 1.5 s (measured 3.7 s total);
@@ -89,7 +97,7 @@ The M8 closeout, 2026-09-30:
 
 ## Current / next task
 
-M10 step 4: the accessibility pass. Then the browser/PWA matrix, localization QA, hygiene and docs, and the gate.
+M10 step 5: the browser/PWA matrix (WebKit where available, service-worker update, offline). Then localization QA, hygiene and docs, and the gate.
 
 ## Active exec plan
 

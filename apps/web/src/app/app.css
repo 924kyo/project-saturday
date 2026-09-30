@@ -569,6 +569,10 @@
   font-size: 12px;
   color: var(--ink-3);
 }
+/* The gold-tinted "you" row needs the brighter secondary ink to keep AA contrast. */
+.s2-depthrow--you .s2-depthrow__tag {
+  color: var(--ink-2);
+}
 .s2-compare {
   display: grid;
   gap: 6px;
@@ -672,7 +676,7 @@
   gap: 8px;
   padding: 6px 10px;
   background: var(--c);
-  color: #fff;
+  color: var(--c-ink, #fff);
   min-width: 0;
 }
 .s2-scorebug__abbr {

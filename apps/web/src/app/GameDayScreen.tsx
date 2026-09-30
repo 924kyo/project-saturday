@@ -25,7 +25,7 @@ import {
 } from './content';
 import { TacticalBoard } from './TacticalBoard';
 import { Crest, Meter } from './ui';
-import { METER_COLORS } from './theme';
+import { METER_COLORS, inkOn } from './theme';
 
 function clock(seconds: number): string {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
@@ -288,7 +288,10 @@ export function GameDayScreen({
   return (
     <section aria-labelledby="s2-snap-title" className="s2-gd">
       <div className="s2-scorebug" role="group" aria-label={t('v2.gd.scoreboard')}>
-        <div className="s2-scorebug__team" style={{ '--c': us.primary } as CSSProperties}>
+        <div
+          className="s2-scorebug__team"
+          style={{ '--c': us.primary, '--c-ink': inkOn(us.primary) } as CSSProperties}
+        >
           <span className="s2-scorebug__abbr">{us.monogram}</span>
           <span className="s2-scorebug__score s2-num">{score?.playerTeam ?? '–'}</span>
         </div>
@@ -300,7 +303,10 @@ export function GameDayScreen({
               })
             : t('v2.gd.quarter', { period: sideline!.period })}
         </div>
-        <div className="s2-scorebug__team" style={{ '--c': them.primary } as CSSProperties}>
+        <div
+          className="s2-scorebug__team"
+          style={{ '--c': them.primary, '--c-ink': inkOn(them.primary) } as CSSProperties}
+        >
           <span className="s2-scorebug__abbr">{them.monogram}</span>
           <span className="s2-scorebug__score s2-num">{score?.opponent ?? '–'}</span>
         </div>

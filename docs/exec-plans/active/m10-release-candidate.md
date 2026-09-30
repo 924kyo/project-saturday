@@ -25,7 +25,7 @@ Every item in `RELEASE_CHECKLIST.md` is checked with evidence, there are no crit
    - command latency budgets for week planning, kickoff, snaps and settlement (96-program world), measured in tests;
    - save size across a four-year career;
    - weekly transitions responsive on mobile emulation.
-4. **Accessibility:**
+4. **Accessibility:** (done 2026-09-30; `docs/qa/M10_ACCESSIBILITY.md`)
    - an automated check of accessible names, labels and roles on every screen;
    - a keyboard-only journey, reduced motion, and a review of contrast, state semantics and touch targets.
 5. **Browser and PWA matrix:**
