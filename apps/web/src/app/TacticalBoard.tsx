@@ -1,14 +1,18 @@
-import type { SnapBoardFrame, VNextPositionId } from '@project-saturday/game-core';
+import type { SnapBoardFrame, SnapLookActor, VNextPositionId } from '@project-saturday/game-core';
 
 import {
   BOARD_H,
   MID,
   YARD,
+  actorMotions,
   buildScene,
+  isOffenseActor,
   lookArrows,
   pathD,
   resultMotion,
   techniquePath,
+  type ActorMotion,
+  type Pt,
   type ResultMotion,
   type Scene,
   isDefense,
@@ -158,6 +162,65 @@ function Marker({
   );
 }
 
+/**
+ * Timing inside one run of the board (fractions of its duration). Before the call the look loops:
+ * pre-snap motion, a beat at the snap, then the movements the tells exposed. After it the whole
+ * field plays once alongside the athlete and the ball.
+ */
+const LOOP_SECONDS = 3.2;
+const ONCE_SECONDS = 1.6;
+const LOOP_KEY_TIMES: Readonly<Record<ActorMotion['phase'], string>> = {
+  presnap: '0;0.06;0.34;1',
+  read: '0;0.42;0.8;1',
+  team: '0;0.42;0.8;1',
+};
+const ONCE_KEY_TIMES: Readonly<Record<ActorMotion['phase'], string>> = {
+  presnap: '0;0.01;0.3;1',
+  read: '0;0.15;0.85;1',
+  team: '0;0.3;0.95;1',
+};
+
+function Player({
+  from,
+  motion,
+  loop,
+  ...marker
+}: {
+  readonly from: { x: number; y: number };
+  /** Undefined keeps the player still (no movement, or reduced motion). */
+  readonly motion: ActorMotion | undefined;
+  readonly loop: boolean;
+  readonly color: string;
+  readonly cross: boolean;
+  readonly hidden: boolean;
+  readonly keyed: boolean;
+}) {
+  if (marker.hidden) return null;
+  const origin = { x: 0, y: 0 };
+  if (motion === undefined)
+    return (
+      <g transform={`translate(${from.x} ${from.y})`}>
+        <Marker at={origin} {...marker} />
+      </g>
+    );
+  // The motion path is absolute, so the marker draws at the origin; begin is always 0 (a later
+  // begin would park the marker at the origin until then), and key times hold it in place instead.
+  return (
+    <g>
+      <animateMotion
+        calcMode="linear"
+        dur={`${loop ? LOOP_SECONDS : ONCE_SECONDS}s`}
+        fill="freeze"
+        keyPoints="0;0;1;1"
+        keyTimes={(loop ? LOOP_KEY_TIMES : ONCE_KEY_TIMES)[motion.phase]}
+        path={motion.d}
+        repeatCount={loop ? 'indefinite' : undefined}
+      />
+      <Marker at={origin} {...marker} />
+    </g>
+  );
+}
+
 export interface TacticalBoardProps {
   readonly frame: SnapBoardFrame;
   readonly positionId: VNextPositionId;
@@ -195,12 +258,29 @@ export function TacticalBoard(props: TacticalBoardProps): React.JSX.Element {
   const athleteOnDefense = isDefense(positionId);
   const arrows = lookArrows(scene, frame);
   const keyed = new Set(arrows.filter(({ kind }) => kind === 'read').map(({ actor }) => actor));
-  const keyedPoints = new Set([...keyed].map((actor) => scene.actors[actor]));
   const animate = !props.reducedMotion && motion !== null;
   const hasPresnap = arrows.some(({ kind }) => kind === 'presnap');
   const hasRead = arrows.some(({ kind }) => kind === 'read');
+  const settled = result !== null || (frame.kind === 'SIDELINE' && frame.result !== null);
+  const players = props.reducedMotion
+    ? new Map<SnapLookActor, ActorMotion>()
+    : actorMotions(scene, frame, motion?.end ?? null);
+  const actors = Object.entries(scene.actors) as [SnapLookActor, Pt][];
+  const player = ([actor, from]: [SnapLookActor, Pt], offense: boolean) => (
+    <Player
+      color={offense ? offenseColor : defenseColor}
+      cross={offense === athleteOnDefense}
+      from={from}
+      hidden={from === scene.athlete}
+      key={actor}
+      keyed={keyed.has(actor) && offense !== scene.playerOnOffense}
+      loop={!settled}
+      motion={players.get(actor)}
+    />
+  );
   return (
-    <figure className="s2-board" key={props.replayKey}>
+    // SMIL clocks start with their <svg>: remount when the result arrives so the play starts at 0.
+    <figure className="s2-board" key={`${props.replayKey ?? 0}:${settled ? 'play' : 'look'}`}>
       <svg aria-label={props.summary} role="img" viewBox={`0 0 ${scene.width} ${BOARD_H}`}>
         <defs>
           <marker
@@ -310,26 +390,8 @@ export function TacticalBoard(props: TacticalBoardProps): React.JSX.Element {
             />
           );
         })}
-        {scene.defense.map((point, index) => (
-          <Marker
-            at={point}
-            color={defenseColor}
-            cross={!athleteOnDefense}
-            hidden={athleteOnDefense && point === scene.athlete}
-            key={`d${index}`}
-            keyed={keyedPoints.has(point) && scene.playerOnOffense}
-          />
-        ))}
-        {scene.offense.map((point, index) => (
-          <Marker
-            at={point}
-            color={offenseColor}
-            cross={athleteOnDefense}
-            hidden={!athleteOnDefense && point === scene.athlete}
-            key={`o${index}`}
-            keyed={keyedPoints.has(point) && !scene.playerOnOffense}
-          />
-        ))}
+        {actors.filter(([actor]) => !isOffenseActor(actor)).map((entry) => player(entry, false))}
+        {actors.filter(([actor]) => isOffenseActor(actor)).map((entry) => player(entry, true))}
         {preview !== null && (
           <path
             d={pathD(preview)}

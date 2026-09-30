@@ -395,6 +395,63 @@ export function lookArrows(scene: Scene, frame: SnapBoardFrame): readonly LookAr
   });
 }
 
+/** How one player moves when the board plays. */
+export interface ActorMotion {
+  readonly d: string;
+  /** Pre-snap motion, a movement a tell exposed, or the rest of the field reacting to the play. */
+  readonly phase: 'presnap' | 'read' | 'team';
+}
+
+export function isOffenseActor(actor: SnapLookActor): boolean {
+  return OFFENSE_ACTORS.includes(actor);
+}
+
+const LINE: readonly SnapLookActor[] = ['lt', 'lg', 'c', 'rg', 'rt'];
+const PURSUIT_REACH = 48;
+
+/**
+ * Player movement for the board (presentation only): each look mover follows its deepest revealed
+ * movement, the one the arrows already draw. Once a snap has a saved ball spot (`end`), everyone
+ * else reacts to it: the line fires, the other offense releases, and the defense pursues the spot.
+ */
+export function actorMotions(
+  scene: Scene,
+  frame: SnapBoardFrame,
+  end: Pt | null,
+): ReadonlyMap<SnapLookActor, ActorMotion> {
+  const motions = new Map<SnapLookActor, ActorMotion>();
+  const deepest = new Map<SnapLookActor, { to: SnapLookMoveId; reveal: number }>();
+  for (const move of frame.look?.moves ?? []) {
+    const known = deepest.get(move.actor);
+    if (known === undefined || move.reveal >= known.reveal) deepest.set(move.actor, move);
+  }
+  for (const [actor, move] of deepest) {
+    const from = scene.actors[actor];
+    if (from === undefined) continue;
+    motions.set(actor, {
+      d: pathD({ points: [from, ...lookTarget(scene, from, move.to)], kind: 'route' }),
+      phase: move.reveal === 0 ? 'presnap' : 'read',
+    });
+  }
+  if (end === null) return motions;
+  for (const [actor, from] of Object.entries(scene.actors) as [SnapLookActor, Pt][]) {
+    if (motions.has(actor)) continue;
+    let to: Pt;
+    if (LINE.includes(actor)) to = { x: from.x + 8, y: from.y };
+    else if (actor === 'qb') to = { x: from.x - 14, y: from.y };
+    else if (OFFENSE_ACTORS.includes(actor))
+      to = { x: from.x + (actor === 'rb' ? 20 : 40), y: from.y };
+    else {
+      const dx = end.x - from.x;
+      const dy = end.y - from.y;
+      const scale = Math.min(0.35, PURSUIT_REACH / Math.max(1, Math.hypot(dx, dy)));
+      to = { x: from.x + dx * scale, y: from.y + dy * scale };
+    }
+    motions.set(actor, { d: pathD({ points: [from, to], kind: 'route' }), phase: 'team' });
+  }
+  return motions;
+}
+
 const route = (...points: Pt[]): TechniquePath => ({ points, kind: 'route' });
 const throwTo = (from: Pt, to: Pt): TechniquePath => ({ points: [from, to], kind: 'throw' });
 const read = (from: Pt, to: Pt): TechniquePath => ({ points: [from, to], kind: 'read' });

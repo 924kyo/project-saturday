@@ -8,7 +8,7 @@ import {
 import { edgeContent, lbContent } from '@project-saturday/game-content/content';
 import { describe, expect, it } from 'vitest';
 
-import { buildScene, lookArrows, pathD, resultMotion, techniquePath } from './board';
+import { actorMotions, buildScene, lookArrows, pathD, resultMotion, techniquePath } from './board';
 
 const catalogs: Readonly<Record<VNextPositionId, readonly { readonly id: string }[]>> = {
   position_qb: qbAlphaContent.decisions,
@@ -119,5 +119,37 @@ describe('tactical board geometry', () => {
     expect(motion.end.x).toBe(scene.x(56));
     expect(resultMotion(scene, resolved, 'position_wr')).toEqual(motion);
     expect(motion.tag).toBeNull();
+  });
+
+  it('moves players along the look before the call and the whole field toward the saved spot after', () => {
+    const ids = gameContent.decisions.slice(0, 3).map(({ id }) => id);
+    const base = frame('position_wr', ids);
+    const scene = buildScene(base, 'position_wr', false);
+    const disguised: SnapBoardFrame = {
+      ...base,
+      look: {
+        ...base.look!,
+        moves: [...base.look!.moves, { actor: 'cb_top', to: 'bail', reveal: 2 }],
+      },
+    };
+    // Before the call only look movers move, each along its deepest revealed movement.
+    const looking = actorMotions(scene, disguised, null);
+    expect([...looking.keys()].sort()).toEqual(['cb_top', 'fs']);
+    expect(looking.get('cb_top')).toEqual({
+      d: lookArrows(scene, disguised).find(({ d }) => d.includes(`L${scene.cb.x + 56} `))!.d,
+      phase: 'read',
+    });
+    expect(looking.get('fs')!.phase).toBe('presnap');
+    // After it everyone plays; the defense closes on the spot without reaching past it.
+    const end = { x: scene.x(56), y: scene.wr.y };
+    const playing = actorMotions(scene, disguised, end);
+    expect(playing.size).toBe(Object.keys(scene.actors).length);
+    expect(playing.get('c')!.phase).toBe('team');
+    const mike = scene.actors.mike!;
+    const [, tx, ty] = /L(-?[\d.]+) (-?[\d.]+)$/u.exec(playing.get('mike')!.d)!.map(Number);
+    expect(Math.hypot(end.x - tx!, end.y - ty!)).toBeLessThan(
+      Math.hypot(end.x - mike.x, end.y - mike.y),
+    );
+    expect(actorMotions(scene, disguised, end)).toEqual(playing);
   });
 });
