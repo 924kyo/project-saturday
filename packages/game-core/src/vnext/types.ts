@@ -72,6 +72,8 @@ export type CareerVNextMechanics = PositionAlphaSessionCommandMechanics & {
   readonly defenders: Readonly<Record<DefenderPositionId, DefenderCatalogVNext>>;
   /** NIL offers whose authored copy belongs to specific positions (absent = every position). */
   readonly nilOfferPositions: Readonly<Record<string, readonly VNextPositionId[]>>;
+  /** Generated `given|family` name pairs VNext never shows (they read as real people; M10). */
+  readonly reservedNamePairs: readonly string[];
   /** The legacy mentor scene (M9): an alumnus of the current program checks in. */
   readonly legacyEvents: { readonly mentor: WeeklyEventDefinitionV2 };
   /** Shared campus-life events every position can draw (M8). */

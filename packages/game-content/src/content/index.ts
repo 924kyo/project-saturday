@@ -13,6 +13,7 @@ export {
   programMechanicsDefinitions,
   recruitingMechanicsConfig,
   rosterNameMechanicsPool,
+  reservedRosterNamePairs,
   rotationPolicyMechanicsDefinitions,
 } from './programs.js';
 export { creationContent, isCompatiblePersonalitySelection } from './creation.js';

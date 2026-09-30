@@ -33,7 +33,7 @@ Every item in `RELEASE_CHECKLIST.md` is checked with evidence, there are no crit
    - PWA install/update behavior (a service worker update is picked up without data loss);
    - offline.
 6. **Localization QA:** (done 2026-09-30) full career smoke in both locales, number/unit/currency formatting, and a mobile layout review in both locales.
-7. **Hygiene and documentation:**
+7. **Hygiene and documentation:** (done 2026-09-30; `docs/release/`, `docs/qa/M10_ORIGINALITY_REVIEW.md`)
    - originality and legal review;
    - known limitations;
    - specs and ADRs match the implementation;

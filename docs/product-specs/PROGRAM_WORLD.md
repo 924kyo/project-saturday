@@ -1,5 +1,7 @@
 # Fictional Program World
 
+> **1.0 RC:** what ships is summarized in `docs/release/SPEC_CONFORMANCE.md` and specified by `docs/product-reconciliation/CAREER_VNEXT_CONTRACT.md`. Milestone-numbered sections (M3–M7.5) describe the pre-R aggregates, which are kept only for historical saves, replays and reports.
+
 ## Goal
 
 Programs should feel immediately legible to college-football fans while remaining original fictional composites.

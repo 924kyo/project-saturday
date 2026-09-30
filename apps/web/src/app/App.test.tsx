@@ -40,16 +40,44 @@ beforeAll(() => {
 const JOURNEY_SEED = 'app2-journey';
 const seedFactory = () => JOURNEY_SEED;
 
-async function renderApp(storage: MemoryStorageAdapter) {
+async function renderApp(
+  storage: MemoryStorageAdapter,
+  requestPersistence: () => Promise<boolean> = () => Promise.resolve(true),
+) {
   const i18n = await createAppI18n('en-US');
   render(
     <I18nextProvider i18n={i18n}>
-      <App seedFactory={seedFactory} storage={storage} />
+      <App requestPersistence={requestPersistence} seedFactory={seedFactory} storage={storage} />
     </I18nextProvider>,
   );
 }
 
 describe('App vertical slice', () => {
+  it('asks the browser to keep the save once, after the first real save', async () => {
+    const user = userEvent.setup();
+    const requestPersistence = vi.fn(() => Promise.resolve(true));
+    await renderApp(new MemoryStorageAdapter(), requestPersistence);
+    await user.click(await screen.findByRole('button', { name: 'Next' }));
+    // Nothing is saved yet, so nothing is requested at launch.
+    expect(requestPersistence).not.toHaveBeenCalled();
+    await user.click(screen.getAllByRole('checkbox')[0]!);
+    await user.click(
+      screen
+        .getAllByRole('checkbox')
+        .find(
+          (box) => !box.hasAttribute('disabled') && box.getAttribute('aria-checked') === 'false',
+        )!,
+    );
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    await user.type(screen.getByLabelText('Player name'), 'Kept Save');
+    await user.click(screen.getByRole('button', { name: 'Start recruiting' }));
+    const offers = await screen.findAllByRole('listitem');
+    await user.click(within(offers[0]!).getByRole('button'));
+    await user.click(screen.getByRole('button', { name: /^Commit to / }));
+    expect(await screen.findByRole('heading', { name: 'Pick three focuses' })).toBeInTheDocument();
+    expect(requestPersistence).toHaveBeenCalledTimes(1);
+  });
+
   it('plays create → recruit → week → Game Day → post-game → next week with retryable saves', async () => {
     const user = userEvent.setup();
     const storage = new FlakyStorage();

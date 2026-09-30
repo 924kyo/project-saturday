@@ -1,5 +1,7 @@
 # Player Model
 
+> **1.0 RC:** what ships is summarized in `docs/release/SPEC_CONFORMANCE.md` and specified by `docs/product-reconciliation/CAREER_VNEXT_CONTRACT.md`. Milestone-numbered sections (M3–M7.5) describe the pre-R aggregates, which are kept only for historical saves, replays and reports.
+
 ## Playable-position rollout
 
 The verified M0–M6 vertical slice is **WR** only. M7 expands the alpha to QB, RB, WR, and CB. Its first v7 compatibility checkpoint reserves all four position, archetype, and position-attribute IDs but intentionally keeps live creation, commands, persisted players, and alumni WR-only until the position-aware contracts and engines activate together.

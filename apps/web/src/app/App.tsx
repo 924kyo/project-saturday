@@ -34,7 +34,7 @@ import {
 import { useAppTranslation } from '../i18n/i18n';
 import { persistLocale } from '../i18n/locale';
 import { PwaUpdatePrompt } from '../pwa/PwaUpdatePrompt';
-import type { StorageAdapter } from '../storage';
+import { requestPersistentStorage, type StorageAdapter } from '../storage';
 import './app.css';
 import { program } from './content';
 import { CreateScreen } from './CreateScreen';
@@ -71,6 +71,8 @@ import { WeekScreen } from './WeekScreen';
 export interface AppProps {
   readonly storage: StorageAdapter;
   readonly seedFactory?: () => string;
+  /** Asks the browser not to evict saved data (injectable for tests). */
+  readonly requestPersistence?: () => Promise<boolean>;
 }
 
 type Command = (career: CareerVNext, mechanics: CareerVNextMechanics) => CareerVNextResult;
@@ -79,7 +81,11 @@ function browserSeed(): string {
   return `career-seed:${globalThis.crypto?.randomUUID?.() ?? Date.now().toString(36)}`;
 }
 
-export function App({ storage, seedFactory = browserSeed }: AppProps): React.JSX.Element {
+export function App({
+  storage,
+  seedFactory = browserSeed,
+  requestPersistence = requestPersistentStorage,
+}: AppProps): React.JSX.Element {
   const { i18n, t } = useAppTranslation();
   const locale = (i18n.resolvedLanguage ?? DEFAULT_LOCALE) as SupportedLocale;
   const [career, setCareer] = useState<CareerVNext | null>(null);
@@ -92,6 +98,7 @@ export function App({ storage, seedFactory = browserSeed }: AppProps): React.JSX
   const [alumni, setAlumni] = useState<readonly AlumniVNext[]>([]);
   const [prototypeAlumni, setPrototypeAlumni] = useState<readonly PrototypeAlumniView[]>([]);
   const inFlight = useRef(false);
+  const persistenceRequested = useRef(false);
   const reducedMotion = useMemo(
     () => globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false,
     [],
@@ -151,6 +158,12 @@ export function App({ storage, seedFactory = browserSeed }: AppProps): React.JSX
       if (saved !== null) {
         setCareer(next);
         setPending(null);
+        // The save is the player's only copy: once per session, after a real save (a player
+        // action), ask the browser to keep it through storage pressure.
+        if (!persistenceRequested.current) {
+          persistenceRequested.current = true;
+          void requestPersistence().catch(() => false);
+        }
       }
     } catch {
       // Keep the exact next state for retry; the previous saved career stays on screen.

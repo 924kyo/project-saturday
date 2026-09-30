@@ -1,5 +1,7 @@
 # Training and Body
 
+> **1.0 RC:** what ships is summarized in `docs/release/SPEC_CONFORMANCE.md` and specified by `docs/product-reconciliation/CAREER_VNEXT_CONTRACT.md`. Milestone-numbered sections (M3–M7.5) describe the pre-R aggregates, which are kept only for historical saves, replays and reports.
+
 ## Goal
 
 Weekly focus should be easy to choose but strategically altered by skills, Body, Preparation, Confidence, upcoming matchup, role, life obligations, and long-term build.

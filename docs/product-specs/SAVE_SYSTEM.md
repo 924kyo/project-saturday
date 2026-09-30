@@ -1,5 +1,7 @@
 # Save System
 
+> **1.0 RC:** what ships is summarized in `docs/release/SPEC_CONFORMANCE.md` and specified by `docs/product-reconciliation/CAREER_VNEXT_CONTRACT.md`. Milestone-numbered sections (M3–M7.5) describe the pre-R aggregates, which are kept only for historical saves, replays and reports.
+
 ## Principle
 
 M7.5 WR resolved-boundary staging retains the exact personal play and its post-resolution RNG separately from any following aggregate drive or pending opportunity. The continuation cursor and remaining-drive flag must be re-derived from that result, never trusted as independently editable state. Source-bound equality must reject missing/extra/undefined keys and sparse arrays, not merely compare lossy JSON serialization. This internal contract still requires a validated owning current-game source and explicit v8 career/session integration before a browser writer can publish it; historical v7 phases and readers are unchanged.

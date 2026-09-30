@@ -1,5 +1,7 @@
 # Art and Presentation Direction
 
+> **1.0 RC:** what ships is summarized in `docs/release/SPEC_CONFORMANCE.md` and specified by `docs/product-reconciliation/CAREER_VNEXT_CONTRACT.md`. Milestone-numbered sections (M3–M7.5) describe the pre-R aggregates, which are kept only for historical saves, replays and reports.
+
 ## Goal
 
 Build an original visual identity that feels like college football, campus culture, locker-room life, and sports broadcast presentation without imitating a specific existing game's UI.

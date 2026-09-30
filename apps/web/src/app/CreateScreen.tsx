@@ -24,6 +24,7 @@ import {
   attributeNameKey,
   backgroundModifiers,
   backgrounds,
+  imperialMeasure,
   key,
   traits,
   positionOverall,
@@ -128,9 +129,8 @@ export function CreateScreen({
   const headline = [...archetype.priorityAttributeIds];
   const canFinish = draft.traitIds.length === 2 && preview !== null;
   const steps = [t('v2.create.stepRole'), t('v2.create.stepStory'), t('v2.create.stepLook')];
-  const feet = Math.floor(draft.heightCm / 30.48);
-  const inches = Math.round((draft.heightCm / 2.54) % 12);
-  const pounds = Math.round(draft.weightKg * 2.2046);
+  // One conversion for creation and Profile (a stored 152 cm reads 5′0″, never 4′12″).
+  const { feet, inches, pounds } = imperialMeasure(draft.heightCm, draft.weightKg);
 
   function toggleTrait(id: PersonalityTraitId): void {
     if (draft.traitIds.includes(id))

@@ -1,5 +1,7 @@
 # Career Management
 
+> **1.0 RC:** what ships is summarized in `docs/release/SPEC_CONFORMANCE.md` and specified by `docs/product-reconciliation/CAREER_VNEXT_CONTRACT.md`. Milestone-numbered sections (M3–M7.5) describe the pre-R aggregates, which are kept only for historical saves, replays and reports.
+
 Initial creation uses the same save-before-publication contract as an active career. If its first save fails, retain the exact prepared athlete/seed, expose a focused bilingual retry and disable draft/position changes until that save succeeds. Never silently generate a second athlete when the player retries. Retried envelope timestamps may change; gameplay payload and RNG must not.
 
 ## Goal

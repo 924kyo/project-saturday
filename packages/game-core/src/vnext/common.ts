@@ -1,6 +1,7 @@
 import { deepFreeze } from '../player/immutable.js';
 import type { ProgramId } from '../player/ids.js';
 import type { CreatedPositionPlayerProfile } from '../player/position-creation.js';
+import type { RosterFamilyNameId } from '../programs/ids.js';
 import {
   derivePositionRecruitingProfile,
   generatePositionRoom,
@@ -117,7 +118,7 @@ export function roomFor(
         tuning.premiumPerRatingPointPermille) /
         1000,
     ) + tuning.premiumOffset;
-  return generatePositionRoom(
+  const room = generatePositionRoom(
     career.athlete.profile,
     rng,
     mechanics.roomNames,
@@ -126,6 +127,50 @@ export function roomFor(
       Math.max(tuning.talentSpread, Math.min(100 - tuning.talentSpread, playerTalent + premium)),
     ),
   );
+  if (!room.ok) return room;
+  const context = withoutReservedNames(
+    room.generated.context,
+    mechanics.reservedNamePairs,
+    mechanics.roomNames.familyNameIds,
+  );
+  return context === room.generated.context
+    ? room
+    : deepFreeze({ ...room, generated: { ...room.generated, context } });
+}
+
+/**
+ * A reserved pair keeps its given name and takes the next family name (in catalog ID order) that
+ * is neither used in the room nor reserved. Names are cosmetic: no draw, rating or order changes.
+ */
+function withoutReservedNames(
+  context: PositionRoomContext,
+  reserved: readonly string[],
+  familyNameIds: readonly RosterFamilyNameId[],
+): PositionRoomContext {
+  const pair = (given: string, family: string) => `${given}|${family}`;
+  if (
+    !context.competitors.some((entry) =>
+      reserved.includes(pair(entry.givenNameId, entry.familyNameId)),
+    )
+  )
+    return context;
+  const families = [...familyNameIds].sort();
+  const used = new Set(
+    context.competitors.map((entry) => pair(entry.givenNameId, entry.familyNameId)),
+  );
+  const competitors = context.competitors.map((entry) => {
+    if (!reserved.includes(pair(entry.givenNameId, entry.familyNameId))) return entry;
+    const start = families.indexOf(entry.familyNameId);
+    for (let step = 1; step < families.length; step += 1) {
+      const familyNameId = families[(start + step) % families.length]!;
+      const candidate = pair(entry.givenNameId, familyNameId);
+      if (used.has(candidate) || reserved.includes(candidate)) continue;
+      used.add(candidate);
+      return { ...entry, familyNameId };
+    }
+    return entry;
+  });
+  return { ...context, competitors };
 }
 
 export function offerFromRoom(

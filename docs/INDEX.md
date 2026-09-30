@@ -16,6 +16,15 @@
 - `execution/DESKTOP_PACKAGING.md` — Windows snapshot requirements
 - `../apps/desktop/README.md` — desktop commands, real artifact paths and measured verification
 
+## 1.0 release candidate
+
+- `release/RELEASE_NOTES_1.0_RC.md` — what ships
+- `release/READINESS_REPORT.md` — the M10 gate with evidence
+- `release/KNOWN_LIMITATIONS.md` — scope boundaries and manual to-dos
+- `release/SPEC_CONFORMANCE.md` — each spec and ADR against the shipped game
+- `product-reconciliation/CAREER_VNEXT_CONTRACT.md` — the shipped career model
+- `qa/M10_ACCESSIBILITY.md`, `qa/M10_ORIGINALITY_REVIEW.md`, `qa/BALANCE_TARGETS.md`
+
 ## Product specs
 
 - `product-specs/CORE_LOOP.md`

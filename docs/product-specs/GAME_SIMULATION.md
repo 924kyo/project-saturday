@@ -1,5 +1,7 @@
 # Game Simulation and Key Snaps
 
+> **1.0 RC:** what ships is summarized in `docs/release/SPEC_CONFORMANCE.md` and specified by `docs/product-reconciliation/CAREER_VNEXT_CONTRACT.md`. Milestone-numbered sections (M3–M7.5) describe the pre-R aggregates, which are kept only for historical saves, replays and reports.
+
 ## M7.5 staged current WR physical evidence
 
 The existing WR owning resolver may explicitly receive a validated tactical pre-context only on its staged current path. That context must equal its actual pending clock, down/distance/line, score, offered decisions and earned clues before resolution; no extra gameplay draw is needed to retain existing facts. Original calls omit the context and keep literal outcome/stat/draw behavior. New path: a scored reception credits the remaining distance to the goal line; a non-scoring reception or lost YAC fumble stops before the goal line; no-target ball location remains untracked. A turnover without a reception is an interception at the bounded modeled intended-pass distance, with no invented return or opponent score; a turnover after a reception is a lost fumble. Keep raw calculated/hook-adjusted yards as resolution evidence distinct from actual field-bounded credited yards. Reuse shared core field rules and preserve six original resolution draws. Current drive initialization and saved-result validation/retention must complete under v8 before any shipping caller selects this path; migration never turns an in-progress historical game into it.

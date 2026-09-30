@@ -1,5 +1,7 @@
 # Meta Progression and Alumni Legacy
 
+> **1.0 RC:** what ships is summarized in `docs/release/SPEC_CONFORMANCE.md` and specified by `docs/product-reconciliation/CAREER_VNEXT_CONTRACT.md`. Milestone-numbered sections (M3–M7.5) describe the pre-R aggregates, which are kept only for historical saves, replays and reports.
+
 ## Design goal
 
 One career is one player's story. All careers together become the player's personal college-football history.

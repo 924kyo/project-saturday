@@ -1,5 +1,7 @@
 # NIL and Off-field Life
 
+> **1.0 RC:** what ships is summarized in `docs/release/SPEC_CONFORMANCE.md` and specified by `docs/product-reconciliation/CAREER_VNEXT_CONTRACT.md`. Milestone-numbered sections (M3–M7.5) describe the pre-R aggregates, which are kept only for historical saves, replays and reports.
+
 ## Current added-position calendar and program coverage
 
 Current QB/RB/CB offer cutoff and obligation feasibility use the local regular-season round, not career-week modulo. Stored offers, expiry, actions and cooldowns retain absolute career dates: migrated season two begins at offset 12, while a new season after both current bracket slots begins at offset 14. Both postseason slots are zero-offer-draw cutoff weeks. Historical WR dates and timing remain unchanged.

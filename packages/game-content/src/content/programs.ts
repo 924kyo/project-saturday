@@ -930,6 +930,30 @@ export const rotationPolicyMechanicsDefinitions = programContent.rotationPolicie
 
 export const recruitingMechanicsConfig = programContent.recruitingConfig;
 
+/**
+ * M10 originality: generated full names that would read as a well-known real football player or
+ * coach. Career VNext never shows these combinations (it keeps the given name and moves to the
+ * next free family name, with no RNG). Historical sessions keep their literal replayed rooms.
+ */
+const RESERVED_ROSTER_NAMES = [
+  ['bryce', 'young'],
+  ['caleb', 'banks'],
+  ['darius', 'robinson'],
+  ['desmond', 'king'],
+  ['devon', 'walker'],
+  ['henry', 'ford'],
+  ['jalen', 'carter'],
+  ['jordan', 'reed'],
+  ['keon', 'coleman'],
+  ['malik', 'jackson'],
+  ['marcus', 'freeman'],
+  ['quincy', 'carter'],
+] as const;
+
+export const reservedRosterNamePairs: readonly string[] = RESERVED_ROSTER_NAMES.map(
+  ([given, family]) => `roster_given_name_${given}|roster_family_name_${family}`,
+);
+
 export const rosterNameMechanicsPool = {
   familyNameIds: programContent.rosterFamilyNames.map(({ id }) => id),
   givenNameIds: programContent.rosterGivenNames.map(({ id }) => id),

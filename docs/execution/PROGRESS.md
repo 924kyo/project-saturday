@@ -22,6 +22,13 @@ M8 is COMPLETE (2026-09-30): see `docs/exec-plans/completed/m8-six-position-beta
 
 ## Last completed task
 
+M10 step 7, hygiene and documentation (2026-09-30):
+- the originality review (`docs/qa/M10_ORIGINALITY_REVIEW.md`); a fix means Career VNext never shows generated full names that read as real players or a coach;
+- the app now requests persistent storage after the first save of a session (it was dropped at the R cutover);
+- the en-US creation height no longer shows 4′12″;
+- `docs/release/`: release notes, known limitations and spec conformance; the Career VNext contract is updated to v3 and the 1.0 world; each older spec carries a pointer banner.
+
+
 M10 step 6, localization QA (2026-09-30):
 - numbers use the app language, not the device default: NIL fund totals and fund chips go through `formatNumber` with grouping;
 - en-US Profile shows height and weight in feet, inches and pounds, matching creation's imperial input, while ko-KR stays metric (`v2.profile.measureImperial`);
@@ -113,7 +120,7 @@ The M8 closeout, 2026-09-30:
 
 ## Current / next task
 
-M10 step 7: hygiene and documentation (originality and legal review, known limitations, specs and ADRs against the implementation, release notes, the readiness report). Then the gate.
+M10 step 8: the gate. Check every `RELEASE_CHECKLIST.md` item with evidence, run Tier 3 (`pnpm check`, `E2E_FULL=1` matrix including WebKit, desktop build and smoke), write `docs/release/READINESS_REPORT.md`, and mark M10 complete.
 
 ## Active exec plan
 
