@@ -80,9 +80,9 @@ const patterns: readonly [string, Pair, Pair, readonly [Pair, Pair, Pair]][] = [
       '리시버가 균형 잡힌 스플릿에서 양쪽을 위협합니다.',
     ],
     [
-      ['The first step stays square.', '첫 스텝이 정면을 유지합니다.'],
-      ['Inside help is available.', '안쪽 도움 수비가 있습니다.'],
-      ['The sideline limits space.', '사이드라인이 공간을 제한합니다.'],
+      ['The first step stays square.', '첫 스텝이 정면을 유지한다.'],
+      ['Inside help is available.', '안쪽 도움 수비가 있다.'],
+      ['The sideline limits space.', '사이드라인이 공간을 제한한다.'],
     ],
   ],
   [
@@ -93,9 +93,9 @@ const patterns: readonly [string, Pair, Pair, readonly [Pair, Pair, Pair]][] = [
       '루트가 수비의 쿠션을 정면으로 압박합니다.',
     ],
     [
-      ['The receiver gains speed early.', '리시버가 일찍 속도를 올립니다.'],
-      ['Safety help stays inside.', '세이프티 도움은 안쪽에 있습니다.'],
-      ['The short break remains possible.', '짧은 브레이크 가능성이 남습니다.'],
+      ['The receiver gains speed early.', '리시버가 일찍 속도를 올린다.'],
+      ['Safety help stays inside.', '세이프티 도움은 안쪽에 있다.'],
+      ['The short break remains possible.', '짧은 브레이크 가능성이 남아 있다.'],
     ],
   ],
   [
@@ -103,9 +103,9 @@ const patterns: readonly [string, Pair, Pair, readonly [Pair, Pair, Pair]][] = [
     ['Crossing exchange', '크로싱 교환'],
     ['Two routes cross the coverage boundary.', '두 루트가 커버리지 경계를 교차합니다.'],
     [
-      ['The inside route gains depth.', '안쪽 루트가 깊이를 얻습니다.'],
-      ['A teammate carries the shallow route.', '동료가 얕은 루트를 이어받습니다.'],
-      ['The quarterback looks middle.', '쿼터백이 중앙을 봅니다.'],
+      ['The inside route gains depth.', '안쪽 루트가 깊어진다.'],
+      ['A teammate carries the shallow route.', '동료가 얕은 루트를 이어받는다.'],
+      ['The quarterback looks middle.', '쿼터백이 중앙을 본다.'],
     ],
   ],
   [
@@ -113,9 +113,9 @@ const patterns: readonly [string, Pair, Pair, readonly [Pair, Pair, Pair]][] = [
     ['Zone flood', '존 플러드'],
     ['Multiple routes overload one outside zone.', '여러 루트가 한 바깥 존을 과부하시킵니다.'],
     [
-      ['The flat route releases now.', '플랫 루트가 바로 나옵니다.'],
-      ['The corner route climbs.', '코너 루트가 깊어집니다.'],
-      ['Inside help cannot cover both.', '안쪽 도움은 둘 다 막을 수 없습니다.'],
+      ['The flat route releases now.', '플랫 루트가 바로 나온다.'],
+      ['The corner route climbs.', '코너 루트가 깊어진다.'],
+      ['Inside help cannot cover both.', '안쪽 도움은 둘 다 막을 수 없다.'],
     ],
   ],
   [
@@ -123,9 +123,9 @@ const patterns: readonly [string, Pair, Pair, readonly [Pair, Pair, Pair]][] = [
     ['High-point throw', '하이포인트 패스'],
     ['The ball arrives above a contested catch point.', '공이 경합 캐치 지점 위로 옵니다.'],
     [
-      ['The receiver turns late.', '리시버가 늦게 돌아봅니다.'],
-      ['The throw hangs briefly.', '패스가 잠시 떠 있습니다.'],
-      ['Contact is imminent.', '접촉이 임박했습니다.'],
+      ['The receiver turns late.', '리시버가 늦게 돌아본다.'],
+      ['The throw hangs briefly.', '패스가 잠시 떠 있다.'],
+      ['Contact is imminent.', '접촉이 임박했다.'],
     ],
   ],
   [
@@ -136,9 +136,9 @@ const patterns: readonly [string, Pair, Pair, readonly [Pair, Pair, Pair]][] = [
       '첫 루트 브레이크 뒤 늦은 패스 창이 열립니다.',
     ],
     [
-      ['The quarterback resets.', '쿼터백이 자세를 다시 잡습니다.'],
-      ['The receiver drifts outside.', '리시버가 바깥으로 흐릅니다.'],
-      ['Recovery space is narrow.', '회복 공간이 좁습니다.'],
+      ['The quarterback resets.', '쿼터백이 자세를 다시 잡는다.'],
+      ['The receiver drifts outside.', '리시버가 바깥으로 흘러간다.'],
+      ['Recovery space is narrow.', '회복 공간이 좁다.'],
     ],
   ],
   [
@@ -149,9 +149,9 @@ const patterns: readonly [string, Pair, Pair, readonly [Pair, Pair, Pair]][] = [
       '짧은 패스 완성이 고립된 태클을 만듭니다.',
     ],
     [
-      ['The receiver squares up.', '리시버가 정면을 잡습니다.'],
-      ['Pursuit trails inside.', '추격 수비가 안쪽에서 따라옵니다.'],
-      ['The boundary is several yards away.', '사이드라인까지 몇 야드 남았습니다.'],
+      ['The receiver squares up.', '리시버가 정면을 잡는다.'],
+      ['Pursuit trails inside.', '추격 수비가 안쪽에서 따라온다.'],
+      ['The boundary is several yards away.', '사이드라인까지 몇 야드 남았다.'],
     ],
   ],
   [
@@ -162,9 +162,9 @@ const patterns: readonly [string, Pair, Pair, readonly [Pair, Pair, Pair]][] = [
       '리시버가 좁은 사이드라인 근처에서 방향을 틉니다.',
     ],
     [
-      ['Inside leverage is available.', '안쪽 레버리지를 잡을 수 있습니다.'],
-      ['The receiver protects the ball.', '리시버가 공을 감쌉니다.'],
-      ['Support arrives from depth.', '깊은 곳에서 지원 수비가 옵니다.'],
+      ['Inside leverage is available.', '안쪽 레버리지를 잡을 수 있다.'],
+      ['The receiver protects the ball.', '리시버가 공을 감싼다.'],
+      ['Support arrives from depth.', '깊은 곳에서 지원 수비가 온다.'],
     ],
   ],
 ];

@@ -149,9 +149,9 @@ const patterns: readonly PatternEntry[] = [
     ],
     {
       clues: [
-        ['Both safeties hold depth.', '두 세이프티가 깊이를 유지합니다.'],
-        ['The nickel defender shades inside.', '니켈 수비가 안쪽을 향합니다.'],
-        ['The back has leverage underneath.', '백이 아래쪽 레버리지를 확보합니다.'],
+        ['Both safeties hold depth.', '두 세이프티가 깊이를 유지한다.'],
+        ['The nickel defender shades inside.', '니켈 수비가 안쪽을 향한다.'],
+        ['The back has leverage underneath.', '백이 아래쪽 레버리지를 확보한다.'],
       ],
     },
   ] as never,
@@ -164,9 +164,9 @@ const patterns: readonly PatternEntry[] = [
     ],
     {
       clues: [
-        ['The boundary linebacker creeps forward.', '바운더리 라인배커가 전진합니다.'],
-        ['The interior tackle lightens his stance.', '인테리어 태클의 스탠스가 가벼워집니다.'],
-        ['The slot defender watches the cadence.', '슬롯 수비가 카운트를 주시합니다.'],
+        ['The boundary linebacker creeps forward.', '바운더리 라인배커가 전진한다.'],
+        ['The interior tackle lightens his stance.', '인테리어 태클의 스탠스가 가벼워진다.'],
+        ['The slot defender watches the cadence.', '슬롯 수비가 카운트를 주시한다.'],
       ],
     },
   ] as never,
@@ -179,9 +179,9 @@ const patterns: readonly PatternEntry[] = [
     ],
     {
       clues: [
-        ['Both tackles keep outside width.', '양쪽 태클이 바깥 폭을 유지합니다.'],
-        ['The middle rusher wins low leverage.', '중앙 러셔가 낮은 레버리지를 잡습니다.'],
-        ['A lane forms behind the center.', '센터 뒤에 전진 통로가 생깁니다.'],
+        ['Both tackles keep outside width.', '양쪽 태클이 바깥 폭을 유지한다.'],
+        ['The middle rusher wins low leverage.', '중앙 러셔가 낮은 레버리지를 잡는다.'],
+        ['A lane forms behind the center.', '센터 뒤에 전진 통로가 생긴다.'],
       ],
     },
   ] as never,
@@ -194,9 +194,9 @@ const patterns: readonly PatternEntry[] = [
     ],
     {
       clues: [
-        ['The edge defender starts outside the tackle.', '에지 수비가 태클 바깥에서 출발합니다.'],
-        ['The interior stays square.', '내부 수비는 정면을 유지합니다.'],
-        ['Open grass appears beyond the rush.', '러시 바깥에 열린 공간이 보입니다.'],
+        ['The edge defender starts outside the tackle.', '에지 수비가 태클 바깥에서 출발한다.'],
+        ['The interior stays square.', '내부 수비는 정면을 유지한다.'],
+        ['Open grass appears beyond the rush.', '러시 바깥에 열린 공간이 보인다.'],
       ],
     },
   ] as never,
@@ -209,9 +209,9 @@ const patterns: readonly PatternEntry[] = [
     ],
     {
       clues: [
-        ['The hook defender settles shallow.', '훅 수비가 얕게 자리 잡습니다.'],
-        ['The safety gains depth at the snap.', '세이프티가 스냅과 함께 깊어집니다.'],
-        ['The checkdown releases immediately.', '체크다운이 즉시 빠져나옵니다.'],
+        ['The hook defender settles shallow.', '훅 수비가 얕게 자리 잡는다.'],
+        ['The safety gains depth at the snap.', '세이프티가 스냅과 함께 깊어진다.'],
+        ['The checkdown releases immediately.', '체크다운이 즉시 빠져나온다.'],
       ],
     },
   ] as never,
@@ -224,9 +224,9 @@ const patterns: readonly PatternEntry[] = [
     ],
     {
       clues: [
-        ['The corner plays outside leverage.', '코너가 바깥 레버리지를 잡습니다.'],
-        ['The safety stays near the hash.', '세이프티가 해시 근처에 머뭅니다.'],
-        ['The receiver preserves sideline space.', '리시버가 사이드라인 공간을 남깁니다.'],
+        ['The corner plays outside leverage.', '코너가 바깥 레버리지를 잡는다.'],
+        ['The safety stays near the hash.', '세이프티가 해시 근처에 머문다.'],
+        ['The receiver preserves sideline space.', '리시버가 사이드라인 공간을 남긴다.'],
       ],
     },
   ] as never,
@@ -239,9 +239,9 @@ const patterns: readonly PatternEntry[] = [
     ],
     {
       clues: [
-        ['The middle defender carries the route.', '중앙 수비가 루트를 따라갑니다.'],
-        ['The rush opens beyond the guard.', '가드 바깥으로 러시가 벌어집니다.'],
-        ['The nearest defender has a poor angle.', '가장 가까운 수비의 각도가 좋지 않습니다.'],
+        ['The middle defender carries the route.', '중앙 수비가 루트를 따라간다.'],
+        ['The rush opens beyond the guard.', '가드 바깥으로 러시가 벌어진다.'],
+        ['The nearest defender has a poor angle.', '가장 가까운 수비의 각도가 좋지 않다.'],
       ],
     },
   ] as never,
@@ -254,9 +254,9 @@ const patterns: readonly PatternEntry[] = [
     ],
     {
       clues: [
-        ['One linebacker does not gain depth.', '한 라인배커가 깊이를 얻지 않습니다.'],
-        ['The boundary remains available.', '사이드라인 쪽 출구는 열려 있습니다.'],
-        ['The marker sits beyond the spy.', '목표 지점은 스파이 너머에 있습니다.'],
+        ['One linebacker does not gain depth.', '한 라인배커가 깊이 물러서지 않는다.'],
+        ['The boundary remains available.', '사이드라인 쪽 출구는 열려 있다.'],
+        ['The marker sits beyond the spy.', '목표 지점은 스파이 너머에 있다.'],
       ],
     },
   ] as never,

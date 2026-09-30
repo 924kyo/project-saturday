@@ -126,6 +126,19 @@ describe('snap look catalog', () => {
         expect(ko[key], key).toBeTruthy();
       }
   });
+
+  it('narrates every Korean tell in the plain register (M9 editorial rule)', () => {
+    const ko = localeMessages['ko-KR'] as Record<string, string>;
+    // Polite endings put a ㅂ-final syllable before 니다 (합니다, 습니다); 아니다 stays plain.
+    const polite = (text: string) => {
+      const match = /(.)니다\.?$/u.exec(text);
+      if (match === null) return false;
+      const code = match[1]!.charCodeAt(0) - 0xac00;
+      return match[1] === '습' || (code >= 0 && code < 11172 && code % 28 === 17);
+    };
+    for (const look of looks)
+      for (const key of look.tellKeys) expect(polite(ko[key]!), `${look.id} ${key}`).toBe(false);
+  });
 });
 
 function play(positionId: string, archetypeId: string, seed: string, weeks: number) {

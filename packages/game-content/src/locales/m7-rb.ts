@@ -89,9 +89,9 @@ const patterns: readonly [string, Pair, Pair, readonly [Pair, Pair, Pair]][] = [
     ['Flowing front', '흐르는 프런트'],
     ['The defense stretches with the run action.', '수비가 러닝 액션을 따라 옆으로 늘어납니다.'],
     [
-      ['The play-side linebacker widens.', '플레이 쪽 라인배커가 넓어집니다.'],
-      ['The guard keeps inside leverage.', '가드가 안쪽 레버리지를 유지합니다.'],
-      ['The edge defender stays patient.', '에지 수비가 인내하며 버팁니다.'],
+      ['The play-side linebacker widens.', '플레이 쪽 라인배커가 넓어진다.'],
+      ['The guard keeps inside leverage.', '가드가 안쪽 레버리지를 유지한다.'],
+      ['The edge defender stays patient.', '에지 수비가 인내하며 버틴다.'],
     ],
   ],
   [
@@ -99,9 +99,9 @@ const patterns: readonly [string, Pair, Pair, readonly [Pair, Pair, Pair]][] = [
     ['Backside fold', '뒷면 폴드'],
     ['Pursuit opens a lane against the original flow.', '추격이 원래 흐름 반대쪽 길을 엽니다.'],
     [
-      ['The backside tackle crosses face.', '뒷면 태클이 얼굴 앞을 가로지릅니다.'],
-      ['The safety rotates late.', '세이프티가 늦게 회전합니다.'],
-      ['The edge loses contain depth.', '에지가 컨테인 깊이를 잃습니다.'],
+      ['The backside tackle crosses face.', '백사이드 태클이 얼굴 앞을 가로지른다.'],
+      ['The safety rotates late.', '세이프티가 늦게 회전한다.'],
+      ['The edge loses contain depth.', '에지가 컨테인 깊이를 잃는다.'],
     ],
   ],
   [
@@ -112,9 +112,9 @@ const patterns: readonly [string, Pair, Pair, readonly [Pair, Pair, Pair]][] = [
       '내리꽂는 수비가 좁은 길에서 러닝을 맞습니다.',
     ],
     [
-      ['The defender lowers his hips.', '수비가 엉덩이를 낮춥니다.'],
-      ['Both shoulders stay square.', '양쪽 어깨가 정면을 유지합니다.'],
-      ['Help closes from inside.', '안쪽에서 지원 수비가 닫힙니다.'],
+      ['The defender lowers his hips.', '수비가 엉덩이를 낮춘다.'],
+      ['Both shoulders stay square.', '양쪽 어깨가 정면을 유지한다.'],
+      ['Help closes from inside.', '안쪽에서 지원 수비가 좁혀 온다.'],
     ],
   ],
   [
@@ -125,9 +125,9 @@ const patterns: readonly [string, Pair, Pair, readonly [Pair, Pair, Pair]][] = [
       '한 수비가 러너와 열린 공간 사이를 지킵니다.',
     ],
     [
-      ['The defender overcommits inside.', '수비가 안쪽으로 과하게 들어옵니다.'],
-      ['The sideline remains distant.', '사이드라인은 아직 멉니다.'],
-      ['Pursuit trails the play.', '추격 수비가 뒤에서 따라옵니다.'],
+      ['The defender overcommits inside.', '수비가 안쪽으로 과하게 들어온다.'],
+      ['The sideline remains distant.', '사이드라인은 아직 멀다.'],
+      ['Pursuit trails the play.', '추격 수비가 뒤에서 따라온다.'],
     ],
   ],
   [
@@ -138,9 +138,9 @@ const patterns: readonly [string, Pair, Pair, readonly [Pair, Pair, Pair]][] = [
       '내부 러셔가 쿼터백을 빠르게 위협합니다.',
     ],
     [
-      ['The linebacker enters the A gap.', '라인배커가 A 갭으로 들어옵니다.'],
-      ['The center is occupied.', '센터가 이미 수비를 맡고 있습니다.'],
-      ['The outlet remains uncovered.', '패스 출구는 아직 비어 있습니다.'],
+      ['The linebacker enters the A gap.', '라인배커가 A 갭으로 들어온다.'],
+      ['The center is occupied.', '센터가 이미 수비를 맡고 있다.'],
+      ['The outlet remains uncovered.', '패스 출구는 아직 비어 있다.'],
     ],
   ],
   [
@@ -151,9 +151,9 @@ const patterns: readonly [string, Pair, Pair, readonly [Pair, Pair, Pair]][] = [
       '인내하는 러셔가 보호가 확정되기를 기다립니다.',
     ],
     [
-      ['The edge defender pauses.', '에지 수비가 잠시 멈춥니다.'],
-      ['The tackle looks inside.', '태클이 안쪽을 봅니다.'],
-      ['The flat opens after the rush.', '러시 뒤 플랫이 열립니다.'],
+      ['The edge defender pauses.', '에지 수비가 잠시 멈춘다.'],
+      ['The tackle looks inside.', '태클이 안쪽을 본다.'],
+      ['The flat opens after the rush.', '러시 뒤 플랫이 열린다.'],
     ],
   ],
   [
@@ -164,9 +164,9 @@ const patterns: readonly [string, Pair, Pair, readonly [Pair, Pair, Pair]][] = [
       '짧은 패스 뒤 필드 안쪽으로 전환할 공간이 생깁니다.',
     ],
     [
-      ['The nearest defender has depth.', '가장 가까운 수비가 깊이 있습니다.'],
-      ['The sideline angle is clean.', '사이드라인 각도가 깨끗합니다.'],
-      ['Inside pursuit is late.', '안쪽 추격이 늦습니다.'],
+      ['The nearest defender has depth.', '가장 가까운 수비가 깊이 있다.'],
+      ['The sideline angle is clean.', '사이드라인 각도가 깨끗하다.'],
+      ['Inside pursuit is late.', '안쪽 추격이 늦다.'],
     ],
   ],
   [
@@ -177,9 +177,9 @@ const patterns: readonly [string, Pair, Pair, readonly [Pair, Pair, Pair]][] = [
       '아래 수비 레버리지에 따라 루트를 멈추거나 이어갈 수 있습니다.',
     ],
     [
-      ['The hook defender widens.', '훅 수비가 바깥으로 넓어집니다.'],
-      ['The quarterback faces pressure.', '쿼터백이 압박을 받습니다.'],
-      ['Boundary help stays high.', '사이드라인 지원 수비가 깊게 남습니다.'],
+      ['The hook defender widens.', '훅 수비가 바깥으로 넓어진다.'],
+      ['The quarterback faces pressure.', '쿼터백이 압박을 받는다.'],
+      ['Boundary help stays high.', '사이드라인 지원 수비가 깊게 남는다.'],
     ],
   ],
 ];

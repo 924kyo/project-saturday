@@ -57,7 +57,7 @@ const rows = {
   'v2.look.qbWideRush.name': ['Wide rush, soft middle', '넓은 러시, 빈 중앙'],
   'v2.look.qbWideRush.tell2': [
     'Both edges keep running upfield past you.',
-    '양쪽 에지가 당신을 지나 위로 계속 달린다.',
+    '양쪽 에지가 당신보다 깊이 계속 달려 들어간다.',
   ],
   'v2.look.qbWideRush.tell3': [
     'The middle of the line gets pushed back.',
@@ -97,7 +97,7 @@ const rows = {
   ],
   'v2.look.qbSpyStepsUp.tell3': [
     'The middle opens once he commits.',
-    '그가 결정하자 가운데가 열린다.',
+    '그가 움직이자 가운데가 열린다.',
   ],
   'v2.look.qbCornerPeels.name': ['Corner peels off', '떨어져 나오는 코너'],
   'v2.look.qbCornerPeels.tell2': [
@@ -106,7 +106,7 @@ const rows = {
   ],
   'v2.look.qbCornerPeels.tell3': [
     'The safety has a downhill angle.',
-    '세이프티가 내려오는 좋은 각도를 잡았다.',
+    '세이프티가 좋은 각도로 내려온다.',
   ],
   'v2.lookFamily.qbThrow.name': ['Where to throw', '패스 선택'],
   'v2.lookFamily.qbThrow.prompt': [
@@ -246,13 +246,13 @@ const rows = {
     'Open grass waits outside the tight end.',
     '타이트엔드 바깥에 빈 공간이 있다.',
   ],
-  'v2.look.rbBacksideHome.name': ['Backside stays home', '뒷면이 지키는 수비'],
+  'v2.look.rbBacksideHome.name': ['Backside stays home', '자리를 지키는 백사이드'],
   'v2.look.rbBacksideHome.tell2': [
     'The backside linebacker stays home.',
-    '뒷면 라인배커가 자리를 지킨다.',
+    '백사이드 라인배커가 자리를 지킨다.',
   ],
   'v2.look.rbBacksideHome.tell3': ['The front holds its gaps.', '프런트가 갭을 지킨다.'],
-  'v2.look.rbOverflow.name': ['Front overflows', '넘쳐 흐르는 프런트'],
+  'v2.look.rbOverflow.name': ['Front overflows', '한쪽으로 쏠리는 프런트'],
   'v2.look.rbOverflow.tell2': [
     'The whole front overflows inside.',
     '프런트 전체가 안쪽으로 몰린다.',
@@ -274,7 +274,7 @@ const rows = {
   ],
   'v2.look.wrReducedSplit.tell2': [
     'The corner sits inside with zone eyes.',
-    '코너가 안쪽에서 존 시선으로 기다린다.',
+    '코너가 안쪽에서 쿼터백을 보며 기다린다.',
   ],
   'v2.look.wrReducedSplit.tell3': ['Two safeties split the field.', '두 세이프티가 필드를 나눈다.'],
   'v2.look.wrOffCushion.name': ['Off cushion', '오프 쿠션'],
@@ -293,13 +293,13 @@ const rows = {
   'v2.look.wrJumpyPress.name': ['Jumpy press', '성급한 프레스'],
   'v2.look.wrJumpyPress.tell2': [
     'His feet are narrow; he will jump the first move.',
-    '발이 좁다. 첫 동작에 뛰어들 것이다.',
+    '그의 발이 좁다. 첫 동작에 달려들 것이다.',
   ],
   'v2.look.wrJumpyPress.tell3': [
     'Safety help rolls to your side.',
     '세이프티 도움이 당신 쪽으로 온다.',
   ],
-  'v2.look.wrInsideHips.name': ['Inside-hip corner', '안쪽 골반의 코너'],
+  'v2.look.wrInsideHips.name': ['Inside-hip corner', '골반을 안으로 연 코너'],
   'v2.look.wrInsideHips.tell2': [
     'The corner opens his hips inside at the snap.',
     '코너가 스냅과 함께 골반을 안쪽으로 연다.',
@@ -427,7 +427,7 @@ const rows = {
   ],
   'v2.look.wrPursuitAngle.tell2': ['The corner overruns outside.', '코너가 바깥으로 지나쳐 간다.'],
   'v2.look.wrPursuitAngle.tell3': ['The inside lane is open.', '안쪽 길이 열려 있다.'],
-  'v2.look.wrOpenAlley.name': ['Open alley', '열린 골목'],
+  'v2.look.wrOpenAlley.name': ['Open alley', '열린 통로'],
   'v2.look.wrOpenAlley.tell1': [
     'The nearest defender is still backpedaling.',
     '가장 가까운 수비가 아직 뒤로 물러나고 있다.',
@@ -467,14 +467,17 @@ const rows = {
     'There is no safety help inside.',
     '안쪽 세이프티 도움이 없다.',
   ],
-  'v2.look.cbSquareThenGo.name': ['Square step, then vertical', '정면 스텝 뒤 수직'],
+  'v2.look.cbSquareThenGo.name': ['Square step, then vertical', '정면 스텝 후 수직 질주'],
   'v2.look.cbSquareThenGo.tell2': [
     'He explodes vertically after the first step.',
-    '첫 스텝 뒤 수직으로 폭발한다.',
+    '리시버가 첫 스텝 뒤 수직으로 폭발한다.',
   ],
   'v2.look.cbSquareThenGo.tell3': ['The safety is late to help.', '세이프티 도움이 늦다.'],
   'v2.look.cbThrottleStem.name': ['Throttle-down stem', '감속 스템'],
-  'v2.look.cbThrottleStem.tell2': ['He throttles down at eight yards.', '8야드에서 속도를 줄인다.'],
+  'v2.look.cbThrottleStem.tell2': [
+    'He throttles down at eight yards.',
+    '리시버가 8야드에서 속도를 줄인다.',
+  ],
   'v2.look.cbThrottleStem.tell3': [
     'The quarterback takes a quick drop.',
     '쿼터백이 짧게 드롭한다.',
@@ -512,7 +515,7 @@ const rows = {
     'Your inside help is taken by the slot.',
     '안쪽 도움 수비가 슬롯에게 묶인다.',
   ],
-  'v2.lookFamily.cbBall.name': ['Ball in the air', '공중의 공'],
+  'v2.lookFamily.cbBall.name': ['Ball in the air', '떠 있는 공'],
   'v2.lookFamily.cbBall.prompt': [
     'The throw is coming your way. Choose how to play it.',
     '패스가 당신 쪽으로 온다. 대응을 고른다.',
@@ -599,7 +602,7 @@ const rows = {
     '백이 넘버 쪽을 넓게 겨눈다.',
   ],
   'v2.look.lbOutsideStretch.tell3': ['The edge is being hooked.', '에지가 훅 블록에 걸린다.'],
-  'v2.look.lbSinglePuller.name': ['Single puller', '한 명만 풀'],
+  'v2.look.lbSinglePuller.name': ['Single puller', '혼자 풀하는 가드'],
   'v2.look.lbSinglePuller.tell2': [
     'Only the guard pulls; the tackle blocks down.',
     '가드만 풀하고 태클은 다운 블록한다.',
@@ -740,7 +743,7 @@ const rows = {
     'The back meshes away from you.',
     '백이 당신 반대쪽으로 메시한다.',
   ],
-  'v2.look.edgeHandoffFeet.name': ['Handoff feet', '건네줄 발'],
+  'v2.look.edgeHandoffFeet.name': ['Handoff feet', '핸드오프 발놀림'],
   'v2.look.edgeHandoffFeet.tell2': [
     "The quarterback's feet are set to hand off.",
     '쿼터백의 발이 핸드오프 자세다.',
@@ -770,7 +773,7 @@ const rows = {
     'A receiver sits right behind you.',
     '리시버가 바로 뒤에 앉아 있다.',
   ],
-  'v2.look.edgeBallPulledDown.name': ['Ball pulled down', '내려놓는 공'],
+  'v2.look.edgeBallPulledDown.name': ['Ball pulled down', '공을 내리는 쿼터백'],
   'v2.look.edgeBallPulledDown.tell2': [
     'The quarterback pulls the ball down.',
     '쿼터백이 공을 내린다.',
