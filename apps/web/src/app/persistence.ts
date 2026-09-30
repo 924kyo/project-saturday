@@ -57,12 +57,49 @@ function read(envelope: unknown): { career: CareerVNext; updatedAt: string } | n
   return career === null ? null : { career, updatedAt: envelope.updatedAt };
 }
 
-export async function loadCareerVNext(storage: StorageAdapter): Promise<LoadVNextResult> {
-  const envelope = await storage.get<unknown>('currentCareer', VNEXT_CAREER_ID);
+/**
+ * Save slots: several careers side by side, each with its own last-good backup. Slot 1 keeps the
+ * original keys, so a save from before slots opens as slot 1.
+ */
+export const CAREER_SLOT_COUNT = 5 as const;
+export type CareerSlot = 1 | 2 | 3 | 4 | 5;
+export const CAREER_SLOTS: readonly CareerSlot[] = [1, 2, 3, 4, 5];
+/** The slot the app opens (a device setting, not part of any save). */
+export const ACTIVE_SLOT_ID = 'career-vnext-active-slot' as const;
+
+function slotKeys(slot: CareerSlot): { readonly current: string; readonly backup: string } {
+  return slot === 1
+    ? { current: VNEXT_CAREER_ID, backup: VNEXT_BACKUP_ID }
+    : { current: `career-vnext-slot-${slot}`, backup: `career-vnext-slot-${slot}-backup` };
+}
+
+export function isCareerSlot(value: unknown): value is CareerSlot {
+  return CAREER_SLOTS.includes(value as CareerSlot);
+}
+
+export async function loadActiveSlot(storage: StorageAdapter): Promise<CareerSlot> {
+  try {
+    const stored = await storage.get<unknown>('settings', ACTIVE_SLOT_ID);
+    return isCareerSlot(stored) ? stored : 1;
+  } catch {
+    return 1;
+  }
+}
+
+export async function saveActiveSlot(storage: StorageAdapter, slot: CareerSlot): Promise<void> {
+  await storage.put('settings', ACTIVE_SLOT_ID, slot);
+}
+
+export async function loadCareerVNext(
+  storage: StorageAdapter,
+  slot: CareerSlot = 1,
+): Promise<LoadVNextResult> {
+  const keys = slotKeys(slot);
+  const envelope = await storage.get<unknown>('currentCareer', keys.current);
   if (envelope === undefined) return { status: 'none' };
   const current = read(envelope);
   if (current !== null) return { status: 'ok', ...current };
-  const backup = read(await storage.get<unknown>('currentCareer', VNEXT_BACKUP_ID));
+  const backup = read(await storage.get<unknown>('currentCareer', keys.backup));
   return backup === null ? { status: 'corrupt' } : { status: 'recovered', ...backup };
 }
 
@@ -70,9 +107,11 @@ export async function saveCareerVNext(
   storage: StorageAdapter,
   career: CareerVNext,
   now: () => Date = () => new Date(),
+  slot: CareerSlot = 1,
 ): Promise<string | null> {
   const json = serializeCareerVNext(career);
   if (json === null) return null;
+  const keys = slotKeys(slot);
   return storage.runExclusive(LOCK, async () => {
     const updatedAt = now().toISOString();
     const envelope: VNextSaveEnvelope = {
@@ -83,18 +122,51 @@ export async function saveCareerVNext(
       json,
     };
     // Keep the previous good save as the backup before replacing it.
-    const previous = await storage.get<unknown>('currentCareer', VNEXT_CAREER_ID);
-    if (validEnvelope(previous)) await storage.put('currentCareer', VNEXT_BACKUP_ID, previous);
-    await storage.put('currentCareer', VNEXT_CAREER_ID, envelope);
+    const previous = await storage.get<unknown>('currentCareer', keys.current);
+    if (validEnvelope(previous)) await storage.put('currentCareer', keys.backup, previous);
+    await storage.put('currentCareer', keys.current, envelope);
     return updatedAt;
   });
 }
 
-export async function clearCareerVNext(storage: StorageAdapter): Promise<void> {
+export async function clearCareerVNext(
+  storage: StorageAdapter,
+  slot: CareerSlot = 1,
+): Promise<void> {
+  const keys = slotKeys(slot);
   await storage.runExclusive(LOCK, async () => {
-    await storage.delete('currentCareer', VNEXT_CAREER_ID);
-    await storage.delete('currentCareer', VNEXT_BACKUP_ID);
+    await storage.delete('currentCareer', keys.current);
+    await storage.delete('currentCareer', keys.backup);
   });
+}
+
+export type CareerSlotView =
+  | { readonly slot: CareerSlot; readonly status: 'empty' | 'corrupt' }
+  | {
+      readonly slot: CareerSlot;
+      readonly status: 'ok' | 'recovered';
+      readonly career: CareerVNext;
+      readonly updatedAt: string;
+    };
+
+/** Every slot, in order, for the save screen. */
+export async function listCareerSlotsVNext(
+  storage: StorageAdapter,
+): Promise<readonly CareerSlotView[]> {
+  const views: CareerSlotView[] = [];
+  for (const slot of CAREER_SLOTS) {
+    const loaded = await loadCareerVNext(storage, slot).catch(() => ({
+      status: 'corrupt' as const,
+    }));
+    views.push(
+      loaded.status === 'none'
+        ? { slot, status: 'empty' }
+        : loaded.status === 'corrupt'
+          ? { slot, status: 'corrupt' }
+          : { slot, status: loaded.status, career: loaded.career, updatedAt: loaded.updatedAt },
+    );
+  }
+  return views;
 }
 
 /** Alumni Wall: finished careers, kept beside (never inside) the live save and prototype records. */

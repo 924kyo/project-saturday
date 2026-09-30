@@ -20,6 +20,7 @@ import {
   type CareerVNext,
   type CareerVNextMechanics,
   type CareerVNextResult,
+  type AthleteNameTokensVNext,
   type PositionPlayerCreationIdentity,
   type ProgramId,
   chooseNilVNext,
@@ -41,11 +42,23 @@ import { CreateScreen } from './CreateScreen';
 import { GameDayScreen } from './GameDayScreen';
 import {
   clearCareerVNext,
+  loadActiveSlot,
   loadAlumniVNext,
   loadCareerVNext,
   recordAlumniVNext,
+  saveActiveSlot,
   saveCareerVNext,
+  type CareerSlot,
 } from './persistence';
+import {
+  PreferencesContext,
+  defaultPreferences,
+  loadPreferences,
+  savePreferences,
+  type Preferences,
+} from './preferences';
+import { SaveSlotsScreen } from './SaveSlots';
+import { SettingsPanel } from './Settings';
 import {
   dismissPrototypeNotice,
   downloadJson,
@@ -94,11 +107,17 @@ export function App({
   const [notice, setNotice] = useState<'corrupt' | 'recovered' | null>(null);
   const [pending, setPending] = useState<CareerVNext | null>(null);
   const [saving, setSaving] = useState(false);
-  const [confirmNew, setConfirmNew] = useState(false);
+  const [slot, setSlot] = useState<CareerSlot>(1);
+  const [slotsOpen, setSlotsOpen] = useState(false);
+  const [slotsVersion, setSlotsVersion] = useState(0);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [preferences, setPreferences] = useState<Preferences>(() => defaultPreferences(locale));
   const [prototype, setPrototype] = useState(false);
   const [alumni, setAlumni] = useState<readonly AlumniVNext[]>([]);
   const [prototypeAlumni, setPrototypeAlumni] = useState<readonly PrototypeAlumniView[]>([]);
   const inFlight = useRef(false);
+  // First-launch unit defaults read the language once; later language changes never move them.
+  const firstLocale = useRef<string>(locale);
   const persistenceRequested = useRef(false);
   const reducedMotion = useMemo(
     () => globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false,
@@ -111,13 +130,21 @@ export function App({
 
   useEffect(() => {
     let active = true;
-    void loadCareerVNext(storage).then((loaded) => {
-      if (!active) return;
-      if (loaded.status === 'ok' || loaded.status === 'recovered') setCareer(loaded.career);
-      if (loaded.status === 'corrupt') setNotice('corrupt');
-      if (loaded.status === 'recovered') setNotice('recovered');
-      setBooting(false);
-    });
+    void loadActiveSlot(storage)
+      .then(async (opened) => ({ opened, loaded: await loadCareerVNext(storage, opened) }))
+      .then(({ opened, loaded }) => {
+        if (!active) return;
+        setSlot(opened);
+        if (loaded.status === 'ok' || loaded.status === 'recovered') setCareer(loaded.career);
+        if (loaded.status === 'corrupt') setNotice('corrupt');
+        if (loaded.status === 'recovered') setNotice('recovered');
+        setBooting(false);
+      });
+    void loadPreferences(storage, firstLocale.current)
+      .then((stored) => {
+        if (active) setPreferences(stored);
+      })
+      .catch(() => undefined);
     void hasPrototypeData(storage)
       .then((found) => {
         if (active) setPrototype(found);
@@ -155,7 +182,7 @@ export function App({
     setSaving(true);
     setPending(next);
     try {
-      const saved = await saveCareerVNext(storage, next);
+      const saved = await saveCareerVNext(storage, next, undefined, slot);
       if (saved !== null) {
         setCareer(next);
         setPending(null);
@@ -180,21 +207,53 @@ export function App({
     if (result.ok) void publish(result.career);
   }
 
-  function create(identity: PositionPlayerCreationIdentity): void {
+  function create(
+    identity: PositionPlayerCreationIdentity,
+    nameTokens: AthleteNameTokensVNext | null,
+  ): void {
     if (inFlight.current) return;
     const built = buildCareerVNextMechanics(identity);
     if (built === null) return;
     // The Alumni Wall as it stands now becomes this career's legacy snapshot.
-    const result = createCareerVNext({ seed: seedFactory(), identity, legacy: alumni }, built);
+    const result = createCareerVNext(
+      {
+        seed: seedFactory(),
+        identity,
+        legacy: alumni,
+        ...(nameTokens === null ? {} : { nameTokens }),
+      },
+      built,
+    );
     if (result.ok) void publish(result.career);
   }
 
-  async function startOver(): Promise<void> {
-    await clearCareerVNext(storage);
-    setCareer(null);
+  /** Opens a slot: its career if it has one, creation if it is empty. */
+  async function openSlot(next: CareerSlot): Promise<void> {
+    if (inFlight.current) return;
+    const loaded = await loadCareerVNext(storage, next);
+    await saveActiveSlot(storage, next).catch(() => undefined);
+    setSlot(next);
     setPending(null);
-    setConfirmNew(false);
-    setNotice(null);
+    setNotice(
+      loaded.status === 'recovered' ? 'recovered' : loaded.status === 'corrupt' ? 'corrupt' : null,
+    );
+    setCareer(loaded.status === 'ok' || loaded.status === 'recovered' ? loaded.career : null);
+    setSlotsOpen(false);
+  }
+
+  async function deleteSlot(target: CareerSlot): Promise<void> {
+    await clearCareerVNext(storage, target);
+    if (target === slot) {
+      setCareer(null);
+      setPending(null);
+      setNotice(null);
+    }
+    setSlotsVersion((version) => version + 1);
+  }
+
+  function changePreferences(next: Preferences): void {
+    setPreferences(next);
+    void savePreferences(storage, next).catch(() => undefined);
   }
 
   function switchLocale(next: SupportedLocale): void {
@@ -208,223 +267,242 @@ export function App({
   const flow = career?.flow.type;
 
   return (
-    <div
-      className="s2"
-      data-scene={
-        career === null
-          ? 'create'
-          : flow === 'RECRUITING'
-            ? 'recruit'
-            : flow === 'GAME'
-              ? 'gameday'
-              : flow === 'POST_GAME' || flow === 'SEASON_REVIEW' || flow === 'CAREER_COMPLETE'
-                ? 'story'
-                : 'locker'
-      }
-      style={style}
-    >
-      <div aria-hidden="true" className="s2-backdrop" />
-      <div className="s2-shell">
-        <header className="s2-topbar">
-          <div className="s2-brand">
-            <LogoMark />
-            <span className="s2-brand__word">{t('app.title')}</span>
-          </div>
-          <div className="s2-topbar__actions">
-            <button
-              aria-label={t('v2.locale.switch')}
-              className="s2-chipbtn"
-              lang={locale === 'ko-KR' ? 'en-US' : 'ko-KR'}
-              onClick={() => switchLocale(SUPPORTED_LOCALES.find((option) => option !== locale)!)}
-              type="button"
-            >
-              {t(locale === 'ko-KR' ? 'v2.locale.en' : 'v2.locale.ko')}
-            </button>
-            {career !== null && (
-              <button className="s2-chipbtn" onClick={() => setConfirmNew(true)} type="button">
-                {t('v2.hub.new')}
-              </button>
-            )}
-          </div>
-        </header>
-
-        {confirmNew && (
-          <div className="s2-banner" role="alertdialog" aria-labelledby="s2-confirm-new">
-            <p id="s2-confirm-new">{t('v2.hub.confirmNew')}</p>
-            <div className="s2-row">
-              <button
-                className="s2-btn s2-btn--ghost"
-                onClick={() => setConfirmNew(false)}
-                type="button"
-              >
-                {t('v2.common.cancel')}
-              </button>
-              <button
-                className="s2-btn s2-btn--ghost"
-                onClick={() => void startOver()}
-                type="button"
-              >
-                {t('v2.hub.confirmNewAction')}
-              </button>
+    <PreferencesContext.Provider value={preferences}>
+      <div
+        className="s2"
+        data-scene={
+          career === null
+            ? 'create'
+            : flow === 'RECRUITING'
+              ? 'recruit'
+              : flow === 'GAME'
+                ? 'gameday'
+                : flow === 'POST_GAME' || flow === 'SEASON_REVIEW' || flow === 'CAREER_COMPLETE'
+                  ? 'story'
+                  : 'locker'
+        }
+        style={style}
+      >
+        <div aria-hidden="true" className="s2-backdrop" />
+        <div className="s2-shell">
+          <header className="s2-topbar">
+            <div className="s2-brand">
+              <LogoMark />
+              <span className="s2-brand__word">{t('app.title')}</span>
             </div>
-          </div>
-        )}
-        {prototype && (
-          <div className="s2-banner s2-banner--info" role="status">
-            <p>{t('v2.prototype.notice')}</p>
-            <div className="s2-row">
+            <div className="s2-topbar__actions">
               <button
-                className="s2-btn s2-btn--ghost"
-                onClick={() =>
-                  void exportPrototypeData(storage).then((json) =>
-                    downloadJson('project-saturday-prototype.json', json),
-                  )
-                }
+                aria-label={t('v2.locale.switch')}
+                className="s2-chipbtn"
+                lang={locale === 'ko-KR' ? 'en-US' : 'ko-KR'}
+                onClick={() => switchLocale(SUPPORTED_LOCALES.find((option) => option !== locale)!)}
                 type="button"
               >
-                {t('v2.prototype.export')}
+                {t(locale === 'ko-KR' ? 'v2.locale.en' : 'v2.locale.ko')}
               </button>
               <button
-                className="s2-btn s2-btn--ghost"
-                onClick={() => {
-                  setPrototype(false);
-                  void dismissPrototypeNotice(storage);
-                }}
+                aria-expanded={settingsOpen}
+                className="s2-chipbtn"
+                onClick={() => setSettingsOpen(!settingsOpen)}
                 type="button"
               >
-                {t('v2.prototype.dismiss')}
+                {t('v2.settings.open')}
               </button>
+              {!booting && (
+                <button
+                  aria-pressed={slotsOpen}
+                  className="s2-chipbtn"
+                  disabled={blocked}
+                  onClick={() => {
+                    setSlotsVersion((version) => version + 1);
+                    setSlotsOpen(!slotsOpen);
+                  }}
+                  type="button"
+                >
+                  {t('v2.slots.open')}
+                </button>
+              )}
             </div>
-          </div>
-        )}
-        {notice === 'recovered' && (
-          <div className="s2-banner" role="status">
-            <p>{t('v2.save.recovered')}</p>
-          </div>
-        )}
-        {notice === 'corrupt' && (
-          <div className="s2-banner" role="alert">
-            <p>{t('v2.save.corrupt')}</p>
-          </div>
-        )}
-        {pending !== null && !saving && (
-          <div className="s2-banner" role="alert">
-            <p>{t('v2.save.failed')}</p>
-            <button
-              className="s2-btn s2-btn--ghost"
-              onClick={() => void publish(pending)}
-              type="button"
-            >
-              {t('v2.save.retry')}
-            </button>
-          </div>
-        )}
+          </header>
 
-        <main aria-busy={booting || saving}>
-          {booting ? (
-            <p className="s2-note" role="status">
-              {t('v2.common.loading')}
-            </p>
-          ) : career === null || mechanics === null ? (
-            <>
-              <CreateScreen blocked={blocked} onCreate={create} />
-              {alumni.length > 0 && <LegacyPanel alumni={alumni} prototypes={prototypeAlumni} />}
-            </>
-          ) : flow === 'RECRUITING' ? (
-            <RecruitScreen
-              blocked={blocked}
-              career={career}
-              onCommit={(id: ProgramId) => run((c, m) => commitProgramVNext(c, id, m))}
-              reducedMotion={reducedMotion}
-            />
-          ) : flow === 'WEEK_PLAN' || flow === 'PRACTICE_REPORT' ? (
-            <WeekScreen
-              blocked={blocked}
-              career={career}
-              mechanics={mechanics}
-              onEquip={(slot, id) => run((c) => equipSkillVNext(c, slot, id))}
-              onGameDay={() => run(toGameDayVNext)}
-              onPlan={(ids) => run((c, m) => planWeekVNext(c, ids, m))}
-            />
-          ) : flow === 'BREAKTHROUGH' ? (
-            <BreakthroughScreen
-              blocked={blocked}
-              career={career}
-              onChoose={(id) => run((c) => chooseBreakthroughVNext(c, id))}
-              onContinue={() => run(toGameDayVNext)}
-            />
-          ) : flow === 'EVENT' ? (
-            <EventScreen
-              blocked={blocked}
-              career={career}
-              mechanics={mechanics}
-              onChoose={(id) => run((c, m) => chooseEventVNext(c, id, m))}
-              onContinue={() => run(toGameDayVNext)}
-            />
-          ) : flow === 'NIL' ? (
-            <NilScreen
-              blocked={blocked}
-              career={career}
-              mechanics={mechanics}
-              onDecide={(accept) => run((c, m) => chooseNilVNext(c, accept, m))}
-              onContinue={() => run(toGameDayVNext)}
-            />
-          ) : flow === 'INJURY' ? (
-            <InjuryScreen
-              blocked={blocked}
-              career={career}
-              mechanics={mechanics}
-              onChoose={(id) => run((c, m) => chooseInjuryVNext(c, id, m))}
-              onContinue={() => run(toGameDayVNext)}
-            />
-          ) : flow === 'GAME' ? (
-            <GameDayScreen
-              blocked={blocked}
-              career={career}
-              mechanics={mechanics}
-              onChoose={(id) => run((c, m) => chooseSnapVNext(c, id, m))}
-              onContinue={() => run(continueGameVNext)}
-              onKickoff={() => run(kickoffVNext)}
-              reducedMotion={reducedMotion}
-            />
-          ) : flow === 'POST_GAME' ? (
-            <PostGameScreen
-              blocked={blocked}
-              career={career}
-              mechanics={mechanics}
-              onNext={() => run(nextWeekVNext)}
-            />
-          ) : flow === 'SEASON_REVIEW' ? (
-            <SeasonReviewScreen
-              blocked={blocked}
-              career={career}
-              onContinue={() => run(continueSeasonReviewVNext)}
-            />
-          ) : flow === 'OFFSEASON' ? (
-            <OffseasonScreen
-              blocked={blocked}
-              career={career}
-              onCommit={(id) => run((c, m) => commitOffseasonVNext(c, id, m))}
-              onRetire={() => run((c) => retireVNext(c))}
-              onDeclare={() => run((c) => declareForDraftVNext(c))}
-            />
-          ) : flow === 'CAREER_COMPLETE' ? (
-            <CareerCompleteScreen
-              alumni={alumni}
-              career={career}
-              onNewCareer={() => void startOver()}
-              prototypes={prototypeAlumni}
-            />
-          ) : (
-            <SeasonEndScreen
-              blocked={blocked}
-              career={career}
-              onContinue={() => run(nextWeekVNext)}
+          {settingsOpen && (
+            <SettingsPanel
+              onChange={changePreferences}
+              onClose={() => setSettingsOpen(false)}
+              preferences={preferences}
             />
           )}
-        </main>
+          {prototype && (
+            <div className="s2-banner s2-banner--info" role="status">
+              <p>{t('v2.prototype.notice')}</p>
+              <div className="s2-row">
+                <button
+                  className="s2-btn s2-btn--ghost"
+                  onClick={() =>
+                    void exportPrototypeData(storage).then((json) =>
+                      downloadJson('project-saturday-prototype.json', json),
+                    )
+                  }
+                  type="button"
+                >
+                  {t('v2.prototype.export')}
+                </button>
+                <button
+                  className="s2-btn s2-btn--ghost"
+                  onClick={() => {
+                    setPrototype(false);
+                    void dismissPrototypeNotice(storage);
+                  }}
+                  type="button"
+                >
+                  {t('v2.prototype.dismiss')}
+                </button>
+              </div>
+            </div>
+          )}
+          {notice === 'recovered' && (
+            <div className="s2-banner" role="status">
+              <p>{t('v2.save.recovered')}</p>
+            </div>
+          )}
+          {notice === 'corrupt' && (
+            <div className="s2-banner" role="alert">
+              <p>{t('v2.save.corrupt')}</p>
+            </div>
+          )}
+          {pending !== null && !saving && (
+            <div className="s2-banner" role="alert">
+              <p>{t('v2.save.failed')}</p>
+              <button
+                className="s2-btn s2-btn--ghost"
+                onClick={() => void publish(pending)}
+                type="button"
+              >
+                {t('v2.save.retry')}
+              </button>
+            </div>
+          )}
+
+          <main aria-busy={booting || saving}>
+            {booting ? (
+              <p className="s2-note" role="status">
+                {t('v2.common.loading')}
+              </p>
+            ) : slotsOpen ? (
+              <SaveSlotsScreen
+                activeSlot={slot}
+                hasActiveCareer={career !== null}
+                onClose={() => setSlotsOpen(false)}
+                onDelete={deleteSlot}
+                onNew={(target) => void openSlot(target)}
+                onResume={(target) => void openSlot(target)}
+                refresh={slotsVersion}
+                storage={storage}
+              />
+            ) : career === null || mechanics === null ? (
+              <>
+                <CreateScreen blocked={blocked} onCreate={create} />
+                {alumni.length > 0 && <LegacyPanel alumni={alumni} prototypes={prototypeAlumni} />}
+              </>
+            ) : flow === 'RECRUITING' ? (
+              <RecruitScreen
+                blocked={blocked}
+                career={career}
+                onCommit={(id: ProgramId) => run((c, m) => commitProgramVNext(c, id, m))}
+                reducedMotion={reducedMotion}
+              />
+            ) : flow === 'WEEK_PLAN' || flow === 'PRACTICE_REPORT' ? (
+              <WeekScreen
+                blocked={blocked}
+                career={career}
+                mechanics={mechanics}
+                onEquip={(slot, id) => run((c) => equipSkillVNext(c, slot, id))}
+                onGameDay={() => run(toGameDayVNext)}
+                onPlan={(ids) => run((c, m) => planWeekVNext(c, ids, m))}
+              />
+            ) : flow === 'BREAKTHROUGH' ? (
+              <BreakthroughScreen
+                blocked={blocked}
+                career={career}
+                onChoose={(id) => run((c) => chooseBreakthroughVNext(c, id))}
+                onContinue={() => run(toGameDayVNext)}
+              />
+            ) : flow === 'EVENT' ? (
+              <EventScreen
+                blocked={blocked}
+                career={career}
+                mechanics={mechanics}
+                onChoose={(id) => run((c, m) => chooseEventVNext(c, id, m))}
+                onContinue={() => run(toGameDayVNext)}
+              />
+            ) : flow === 'NIL' ? (
+              <NilScreen
+                blocked={blocked}
+                career={career}
+                mechanics={mechanics}
+                onDecide={(accept) => run((c, m) => chooseNilVNext(c, accept, m))}
+                onContinue={() => run(toGameDayVNext)}
+              />
+            ) : flow === 'INJURY' ? (
+              <InjuryScreen
+                blocked={blocked}
+                career={career}
+                mechanics={mechanics}
+                onChoose={(id) => run((c, m) => chooseInjuryVNext(c, id, m))}
+                onContinue={() => run(toGameDayVNext)}
+              />
+            ) : flow === 'GAME' ? (
+              <GameDayScreen
+                blocked={blocked}
+                career={career}
+                mechanics={mechanics}
+                onChoose={(id) => run((c, m) => chooseSnapVNext(c, id, m))}
+                onContinue={() => run(continueGameVNext)}
+                onKickoff={() => run(kickoffVNext)}
+                reducedMotion={reducedMotion}
+              />
+            ) : flow === 'POST_GAME' ? (
+              <PostGameScreen
+                blocked={blocked}
+                career={career}
+                mechanics={mechanics}
+                onNext={() => run(nextWeekVNext)}
+              />
+            ) : flow === 'SEASON_REVIEW' ? (
+              <SeasonReviewScreen
+                blocked={blocked}
+                career={career}
+                onContinue={() => run(continueSeasonReviewVNext)}
+              />
+            ) : flow === 'OFFSEASON' ? (
+              <OffseasonScreen
+                blocked={blocked}
+                career={career}
+                onCommit={(id) => run((c, m) => commitOffseasonVNext(c, id, m))}
+                onRetire={() => run((c) => retireVNext(c))}
+                onDeclare={() => run((c) => declareForDraftVNext(c))}
+              />
+            ) : flow === 'CAREER_COMPLETE' ? (
+              <CareerCompleteScreen
+                alumni={alumni}
+                career={career}
+                onNewCareer={() => {
+                  setSlotsVersion((version) => version + 1);
+                  setSlotsOpen(true);
+                }}
+                prototypes={prototypeAlumni}
+              />
+            ) : (
+              <SeasonEndScreen
+                blocked={blocked}
+                career={career}
+                onContinue={() => run(nextWeekVNext)}
+              />
+            )}
+          </main>
+        </div>
+        <PwaUpdatePrompt locale={locale} />
       </div>
-      <PwaUpdatePrompt locale={locale} />
-    </div>
+    </PreferencesContext.Provider>
   );
 }

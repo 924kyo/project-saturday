@@ -7,15 +7,16 @@ import type { AwardIdVNext, GameRecapVNext, SeasonReviewVNext, VNextPositionId }
  */
 export const VNEXT_AWARD_TUNING = Object.freeze({
   minimumLiveGames: 8,
-  allConferenceFirst: 64,
-  allConferenceSecond: 62,
-  freshman: 62,
-  allAmerican: 66,
+  // Playtest round 1: grades now weigh the read, so a player who reads well grades higher.
+  allConferenceFirst: 74,
+  allConferenceSecond: 72,
+  freshman: 72,
+  allAmerican: 76,
   allAmericanWins: 8,
-  positionAward: 68,
+  positionAward: 78,
   positionAwardLiveGames: 10,
-  playerOfYear: 65,
-  titleGameMvp: 70,
+  playerOfYear: 75,
+  titleGameMvp: 78,
 });
 
 export const POSITION_AWARD_IDS = Object.freeze({

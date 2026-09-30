@@ -13,6 +13,7 @@ import type { MessageKey } from '@project-saturday/game-content/locales';
 
 import { AthletePortrait } from '../career/AthletePortrait';
 import { useAppTranslation } from '../i18n/i18n';
+import { usePreferences } from './preferences';
 import {
   CLASS_YEAR_KEYS,
   POSITION_ABBR_KEYS,
@@ -33,6 +34,7 @@ import {
   familiarNames,
   formatUsd,
   imperialMeasure,
+  athleteName,
 } from './content';
 import { METER_COLORS, PORTRAIT } from './theme';
 import { Crest, Meter, Panel } from './ui';
@@ -126,12 +128,7 @@ export function TeamPanel({
               const competitor = room.competitors.find(({ id }) => id === row.participantId);
               const you = row.participantId === room.playerId;
               const year = competitor?.classYear ?? Math.min(4, career.season.index + 1);
-              const name = participantName(
-                t,
-                room,
-                row.participantId,
-                career.athlete.profile.displayName,
-              );
+              const name = participantName(t, room, row.participantId, athleteName(t, career));
               return (
                 <li
                   className={`s2-depthrow ${you ? 's2-depthrow--you' : ''}`}
@@ -369,7 +366,8 @@ export function ProfilePanel({
   readonly career: CareerVNext;
   readonly mechanics: CareerVNextMechanics;
 }): React.JSX.Element {
-  const { i18n, t } = useAppTranslation();
+  const { t } = useAppTranslation();
+  const { units } = usePreferences();
   const profile = career.athlete.profile;
   const positionId = profile.positionId as VNextPositionId;
   const archetype = archetypesFor(positionId).find(({ id }) => id === profile.archetypeId);
@@ -391,20 +389,20 @@ export function ProfilePanel({
         <div className="s2-row" style={{ alignItems: 'center', gap: 14 }}>
           <AthletePortrait
             appearance={profile.appearance}
-            label={t('v2.player.portrait', { name: profile.displayName })}
+            label={t('v2.player.portrait', { name: athleteName(t, career) })}
             size={PORTRAIT.compact}
           />
           <div>
             <p className="s2-eyebrow">{t('v2.profile.title')}</p>
             <h1 className="s2-display s2-size-h1" id="s2-profile-title">
-              {profile.displayName}
+              {athleteName(t, career)}
             </h1>
             <p className="s2-note">
               {t(POSITION_NAME_KEYS[positionId])}
               {archetype !== undefined && <> · {t(key(archetype.nameKey))}</>}
             </p>
             <p className="s2-note s2-num">
-              {i18n.resolvedLanguage === 'en-US'
+              {units === 'imperial'
                 ? t(
                     'v2.profile.measureImperial',
                     imperialMeasure(profile.heightCm, profile.weightKg),

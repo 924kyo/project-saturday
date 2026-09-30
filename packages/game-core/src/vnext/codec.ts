@@ -82,6 +82,14 @@ export function isCareerVNext(value: unknown): value is CareerVNext {
     history.length > CAREER_VNEXT_SEASONS
   )
     return false;
+  const tokens = athlete['nameTokens'];
+  if (
+    tokens !== undefined &&
+    (!record(tokens) ||
+      typeof tokens['givenNameId'] !== 'string' ||
+      typeof tokens['familyNameId'] !== 'string')
+  )
+    return false;
   const state = athlete['profile']['state'];
   for (const key of ['body', 'preparation', 'confidence', 'coachTrust'] as const)
     if (!integer(state[key], 0, 100)) return false;

@@ -15,7 +15,7 @@ import type { BreakthroughOfferVNext, CareerVNext, CareerVNextMechanics } from '
  * three-card weighted offer; four slots hold the equipped build. Card effects are consumed by the
  * owning rules (focus resolution, rollover, injury risk, game kernels, event choices).
  */
-export const VNEXT_BREAKTHROUGH_THRESHOLD = 80;
+export const VNEXT_BREAKTHROUGH_THRESHOLD = 50;
 export const VNEXT_BUILD_SLOTS = 4;
 
 /** The position's card mechanics (QB/RB/CB position builds; WR ships its own card catalog). */

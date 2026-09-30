@@ -246,6 +246,7 @@ export {
   M10_BALANCE_STRATEGIES,
   runM10BalanceCareer,
   runM10BalanceReport,
+  runM10ReaderComparison,
   type M10BalanceCareer,
   type M10BalanceSummary,
 } from './simulations/m10-balance.js';

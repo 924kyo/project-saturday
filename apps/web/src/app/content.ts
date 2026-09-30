@@ -19,6 +19,7 @@ import {
   lifeEventContent,
   injuryContent,
   programIdentityVNext,
+  reservedRosterNamePairs,
   worldVNext96MechanicsDefinition,
   type ProgramIdentityVNext,
   legacyMentorContent,
@@ -26,6 +27,7 @@ import {
 import type { MessageKey } from '@project-saturday/game-content/locales';
 import {
   overallVNext,
+  type AthleteNameTokensVNext,
   type CreatedPositionPlayerProfile,
   type DepthRoleId,
   type SidelineRepGradeVNext,
@@ -214,6 +216,58 @@ export function focusText(id: string): {
   };
 }
 
+function tokenName(t: AppTranslate, tokens: AthleteNameTokensVNext) {
+  const given = programContent.rosterGivenNames.find(({ id }) => id === tokens.givenNameId);
+  const family = programContent.rosterFamilyNames.find(({ id }) => id === tokens.familyNameId);
+  if (given === undefined || family === undefined) return null;
+  return {
+    full: t('career.program.room.competitorName', {
+      given: t(given.nameKey as MessageKey),
+      family: t(family.nameKey as MessageKey),
+    }),
+    family: t(family.nameKey as MessageKey),
+  };
+}
+
+/** The athlete's name in the app language: a generated name follows the language; a typed one stays. */
+export function athleteName(t: AppTranslate, career: CareerVNext): string {
+  const tokens = career.athlete.nameTokens;
+  return (tokens && tokenName(t, tokens)?.full) ?? career.athlete.profile.displayName;
+}
+
+/** The short name for headlines ("Park, 12-yard catch"). */
+export function athleteShortName(t: AppTranslate, career: CareerVNext): string {
+  const tokens = career.athlete.nameTokens;
+  const family = tokens && tokenName(t, tokens)?.family;
+  if (family !== undefined && family !== null) return family;
+  const name = career.athlete.profile.displayName;
+  return name.split(' ').at(-1) ?? name;
+}
+
+/** A name to preview at creation, in the app language. */
+export function namePreview(t: AppTranslate, tokens: AthleteNameTokensVNext): string {
+  return tokenName(t, tokens)?.full ?? '';
+}
+
+const RESERVED = new Set(reservedRosterNamePairs);
+const NAME_PAIRS: readonly AthleteNameTokensVNext[] = (() => {
+  const given = programContent.rosterGivenNames.map(({ id }) => id);
+  const family = programContent.rosterFamilyNames.map(({ id }) => id);
+  const pairs: AthleteNameTokensVNext[] = [];
+  // A fixed interleaving walk (no randomness): consecutive rolls change both names.
+  for (let step = 0; step < given.length * family.length; step += 1) {
+    const givenNameId = given[step % given.length]!;
+    const familyNameId = family[(step * 11 + Math.floor(step / given.length)) % family.length]!;
+    if (!RESERVED.has(`${givenNameId}|${familyNameId}`)) pairs.push({ givenNameId, familyNameId });
+  }
+  return pairs;
+})();
+
+/** The n-th generated name; the creation screen rolls through them in a fixed order. */
+export function generatedName(index: number): AthleteNameTokensVNext {
+  return NAME_PAIRS[((index % NAME_PAIRS.length) + NAME_PAIRS.length) % NAME_PAIRS.length]!;
+}
+
 export function participantName(
   t: AppTranslate,
   room: PositionRoomContext,
@@ -223,12 +277,10 @@ export function participantName(
   if (participantId === room.playerId) return playerName;
   const athlete = room.competitors.find(({ id }) => id === participantId);
   if (athlete === undefined) return playerName;
-  const given = programContent.rosterGivenNames.find(({ id }) => id === athlete.givenNameId)!;
-  const family = programContent.rosterFamilyNames.find(({ id }) => id === athlete.familyNameId)!;
-  return t('career.program.room.competitorName', {
-    given: t(given.nameKey as MessageKey),
-    family: t(family.nameKey as MessageKey),
-  });
+  return (
+    tokenName(t, { givenNameId: athlete.givenNameId, familyNameId: athlete.familyNameId })?.full ??
+    playerName
+  );
 }
 
 export const DEPTH_COMPONENT_KEYS = {

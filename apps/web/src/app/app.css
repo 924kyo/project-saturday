@@ -344,6 +344,7 @@ body {
   font-size: 22px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  white-space: nowrap;
   cursor: pointer;
   overflow: hidden;
   clip-path: polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
@@ -996,10 +997,26 @@ body {
   background: linear-gradient(180deg, transparent, rgba(5, 7, 10, 0.94) 38%);
 }
 .s2-actionbar__inner {
-  max-width: 760px;
+  max-width: 560px;
   margin: 0 auto;
   display: grid;
   gap: 8px;
+}
+/* The bar's call to action: prominent, not a billboard. */
+.s2-actionbar .s2-btn {
+  min-height: 48px;
+  font-size: 18px;
+}
+.s2-actionbar__buttons {
+  display: flex;
+  gap: 10px;
+}
+.s2-actionbar__buttons .s2-btn--block {
+  flex: 1;
+}
+.s2-btn--back {
+  flex: none;
+  padding: 0 20px;
 }
 .s2-actionbar__hint {
   display: flex;
@@ -2013,6 +2030,119 @@ body {
   font-size: 38px;
   font-weight: 900;
 }
+/* Trading card: style under the position, and a foil series plate for the recruiting background. */
+.s2-tcard__role {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+  text-align: right;
+}
+.s2-tcard__style {
+  max-width: 11ch;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.s2:lang(ko) .s2-tcard__style {
+  font-style: normal;
+  letter-spacing: 0;
+}
+.s2-tcard {
+  --series: #ffcc3d;
+  --series-2: #fff1b0;
+  padding-bottom: 54px;
+}
+.s2-tcard[data-series='violet'] {
+  --series: #b58cff;
+  --series-2: #e6d8ff;
+}
+.s2-tcard[data-series='cyan'] {
+  --series: #45c8ff;
+  --series-2: #c9f0ff;
+}
+.s2-tcard[data-series='green'] {
+  --series: #3ddc84;
+  --series-2: #c8f5dc;
+}
+.s2-tcard[data-series='ember'] {
+  --series: #ff8a3d;
+  --series-2: #ffd8b8;
+}
+.s2-tcard[data-series] {
+  box-shadow:
+    inset 0 0 0 2px var(--series),
+    inset 0 0 22px color-mix(in srgb, var(--series) 18%, transparent);
+}
+.s2-tcard__series {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  margin: 0;
+  padding: 0 24px;
+  overflow: hidden;
+  background: linear-gradient(100deg, var(--series), var(--series-2) 48%, var(--series));
+  clip-path: polygon(18px 0, calc(100% - 18px) 0, 100% 100%, 0 100%);
+  color: #10141b;
+  font-family: var(--display);
+  font-size: 15px;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.s2:lang(ko) .s2-tcard__series {
+  font-style: normal;
+  letter-spacing: 0.06em;
+}
+.s2-tcard__foil {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.65) 45%,
+    transparent 60%
+  );
+  transform: translateX(-100%);
+  animation: s2-foil 4.5s ease-in-out infinite;
+}
+.s2-tcard__series > span:last-child {
+  position: relative;
+}
+@keyframes s2-foil {
+  60%,
+  100% {
+    transform: translateX(100%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .s2-tcard__foil {
+    animation: none;
+  }
+}
+.s2-namefield {
+  display: flex;
+  gap: 10px;
+}
+.s2-namefield .s2-input {
+  flex: 1;
+  min-width: 0;
+}
+.s2-namefield .s2-btn {
+  flex: none;
+  min-height: 44px;
+  font-size: 15px;
+  padding: 0 16px;
+}
 .s2-playercard > .s2-note,
 .s2-playercard .athlete-portrait {
   position: relative;
@@ -2585,4 +2715,150 @@ fieldset.s2-stack > legend {
   .s2-board__look--read {
     stroke-dashoffset: 0;
   }
+}
+
+/* ---------- Save slots ---------- */
+.s2-saveslots {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  padding-bottom: 96px;
+}
+.s2-saveslot {
+  position: relative;
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 18px;
+  background: var(--surface-2);
+  border-left: 4px solid var(--line);
+  clip-path: var(--cut-shape);
+}
+.s2-saveslot--active {
+  border-left-color: var(--volt);
+  box-shadow: inset 0 0 0 1px rgba(200, 255, 46, 0.35);
+}
+.s2-saveslot--empty {
+  background: rgba(15, 20, 28, 0.55);
+}
+.s2-saveslot__n {
+  font-size: 34px;
+  color: var(--ink-3);
+  text-align: center;
+}
+.s2-saveslot--active .s2-saveslot__n {
+  color: var(--volt);
+}
+.s2-saveslot__body {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+.s2-saveslot__name {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 800;
+}
+.s2-saveslot__pos {
+  margin-left: 6px;
+  font-family: var(--display);
+  font-size: 14px;
+  color: var(--volt);
+}
+.s2-saveslot__when {
+  font-size: 12px;
+}
+.s2-saveslot__empty {
+  margin: 0;
+  color: var(--ink-3);
+}
+.s2-saveslot__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+.s2-saveslot__actions .s2-btn {
+  min-height: 44px;
+  font-size: 15px;
+  padding: 0 16px;
+}
+.s2-btn--danger {
+  background: var(--hot, #ff4d6a);
+  color: #10141b;
+}
+@media (max-width: 640px) {
+  .s2-saveslot {
+    grid-template-columns: 32px 1fr;
+  }
+  .s2-saveslot__actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+}
+
+/* ---------- Settings ---------- */
+.s2-settings {
+  display: grid;
+  gap: 16px;
+  max-width: 560px;
+  margin: 0 0 16px auto;
+  padding: 18px 20px;
+}
+.s2-settings__row {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: grid;
+  gap: 8px;
+}
+.s2-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+}
+.s2-toggle input {
+  position: absolute;
+  opacity: 0;
+  width: 44px;
+  height: 26px;
+  margin: 0;
+}
+.s2-toggle__track {
+  flex: none;
+  position: relative;
+  width: 44px;
+  height: 26px;
+  margin-top: 2px;
+  border-radius: 13px;
+  background: var(--surface-3);
+  transition: background var(--fast);
+}
+.s2-toggle__track::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--ink-2);
+  transition: transform var(--fast);
+}
+.s2-toggle input:checked + .s2-toggle__track {
+  background: var(--volt);
+}
+.s2-toggle input:checked + .s2-toggle__track::after {
+  transform: translateX(18px);
+  background: #10141b;
+}
+.s2-toggle input:focus-visible + .s2-toggle__track {
+  outline: 2px solid var(--volt);
+  outline-offset: 2px;
 }

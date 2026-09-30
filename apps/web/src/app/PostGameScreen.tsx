@@ -20,6 +20,7 @@ import {
   playHeadlineKey,
   practiceBand,
   program,
+  athleteShortName,
 } from './content';
 import { Nameplate } from './Nameplate';
 import { SPEAKER_KEYS, selectReactions } from './reactions';
@@ -48,8 +49,7 @@ export function PostGameScreen({
   const growth = recap.engine.game.growth;
   const won = recap.resultId === 'game_result_win';
   const lost = recap.resultId === 'game_result_loss';
-  const name = career.athlete.profile.displayName;
-  const lastName = name.split(' ').at(-1) ?? name;
+  const lastName = athleteShortName(t, career);
   const stats = Object.entries(summary.statLine as unknown as Record<string, number>).filter(
     ([field, value]) => value !== 0 && STAT_KEYS[field] !== undefined,
   );

@@ -29,6 +29,7 @@ import {
   practiceBand,
   program,
   riskBand,
+  athleteName,
 } from './content';
 import { BuildPanel } from './BuildView';
 import { benefitNameKey, nilOfferText } from './nil';
@@ -152,7 +153,7 @@ function DepthSlice({ career }: { readonly career: CareerVNext }): React.JSX.Ele
   const gaps = [...explanation.components].sort(
     (a, b) => b.contributionGapMilli - a.contributionGapMilli,
   );
-  const name = (id: string) => participantName(t, room, id, career.athlete.profile.displayName);
+  const name = (id: string) => participantName(t, room, id, athleteName(t, career));
   return (
     <Panel id="s2-depth" title={t('v2.depth.title', { position: abbr })}>
       <ol className="s2-depthlist">

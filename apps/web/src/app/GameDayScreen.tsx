@@ -22,6 +22,7 @@ import {
   playHeadlineKey,
   program,
   ROUND_KEYS,
+  athleteShortName,
 } from './content';
 import { TacticalBoard } from './TacticalBoard';
 import { Crest, Meter } from './ui';
@@ -121,8 +122,7 @@ export function GameDayScreen({
     '--left-ink': inkOn(us.primary),
     '--right-ink': inkOn(them.primary),
   } as CSSProperties;
-  const name = career.athlete.profile.displayName;
-  const lastName = name.split(' ').at(-1) ?? name;
+  const lastName = athleteShortName(t, career);
 
   if (game.stage === 'PREGAME') {
     const projection = career.program.room.projection;

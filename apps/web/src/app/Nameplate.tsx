@@ -16,6 +16,7 @@ import {
   currentOverall,
   key,
   program,
+  athleteName,
 } from './content';
 import { Crest } from './ui';
 
@@ -44,7 +45,7 @@ export function Nameplate({ career }: { readonly career: CareerVNext }): React.J
       <div className="s2-nameplate__portrait">
         <AthletePortrait
           appearance={career.athlete.profile.appearance}
-          label={t('v2.player.portrait', { name: career.athlete.profile.displayName })}
+          label={t('v2.player.portrait', { name: athleteName(t, career) })}
           size={PORTRAIT.card}
         />
       </div>
@@ -53,7 +54,7 @@ export function Nameplate({ career }: { readonly career: CareerVNext }): React.J
           {t(key(identity.shortNameKey))} ·{' '}
           {t(CLASS_YEAR_KEYS[Math.min(4, career.season.index + 1) as 1 | 2 | 3 | 4])} · {stage}
         </p>
-        <h1 className="s2-display s2-nameplate__name">{career.athlete.profile.displayName}</h1>
+        <h1 className="s2-display s2-nameplate__name">{athleteName(t, career)}</h1>
         <p className="s2-nameplate__meta">
           {t(ROLE_KEYS[career.program.room.projection.roleId])} ·{' '}
           {t('v2.player.ovr', { ovr: currentOverall(career) })}

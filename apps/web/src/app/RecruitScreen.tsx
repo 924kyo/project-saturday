@@ -9,7 +9,14 @@ import type {
 import { AthletePortrait } from '../career/AthletePortrait';
 import { PORTRAIT } from './theme';
 import { useAppTranslation } from '../i18n/i18n';
-import { CLASS_YEAR_KEYS, POSITION_ABBR_KEYS, key, program, familiarNames } from './content';
+import {
+  CLASS_YEAR_KEYS,
+  POSITION_ABBR_KEYS,
+  key,
+  program,
+  familiarNames,
+  athleteName,
+} from './content';
 import { Crest } from './ui';
 
 function pitchKey(offer: RecruitOfferVNext) {
@@ -58,7 +65,7 @@ export function RecruitScreen({
       <div className="s2-row" style={{ alignItems: 'center' }}>
         <AthletePortrait
           appearance={career.athlete.profile.appearance}
-          label={t('v2.player.portrait', { name: career.athlete.profile.displayName })}
+          label={t('v2.player.portrait', { name: athleteName(t, career) })}
           size={PORTRAIT.compact}
         />
         <div>
@@ -170,9 +177,7 @@ export function RecruitScreen({
           <p className="s2-eyebrow" style={{ color: '#fff' }}>
             {t('v2.recruit.signed')}
           </p>
-          <p className="s2-display s2-size-hero s2-tone-light">
-            {career.athlete.profile.displayName}
-          </p>
+          <p className="s2-display s2-size-hero s2-tone-light">{athleteName(t, career)}</p>
           <p className="s2-display" style={{ fontSize: 28, color: signingIdentity.secondary }}>
             {t(key(signingIdentity.nameKey))}
           </p>

@@ -1,5 +1,6 @@
 import { expect, it } from 'vitest';
 import {
+  bestDecisionOfLook,
   chooseBreakthroughVNext,
   chooseEventVNext,
   chooseInjuryVNext,
@@ -108,10 +109,17 @@ it('plays full six-position careers inside the product bands', () => {
           if (flow.game.stage === 'PREGAME') career = ok(kickoffVNext(career, mechanics));
           else if (flow.game.stage === 'SNAP') {
             const frame = projectSnapBoardFrame(career, mechanics)!;
+            // A decent player: reads two looks in three right (grades weigh the read).
+            const look =
+              frame.kind === 'LIVE' && frame.snapNumber % 3 !== 0 && frame.look !== null
+                ? mechanics.looks.looks.find(({ id }) => id === frame.look!.lookId)
+                : undefined;
             const choice =
               frame.kind === 'SIDELINE'
                 ? flow.game.sideline[frame.repNumber - 1]!.bestDecisionId
-                : frame.decisionIds[frame.snapNumber % 3]!;
+                : look !== undefined
+                  ? bestDecisionOfLook(look)
+                  : frame.decisionIds[frame.snapNumber % 3]!;
             career = ok(chooseSnapVNext(career, choice, mechanics));
           } else career = ok(continueGameVNext(career, mechanics));
         } else if (flow.type === 'POST_GAME') career = ok(nextWeekVNext(career, mechanics));

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
   createPositionPlayerProfile,
+  type AthleteNameTokensVNext,
   type PersonalityTraitId,
   type PlayerAppearance,
   type PositionPlayerCreationIdentity,
@@ -10,10 +11,10 @@ import {
 import { defaultWrAppearance } from '@project-saturday/game-content';
 import { buildCareerVNextMechanics } from '@project-saturday/game-content/content';
 
-import { AthletePortrait } from '../career/AthletePortrait';
-import { PORTRAIT } from './theme';
+import { TradingCard } from './TradingCard';
 import { PositionGlyph } from './ui';
 import { useAppTranslation, type AppTranslate } from '../i18n/i18n';
+import { usePreferences } from './preferences';
 import {
   POSITION_ABBR_KEYS,
   POSITION_NAME_KEYS,
@@ -22,6 +23,8 @@ import {
   appearanceCatalog,
   archetypeModifiers,
   archetypesFor,
+  generatedName,
+  namePreview,
   attributeNameKey,
   backgroundModifiers,
   backgrounds,
@@ -43,15 +46,33 @@ const EXTRA_FIELDS = [
   'footwearId',
 ] as const;
 
+/** Nothing is chosen for the player: position, style, background and name start empty. */
 interface Draft {
-  readonly positionId: VNextPositionId;
-  readonly archetypeId: string;
-  readonly backgroundId: RecruitingBackgroundId;
+  readonly positionId: VNextPositionId | null;
+  readonly archetypeId: string | null;
+  readonly backgroundId: RecruitingBackgroundId | null;
   readonly traitIds: readonly PersonalityTraitId[];
   readonly appearance: PlayerAppearance;
   readonly displayName: string;
+  /** Set when the name is a suggestion; it then follows the language. Typing clears it. */
+  readonly nameTokens: AthleteNameTokensVNext | null;
   readonly heightCm: number;
   readonly weightKg: number;
+}
+
+type CompleteDraft = Draft & {
+  readonly positionId: VNextPositionId;
+  readonly archetypeId: string;
+  readonly backgroundId: RecruitingBackgroundId;
+};
+
+function complete(draft: Draft): draft is CompleteDraft {
+  return (
+    draft.positionId !== null &&
+    draft.archetypeId !== null &&
+    draft.backgroundId !== null &&
+    draft.traitIds.length === 2
+  );
 }
 
 function trade(
@@ -77,9 +98,9 @@ function trade(
   );
 }
 
-function identityOf(draft: Draft, fallbackName: string): PositionPlayerCreationIdentity {
+function identityOf(draft: CompleteDraft, name: string): PositionPlayerCreationIdentity {
   return {
-    displayName: draft.displayName.trim() === '' ? fallbackName : draft.displayName.trim(),
+    displayName: name,
     positionId: draft.positionId,
     archetypeId: draft.archetypeId,
     recruitingBackgroundId: draft.backgroundId,
@@ -95,27 +116,34 @@ export function CreateScreen({
   onCreate,
 }: {
   readonly blocked: boolean;
-  readonly onCreate: (identity: PositionPlayerCreationIdentity) => void;
+  readonly onCreate: (
+    identity: PositionPlayerCreationIdentity,
+    nameTokens: AthleteNameTokensVNext | null,
+  ) => void;
 }): React.JSX.Element {
-  const { i18n, t } = useAppTranslation();
-  const imperial = i18n.resolvedLanguage === 'en-US';
+  const { t } = useAppTranslation();
+  const imperial = usePreferences().units === 'imperial';
   const [step, setStep] = useState(0);
   const [showExtras, setShowExtras] = useState(false);
+  const [suggestion, setSuggestion] = useState(0);
   const [draft, setDraft] = useState<Draft>({
-    positionId: 'position_qb',
-    archetypeId: archetypesFor('position_qb')[0]!.id,
-    backgroundId: backgrounds[0]!.id,
+    positionId: null,
+    archetypeId: null,
+    backgroundId: null,
     traitIds: [],
     appearance: defaultWrAppearance,
     displayName: '',
+    nameTokens: null,
     heightCm: 188,
     weightKg: 95,
   });
   const update = (patch: Partial<Draft>) => setDraft((current) => ({ ...current, ...patch }));
-  const fallbackName = t('v2.create.defaultName');
+  // A suggested name is shown (and saved) in the current language.
+  const name =
+    draft.nameTokens === null ? draft.displayName.trim() : namePreview(t, draft.nameTokens);
   const preview = useMemo(() => {
-    if (draft.traitIds.length !== 2) return null;
-    const identity = identityOf(draft, fallbackName);
+    if (!complete(draft)) return null;
+    const identity = identityOf(draft, 'Preview');
     const mechanics = buildCareerVNextMechanics(identity);
     if (mechanics === null) return null;
     const created = createPositionPlayerProfile({
@@ -124,11 +152,17 @@ export function CreateScreen({
       mechanics: mechanics.creation,
     });
     return created.ok ? created.player : null;
-  }, [draft, fallbackName]);
-  const archetypes = archetypesFor(draft.positionId);
-  const archetype = archetypes.find(({ id }) => id === draft.archetypeId) ?? archetypes[0]!;
-  const headline = [...archetype.priorityAttributeIds];
-  const canFinish = draft.traitIds.length === 2 && preview !== null;
+  }, [draft]);
+  const archetypes = draft.positionId === null ? [] : archetypesFor(draft.positionId);
+  const archetype = archetypes.find(({ id }) => id === draft.archetypeId) ?? null;
+  const headline = archetype === null ? [] : [...archetype.priorityAttributeIds];
+  const roleDone = draft.positionId !== null && draft.archetypeId !== null;
+  const storyDone = draft.backgroundId !== null && draft.traitIds.length === 2;
+  const canFinish = complete(draft) && preview !== null && name !== '';
+  function suggestName(): void {
+    update({ nameTokens: generatedName(suggestion), displayName: '' });
+    setSuggestion(suggestion + 1);
+  }
   const steps = [t('v2.create.stepRole'), t('v2.create.stepStory'), t('v2.create.stepLook')];
   // One conversion for creation and Profile (a stored 152 cm reads 5′0″, never 4′12″).
   const { feet, inches, pounds } = imperialMeasure(draft.heightCm, draft.weightKg);
@@ -151,40 +185,27 @@ export function CreateScreen({
   }
 
   const card = (
-    <aside aria-label={t('v2.create.cardLabel')} className="s2-playercard s2-cardpreview">
-      <div className="s2-playercard__top">
-        <div>
-          <p className="s2-display s2-playercard__ovr s2-num">
-            {preview === null ? '—' : positionOverall(preview)}
-          </p>
-          <p className="s2-eyebrow">{t('v2.create.overall')}</p>
-        </div>
-        <p className="s2-display s2-playercard__pos">{t(POSITION_ABBR_KEYS[draft.positionId])}</p>
-      </div>
-      <AthletePortrait
-        appearance={draft.appearance}
-        label={t('v2.player.portrait', { name: draft.displayName || fallbackName })}
-        size={PORTRAIT.profile}
-      />
-      <p className="s2-display s2-playercard__name">{draft.displayName || fallbackName}</p>
-      <p className="s2-note">
-        {t(key(archetype.nameKey))} ·{' '}
-        {t(key(backgrounds.find(({ id }) => id === draft.backgroundId)!.nameKey))}
-      </p>
-      {preview !== null && (
-        <div className="s2-ratings">
-          {headline.map((attributeId) => (
-            <div key={attributeId}>
-              <span>{t(attributeNameKey(attributeId))}</span>
-              <strong className="s2-num">
-                {(preview.attributes as unknown as Record<string, { rating: number }>)[attributeId]
-                  ?.rating ?? '—'}
-              </strong>
-            </div>
-          ))}
-        </div>
-      )}
-    </aside>
+    <TradingCard
+      appearance={draft.appearance}
+      ariaLabel={t('v2.create.cardLabel')}
+      backgroundId={draft.backgroundId}
+      className="s2-cardpreview"
+      name={name}
+      overall={preview === null ? null : positionOverall(preview)}
+      overallLabel={t('v2.create.overall')}
+      positionId={draft.positionId}
+      ratings={
+        preview === null
+          ? []
+          : headline.map((attributeId) => ({
+              label: t(attributeNameKey(attributeId)),
+              value:
+                (preview.attributes as unknown as Record<string, { rating: number }>)[attributeId]
+                  ?.rating ?? 0,
+            }))
+      }
+      styleKey={archetype?.nameKey ?? null}
+    />
   );
 
   return (
@@ -215,7 +236,7 @@ export function CreateScreen({
                     data-position={positionId.slice('position_'.length)}
                     key={positionId}
                     onClick={() =>
-                      update({ positionId, archetypeId: archetypesFor(positionId)[0]!.id })
+                      draft.positionId !== positionId && update({ positionId, archetypeId: null })
                     }
                     type="button"
                   >
@@ -229,24 +250,26 @@ export function CreateScreen({
                 ))}
               </div>
             </fieldset>
-            <fieldset className="s2-stack" style={{ border: 0, padding: 0, margin: 0 }}>
-              <legend className="s2-eyebrow">{t('v2.create.archetype')}</legend>
-              <div className="s2-tiles s2-tiles--3">
-                {archetypes.map((entry) => (
-                  <button
-                    aria-pressed={draft.archetypeId === entry.id}
-                    className="s2-tile"
-                    key={entry.id}
-                    onClick={() => update({ archetypeId: entry.id })}
-                    type="button"
-                  >
-                    <span className="s2-tile__name">{t(key(entry.nameKey))}</span>
-                    <span className="s2-tile__desc">{t(key(entry.descriptionKey))}</span>
-                    {trade(t, archetypeModifiers(entry.id))}
-                  </button>
-                ))}
-              </div>
-            </fieldset>
+            {draft.positionId !== null && (
+              <fieldset className="s2-stack" style={{ border: 0, padding: 0, margin: 0 }}>
+                <legend className="s2-eyebrow">{t('v2.create.archetype')}</legend>
+                <div className="s2-tiles s2-tiles--3">
+                  {archetypes.map((entry) => (
+                    <button
+                      aria-pressed={draft.archetypeId === entry.id}
+                      className="s2-tile"
+                      key={entry.id}
+                      onClick={() => update({ archetypeId: entry.id })}
+                      type="button"
+                    >
+                      <span className="s2-tile__name">{t(key(entry.nameKey))}</span>
+                      <span className="s2-tile__desc">{t(key(entry.descriptionKey))}</span>
+                      {trade(t, archetypeModifiers(entry.id))}
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+            )}
           </>
         )}
 
@@ -264,7 +287,8 @@ export function CreateScreen({
                     type="button"
                   >
                     <span className="s2-tile__name">{t(key(entry.nameKey))}</span>
-                    {trade(t, backgroundModifiers(draft.positionId, entry.id))}
+                    {draft.positionId !== null &&
+                      trade(t, backgroundModifiers(draft.positionId, entry.id))}
                   </button>
                 ))}
               </div>
@@ -300,15 +324,26 @@ export function CreateScreen({
           <>
             <div className="s2-field">
               <label htmlFor="s2-name">{t('v2.create.name')}</label>
-              <input
-                autoComplete="off"
-                className="s2-input"
-                id="s2-name"
-                maxLength={40}
-                onChange={(event) => update({ displayName: event.target.value })}
-                placeholder={fallbackName}
-                value={draft.displayName}
-              />
+              <div className="s2-namefield">
+                <input
+                  aria-describedby="s2-name-help"
+                  autoComplete="off"
+                  className="s2-input"
+                  id="s2-name"
+                  maxLength={40}
+                  onChange={(event) =>
+                    update({ displayName: event.target.value, nameTokens: null })
+                  }
+                  placeholder={t('v2.create.namePlaceholder')}
+                  value={draft.nameTokens === null ? draft.displayName : name}
+                />
+                <button className="s2-btn s2-btn--ghost" onClick={suggestName} type="button">
+                  {t('v2.create.suggestName')}
+                </button>
+              </div>
+              <p className="s2-note" id="s2-name-help">
+                {t('v2.create.suggestHelp')}
+              </p>
             </div>
             {[...LOOK_FIELDS, ...(showExtras ? EXTRA_FIELDS : [])].map((field) => {
               const spec = appearanceCatalog[field];
@@ -434,13 +469,23 @@ export function CreateScreen({
 
         <div className="s2-actionbar">
           <div className="s2-actionbar__inner">
-            {step === 1 && draft.traitIds.length !== 2 && (
-              <p className="s2-actionbar__hint">{t('v2.create.traitsHint')}</p>
+            {((step === 0 && !roleDone) ||
+              (step === 1 && !storyDone) ||
+              (step === 2 && name === '')) && (
+              <p className="s2-actionbar__hint">
+                {t(
+                  step === 0
+                    ? 'v2.create.roleHint'
+                    : step === 1
+                      ? 'v2.create.storyHint'
+                      : 'v2.create.nameHint',
+                )}
+              </p>
             )}
-            <div className="s2-row" style={{ flexWrap: 'nowrap' }}>
+            <div className="s2-actionbar__buttons">
               {step > 0 && (
                 <button
-                  className="s2-btn s2-btn--ghost"
+                  className="s2-btn s2-btn--ghost s2-btn--back"
                   onClick={() => setStep(step - 1)}
                   type="button"
                 >
@@ -450,7 +495,7 @@ export function CreateScreen({
               {step < 2 ? (
                 <button
                   className="s2-btn s2-btn--block"
-                  disabled={step === 1 && draft.traitIds.length !== 2}
+                  disabled={step === 0 ? !roleDone : !storyDone}
                   onClick={() => setStep(step + 1)}
                   type="button"
                 >
@@ -460,7 +505,9 @@ export function CreateScreen({
                 <button
                   className="s2-btn s2-btn--block"
                   disabled={!canFinish || blocked}
-                  onClick={() => onCreate(identityOf(draft, fallbackName))}
+                  onClick={() =>
+                    complete(draft) && onCreate(identityOf(draft, name), draft.nameTokens)
+                  }
                   type="button"
                 >
                   {t('v2.create.finish')}

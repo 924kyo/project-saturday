@@ -116,6 +116,16 @@ export interface AthleteVNext {
   readonly proficiencyUses: PositionTrainingProficiencyUses;
   readonly sharedProficiencyUses: CommonPositionProficiencyUses;
   readonly breakthroughGauge: number;
+  /**
+   * A generated name from the roster name pool (optional, rc.3): shown in the app language. A
+   * typed name has none, and `profile.displayName` stays the name as created.
+   */
+  readonly nameTokens?: AthleteNameTokensVNext;
+}
+
+export interface AthleteNameTokensVNext {
+  readonly givenNameId: string;
+  readonly familyNameId: string;
 }
 
 export interface BuildVNext {

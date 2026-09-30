@@ -2,6 +2,8 @@ export * from './types.js';
 export {
   chooseBreakthroughVNext,
   coachGradeVNext,
+  staffGameScoreVNext,
+  VNEXT_READ_GRADE_WEIGHT_PERMILLE,
   coachTrustDeltaVNext,
   chooseEventVNext,
   chooseInjuryVNext,
@@ -50,6 +52,8 @@ export {
 export { projectGameStakesVNext, RANKED_CUTOFF, type GameStakesVNext } from './stakes.js';
 export {
   livePlayFrame,
+  liveReadScoreVNext,
+  READ_GRADE_POINTS_VNEXT,
   projectCompletedPlayFrames,
   projectSnapBoardFrame,
   readQuality,
@@ -64,6 +68,7 @@ export {
   SNAP_LOOK_MOVES,
   SNAP_LOOK_STANCES,
   bestDecisionOfLook,
+  READ_EDGE_VNEXT,
   snapLookVNext,
   type SnapLookActor,
   type SnapLookCatalogVNext,
@@ -116,3 +121,4 @@ export {
   VNEXT_LEGACY_TUNING,
   type RecordBookEntryVNext,
 } from './legacy.js';
+export { rivalWeekVNext, VNEXT_RIVAL_TUNING } from './rivals.js';

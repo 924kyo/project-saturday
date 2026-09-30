@@ -32,7 +32,7 @@ describe('VNext season awards', () => {
       seasonAwardsVNext(
         {
           ...base,
-          averageGrade: 70,
+          averageGrade: 80,
           conferenceChampion: true,
           record: { wins: 10, losses: 2, ties: 0 },
         },
@@ -47,7 +47,7 @@ describe('VNext season awards', () => {
     ]);
     expect(
       seasonAwardsVNext(
-        { ...base, seasonIndex: 0, averageGrade: 62, depthRank: { start: 3, end: 2 } },
+        { ...base, seasonIndex: 0, averageGrade: 72, depthRank: { start: 3, end: 2 } },
         'position_lb',
         [],
       ),
@@ -55,7 +55,7 @@ describe('VNext season awards', () => {
   });
 
   it('names a title game MVP only from the saved final', () => {
-    const final = { round: 'FINAL', liveSnapCount: 4, coachGrade: 74 } as GameRecapVNext;
+    const final = { round: 'FINAL', liveSnapCount: 4, coachGrade: 80 } as GameRecapVNext;
     expect(seasonAwardsVNext({ ...base, finish: 'CHAMPION' }, 'position_wr', [final])).toEqual([
       'award_title_game_mvp',
     ]);

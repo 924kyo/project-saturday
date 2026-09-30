@@ -178,7 +178,27 @@ type PatternLike = {
   readonly id: string;
   readonly decisionFits: readonly { readonly decisionId: string; readonly fit: number }[];
 };
-type ActiveLike = { readonly type: 'ACTIVE'; readonly patterns: readonly PatternLike[] };
+type ActiveLike = {
+  readonly type: 'ACTIVE';
+  readonly patterns: readonly PatternLike[];
+  readonly input?: { readonly eventModifiers?: { readonly decisionScoreFlat?: number } };
+};
+
+/**
+ * Playtest round 1: the read decides more of the play. The kernels weigh fit at a quarter of their
+ * decision score, so a right read barely beat a wrong one. For the one snap it resolves, VNext adds
+ * the read's edge to the kernel's decision score (the kernels' own event-modifier seam; the WR
+ * kernel reads fit directly and takes a wider fit spread instead). The saved state is unchanged.
+ */
+export const READ_EDGE_VNEXT = Object.freeze({ SHARP: 12, SOLID: 0, MISSED: -12 });
+
+function readEdge(fit: number): number {
+  return fit >= 85
+    ? READ_EDGE_VNEXT.SHARP
+    : fit >= 65
+      ? READ_EDGE_VNEXT.SOLID
+      : READ_EDGE_VNEXT.MISSED;
+}
 
 /**
  * Resolves one live snap against the look: the owning kernel sees the look's fits for its pending
@@ -189,6 +209,8 @@ export function resolveWithLookVNext(
   patternId: string,
   look: SnapLookDefinitionVNext | null,
   resolve: (state: VNextGameState) => VNextGameState | null,
+  /** The call being made: its read quality adds the read edge for this one resolve. */
+  decisionId?: string,
 ): VNextGameState | null {
   const game = engine.game as unknown as ActiveLike;
   if (look === null || game.type !== 'ACTIVE' || !Array.isArray(game.patterns))
@@ -215,13 +237,40 @@ export function resolveWithLookVNext(
           })),
         },
   );
+  const input = game.input;
+  const modifiers = input?.eventModifiers;
+  const chosenFit = look.fits.find((entry) => entry.decisionId === decisionId)?.fit;
+  const edge =
+    chosenFit !== undefined && typeof modifiers?.decisionScoreFlat === 'number'
+      ? readEdge(chosenFit)
+      : 0;
   const resolved = resolve({
     ...engine,
-    game: { ...engine.game, patterns: patched },
+    game: {
+      ...engine.game,
+      patterns: patched,
+      ...(edge === 0
+        ? {}
+        : {
+            input: {
+              ...input,
+              eventModifiers: {
+                ...modifiers,
+                decisionScoreFlat: modifiers!.decisionScoreFlat! + edge,
+              },
+            },
+          }),
+    },
   } as unknown as VNextGameState);
   if (resolved === null) return null;
-  const next = resolved.game as unknown as { patterns?: unknown };
-  return Array.isArray(next.patterns)
-    ? ({ ...resolved, game: { ...resolved.game, patterns: original } } as unknown as VNextGameState)
-    : resolved;
+  // Hand back the kernel's own patterns and input: the look and the read edge were for this snap.
+  const next = resolved.game as unknown as { patterns?: unknown; input?: unknown };
+  return {
+    ...resolved,
+    game: {
+      ...resolved.game,
+      ...(Array.isArray(next.patterns) ? { patterns: original } : {}),
+      ...(edge !== 0 && next.input !== undefined ? { input } : {}),
+    },
+  } as unknown as VNextGameState;
 }

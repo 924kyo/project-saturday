@@ -37,8 +37,11 @@ const catalogs = (): Readonly<Record<VNextPositionId, Catalog>> => ({
   position_edge: edgeContent as unknown as Catalog,
 });
 
-/** WR patterns author score modifiers (−10…24); looks speak the kernels' 0–100 fit scale. */
-const WR_RANK_FITS = [92, 68, 44] as const;
+/**
+ * WR patterns author score modifiers (−10…24); looks speak the kernels' 0–100 fit scale. The WR
+ * kernel reads fit directly (targets, catch, turnovers), so its spread is the read's whole edge.
+ */
+const WR_RANK_FITS = [96, 66, 36] as const;
 
 function patternOf(positionId: VNextPositionId, patternId: string): CatalogPattern {
   const pattern = catalogs()[positionId].patterns.find(({ id }) => id === patternId);

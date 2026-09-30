@@ -248,6 +248,20 @@ function plays(engine: VNextGameState): readonly AnyPlay[] {
   return engine.game.keyPlayLog as unknown as readonly AnyPlay[];
 }
 
+/** What a read is worth to the staff, whatever the play then did. */
+export const READ_GRADE_POINTS_VNEXT = Object.freeze({ SHARP: 90, SOLID: 65, MISSED: 30 });
+
+/** The mean read grade of a game's live snaps (null without live snaps). */
+export function liveReadScoreVNext(engine: VNextGameState): number | null {
+  const log = plays(engine);
+  if (log.length === 0) return null;
+  const total = log.reduce(
+    (sum, play) => sum + READ_GRADE_POINTS_VNEXT[readQuality(num(play, 'decisionFit'))],
+    0,
+  );
+  return total / log.length;
+}
+
 function sidelineFrame(
   positionId: VNextPositionId,
   rep: SidelineRepVNext,

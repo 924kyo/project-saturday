@@ -1,3 +1,5 @@
+import { rivalWeekVNext } from './rivals.js';
+import { liveReadScoreVNext } from './frames.js';
 import { resolveWithLookVNext, snapLookVNext } from './looks.js';
 import { deriveCareerId } from '../player/creation.js';
 import type { ProgramId } from '../player/ids.js';
@@ -80,6 +82,7 @@ import {
   CAREER_VNEXT_REGULAR_SEASON_WEEKS,
   CAREER_VNEXT_VERSION,
   type AlumniVNext,
+  type AthleteNameTokensVNext,
   type CareerVNext,
   type CareerVNextMechanics,
   type CareerVNextResult,
@@ -99,6 +102,8 @@ export interface CreateCareerVNextInput {
   readonly identity: PositionPlayerCreationIdentity;
   /** The Alumni Wall at creation; saved as a bounded snapshot (information and story only). */
   readonly legacy?: readonly AlumniVNext[];
+  /** A generated name from the roster pool, shown in the app language (optional). */
+  readonly nameTokens?: AthleteNameTokensVNext;
 }
 
 export function createCareerVNext(
@@ -116,11 +121,21 @@ export function createCareerVNext(
   const recruiting = derivePositionRecruitingProfile(profile, mechanics.room, 0);
   if (recruiting === undefined) return fail('career_vnext.invalid_input');
   const positionId = profile.positionId as VNextPositionId;
+  const tokens = input.nameTokens;
+  if (
+    tokens !== undefined &&
+    (!(mechanics.roomNames.givenNameIds as readonly string[]).includes(tokens.givenNameId) ||
+      !(mechanics.roomNames.familyNameIds as readonly string[]).includes(tokens.familyNameId))
+  )
+    return fail('career_vnext.invalid_input');
   const athlete = {
     profile,
     proficiencyUses: createPositionTrainingProficiencyUses(positionId),
     sharedProficiencyUses: createCommonPositionProficiencyUses(),
     breakthroughGauge: 0,
+    ...(tokens === undefined
+      ? {}
+      : { nameTokens: { givenNameId: tokens.givenNameId, familyNameId: tokens.familyNameId } }),
   };
   // Four realistic suitors around the recruit's level: a reach, two fits and an early-role path.
   const target = 50 + Math.round((recruiting.recruitScore - 50) * 0.6);
@@ -290,7 +305,14 @@ export function planWeekVNext(
     state = resolved.next;
     evidence.push(resolved.evidence);
   }
-  const room = career.program.room;
+  // The room practices too: teammates' form and growth move before the depth update reads them.
+  const room = rivalWeekVNext(
+    career.program.room,
+    career.seed,
+    career.season.index,
+    career.season.weekIndex,
+    mechanics.room,
+  );
   const grade = derivePositionPracticeGrade(
     [evidence[0]!, evidence[1]!, evidence[2]!],
     room.projection.roleId,
@@ -723,8 +745,12 @@ export function chooseSnapVNext(
     pending.familyId,
     mechanics,
   );
-  const engine = resolveWithLookVNext(game.engine, pending.patternId, look, (state) =>
-    resolveVNextSnap(state, decisionId),
+  const engine = resolveWithLookVNext(
+    game.engine,
+    pending.patternId,
+    look,
+    (state) => resolveVNextSnap(state, decisionId),
+    decisionId,
   );
   if (engine === null) return fail('career_vnext.engine_failed');
   return publish(career, {
@@ -799,7 +825,10 @@ function settleGame(
   const profile = career.athlete.profile;
   const stakes = projectGameStakesVNext(career, game.opponentProgramId, game.isHome, mechanics);
   const coachGrade = coachGradeVNext(
-    calibratedGradeVNext(profile.positionId as VNextPositionId, summary.gradeScore),
+    staffGameScoreVNext(
+      calibratedGradeVNext(profile.positionId as VNextPositionId, summary.gradeScore),
+      liveReadScoreVNext(completed),
+    ),
     summary.opportunityCount,
   );
   const coachTrustAfter = Math.min(
@@ -892,6 +921,18 @@ export const VNEXT_GRADE_CALIBRATION: Readonly<Partial<Record<VNextPositionId, n
 
 export function calibratedGradeVNext(positionId: VNextPositionId, gradeScore: number): number {
   return Math.max(0, Math.min(100, gradeScore + (VNEXT_GRADE_CALIBRATION[positionId] ?? 0)));
+}
+
+/**
+ * Playtest round 1: the staff grades the decision as much as the box score. A right read that the
+ * play did not reward still earns credit; a lucky result on a wrong read does not carry the game.
+ */
+export const VNEXT_READ_GRADE_WEIGHT_PERMILLE = 500;
+
+export function staffGameScoreVNext(boxScore: number, readScore: number | null): number {
+  if (readScore === null) return boxScore;
+  const weight = VNEXT_READ_GRADE_WEIGHT_PERMILLE;
+  return Math.round((boxScore * (1000 - weight) + readScore * weight) / 1000);
 }
 
 export function coachGradeVNext(gradeScore: number, liveSnaps: number): number | null {

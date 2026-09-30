@@ -22,6 +22,7 @@ import { koKRAwardMessages } from './m9-awards.js';
 import { koKRLegacyMessages } from './m9-legacy.js';
 import { koKRM10Messages } from './m10-ui.js';
 import { koKRM11LookMessages } from './m11-looks.js';
+import { koKRM12Messages } from './m12-ui.js';
 import { koKRM8PositionMessages } from './m8-positions.js';
 import { m7BuildKo } from './m7-builds.js';
 import { m7DirectKo } from './m7-direct.js';
@@ -49,6 +50,7 @@ export const koKRMessages = {
   ...koKRLegacyMessages,
   ...koKRM10Messages,
   ...koKRM11LookMessages,
+  ...koKRM12Messages,
   ...koKREventBatchMessages,
   ...koKRInjuryBatchMessages,
   ...koKRM6UiMessages,
@@ -376,7 +378,7 @@ export const koKRMessages = {
   'career.program.role.reserve': '리저브',
   'career.program.role.rotation': '로테이션',
   'career.program.role.starter': '스타터',
-  'career.program.room.competitorName': '{family} {given}',
+  'career.program.room.competitorName': '{given} {family}',
   'career.program.room.count': 'WR {count}명',
   'career.program.room.meta': '{classYear}학년 · {role}',
   'career.program.room.score': '평가 {value}',

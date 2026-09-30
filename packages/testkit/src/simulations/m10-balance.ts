@@ -14,6 +14,7 @@ import {
   kickoffVNext,
   nextWeekVNext,
   planWeekVNext,
+  bestDecisionOfLook,
   projectSnapBoardFrame,
   toGameDayVNext,
   type CareerVNext,
@@ -118,6 +119,11 @@ export function runM10BalanceCareer(
   archetypeId: string,
   strategy: M10BalanceStrategy,
   seed: string,
+  /**
+   * Live reads: rotate through the calls (right about a third of the time), read two looks in three
+   * right (the report's decent player), or read every look right.
+   */
+  reads: 'rotate' | 'decent' | 'sharp' = 'decent',
 ): M10BalanceCareer {
   const identity = {
     displayName: 'Balance Probe',
@@ -165,10 +171,19 @@ export function runM10BalanceCareer(
         career = ok(kickoffVNext(career, mechanics));
       } else if (flow.game.stage === 'SNAP') {
         const frame = projectSnapBoardFrame(career, mechanics)!;
+        const readsRight =
+          reads === 'sharp' ||
+          (reads === 'decent' && frame.kind === 'LIVE' && frame.snapNumber % 3 !== 0);
+        const look =
+          readsRight && frame.look !== null
+            ? mechanics.looks.looks.find(({ id }) => id === frame.look!.lookId)
+            : undefined;
         const choice =
           frame.kind === 'SIDELINE'
             ? flow.game.sideline[frame.repNumber - 1]!.bestDecisionId
-            : frame.decisionIds[frame.snapNumber % 3]!;
+            : look !== undefined
+              ? bestDecisionOfLook(look)
+              : frame.decisionIds[frame.snapNumber % 3]!;
         career = ok(chooseSnapVNext(career, choice, mechanics));
       } else career = ok(continueGameVNext(career, mechanics));
     } else if (flow.type === 'POST_GAME') career = ok(nextWeekVNext(career, mechanics));
@@ -276,4 +291,26 @@ export function runM10BalanceReport(): {
 /** JSONL: the summary line, then one line per career. */
 export function formatM10BalanceReport(report: ReturnType<typeof runM10BalanceReport>): string {
   return [report.summary, ...report.careers].map((entry) => JSON.stringify(entry)).join('\n');
+}
+
+/**
+ * Playtest round 1: the report's harness is an average reader (it rotates calls). A player who reads
+ * every look right must do clearly better: this compares one balanced career per position.
+ */
+export function runM10ReaderComparison(seed: string = M10_BALANCE_SEEDS[0]): {
+  readonly rotate: { readonly awardSeasonRate: number; readonly meanGrade: number };
+  readonly sharp: { readonly awardSeasonRate: number; readonly meanGrade: number };
+} {
+  const rates = (reads: 'rotate' | 'sharp') => {
+    const seasons = M10_BALANCE_POSITIONS.flatMap(
+      ([positionId, archetypeId]) =>
+        runM10BalanceCareer(positionId, archetypeId, 'balanced', seed, reads).seasons,
+    );
+    const graded = seasons.filter(({ averageGrade }) => averageGrade !== null);
+    return {
+      awardSeasonRate: permille(seasons.filter(({ awards }) => awards > 0).length, seasons.length),
+      meanGrade: mean(graded.map(({ averageGrade }) => averageGrade!)),
+    };
+  };
+  return { rotate: rates('rotate'), sharp: rates('sharp') };
 }

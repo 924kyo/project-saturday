@@ -52,25 +52,37 @@ async function renderApp(
   );
 }
 
+/** Creation picks everything explicitly: nothing is chosen for the player. */
+async function createAthlete(user: ReturnType<typeof userEvent.setup>, name: string) {
+  const positions = await screen.findByRole('group', { name: 'Position' });
+  await user.click(within(positions).getByRole('button', { name: /Quarterback/ }));
+  const styles = screen.getByRole('group', { name: 'Play style' });
+  await user.click(within(styles).getAllByRole('button')[0]!);
+  await user.click(screen.getByRole('button', { name: 'Next' }));
+  const backgrounds = screen.getByRole('group', { name: 'Recruiting background' });
+  await user.click(within(backgrounds).getAllByRole('button')[0]!);
+  await user.click(screen.getAllByRole('checkbox')[0]!);
+  await user.click(
+    screen
+      .getAllByRole('checkbox')
+      .find(
+        (box) => !box.hasAttribute('disabled') && box.getAttribute('aria-checked') === 'false',
+      )!,
+  );
+  await user.click(screen.getByRole('button', { name: 'Next' }));
+  await user.type(screen.getByLabelText('Player name'), name);
+  await user.click(screen.getByRole('button', { name: 'Start recruiting' }));
+}
+
 describe('App vertical slice', () => {
   it('asks the browser to keep the save once, after the first real save', async () => {
     const user = userEvent.setup();
     const requestPersistence = vi.fn(() => Promise.resolve(true));
     await renderApp(new MemoryStorageAdapter(), requestPersistence);
-    await user.click(await screen.findByRole('button', { name: 'Next' }));
     // Nothing is saved yet, so nothing is requested at launch.
+    await screen.findByRole('button', { name: 'Next' });
     expect(requestPersistence).not.toHaveBeenCalled();
-    await user.click(screen.getAllByRole('checkbox')[0]!);
-    await user.click(
-      screen
-        .getAllByRole('checkbox')
-        .find(
-          (box) => !box.hasAttribute('disabled') && box.getAttribute('aria-checked') === 'false',
-        )!,
-    );
-    await user.click(screen.getByRole('button', { name: 'Next' }));
-    await user.type(screen.getByLabelText('Player name'), 'Kept Save');
-    await user.click(screen.getByRole('button', { name: 'Start recruiting' }));
+    await createAthlete(user, 'Kept Save');
     const offers = await screen.findAllByRole('listitem');
     await user.click(within(offers[0]!).getByRole('button'));
     await user.click(screen.getByRole('button', { name: /^Commit to / }));
@@ -83,19 +95,7 @@ describe('App vertical slice', () => {
     const storage = new FlakyStorage();
     await renderApp(storage);
 
-    await user.click(await screen.findByRole('button', { name: 'Next' }));
-    const traits = screen.getAllByRole('checkbox');
-    await user.click(traits[0]!);
-    await user.click(
-      screen
-        .getAllByRole('checkbox')
-        .find(
-          (box) => !box.hasAttribute('disabled') && box.getAttribute('aria-checked') === 'false',
-        )!,
-    );
-    await user.click(screen.getByRole('button', { name: 'Next' }));
-    await user.type(screen.getByLabelText('Player name'), 'Marcus Hale');
-    await user.click(screen.getByRole('button', { name: 'Start recruiting' }));
+    await createAthlete(user, 'Marcus Hale');
 
     expect(await screen.findByRole('heading', { name: 'Where do you start?' })).toBeInTheDocument();
     const offers = screen.getAllByRole('listitem');
@@ -179,4 +179,32 @@ describe('App vertical slice', () => {
     expect((await loadCareerVNext(storage)).status).toBe('corrupt');
     expect(saveCareerVNext).toBeTypeOf('function');
   });
+
+  it('keeps careers in separate save slots: start another, then resume the first', async () => {
+    const user = userEvent.setup();
+    const storage = new MemoryStorageAdapter();
+    await renderApp(storage);
+    await createAthlete(user, 'First Slot');
+    await user.click(within(await screen.findByRole('list')).getAllByRole('button')[0]!);
+    await user.click(screen.getByRole('button', { name: /^Commit to / }));
+    expect(await screen.findByRole('heading', { name: 'Pick three focuses' })).toBeInTheDocument();
+
+    // A second career goes into an empty slot; the first stays saved.
+    await user.click(screen.getByRole('button', { name: 'Saves' }));
+    expect(await screen.findByText('First Slot')).toBeInTheDocument();
+    await user.click(screen.getAllByRole('button', { name: 'New career' })[0]!);
+    await createAthlete(user, 'Second Slot');
+    expect(await screen.findByRole('heading', { name: 'Where do you start?' })).toBeInTheDocument();
+    await waitFor(async () => expect((await loadCareerVNext(storage, 2)).status).toBe('ok'));
+
+    // Resume the first career exactly where it was.
+    await user.click(screen.getByRole('button', { name: 'Saves' }));
+    await user.click(await screen.findByRole('button', { name: 'Resume' }));
+    expect(await screen.findByRole('heading', { name: 'Pick three focuses' })).toBeInTheDocument();
+    expect(screen.getAllByText('First Slot').length).toBeGreaterThan(0);
+    const first = await loadCareerVNext(storage, 1);
+    const second = await loadCareerVNext(storage, 2);
+    expect(first.status === 'ok' && first.career.athlete.profile.displayName).toBe('First Slot');
+    expect(second.status === 'ok' && second.career.athlete.profile.displayName).toBe('Second Slot');
+  }, 60_000);
 });

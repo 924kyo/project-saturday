@@ -2,7 +2,11 @@ import { readFileSync } from 'node:fs';
 
 import { describe, expect, it } from 'vitest';
 
-import { formatM10BalanceReport, runM10BalanceReport } from '../../src/index.js';
+import {
+  formatM10BalanceReport,
+  runM10BalanceReport,
+  runM10ReaderComparison,
+} from '../../src/index.js';
 
 const report = runM10BalanceReport();
 const summary = report.summary;
@@ -42,6 +46,14 @@ describe('M10 balance at scale', () => {
     expect(summary.meanOverallGrowthPerSeason).toBeGreaterThanOrEqual(2);
     expect(summary.meanOverallGrowthPerSeason).toBeLessThanOrEqual(7);
   });
+
+  it('rewards reading the look: a sharp reader outgrades and out-honors a guesser', () => {
+    const { rotate, sharp } = runM10ReaderComparison();
+    expect(sharp.meanGrade).toBeGreaterThanOrEqual(rotate.meanGrade + 8);
+    expect(sharp.awardSeasonRate).toBeGreaterThan(rotate.awardSeasonRate + 300);
+    // Reading alone does not guarantee honors: the box score still counts.
+    expect(sharp.awardSeasonRate).toBeLessThan(1000);
+  }, 120_000);
 
   it('keeps meters meaningful: no saturation, and Body tracks the plan', () => {
     expect(summary.meanKickoffConfidence).toBeGreaterThan(45);
