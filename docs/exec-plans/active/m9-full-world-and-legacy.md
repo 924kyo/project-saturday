@@ -45,6 +45,6 @@ Repeated careers show strong variation and persistent history:
    - program familiarity: past alumni at a program shown in recruiting, transfers and Team;
    - mentors: an alumnus from the current program can appear in a weekly scene;
    - cameos: authored reactions that mention alumni when their facts apply.
-4. **Event library to 250+:** themed position-neutral packs (campus, locker room, media, body, family, program, big games), each with paired copy through the shared event kernel.
+4. **Event library to 250+:** (done 2026-09-30; 254 events, 100 cards) themed position-neutral packs (campus, locker room, media, body, family, program, big games), each with paired copy through the shared event kernel.
 5. **Content QA and bilingual editorial pass:** an automated copy audit (placeholders, lengths, ICU parity, glossary) and a reviewed pass over new surfaces.
 6. **Gate:** a repeated-career variation harness, a two-career browser journey (history persists), a parity ledger update, and a Tier 3 gate.

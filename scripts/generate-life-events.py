@@ -100,6 +100,16 @@ EVENTS = [
 ]
 
 
+# M9 packs (campus, locker room, media, body, family, program): 120 more events.
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from life_events_m9_a import EVENTS_A  # noqa: E402
+from life_events_m9_b import EVENTS_B  # noqa: E402
+
+EVENTS = EVENTS + EVENTS_A + EVENTS_B
+
+
 def camel(value):
     head, *rest = value.split('_')
     return head + ''.join(part[:1].upper() + part[1:] for part in rest)
@@ -118,7 +128,8 @@ for slug, req, choices, en_name, ko_name, en_desc, ko_desc in EVENTS:
     events.append({'id': f'event_life_{slug}', 'weight': 100, 'cooldownWeeks': 6, 'requirements': req,
                    'choices': entries, 'nameKey': f'{base}.name', 'descriptionKey': f'{base}.description'})
 
-assert len(events) == 16 and set(en) == set(ko)
+assert len(events) == 136 and set(en) == set(ko)
+assert len({event['id'] for event in events}) == 136
 
 
 def ts(value):

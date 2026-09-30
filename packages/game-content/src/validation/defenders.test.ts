@@ -122,8 +122,8 @@ describe('M8 front-seven content', () => {
 });
 
 describe('M8 campus-life event pack', () => {
-  it('ships 16 position-neutral events with paired copy and valid effects', () => {
-    expect(lifeEventContent).toHaveLength(16);
+  it('ships 136 position-neutral events with paired copy and valid effects', () => {
+    expect(lifeEventContent).toHaveLength(136);
     const ids = new Set<string>();
     for (const event of lifeEventContent) {
       expect(event.id.startsWith('event_life_')).toBe(true);

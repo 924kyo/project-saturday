@@ -33,6 +33,7 @@ export default defineConfig({
               name: 'game-content',
               test: /[\\/]packages[\\/]game-content[\\/]src[\\/]/,
               priority: 30,
+              maxSize: 400_000,
             },
             {
               name: 'vendor-runtime',

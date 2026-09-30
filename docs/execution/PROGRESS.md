@@ -21,6 +21,9 @@ M8 is COMPLETE (2026-09-30), and its Tier 3 gate is met:
 
 ## Last completed task
 
+M9 step 4, the event library (2026-09-30): 120 new position-neutral events in six themed packs (campus, locker room, media, body, family, program), from `scripts/life_events_m9_a.py`/`_b.py` through the life-event generator with paired copy. The library has 254 events and 100 cards (enforced by `library.test.ts`). The web build splits the content and locale chunks by size to stay under the 500 kB budget. Verified with `pnpm check` (855 + 412 + 394), then a build and e2e (10) after the chunk change.
+
+
 M9 step 3, legacy history (2026-09-30):
 - an alumni snapshot saved into new careers (`vnext/legacy.ts`);
 - a record book (titles, awards, best pick, wins, live games, stat leaders) on the landing screen and at completion;
@@ -50,7 +53,7 @@ The M8 closeout, 2026-09-30:
 
 ## Current / next task
 
-M9 step 4: the event library to 250+. Then the editorial pass and the gate.
+M9 step 5: content QA and a bilingual editorial pass. Then the gate.
 
 ## Active exec plan
 
