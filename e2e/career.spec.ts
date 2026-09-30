@@ -68,6 +68,10 @@ for (const entry of plan) {
         const width = await page.evaluate(() => document.documentElement.scrollWidth);
         expect(width, `step ${guard}`).toBeLessThanOrEqual(320);
       }
+      // M10 localization QA: no raw message key reaches the screen, and English shows no Hangul.
+      const copy = await page.locator('main').innerText();
+      expect(copy, `step ${guard}`).not.toMatch(/\bv2\.[a-z]/);
+      if (entry.locale === 'en-US') expect(copy, `step ${guard}`).not.toMatch(/[가-힣]/);
       const kind = await step(page);
       if (kind === 'snap') snaps += 1;
       if (kind === 'review') reviews += 1;

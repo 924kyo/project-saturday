@@ -32,7 +32,7 @@ Every item in `RELEASE_CHECKLIST.md` is checked with evidence, there are no crit
    - mobile Safari (WebKit) and Chrome smoke where the engines are available, plus desktop;
    - PWA install/update behavior (a service worker update is picked up without data loss);
    - offline.
-6. **Localization QA:** full career smoke in both locales, number/unit/currency formatting, and a mobile layout review in both locales.
+6. **Localization QA:** (done 2026-09-30) full career smoke in both locales, number/unit/currency formatting, and a mobile layout review in both locales.
 7. **Hygiene and documentation:**
    - originality and legal review;
    - known limitations;

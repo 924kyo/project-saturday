@@ -45,7 +45,7 @@ export function NilScreen({
   readonly onDecide: (accept: boolean) => void;
   readonly onContinue: () => void;
 }): React.JSX.Element | null {
-  const { t } = useAppTranslation();
+  const { i18n, t } = useAppTranslation();
   if (career.flow.type !== 'NIL') return null;
   const scene = career.flow.offer;
   const text = nilOfferText(scene.offerId);
@@ -74,7 +74,7 @@ export function NilScreen({
       </section>
       <div className="s2-grid-2">
         <Panel id="s2-nil-deal" title={t('v2.nil.reward')}>
-          <EffectChips chips={nilEffectChips(t, reward)} />
+          <EffectChips chips={nilEffectChips(t, reward, i18n.resolvedLanguage)} />
         </Panel>
         <Panel id="s2-nil-obligation" title={t('v2.nil.obligation')}>
           <p>
@@ -84,7 +84,9 @@ export function NilScreen({
           <p className="s2-note s2-num" style={{ marginTop: 8 }}>
             {t('v2.nil.cost', { weeks: offer.obligation.durationWeeks, penalty })}
           </p>
-          <EffectChips chips={nilEffectChips(t, offer.obligation.weeklyEffects)} />
+          <EffectChips
+            chips={nilEffectChips(t, offer.obligation.weeklyEffects, i18n.resolvedLanguage)}
+          />
         </Panel>
       </div>
       {scene.decision === null ? (

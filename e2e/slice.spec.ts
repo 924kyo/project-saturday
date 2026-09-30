@@ -50,17 +50,28 @@ test.describe('offline resume', () => {
 test.describe('true 320 px layout', () => {
   test.skip(({ isMobile }) => !isMobile, 'Narrow layout is checked once.');
   test.use({ viewport: { width: 320, height: 720 } });
-  test('no screen in the slice scrolls horizontally', async ({ page }) => {
-    const overflow = async (label: string) => {
-      const width = await page.evaluate(() => document.documentElement.scrollWidth);
-      expect(width, label).toBeLessThanOrEqual(320);
-    };
-    await page.goto('/');
-    await expect(primaryAction(page)).toBeVisible({ timeout: 20_000 });
-    await overflow('create');
-    await createCareer(page, 'Narrow Screen');
-    await playWeek(page, overflow);
-  });
+  // M10: both locales, because English and Korean copy wrap differently.
+  for (const locale of ['ko-KR', 'en-US'] as const)
+    test(`no screen in the slice scrolls horizontally (${locale})`, async ({ page }) => {
+      test.setTimeout(180_000);
+      const overflow = async (label: string) => {
+        const width = await page.evaluate(() => document.documentElement.scrollWidth);
+        expect(width, `${locale} ${label}`).toBeLessThanOrEqual(320);
+      };
+      await page.goto('/');
+      await expect(primaryAction(page)).toBeVisible({ timeout: 20_000 });
+      if ((await page.locator('html').getAttribute('lang')) !== locale)
+        await page.locator('.s2-topbar__actions .s2-chipbtn').first().click();
+      await expect(page.locator('html')).toHaveAttribute('lang', locale);
+      await overflow('create');
+      await createCareer(page, 'Narrow Screen');
+      for (const [index, tab] of ['week', 'build', 'team', 'profile'].entries()) {
+        await page.locator('[role=tab]').nth(index).click();
+        await overflow(tab);
+      }
+      await page.locator('[role=tab]').nth(0).click();
+      await playWeek(page, overflow);
+    });
 });
 
 // M10: weekly transitions stay responsive on a throttled phone (4× CPU via DevTools emulation).

@@ -31,6 +31,8 @@ import {
   traits,
   conferenceOf,
   familiarNames,
+  formatNumber,
+  imperialMeasure,
 } from './content';
 import { METER_COLORS, PORTRAIT } from './theme';
 import { Crest, Meter, Panel } from './ui';
@@ -316,14 +318,16 @@ function seasonTotals(career: CareerVNext): readonly [string, number][] {
 /** Profile: who the athlete is, every rating, the season line, and academic/health standing. */
 /** NIL, benefits and the locker room: all saved facts, no hidden numbers. */
 function NilPanel({ career }: { readonly career: CareerVNext }): React.JSX.Element {
-  const { t } = useAppTranslation();
+  const { i18n, t } = useAppTranslation();
   const nil = nilOfVNext(career);
   const room = nil.lockerRoom;
   return (
     <Panel id="s2-profile-nil" title={t('v2.nil.title')}>
       <p className="s2-num">
-        <strong>{t('v2.nil.fundsTotal', { value: nil.fundsUsd.toLocaleString() })}</strong> ·{' '}
-        {t('v2.nil.brand', { value: career.athlete.profile.state.brand })}
+        <strong>
+          {t('v2.nil.fundsTotal', { value: formatNumber(i18n.resolvedLanguage, nil.fundsUsd) })}
+        </strong>{' '}
+        · {t('v2.nil.brand', { value: career.athlete.profile.state.brand })}
       </p>
       <p className="s2-note">
         {nil.obligation === null
@@ -365,7 +369,7 @@ export function ProfilePanel({
   readonly career: CareerVNext;
   readonly mechanics: CareerVNextMechanics;
 }): React.JSX.Element {
-  const { t } = useAppTranslation();
+  const { i18n, t } = useAppTranslation();
   const profile = career.athlete.profile;
   const positionId = profile.positionId as VNextPositionId;
   const archetype = archetypesFor(positionId).find(({ id }) => id === profile.archetypeId);
@@ -400,8 +404,16 @@ export function ProfilePanel({
               {archetype !== undefined && <> · {t(key(archetype.nameKey))}</>}
             </p>
             <p className="s2-note s2-num">
-              {t('v2.profile.measure', { height: profile.heightCm, weight: profile.weightKg })} ·{' '}
-              {t('v2.player.ovr', { ovr: currentOverall(career) })}
+              {i18n.resolvedLanguage === 'en-US'
+                ? t(
+                    'v2.profile.measureImperial',
+                    imperialMeasure(profile.heightCm, profile.weightKg),
+                  )
+                : t('v2.profile.measure', {
+                    height: profile.heightCm,
+                    weight: profile.weightKg,
+                  })}{' '}
+              · {t('v2.player.ovr', { ovr: currentOverall(career) })}
             </p>
           </div>
         </div>

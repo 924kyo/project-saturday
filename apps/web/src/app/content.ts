@@ -279,6 +279,21 @@ export function familiarNames(career: CareerVNext, programId: ProgramId): string
   return names.length === 0 ? null : names.join(', ');
 }
 
+/** Numbers in the app's language (never the device default). */
+export function formatNumber(locale: string | undefined, value: number): string {
+  return new Intl.NumberFormat(locale ?? 'ko-KR').format(value);
+}
+
+/** Height and weight in feet/inches and pounds (en-US convention for American football). */
+export function imperialMeasure(heightCm: number, weightKg: number) {
+  const totalInches = Math.round(heightCm / 2.54);
+  return {
+    feet: Math.floor(totalInches / 12),
+    inches: totalInches % 12,
+    pounds: Math.round(weightKg * 2.20462),
+  };
+}
+
 export const ROUND_KEYS = {
   FIRST_ROUND: 'v2.round.firstRound',
   QUARTERFINAL: 'v2.round.quarterfinal',

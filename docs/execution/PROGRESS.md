@@ -22,6 +22,13 @@ M8 is COMPLETE (2026-09-30): see `docs/exec-plans/completed/m8-six-position-beta
 
 ## Last completed task
 
+M10 step 6, localization QA (2026-09-30):
+- numbers use the app language, not the device default: NIL fund totals and fund chips go through `formatNumber` with grouping;
+- en-US Profile shows height and weight in feet, inches and pounds, matching creation's imperial input, while ko-KR stays metric (`v2.profile.measureImperial`);
+- the 320 px layout test covers both locales and the Week, Build, Team and Profile tabs;
+- every step of the two-season career journeys (both locales, all six positions under `E2E_FULL=1`) asserts no raw message key on screen and no Hangul in en-US.
+
+
 M10 step 5, the browser and PWA matrix (2026-09-30):
 - a `mobile-webkit` Playwright project (iPhone 14, WebKit 26.5) for the slice journey and the ko-KR accessibility scan;
 - the install scripts include WebKit;
@@ -106,7 +113,7 @@ The M8 closeout, 2026-09-30:
 
 ## Current / next task
 
-M10 step 6: localization QA (formatting, full career in both locales, mobile layouts). Then hygiene and docs, and the gate.
+M10 step 7: hygiene and documentation (originality and legal review, known limitations, specs and ADRs against the implementation, release notes, the readiness report). Then the gate.
 
 ## Active exec plan
 
