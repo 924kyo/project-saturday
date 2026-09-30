@@ -14,7 +14,7 @@ test.describe('career slice journey', () => {
     const week = await page.locator('.s2-nameplate .s2-eyebrow').textContent();
     await page.reload();
     await expect(page.locator('.s2-nameplate .s2-eyebrow')).toHaveText(week ?? '');
-    await expect(page.locator('.s2-focusgrid')).toBeVisible();
+    await expect(page.locator('.s2-focusgroups')).toBeVisible();
     expect(errors).toEqual([]);
   });
 });

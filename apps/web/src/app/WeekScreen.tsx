@@ -26,20 +26,44 @@ import {
   injuryText,
   key,
   participantName,
+  positionOverall,
   practiceBand,
   program,
   riskBand,
   athleteName,
 } from './content';
 import { BuildPanel } from './BuildView';
+import { GrowthList } from './Growth';
+import { mergeGrowth, type AttributeGrowth } from './growth-model';
 import { benefitNameKey, nilOfferText } from './nil';
 import { AcademicAlert, ProfilePanel, TeamPanel } from './TeamProfile';
 import { Nameplate } from './Nameplate';
 import { Crest, Delta, Meter, Panel } from './ui';
 import { METER_COLORS } from './theme';
 
+type FocusCategory = 'position' | 'physical' | 'mental' | 'recovery';
+
+/** The week's work in four kinds, so a plan reads as a mix: technique, body, mind, rest. */
+const FOCUS_CATEGORY: Readonly<Record<string, FocusCategory>> = {
+  action_weight_room: 'physical',
+  action_speed_work: 'physical',
+  action_film_study: 'mental',
+  action_recovery: 'recovery',
+  action_study_hall: 'recovery',
+};
+const FOCUS_CATEGORIES: readonly FocusCategory[] = ['position', 'physical', 'mental', 'recovery'];
+const CATEGORY_KEYS = {
+  position: 'v2.week.catPosition',
+  physical: 'v2.week.catPhysical',
+  mental: 'v2.week.catMental',
+  recovery: 'v2.week.catRecovery',
+} as const;
+
 interface FocusView {
   readonly id: string;
+  readonly category: FocusCategory;
+  /** The attributes this focus trains (XP targets). */
+  readonly trains: readonly string[];
   readonly position: boolean;
   readonly open: boolean;
   readonly body: number;
@@ -48,6 +72,7 @@ interface FocusView {
   readonly gpa: number;
 }
 
+/** Gains on one line, costs on the next, so a focus reads at a glance. */
 function effects(t: AppTranslate, focus: FocusView): React.JSX.Element {
   const list: [string, number][] = [
     [t('v2.stat.body'), focus.body],
@@ -55,19 +80,25 @@ function effects(t: AppTranslate, focus: FocusView): React.JSX.Element {
     [t('v2.stat.conf'), focus.confidence],
     [t('v2.stat.gpa'), Math.round(focus.gpa * 100) / 100],
   ];
+  const chip = ([label, value]: [string, number]) => (
+    <span className={`s2-effect ${value > 0 ? 's2-effect--up' : 's2-effect--down'}`} key={label}>
+      {label} {value > 0 ? '+' : '−'}
+      {Math.abs(value)}
+    </span>
+  );
+  const gains = list.filter(([, value]) => value > 0);
+  const costs = list.filter(([, value]) => value < 0);
   return (
-    <span className="s2-effects">
-      {list
-        .filter(([, value]) => value !== 0)
-        .map(([label, value]) => (
-          <span
-            className={`s2-effect ${value > 0 ? 's2-effect--up' : 's2-effect--down'}`}
-            key={label}
-          >
-            {label} {value > 0 ? '+' : '−'}
-            {Math.abs(value)}
-          </span>
-        ))}
+    <span className="s2-focus__effects">
+      {focus.trains.length > 0 && (
+        <span className="s2-focus__trains">
+          {t('v2.week.trains', {
+            list: focus.trains.map((id) => t(attributeNameKey(id))).join(' · '),
+          })}
+        </span>
+      )}
+      {gains.length > 0 && <span className="s2-effects">{gains.map(chip)}</span>}
+      {costs.length > 0 && <span className="s2-effects">{costs.map(chip)}</span>}
     </span>
   );
 }
@@ -223,6 +254,54 @@ function DepthSlice({ career }: { readonly career: CareerVNext }): React.JSX.Ele
   );
 }
 
+/** Every attribute the week trained, merged across the three focuses. */
+function growthOf(report: PracticeReportVNext): readonly AttributeGrowth[] {
+  return mergeGrowth(report.focuses.flatMap((focus) => focus.attributeXp));
+}
+
+function GrowthPanel({
+  career,
+  report,
+}: {
+  readonly career: CareerVNext;
+  readonly report: PracticeReportVNext;
+}): React.JSX.Element {
+  const { t } = useAppTranslation();
+  const rows = growthOf(report);
+  const profile = career.athlete.profile;
+  const attributes = profile.attributes as unknown as Record<
+    string,
+    { rating: number; xp: number }
+  >;
+  const before = positionOverall({
+    ...profile,
+    attributes: {
+      ...attributes,
+      ...Object.fromEntries(
+        rows.map((row) => [row.attributeId, { rating: row.ratingBefore, xp: row.xpBefore }]),
+      ),
+    },
+  } as typeof profile);
+  const after = positionOverall(profile);
+  return (
+    <Panel
+      aside={
+        <span className={`s2-effect ${after > before ? 's2-effect--up' : ''}`}>
+          {t('v2.report.overallLine', { before, after })}
+        </span>
+      }
+      id="s2-growth"
+      title={t('v2.report.growthTitle')}
+    >
+      {rows.length === 0 ? (
+        <p className="s2-note">{t('v2.report.noGrowth')}</p>
+      ) : (
+        <GrowthList rows={rows} />
+      )}
+    </Panel>
+  );
+}
+
 function Report({
   career,
   report,
@@ -241,96 +320,87 @@ function Report({
   const { depth } = report;
   const moved = depth.movement;
   const band = practiceBand(report.practiceScore);
-  const xp = new Map<string, number>();
-  for (const focus of report.focuses)
-    for (const entry of focus.attributeXp)
-      xp.set(entry.attributeId, (xp.get(entry.attributeId) ?? 0) + entry.appliedXp);
-  const topXp = [...xp.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3);
   const first = report.focuses[0];
   const last = report.focuses[2];
   return (
     <div className="s2-grid-2">
-      <Panel id="s2-report" title={t('v2.report.title')}>
-        <div className="s2-row" style={{ alignItems: 'center', gap: 18 }}>
-          <span aria-label={t('v2.report.gradeLabel', { band })} className="s2-grade" role="img">
-            {band}
-          </span>
-          <div className="s2-stack" style={{ gap: 6 }}>
-            <p className="s2-display" style={{ fontSize: 30 }}>
-              {t(MOVEMENT_KEYS[moved], { position: abbr, rank: depth.rankAfter })}
-            </p>
-            {moved !== 'HELD' && (
-              <div className="s2-movement s2-num" aria-hidden="true">
-                <span>
-                  {abbr}
-                  {depth.rankBefore}
-                </span>
-                <span className="s2-movement__arrow">→</span>
-                <span
-                  className={moved === 'PROMOTED' ? 's2-up' : moved === 'DEMOTED' ? 's2-down' : ''}
-                >
-                  {abbr}
-                  {depth.rankAfter}
-                </span>
-              </div>
-            )}
+      <div className="s2-stack">
+        <Panel id="s2-report" title={t('v2.report.title')}>
+          <div className="s2-row" style={{ alignItems: 'center', gap: 18 }}>
+            <span aria-label={t('v2.report.gradeLabel', { band })} className="s2-grade" role="img">
+              {band}
+            </span>
+            <div className="s2-stack" style={{ gap: 6 }}>
+              <p className="s2-display" style={{ fontSize: 30 }}>
+                {t(MOVEMENT_KEYS[moved], { position: abbr, rank: depth.rankAfter })}
+              </p>
+              {moved !== 'HELD' && (
+                <div className="s2-movement s2-num" aria-hidden="true">
+                  <span>
+                    {abbr}
+                    {depth.rankBefore}
+                  </span>
+                  <span className="s2-movement__arrow">→</span>
+                  <span
+                    className={
+                      moved === 'PROMOTED' ? 's2-up' : moved === 'DEMOTED' ? 's2-down' : ''
+                    }
+                  >
+                    {abbr}
+                    {depth.rankAfter}
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-        <ul className="s2-bullets" style={{ marginTop: 14 }}>
-          <li>
-            <span>
-              {t('v2.report.trust')} <Delta value={depth.coachTrust.actualDelta} />
-              {depth.coachTrust.actualDelta === 0 && t('v2.report.noChange')}
-            </span>
-          </li>
-          {topXp.length > 0 && (
+          <ul className="s2-bullets" style={{ marginTop: 14 }}>
             <li>
               <span>
-                {t('v2.report.growth', {
-                  list: topXp
-                    .map(([id, value]) => `${t(attributeNameKey(id))} +${value}`)
-                    .join(' · '),
+                {t('v2.report.trust')} <Delta value={depth.coachTrust.actualDelta} />
+                {depth.coachTrust.actualDelta === 0 && t('v2.report.noChange')}
+              </span>
+            </li>
+            {(report.offFieldDelta ?? 0) !== 0 && (
+              <li>
+                <span className="s2-num">
+                  {t('v2.report.offField', {
+                    value: `${report.offFieldDelta! > 0 ? '+' : '−'}${Math.abs(report.offFieldDelta!)}`,
+                  })}
+                </span>
+              </li>
+            )}
+            {(report.benefitsUsed ?? []).map((benefitId) => (
+              <li key={benefitId}>
+                <span>{t('v2.report.benefitUsed', { benefit: t(benefitNameKey(benefitId)) })}</span>
+              </li>
+            ))}
+            {report.sidelineCredit !== 0 && (
+              <li>
+                <span>
+                  {t(
+                    report.sidelineCredit > 0
+                      ? 'v2.report.sidelinePlus'
+                      : 'v2.report.sidelineMinus',
+                    {
+                      value: Math.abs(report.sidelineCredit),
+                    },
+                  )}
+                </span>
+              </li>
+            )}
+            <li>
+              <span>
+                {t('v2.report.gauge', {
+                  value: report.gaugeAfter,
+                  threshold: VNEXT_BREAKTHROUGH_THRESHOLD,
+                  gain: report.gaugeAfter - report.gaugeBefore,
                 })}
               </span>
             </li>
-          )}
-          {(report.offFieldDelta ?? 0) !== 0 && (
-            <li>
-              <span className="s2-num">
-                {t('v2.report.offField', {
-                  value: `${report.offFieldDelta! > 0 ? '+' : '−'}${Math.abs(report.offFieldDelta!)}`,
-                })}
-              </span>
-            </li>
-          )}
-          {(report.benefitsUsed ?? []).map((benefitId) => (
-            <li key={benefitId}>
-              <span>{t('v2.report.benefitUsed', { benefit: t(benefitNameKey(benefitId)) })}</span>
-            </li>
-          ))}
-          {report.sidelineCredit !== 0 && (
-            <li>
-              <span>
-                {t(
-                  report.sidelineCredit > 0 ? 'v2.report.sidelinePlus' : 'v2.report.sidelineMinus',
-                  {
-                    value: Math.abs(report.sidelineCredit),
-                  },
-                )}
-              </span>
-            </li>
-          )}
-          <li>
-            <span>
-              {t('v2.report.gauge', {
-                value: report.gaugeAfter,
-                threshold: VNEXT_BREAKTHROUGH_THRESHOLD,
-                gain: report.gaugeAfter - report.gaugeBefore,
-              })}
-            </span>
-          </li>
-        </ul>
-      </Panel>
+          </ul>
+        </Panel>
+        <GrowthPanel career={career} report={report} />
+      </div>
       <div className="s2-stack">
         <Panel id="s2-readiness" title={t('v2.readiness.title')}>
           <div className="s2-meters">
@@ -408,6 +478,13 @@ export function WeekScreen({
     () =>
       focusDefinitionsVNext(career, mechanics).map((definition) => ({
         id: definition.id,
+        category:
+          'positionId' in definition ? 'position' : (FOCUS_CATEGORY[definition.id] ?? 'physical'),
+        trains: (
+          ('attributeXp' in definition ? definition.attributeXp : []) as readonly {
+            readonly attributeId: string;
+          }[]
+        ).map(({ attributeId }) => attributeId),
         position: 'positionId' in definition,
         open: isFocusAvailableVNext(career, definition.id, mechanics),
         body: definition.bodyDelta,
@@ -549,27 +626,37 @@ export function WeekScreen({
               );
             })}
           </div>
-          <div className="s2-focusgrid">
-            {focuses.map((focus) => {
-              const count = picks.filter((id) => id === focus.id).length;
+          <div className="s2-focusgroups">
+            {FOCUS_CATEGORIES.map((category) => {
+              const inCategory = focuses.filter((focus) => focus.category === category);
+              if (inCategory.length === 0) return null;
               return (
-                <button
-                  className={`s2-focus ${focus.position ? 's2-focus--position' : ''}`}
-                  disabled={picks.length >= 3 || !focus.open}
-                  key={focus.id}
-                  onClick={() => add(focus.id)}
-                  title={t(focusText(focus.id).descriptionKey)}
-                  type="button"
-                >
-                  <span className="s2-focus__kind">
-                    {focus.open
-                      ? t(focus.position ? 'v2.week.positionWork' : 'v2.week.sharedWork')
-                      : t('v2.inj.restricted')}
-                  </span>
-                  <span className="s2-focus__name">{t(focusText(focus.id).nameKey)}</span>
-                  {effects(t, focus)}
-                  {count > 0 && <span className="s2-focus__count">{count}</span>}
-                </button>
+                <section className="s2-focusgroup" key={category}>
+                  <h3 className="s2-eyebrow s2-focusgroup__title">{t(CATEGORY_KEYS[category])}</h3>
+                  <div className="s2-focusgrid">
+                    {inCategory.map((focus) => {
+                      const count = picks.filter((id) => id === focus.id).length;
+                      return (
+                        <button
+                          className={`s2-focus ${focus.position ? 's2-focus--position' : ''}`}
+                          data-category={focus.category}
+                          disabled={picks.length >= 3 || !focus.open}
+                          key={focus.id}
+                          onClick={() => add(focus.id)}
+                          title={t(focusText(focus.id).descriptionKey)}
+                          type="button"
+                        >
+                          {!focus.open && (
+                            <span className="s2-focus__kind">{t('v2.inj.restricted')}</span>
+                          )}
+                          <span className="s2-focus__name">{t(focusText(focus.id).nameKey)}</span>
+                          {effects(t, focus)}
+                          {count > 0 && <span className="s2-focus__count">{count}</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
               );
             })}
           </div>

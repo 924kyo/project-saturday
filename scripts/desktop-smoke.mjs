@@ -98,8 +98,10 @@ async function useLocale(locale) {
 async function create(locale, positionIndex, name) {
   await useLocale(locale);
   await expect(primary()).toBeVisible({ timeout: 20_000 });
-  await page.locator('.s2-tiles').first().locator('.s2-tile').nth(positionIndex).click();
+  await page.locator('.s2-tile--position').nth(positionIndex).click();
+  await page.locator('fieldset').nth(1).locator('.s2-tile').first().click();
   await primary().click();
+  await page.locator('fieldset').first().locator('.s2-tile').first().click();
   await page.locator('[role=checkbox]:not([disabled])').first().click();
   await page.locator('[role=checkbox][aria-checked=false]:not([disabled])').first().click();
   await primary().click();
@@ -149,7 +151,7 @@ async function playWeek() {
   await primary().click();
   await expect(page.locator('.s2-grade')).toBeVisible();
   await primary().click();
-  await expect(page.locator('.s2-focusgrid')).toBeVisible();
+  await expect(page.locator('.s2-focusgroups')).toBeVisible();
   return decisions;
 }
 
@@ -173,20 +175,20 @@ try {
   await writeFile(join(output, 'before-relaunch.json'), JSON.stringify(saved, null, 2));
   await stop();
   await launch();
-  await expect(page.locator('.s2-focusgrid')).toBeVisible();
+  await expect(page.locator('.s2-focusgroups')).toBeVisible();
   assert.deepEqual(await readCurrent(), saved, 'Exact save envelope unchanged after process exit');
   report.checks.push('Exact save envelope survives process exit and offline relaunch');
-  // New career: cancel keeps the save, confirm clears it.
+  // Save slots: a second career goes into slot 2 and the first stays exactly as saved.
   const topbar = page.locator('.s2-topbar__actions .s2-chipbtn');
   await topbar.last().click();
-  await page.locator('[role=alertdialog] .s2-btn--ghost').first().click();
-  assert.deepEqual(await readCurrent(), saved);
-  await topbar.last().click();
-  await page.locator('[role=alertdialog] .s2-btn--ghost').last().click();
-  await expect.poll(readCurrent).toBeUndefined();
+  await page.locator('.s2-saveslot--empty .s2-btn').first().click();
   await create('en-US', 3, 'Desktop Second Career');
   await page.screenshot({ path: join(output, 'en-second-career.png'), fullPage: true });
-  report.checks.push('New career cancel/confirm and an en-US CB creation');
+  assert.deepEqual(await readCurrent(), saved, 'Slot 1 is untouched by a career in slot 2');
+  await topbar.last().click();
+  await page.locator('.s2-saveslot:not(.s2-saveslot--active) .s2-btn').first().click();
+  await expect(page.locator('.s2-focusgroups')).toBeVisible({ timeout: 10_000 });
+  report.checks.push('Save slots: an en-US CB career in slot 2, then resume slot 1');
   assert.deepEqual(errors, []);
   report.passed = true;
 } catch (error) {

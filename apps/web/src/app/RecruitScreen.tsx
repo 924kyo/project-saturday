@@ -5,9 +5,10 @@ import type {
   RecruitOfferVNext,
   VNextPositionId,
 } from '@project-saturday/game-core';
+import { programCultureVNext } from '@project-saturday/game-content/content';
 
 import { AthletePortrait } from '../career/AthletePortrait';
-import { PORTRAIT } from './theme';
+import { PORTRAIT, inkOn } from './theme';
 import { useAppTranslation } from '../i18n/i18n';
 import {
   CLASS_YEAR_KEYS,
@@ -18,6 +19,7 @@ import {
   athleteName,
 } from './content';
 import { Crest } from './ui';
+import { ProgramEmblem } from './ProgramEmblem';
 
 function pitchKey(offer: RecruitOfferVNext) {
   if (offer.preview.rank <= 2) return 'v2.recruit.pitch.early' as const;
@@ -81,6 +83,7 @@ export function RecruitScreen({
       <div className="s2-offers" role="list">
         {career.recruiting.offers.map((offer) => {
           const identity = program(offer.programId);
+          const culture = programCultureVNext(offer.programId);
           const strength = Math.max(1, Math.min(5, Math.round((offer.programRating - 50) / 7)));
           const playing = Math.max(1, 6 - Math.ceil(offer.preview.rank / 1.6));
           return (
@@ -89,18 +92,27 @@ export function RecruitScreen({
                 aria-pressed={selected === offer.programId}
                 className="s2-offer"
                 onClick={() => setSelected(offer.programId)}
-                style={{ '--c1': identity.primary, '--c2': identity.secondary } as CSSProperties}
+                style={
+                  {
+                    '--c1': identity.primary,
+                    '--c2': identity.secondary,
+                    '--c1-ink': inkOn(identity.primary),
+                  } as CSSProperties
+                }
                 type="button"
               >
                 <span className="s2-offer__top">
-                  <Crest identity={identity} size={64} />
-                  <span>
+                  <Crest identity={identity} size={60} />
+                  <span className="s2-offer__title">
                     <span className="s2-display s2-offer__name">
                       {t(key(identity.shortNameKey))}
                     </span>
-                    <br />
+                    {culture !== null && (
+                      <span className="s2-offer__mascot">{t(key(culture.mascotKey))}</span>
+                    )}
                     <span className="s2-offer__pitch">{t(pitchKey(offer))}</span>
                   </span>
+                  <ProgramEmblem identity={identity} size={52} />
                 </span>
                 <span className="s2-offer__path">
                   <span className="s2-display s2-offer__rank s2-num">
@@ -122,6 +134,18 @@ export function RecruitScreen({
                   </span>
                 </span>
                 <span className="s2-note">{t(key(identity.descriptionKey))}</span>
+                {culture !== null && (
+                  <span className="s2-offer__culture">
+                    <span className="s2-offer__tags">
+                      {culture.atmosphereKeys.map((tag) => (
+                        <span className="s2-tag" key={tag}>
+                          {t(key(tag))}
+                        </span>
+                      ))}
+                    </span>
+                    <span className="s2-offer__tradition">{t(key(culture.traditionKey))}</span>
+                  </span>
+                )}
                 {familiarNames(career, offer.programId) !== null && (
                   <span className="s2-effect s2-effect--up">
                     {t('v2.legacy.familiar', { names: familiarNames(career, offer.programId)! })}

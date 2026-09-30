@@ -96,7 +96,7 @@ const patterns: readonly [string, Pair, Pair, readonly [Pair, Pair, Pair]][] = [
   ],
   [
     'backside.fold',
-    ['Backside fold', '뒷면 폴드'],
+    ['Backside fold', '백사이드 폴드'],
     ['Pursuit opens a lane against the original flow.', '추격이 원래 흐름 반대쪽 길을 엽니다.'],
     [
       ['The backside tackle crosses face.', '백사이드 태클이 얼굴 앞을 가로지른다.'],

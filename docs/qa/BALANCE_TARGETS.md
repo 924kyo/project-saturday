@@ -146,3 +146,23 @@ The same report after snap looks, the WR fit-scale fix and grade calibration:
 Award seasons by position (of 24): QB 1, RB 3, WR 8, CB 4, LB 4, EDGE 9. Before M11 QB had none and WR was graded on a broken scale. Tuning:
 - staff-grade calibration: QB +11, RB +6, WR −17 on the kernel box score, so every role sits on the defenders' curve;
 - award thresholds: All-Conference first 64, second 62, Freshman All-American 62.
+
+### Playtest round 1 (2026-10-01): reads that count, a moving room, faster cards
+
+The report now plays a **decent reader** (two looks in three right). Reads weigh on plays and on the staff grade, the room practices each week, and the breakthrough threshold is 50.
+
+| Measure | Value | Band |
+| --- | --- | --- |
+| Seasons reaching the 12-team bracket | 28‰ | 20–300‰ |
+| Seasons with an award | 313‰ | 50–400‰ |
+| Seasons ending as the starter | 861‰ | 400–900‰ |
+| Careers drafted / first round | 694‰ / 56‰ | 150–800‰ / <250‰ |
+| Brand at career end | 80.4 | <90 |
+
+Readers compared (one balanced career per position; `runM10ReaderComparison`):
+
+| Reader | Mean season grade | Award seasons |
+| --- | --- | --- |
+| Guesser (rotates calls) | 58 | ~0‰ |
+| Decent (two in three right) | 70 | 326‰ |
+| Sharp (every look right) | 73 | 770‰ |

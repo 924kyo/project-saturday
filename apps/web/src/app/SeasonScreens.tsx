@@ -29,6 +29,7 @@ import {
 } from './content';
 import { Nameplate } from './Nameplate';
 import type { PrototypeAlumniView } from './prototype';
+import { inkOn } from './theme';
 import { Crest, Delta, Panel } from './ui';
 
 const DRAFT_BAND_KEYS = {
@@ -292,12 +293,18 @@ export function OffseasonScreen({
                 aria-pressed={selected === option.programId}
                 className="s2-offer"
                 onClick={() => setSelected(option.programId)}
-                style={{ '--c1': identity.primary, '--c2': identity.secondary } as CSSProperties}
+                style={
+                  {
+                    '--c1': identity.primary,
+                    '--c2': identity.secondary,
+                    '--c1-ink': inkOn(identity.primary),
+                  } as CSSProperties
+                }
                 type="button"
               >
                 <span className="s2-offer__top">
                   <Crest identity={identity} size={56} />
-                  <span>
+                  <span className="s2-offer__title">
                     <span className="s2-display s2-offer__name">
                       {t(key(identity.shortNameKey))}
                     </span>

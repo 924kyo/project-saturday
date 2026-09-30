@@ -16,6 +16,7 @@ import {
   DOWN_KEYS,
   POSITION_ABBR_KEYS,
   READ_KEYS,
+  playVerdict,
   ROLE_KEYS,
   gameText,
   key,
@@ -25,6 +26,7 @@ import {
   athleteShortName,
 } from './content';
 import { TacticalBoard } from './TacticalBoard';
+import { usePreferences } from './preferences';
 import { Crest, Meter } from './ui';
 import { METER_COLORS, inkOn } from './theme';
 
@@ -71,6 +73,7 @@ export function GameDayScreen({
   readonly onContinue: () => void;
 }): React.JSX.Element | null {
   const { t } = useAppTranslation();
+  const { playReview } = usePreferences();
   const [preview, setPreview] = useState<string | null>(null);
   const [replay, setReplay] = useState(0);
   const compact = globalThis.matchMedia?.('(max-width: 719px)').matches ?? false;
@@ -426,7 +429,7 @@ export function GameDayScreen({
               <div className="s2-lowerthird__body">
                 <p className="s2-eyebrow">{decisionName(result.decisionId)}</p>
                 <p className="s2-display s2-lowerthird__headline">
-                  {t(playHeadlineKey(positionId, result.playResultId), {
+                  {t(playHeadlineKey(positionId, result.playResultId, result.yards), {
                     name: lastName,
                     yards: Math.abs(result.yards),
                   })}
@@ -439,6 +442,14 @@ export function GameDayScreen({
                   </span>{' '}
                   <span className="s2-note">{t(READ_KEYS[result.readQuality].help)}</span>
                 </p>
+                {result.readQuality === 'SHARP' &&
+                  playVerdict(positionId, result.outcome) === 'bad' && (
+                    <p className="s2-note s2-lowerthird__why">{t('v2.read.rightReadBadPlay')}</p>
+                  )}
+                {result.readQuality === 'MISSED' &&
+                  playVerdict(positionId, result.outcome) === 'good' && (
+                    <p className="s2-note s2-lowerthird__why">{t('v2.read.wrongReadGoodPlay')}</p>
+                  )}
               </div>
             </div>
           )}
@@ -531,7 +542,7 @@ export function GameDayScreen({
             </>
           ) : (
             <div className="s2-stack">
-              {look?.reveal != null && (
+              {playReview && look?.reveal != null && (
                 <div className="s2-reveal">
                   <p className="s2-eyebrow">{t('v2.look.revealTitle')}</p>
                   <p className="s2-display s2-reveal__name">{t(key(look.reveal.nameKey))}</p>

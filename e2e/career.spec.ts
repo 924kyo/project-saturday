@@ -32,8 +32,11 @@ async function createInLocale(page: Page, position: number, locale: string, name
   if ((await page.locator('html').getAttribute('lang')) !== locale)
     await page.locator('.s2-topbar__actions .s2-chipbtn').first().click();
   await expect(page.locator('html')).toHaveAttribute('lang', locale);
-  await page.locator('.s2-tiles').first().locator('.s2-tile').nth(position).click();
+  // Creation starts empty: position, style, background and two traits are the player's picks.
+  await page.locator('.s2-tile--position').nth(position).click();
+  await page.locator('fieldset').nth(1).locator('.s2-tile').first().click();
   await primaryAction(page).click();
+  await page.locator('fieldset').first().locator('.s2-tile').first().click();
   await page.locator('[role=checkbox]:not([disabled])').first().click();
   await page.locator('[role=checkbox][aria-checked=false]:not([disabled])').first().click();
   await primaryAction(page).click();
@@ -76,7 +79,7 @@ for (const entry of plan) {
       if (kind === 'snap') snaps += 1;
       if (kind === 'review') reviews += 1;
       if (kind === 'offseason') {
-        await expect(page.locator('.s2-focusgrid')).toBeVisible();
+        await expect(page.locator('.s2-focusgroups')).toBeVisible();
         transferred = (await programAt()).split('·')[0]!.trim() !== firstProgram;
       }
       if (kind === 'complete') break;

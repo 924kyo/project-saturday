@@ -6,7 +6,11 @@ export const primaryAction = (page: Page) => page.locator('.s2-actionbar .s2-btn
 export async function createCareer(page: Page, name: string): Promise<void> {
   await page.goto('/');
   await expect(primaryAction(page)).toBeVisible({ timeout: 20_000 });
+  // Creation starts empty: position, style, background and two traits are the player's picks.
+  await page.locator('.s2-tile--position').first().click();
+  await page.locator('fieldset').nth(1).locator('.s2-tile').first().click();
   await primaryAction(page).click();
+  await page.locator('fieldset').first().locator('.s2-tile').first().click();
   await page.locator('[role=checkbox]:not([disabled])').first().click();
   await page.locator('[role=checkbox][aria-checked=false]:not([disabled])').first().click();
   await primaryAction(page).click();
@@ -88,6 +92,6 @@ export async function playWeek(
   await expect(page.locator('.s2-grade')).toBeVisible();
   await onScreen?.('postgame');
   await primaryAction(page).click();
-  await expect(page.locator('.s2-focusgrid')).toBeVisible();
+  await expect(page.locator('.s2-focusgroups')).toBeVisible();
   return decisions;
 }

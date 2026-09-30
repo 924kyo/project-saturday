@@ -393,6 +393,17 @@ export const DOWN_KEYS = {
   4: 'v2.gd.down.fourth',
 } as const satisfies Record<1 | 2 | 3 | 4, MessageKey>;
 
+/** How the play went for the athlete's side: a defender's stop is a win. */
+export function playVerdict(
+  positionId: VNextPositionId,
+  outcome: string,
+): 'good' | 'bad' | 'neutral' {
+  const defense = ['position_cb', 'position_lb', 'position_edge'].includes(positionId);
+  if (outcome === 'NEUTRAL') return 'neutral';
+  if (defense) return outcome === 'TURNOVER' || outcome === 'STOP' ? 'good' : 'bad';
+  return outcome === 'TURNOVER' || outcome === 'STOP' ? 'bad' : 'good';
+}
+
 export const READ_KEYS = {
   SHARP: { name: 'v2.read.sharp', help: 'v2.read.sharpHelp', sideline: 'v2.sideline.sharp' },
   SOLID: { name: 'v2.read.solid', help: 'v2.read.solidHelp', sideline: 'v2.sideline.solid' },
@@ -457,7 +468,20 @@ const PLAY_KEYS: Readonly<Record<string, MessageKey>> = {
   ),
 };
 
-export function playHeadlineKey(positionId: VNextPositionId, playResultId: string): MessageKey {
+/** A carry or catch that gained nothing reads as a stop, not a burst "for 0". */
+const NO_GAIN_KEYS: Readonly<Record<string, MessageKey>> = {
+  'position_rb:RUSH': 'v2.play.rb.rushStuffed',
+  'position_rb:RECEPTION': 'v2.play.rb.receptionNoGain',
+};
+
+export function playHeadlineKey(
+  positionId: VNextPositionId,
+  playResultId: string,
+  yards?: number,
+): MessageKey {
+  const noGain =
+    yards !== undefined && yards <= 0 ? NO_GAIN_KEYS[`${positionId}:${playResultId}`] : undefined;
+  if (noGain !== undefined) return noGain;
   const found = PLAY_KEYS[`${positionId}:${playResultId}`];
   if (found === undefined)
     throw new Error(`Missing play headline for ${positionId}:${playResultId}.`);

@@ -27,6 +27,17 @@ M8 is COMPLETE (2026-09-30): see `docs/exec-plans/completed/m8-six-position-beta
 
 ## Last completed task
 
+Playtest round 1 (2026-10-01): the user's first playtest notes, all addressed.
+- Five save slots and a Settings panel (units, Play Review).
+- Creation starts empty, with a trading-card preview, a foil series plate and bilingual suggested names.
+- Reads weigh on plays (the read edge) and on the staff grade; awards were re-based and the harness plays a decent reader.
+- The depth chart moves (`rivalWeekVNext`), and the breakthrough threshold is 50.
+- Training is grouped by kind, and the practice report and post-game show growth bars. Post-game has a news report and Play Review.
+- The profile has a trading card and grouped ratings.
+- School cards are readable, and program culture (mascot, tradition, atmosphere) and a home jersey were added.
+- Round-2 art specs are written (24 mascots, 8 uniform layers, 80 portrait layers), with renderers and fallbacks wired.
+- The playtest checklist for round 2 is `docs/qa/M11_PLAYTEST.md`.
+
 The art drop (2026-09-30): the 14 Night Game images are in `apps/web/public/art/` (all to spec: sizes, transparent position art, each under 400 KB, precached). Two layout fixes after seeing them in place:
 - the position abbreviation became a small tag beside the playbook glyph, clear of the figure;
 - scene art now shows the whole image at the card's height, fading in from the left, and is dimmed under wrapped text on phones.

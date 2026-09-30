@@ -76,8 +76,86 @@ Shared prompt suffix: *dramatic rim-lit athlete figure in a plain dark uniform a
 - **13. LB:** linebacker in a two-point stance reading the play, weight forward, hands up, ready to trigger.
 - **14. EDGE:** edge rusher bending around a corner, dipping low, one hand swiping, turned toward the viewer's left.
 
+# Round 2 (playtest round 1): mascots, uniforms and painted portraits
+
+Everything in this round is already wired, each with a working fallback: a missing file changes nothing. Drop a finished file at its exact path and it shows up on the next load.
+
+Shared rules:
+- WebP with an alpha channel, and the same originality rules as above.
+- **Tintable layers** (mascots, uniforms, jersey layers) are pure **white** shapes on transparency, with shading only in the alpha channel. The game paints them in each program's colors, so there must be no color in the file.
+- Keep each file small, because they are all precached for offline play: mascots under 40 KB, uniform and portrait layers under 70 KB.
+
+## A. Mascot emblems (24 files, tinted)
+
+Path: `apps/web/public/art/mascots/<emblem>.webp`. Size: **512 × 512**, white silhouette centered with about 8% padding, readable at 40 px. The game shows it on a circular medallion in the program's primary color and tints the silhouette with the trim color. The 96 programs share these 24 emblems (see `packages/game-content/src/content/program-culture.generated.ts` for who uses which).
+
+Style for every emblem: *bold, heraldic sports-logo silhouette, single flat white shape with a few negative-space cuts for detail, strong readable outline, facing left or front, no text, no letters, no real team logo resemblance, transparent background.*
+
+| File | Subject (add to the style line) | Used by (examples) |
+| --- | --- | --- |
+| `bird_raptor.webp` | a hawk's head in profile with a hooked beak and swept-back feathers | Redtails, Windhawks, Condors |
+| `bird_owl.webp` | a front-facing owl with large round eyes and ear tufts | Owls, Snow Owls, Scholars |
+| `bird_sea.webp` | a long-necked heron or kingfisher mid-stride, beak forward | Herons, Kingfishers, Loons |
+| `phoenix.webp` | a rising firebird with wings up and flame-tipped tail feathers | Firebirds, Sunrays, Solar Flares |
+| `wolf.webp` | a wolf's head in three-quarter view, ears up, snarling | Gray Wolves, Sea Wolves, Fog Hounds |
+| `fox.webp` | an alert fox or coyote head with a pointed snout and big ears | Coyotes, Gray Foxes, River Otters |
+| `bear.webp` | a bear's head, front-on, heavy brow, mouth slightly open | Timber Bears |
+| `big_cat.webp` | a mountain lion's head in profile, mid-roar | Bobcats, Lynx, Mountain Lions |
+| `bison.webp` | a bison's head, front-on, curved horns and heavy mane | Ridge Bison |
+| `stallion.webp` | a horse's head in profile with a flowing mane (also reads as a mule or an iron horse) | Mules, Ironhorses, Locomotives |
+| `ram.webp` | a bighorn ram's head with fully curled horns | Bighorns |
+| `stag.webp` | a stag or pronghorn head with antlers or horns, front three-quarter | Stags, Pronghorns, Antelope |
+| `boar.webp` | a wild boar's head with tusks and a bristled ridge | Thornbacks, Peccaries |
+| `serpent.webp` | a coiled snake raised to strike, fangs showing | Copperheads, Cottonmouths, Sidewinders |
+| `reptile.webp` | a caiman or gila-monster head, low and wide, scaled | Caimans, Gila Monsters, Snapping Turtles |
+| `scorpion.webp` | a scorpion seen from above, tail curled overhead | Scorpions |
+| `sea_creature.webp` | a leaping fish (tarpon or barracuda) arcing out of a wave line | Tarpons, Barracudas, Stingrays, Sea Lions |
+| `mariner.webp` | a ship's wheel crossed with an anchor | Navigators, Stevedores, Icebreakers |
+| `smith.webp` | a hammer striking an anvil with sparks | Hammers, Anvils, Riveters, Masons |
+| `miner.webp` | crossed pickaxes over a mountain peak with a lamp | Prospectors, Sourdoughs |
+| `knight.webp` | a helmeted sentinel's head in profile (not any real school's knight) | Sentinels, Monarchs, Founders |
+| `storm.webp` | a thundercloud with a lightning bolt and wind lines | Thunderheads, Dust Devils, Breakers |
+| `lantern.webp` | an old lantern or lighthouse lamp throwing light rays | Lamplighters, Keepers, Lanterns |
+| `grove.webp` | an oak tree with a broad crown and visible roots | Live Oaks, Harvesters, Haymakers |
+
+## B. Uniform templates (8 files, tinted)
+
+Path: `apps/web/public/art/uniforms/<style>-base.webp` and `<style>-trim.webp`. Size: **600 × 660**, a front view of a football home jersey, flat-lay, centered, with shoulder pads implied.
+- The **base** layer is the whole jersey body in white; the game applies the primary color.
+- The **trim** layer is only the collar, sleeve stripes and side panels in white; the game applies the trim color. It must align exactly with the base.
+- Leave the chest center plain, because the game prints the number there.
+
+| Style | Look | Programs |
+| --- | --- | --- |
+| `classic` | traditional cut, two sleeve stripes, plain collar | shield crests |
+| `modern` | tapered athletic cut, angled side panels, no sleeve stripes | circle crests |
+| `stripe` | classic cut with one wide stripe across the lower chest | diamond crests |
+| `retro` | loose vintage cut, thick yoke across the shoulders | pennant crests |
+
+Prompt suffix: *flat-lay product render of a sports jersey, front view, perfectly symmetrical, even studio lighting, white material only, no logos, no numbers, no text, transparent background.*
+
+## C. Painted portrait layers (80 files)
+
+Path: `apps/web/public/art/portrait/...`. Canvas: **512 × 640 for every layer**.
+- The layers stack exactly, so the head, neck and shoulders must sit at the same coordinates in every file. Use one master template.
+- Framing is a **helmet-off bust**: head and shoulders with the chest cut at the bottom edge, facing front with a slight three-quarter turn, looking at the viewer, with a calm, confident expression.
+- The game keeps the drawn figure until the head layer for the chosen options exists.
+
+Style for every layer: *semi-realistic painted sports-card portrait, soft studio rim light in cool white, subtle cyan edge light, clean edges, fictional person, transparent background, no text, no logos, no numbers.*
+
+| Layer | Files | What is in it |
+| --- | --- | --- |
+| Skin (neck, shoulders, arms) | `skin/<build>-<tone>.webp`: 3 builds × 6 tones = 18 | Bare neck and upper arms for the build. Builds: `lean`, `balanced`, `broad`. Tones: `light`, `light_medium`, `medium`, `medium_deep`, `dark`, `deep` |
+| Jersey (tinted) | `jersey/<build>.webp` and `jersey/<build>-trim.webp`: 6 | A white jersey with shoulder pads over the bust (primary color). The trim file holds only the collar and shoulder stripes (trim color) |
+| Head | `head/<face>-<tone>.webp`: 4 faces × 6 tones = 24 | Face and head with no hair, or very close stubble. Faces: `oval`, `round`, `square`, `angular` |
+| Hair | `hair/<style>-<color>.webp`: 6 styles × 4 colors = 24 | Styles: `shaved` (a stubble shadow only), `close_crop`, `short_curls`, `medium_curls`, `braids`, `locs`. Colors: `black`, `dark_brown`, `brown`, `light_brown` |
+| Eye black | `eye-black/stripes.webp` and `eye-black/wide.webp`: 2 | Only the paint under the eyes |
+| Arm sleeves | `sleeves/left.webp`, `sleeves/right.webp` and `sleeves/both.webp`: 3 | Dark compression sleeves on the visible upper arms |
+| Towel | `towel/left.webp`, `towel/center.webp` and `towel/right.webp`: 3 | A white towel tucked at the waistline, where visible at the bottom edge |
+
+Draw order, bottom to top: skin, sleeves, jersey, jersey trim, head, hair, eye black, towel. Gloves, visor, wrist tape, footwear and jersey fit don't show in a bust, so they stay on the drawn figure only.
+
 ## Optional polish (not wired yet; say if you want them)
 
 - **Program crest art:** the 96 crests are generated SVG shapes with monograms. Painted crests would need a 96-image set at 512 × 512.
-- **Athlete portrait:** the portrait is layered CSS art driven by the creation appearance options (skin, face, hair and more). Painted portraits would need a layered sprite set (heads, hair, skin tones) rather than single images.
 - **Title logo lockup:** the in-app mark is an SVG, `LogoMark` in `ui.tsx`. A bespoke wordmark would be an SVG at 1200 × 300.

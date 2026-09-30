@@ -44,7 +44,7 @@ export async function step(page: Page): Promise<CareerStep> {
   if (await visible(page, '#s2-complete')) return 'complete';
   const before = await savedRevision(page);
   let kind: CareerStep;
-  if (await visible(page, '.s2-focusgrid')) {
+  if (await visible(page, '.s2-focusgroups')) {
     await page.locator('.s2-panel__head .s2-chipbtn').first().click();
     kind = 'plan';
   } else if (await visible(page, '#s2-offseason')) {

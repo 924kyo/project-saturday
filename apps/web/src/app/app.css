@@ -286,8 +286,19 @@ body {
 }
 .s2-topbar__actions {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 6px;
-  flex: none;
+  min-width: 0;
+}
+/* Three top-bar buttons plus the wordmark do not fit a phone: the logo mark stays, the word goes. */
+@media (max-width: 540px) {
+  .s2-brand__word {
+    display: none;
+  }
+  .s2-chipbtn {
+    padding: 0 10px;
+  }
 }
 @media (max-width: 379px) {
   .s2-brand__word {
@@ -344,7 +355,6 @@ body {
   font-size: 22px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  white-space: nowrap;
   cursor: pointer;
   overflow: hidden;
   clip-path: polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
@@ -1000,12 +1010,14 @@ body {
   max-width: 560px;
   margin: 0 auto;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 8px;
 }
-/* The bar's call to action: prominent, not a billboard. */
+/* The bar's call to action: prominent, not a billboard, and never wrapped (Back stays one word). */
 .s2-actionbar .s2-btn {
   min-height: 48px;
   font-size: 18px;
+  white-space: nowrap;
 }
 .s2-actionbar__buttons {
   display: flex;
@@ -1013,6 +1025,18 @@ body {
 }
 .s2-actionbar__buttons .s2-btn--block {
   flex: 1;
+  min-width: 0;
+  text-overflow: ellipsis;
+}
+@media (max-width: 400px) {
+  /* Narrow phones: both buttons stay on one line without either wrapping. */
+  .s2-actionbar .s2-btn {
+    padding: 0 14px;
+    font-size: 16px;
+  }
+  .s2-btn--back {
+    padding: 0 12px;
+  }
 }
 .s2-btn--back {
   flex: none;
@@ -1672,13 +1696,15 @@ body {
   display: grid;
   gap: 12px;
   width: 100%;
-  padding: 18px;
+  padding: 0 18px 18px;
   border: 0;
   overflow: hidden;
-  background:
-    linear-gradient(135deg, color-mix(in srgb, var(--c1) 92%, #000) 0 44%, transparent 44.2%),
-    linear-gradient(135deg, transparent 0 45%, var(--c2) 45.2% 46.2%, transparent 46.4%),
-    linear-gradient(160deg, color-mix(in srgb, var(--c1) 26%, var(--surface)), var(--surface));
+  /* The program color lives in the header band; text below sits on a dark card, always readable. */
+  background: linear-gradient(
+    170deg,
+    color-mix(in srgb, var(--c1) 16%, var(--surface)),
+    var(--surface) 70%
+  );
   text-align: left;
   cursor: pointer;
   clip-path: var(--cut-shape);
@@ -1718,27 +1744,110 @@ body {
   box-shadow: inset 0 0 0 3px var(--volt);
 }
 .s2-offer__top {
-  display: flex;
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   gap: 14px;
   align-items: center;
+  margin: 0 -18px;
+  padding: 16px 18px;
+  background:
+    linear-gradient(
+      115deg,
+      transparent 0 78%,
+      var(--c2) 78% 80%,
+      transparent 80% 83%,
+      var(--c2) 83% 84%,
+      transparent 84%
+    ),
+    var(--c1);
+  color: var(--c1-ink, #fff);
+}
+.s2-offer__title {
+  display: grid;
+  gap: 2px;
+  justify-items: start;
+  min-width: 0;
 }
 .s2-offer__name {
-  font-size: 34px;
+  font-size: 32px;
   font-weight: 900;
-  color: #fff;
+  line-height: 1;
+  color: var(--c1-ink, #fff);
+}
+.s2-offer__mascot {
+  font-family: var(--display);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--c1-ink, #fff);
+  opacity: 0.85;
 }
 .s2-offer__pitch {
   display: inline-block;
-  margin-top: 6px;
+  margin-top: 4px;
   padding: 2px 10px;
-  background: var(--c2);
-  color: #111;
+  background: rgba(5, 7, 10, 0.82);
+  color: #fff;
   font-family: var(--display);
   font-weight: 800;
   font-size: 13px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%);
+}
+.s2-offer__culture {
+  display: grid;
+  gap: 6px;
+}
+.s2-offer__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.s2-tag {
+  padding: 2px 9px;
+  border: 1px solid color-mix(in srgb, var(--c2, var(--volt)) 55%, transparent);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+.s2-offer__tradition {
+  padding-left: 12px;
+  border-left: 2px solid var(--c2, var(--volt));
+  font-size: 13.5px;
+  font-style: italic;
+  color: var(--ink-2);
+}
+.s2:lang(ko) .s2-offer__tradition {
+  font-style: normal;
+}
+/* Mascot medallion: tinted emblem art over the monogram fallback. */
+.s2-emblem {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: var(--size);
+  height: var(--size);
+  border-radius: 50%;
+  background: var(--c1);
+  box-shadow:
+    inset 0 0 0 3px var(--c2),
+    0 0 0 2px rgba(5, 7, 10, 0.6);
+}
+.s2-emblem__mono {
+  font-size: calc(var(--size) * 0.36);
+  font-weight: 900;
+  color: var(--ink);
+}
+.s2-emblem__art {
+  position: absolute;
+  inset: 12%;
+  background: var(--c2);
+  -webkit-mask: var(--emblem) center / contain no-repeat;
+  mask: var(--emblem) center / contain no-repeat;
 }
 .s2-offer__path {
   display: grid;
@@ -2131,10 +2240,11 @@ body {
 }
 .s2-namefield {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
 }
 .s2-namefield .s2-input {
-  flex: 1;
+  flex: 1 1 180px;
   min-width: 0;
 }
 .s2-namefield .s2-btn {
@@ -2861,4 +2971,265 @@ fieldset.s2-stack > legend {
 .s2-toggle input:focus-visible + .s2-toggle__track {
   outline: 2px solid var(--volt);
   outline-offset: 2px;
+}
+
+/* ---------- Week plan: kinds of work ---------- */
+.s2-focusgroups {
+  display: grid;
+  gap: 14px;
+}
+.s2-focusgroup {
+  display: grid;
+  gap: 6px;
+}
+.s2-focusgroup__title {
+  margin: 0;
+}
+.s2-focusgroups .s2-focusgrid {
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+}
+.s2-focus__effects {
+  display: grid;
+  gap: 5px;
+}
+.s2-focus__trains {
+  font-size: 12.5px;
+  line-height: 1.3;
+  color: var(--ink-2);
+}
+.s2-focus[data-category='position'] {
+  border-top: 2px solid var(--volt);
+}
+.s2-focus[data-category='physical'] {
+  border-top: 2px solid #ff8a3d;
+}
+.s2-focus[data-category='mental'] {
+  border-top: 2px solid #45c8ff;
+}
+.s2-focus[data-category='recovery'] {
+  border-top: 2px solid #3ddc84;
+}
+
+/* ---------- Practice report: growth bars ---------- */
+.s2-panel--wide {
+  grid-column: 1 / -1;
+}
+.s2-growth {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.s2-growth__row {
+  display: grid;
+  grid-template-columns: minmax(96px, 150px) 64px 1fr;
+  grid-template-areas: 'name rating bar' '. . xp';
+  align-items: center;
+  column-gap: 12px;
+  row-gap: 2px;
+}
+.s2-growth__name {
+  grid-area: name;
+  font-weight: 700;
+}
+.s2-growth__rating {
+  grid-area: rating;
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 900;
+}
+.s2-growth__up {
+  margin-left: 4px;
+  font-size: 14px;
+  color: var(--volt);
+}
+.s2-growth__bar {
+  grid-area: bar;
+  position: relative;
+  height: 10px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+.s2-growth__base {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: #3b82f6;
+}
+.s2-growth__gain {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--volt);
+  box-shadow: 0 0 10px rgba(200, 255, 46, 0.6);
+  animation: s2-grow 900ms var(--ease) both;
+  transform-origin: left;
+}
+.s2-growth__bar--level {
+  outline: 1px solid var(--volt);
+}
+.s2-growth__xp {
+  grid-area: xp;
+  font-size: 12.5px;
+}
+@keyframes s2-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .s2-growth__gain {
+    animation: none;
+  }
+}
+@media (max-width: 640px) {
+  .s2-growth__row {
+    grid-template-columns: 1fr 56px;
+    grid-template-areas: 'name rating' 'bar bar' 'xp xp';
+  }
+}
+
+/* ---------- Post-game: news report and play review ---------- */
+.s2-news {
+  position: relative;
+  display: grid;
+  gap: 6px;
+  padding: 18px 22px 18px 26px;
+  background: linear-gradient(90deg, rgba(200, 255, 46, 0.08), transparent 60%), var(--surface-2);
+  border-left: 4px solid var(--volt);
+  clip-path: var(--cut-shape);
+}
+.s2-news__head {
+  margin: 0;
+  font-size: clamp(24px, 3.4vw, 34px);
+  line-height: 1.1;
+}
+.s2-news__line {
+  margin: 0;
+  color: var(--ink-2);
+}
+.s2-review {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.s2-review__row {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  align-items: start;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--surface-2);
+}
+
+/* ---------- Profile: the card and the scouting sheet ---------- */
+.s2-profilehead {
+  display: grid;
+  grid-template-columns: minmax(240px, 320px) 1fr;
+  gap: 22px;
+  align-items: start;
+}
+.s2-profilehead__facts {
+  padding-top: 8px;
+}
+.s2-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 20px;
+  margin: 8px 0 0;
+}
+.s2-facts dt {
+  font-family: var(--display);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.s2-facts dd {
+  margin: 2px 0 0;
+  font-weight: 700;
+}
+.s2-ratinggroup__title {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 0 0 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--line);
+}
+.s2-ratinggroup__avg {
+  font-family: var(--display);
+  font-size: 20px;
+  color: var(--ink);
+}
+@media (max-width: 720px) {
+  .s2-profilehead {
+    grid-template-columns: 1fr;
+  }
+  .s2-profilehead .s2-tcard {
+    max-width: 340px;
+    justify-self: center;
+    width: 100%;
+  }
+}
+
+/* ---------- Team: program culture and the home jersey ---------- */
+.s2-teamculture {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 16px;
+  align-items: center;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.s2-teamculture__mascot {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 900;
+}
+.s2-uniform {
+  position: relative;
+  width: 110px;
+  height: 120px;
+  margin: 0;
+}
+.s2-uniform svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.45));
+}
+.s2-uniform__layer {
+  position: absolute;
+  inset: 0;
+  -webkit-mask: var(--base) center / contain no-repeat;
+  mask: var(--base) center / contain no-repeat;
+  background: var(--c1);
+}
+.s2-uniform__layer--trim {
+  -webkit-mask-image: var(--trim);
+  mask-image: var(--trim);
+  background: var(--c2);
+}
+.s2-uniform__number {
+  position: absolute;
+  inset: 34% 0 auto;
+  text-align: center;
+  font-size: 40px;
+  font-weight: 900;
+}
+@media (max-width: 640px) {
+  .s2-teamculture {
+    grid-template-columns: auto 1fr;
+  }
+  .s2-uniform {
+    grid-column: 1 / -1;
+    justify-self: center;
+  }
+}
+/* Scene cards that are not a weekly scene (Team header) carry no scene art. */
+.s2-scene--plain::before {
+  display: none;
 }

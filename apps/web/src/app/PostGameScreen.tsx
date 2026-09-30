@@ -12,8 +12,9 @@ import { useAppTranslation } from '../i18n/i18n';
 import {
   ROUND_KEYS,
   STAT_KEYS,
+  READ_KEYS,
   VERDICT_KEYS,
-  attributeNameKey,
+  athleteName,
   currentOverall,
   gameText,
   key,
@@ -22,7 +23,10 @@ import {
   program,
   athleteShortName,
 } from './content';
+import { GrowthList } from './Growth';
+import { mergeGrowth } from './growth-model';
 import { Nameplate } from './Nameplate';
+import { usePreferences } from './preferences';
 import { SPEAKER_KEYS, selectReactions } from './reactions';
 import { Crest, Meter, Panel } from './ui';
 import { METER_COLORS } from './theme';
@@ -39,6 +43,7 @@ export function PostGameScreen({
   readonly onNext: () => void;
 }): React.JSX.Element | null {
   const { t } = useAppTranslation();
+  const { playReview } = usePreferences();
   if (career.flow.type !== 'POST_GAME' || career.program === null) return null;
   const recap = career.flow.recap;
   if (recap.engine.game.type !== 'COMPLETE') return null;
@@ -53,12 +58,12 @@ export function PostGameScreen({
   const stats = Object.entries(summary.statLine as unknown as Record<string, number>).filter(
     ([field, value]) => value !== 0 && STAT_KEYS[field] !== undefined,
   );
-  const plays = projectCompletedPlayFrames(positionId, recap.engine, {
+  const allPlays = projectCompletedPlayFrames(positionId, recap.engine, {
     career,
     weekIndex: recap.weekIndex,
     mechanics,
-  })
-    .map((play, index) => ({ ...play, index }))
+  }).map((play, index) => ({ ...play, index }));
+  const plays = [...allPlays]
     .sort(
       (a, b) =>
         Number(b.result.outcome === 'TOUCHDOWN' || b.result.outcome === 'TURNOVER') -
@@ -67,10 +72,7 @@ export function PostGameScreen({
     )
     .slice(0, 3);
   const verdict = practiceBand(recap.coachGrade ?? summary.gradeScore);
-  const xp = [...growth.attributeXp]
-    .filter(({ awardedXp }) => awardedXp > 0)
-    .sort((a, b) => b.awardedXp - a.awardedXp)
-    .slice(0, 3);
+  const grown = mergeGrowth(growth.attributeXp);
   const sharp = recap.sideline.filter(({ grade }) => grade === 'SHARP').length;
   const reactions = selectReactions(
     recap,
@@ -80,6 +82,46 @@ export function PostGameScreen({
       : { programId: career.program.programId, alumni: career.legacy.alumni },
   );
   const style = { '--left': us.primary, '--right': them.primary } as CSSProperties;
+  const decisionName = (id: string) => t(gameText.decision(positionId, id).nameKey as MessageKey);
+  const headline = (play: (typeof allPlays)[number]) =>
+    t(playHeadlineKey(positionId, play.result.playResultId, play.result.yards), {
+      name: lastName,
+      yards: Math.abs(play.result.yards),
+    });
+  // The news report: headline and lede from saved facts only.
+  const names = {
+    name: athleteName(t, career),
+    us: t(key(us.shortNameKey)),
+    them: t(key(them.shortNameKey)),
+    a: recap.playerScore,
+    b: recap.opponentScore,
+  };
+  const star = recap.liveSnapCount > 0 && (recap.coachGrade ?? 0) >= 75;
+  const newsHead = t(
+    won
+      ? star
+        ? 'v2.news.headWinStar'
+        : 'v2.news.headWin'
+      : star
+        ? 'v2.news.headLossStar'
+        : 'v2.news.headLoss',
+    names,
+  );
+  const liveSharp = allPlays.filter(({ result }) => result.readQuality === 'SHARP').length;
+  const lede: string[] = [];
+  if (stats.length > 0)
+    lede.push(
+      t('v2.news.stats', {
+        name: lastName,
+        line: stats.map(([field, value]) => `${value} ${t(STAT_KEYS[field]!)}`).join(' · '),
+      }),
+    );
+  if (allPlays.length > 0)
+    lede.push(t('v2.news.reads', { sharp: liveSharp, total: allPlays.length }));
+  else if (recap.sideline.length > 0)
+    lede.push(t('v2.news.sideline', { sharp, total: recap.sideline.length }));
+  if (plays[0] !== undefined) lede.push(t('v2.news.best', { play: headline(plays[0]) }));
+  if (recap.liveSnapCount > 0) lede.push(t('v2.news.grade', { band: verdict }));
 
   return (
     <div className="s2-stack">
@@ -111,6 +153,18 @@ export function PostGameScreen({
           )}
         </p>
       </div>
+
+      <article aria-labelledby="s2-news-head" className="s2-news">
+        <p className="s2-eyebrow">{t('v2.news.eyebrow')}</p>
+        <h2 className="s2-display s2-news__head" id="s2-news-head">
+          {newsHead}
+        </h2>
+        {lede.map((line) => (
+          <p className="s2-news__line" key={line}>
+            {line}
+          </p>
+        ))}
+      </article>
 
       <div className="s2-grid-2">
         <div className="s2-stack">
@@ -170,10 +224,13 @@ export function PostGameScreen({
                     </span>
                     <span>
                       <strong>
-                        {t(playHeadlineKey(positionId, play.result.playResultId), {
-                          name: lastName,
-                          yards: Math.abs(play.result.yards),
-                        })}
+                        {t(
+                          playHeadlineKey(positionId, play.result.playResultId, play.result.yards),
+                          {
+                            name: lastName,
+                            yards: Math.abs(play.result.yards),
+                          },
+                        )}
                       </strong>
                       <br />
                       <span className="s2-note">
@@ -243,20 +300,51 @@ export function PostGameScreen({
                 value={recap.confidence.before}
               />
             </div>
-            {xp.length > 0 && (
-              <p className="s2-note" style={{ marginTop: 10 }}>
-                {t('v2.report.growth', {
-                  list: xp
-                    .map((entry) => `${t(attributeNameKey(entry.attributeId))} +${entry.awardedXp}`)
-                    .join(' · '),
-                })}
-              </p>
-            )}
             <p className="s2-note" style={{ marginTop: 6 }}>
               {t('v2.player.ovr', { ovr: currentOverall(career) })}
             </p>
           </Panel>
         </div>
+        {grown.length > 0 && (
+          <Panel className="s2-panel--wide" id="s2-post-growth" title={t('v2.post.growthTitle')}>
+            <GrowthList rows={grown} />
+          </Panel>
+        )}
+        {playReview && allPlays.length > 0 && (
+          <Panel className="s2-panel--wide" id="s2-playreview" title={t('v2.review.title')}>
+            <ol className="s2-review">
+              {allPlays.map((play) => (
+                <li className="s2-review__row" key={play.index}>
+                  <span className="s2-play__tag">
+                    {t('v2.post.quarter', { period: play.situation.period })}
+                  </span>
+                  <span className="s2-stack" style={{ gap: 2 }}>
+                    <strong>
+                      {play.lookNameKey !== null
+                        ? t(key(play.lookNameKey))
+                        : t(gameText.pattern(positionId, play.patternId).nameKey as MessageKey)}
+                    </strong>
+                    <span>
+                      {t('v2.review.yourCall', { decision: decisionName(play.result.decisionId) })}
+                    </span>
+                    {play.bestDecisionId !== null &&
+                      play.bestDecisionId !== play.result.decisionId && (
+                        <span className="s2-up">
+                          {t('v2.review.best', { decision: decisionName(play.bestDecisionId) })}
+                        </span>
+                      )}
+                    <span className="s2-note">{headline(play)}</span>
+                  </span>
+                  <span
+                    className={`s2-effect ${play.result.readQuality === 'MISSED' ? 's2-effect--down' : 's2-effect--up'}`}
+                  >
+                    {t(READ_KEYS[play.result.readQuality].name)}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </Panel>
+        )}
       </div>
       <div className="s2-actionbar">
         <div className="s2-actionbar__inner">

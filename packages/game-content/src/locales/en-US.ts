@@ -24,6 +24,7 @@ import { enUSLegacyMessages } from './m9-legacy.js';
 import { enUSM10Messages } from './m10-ui.js';
 import { enUSM11LookMessages } from './m11-looks.js';
 import { enUSM12Messages } from './m12-ui.js';
+import { enUSM12ProgramMessages } from './m12-programs.js';
 import { enUSM8PositionMessages } from './m8-positions.js';
 import { m7BuildEn } from './m7-builds.js';
 import { m7DirectEn } from './m7-direct.js';
@@ -52,6 +53,7 @@ export const enUSMessages = {
   ...enUSM10Messages,
   ...enUSM11LookMessages,
   ...enUSM12Messages,
+  ...enUSM12ProgramMessages,
   ...enUSEventBatchMessages,
   ...enUSInjuryBatchMessages,
   ...enUSM6UiMessages,

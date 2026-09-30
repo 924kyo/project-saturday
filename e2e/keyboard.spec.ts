@@ -26,7 +26,10 @@ test('a Saturday is playable with the keyboard alone', async ({ page, isMobile }
   test.setTimeout(180_000);
   await page.goto('/');
   await expect(primaryAction(page)).toBeVisible({ timeout: 20_000 });
+  await tabTo(page, page.locator('.s2-tile--position').first());
+  await tabTo(page, page.locator('fieldset').nth(1).locator('.s2-tile').first());
   await tabTo(page, primaryAction(page));
+  await tabTo(page, page.locator('fieldset').first().locator('.s2-tile').first());
   await tabTo(page, page.locator('[role=checkbox]:not([disabled])').first(), 'Space');
   await tabTo(
     page,
@@ -40,7 +43,7 @@ test('a Saturday is playable with the keyboard alone', async ({ page, isMobile }
   await expect(page.locator('.s2-offer')).toHaveCount(4);
   await tabTo(page, page.locator('.s2-offer').first());
   await tabTo(page, primaryAction(page));
-  await expect(page.locator('.s2-focusgrid')).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator('.s2-focusgroups')).toBeVisible({ timeout: 10_000 });
   await tabTo(page, page.locator('.s2-panel__head .s2-chipbtn').first());
   await tabTo(page, primaryAction(page));
   await expect(page.locator('.s2-grade')).toBeVisible();
@@ -65,7 +68,10 @@ test.describe('reduced motion', () => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/');
     await expect(primaryAction(page)).toBeVisible({ timeout: 20_000 });
+    await page.locator('.s2-tile--position').first().click();
+    await page.locator('fieldset').nth(1).locator('.s2-tile').first().click();
     await primaryAction(page).click();
+    await page.locator('fieldset').first().locator('.s2-tile').first().click();
     await page.locator('[role=checkbox]:not([disabled])').first().click();
     await page.locator('[role=checkbox][aria-checked=false]:not([disabled])').first().click();
     await primaryAction(page).click();
@@ -73,7 +79,7 @@ test.describe('reduced motion', () => {
     await primaryAction(page).click();
     await page.locator('.s2-offer').first().click();
     await primaryAction(page).click();
-    await expect(page.locator('.s2-focusgrid')).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('.s2-focusgroups')).toBeVisible({ timeout: 10_000 });
     await page.locator('.s2-panel__head .s2-chipbtn').first().click();
     await primaryAction(page).click();
     await expect(page.locator('.s2-grade')).toBeVisible();

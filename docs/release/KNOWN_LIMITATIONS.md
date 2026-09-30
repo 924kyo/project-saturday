@@ -22,9 +22,9 @@ The first four rows and the snap looks meet the direction. NIL, injuries and awa
 - **Legacy is information only.** Alumni show up as familiar names, mentors, cameos and the record book. They never grant unlocks or bonuses. Unlock-style meta rewards (`META_PROGRESSION.md`) are not in 1.0, a deliberate choice to keep careers fair (DECISION_LOG, M9 step 3).
 - **No combine or pro day.** Draft stock is a blend of saved facts plus a small draw, shown as a band.
 - **Prototype saves** from before the R rebuild cannot be continued. They are detected and can be exported as JSON, and their alumni plaques are imported read-only.
-- **No reset-all-data control.** New Career (with confirmation) ends the current run and keeps the Alumni Wall. Clearing the Alumni Wall requires clearing site data in the browser.
+- **Save slots, no reset-all-data control.** Five save slots hold separate careers; deleting a slot asks first. Clearing the Alumni Wall requires clearing site data in the browser.
 - **No career export or import, and no cloud sync.** Saves live in this browser's IndexedDB with a last-good backup. After the first save of each session the app asks for persistent storage, but whether it is granted is up to the browser.
-- **Units follow the language.** en-US shows feet, inches and pounds; ko-KR shows cm and kg. There is no separate unit preference yet; stored values are metric, so one can be added without a migration.
+- **Units are a setting.** Settings switches cm/kg and ft/lb in any language (first launch follows the language once). Stored values are metric.
 
 ## Balance
 

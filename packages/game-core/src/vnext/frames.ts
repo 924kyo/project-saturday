@@ -381,6 +381,8 @@ export function projectCompletedPlayFrames(
   readonly result: LivePlayFrame;
   readonly patternId: string;
   readonly lookNameKey: string | null;
+  /** The look's answer (Play Review); null without looks. */
+  readonly bestDecisionId: string | null;
 }[] {
   return deepFreeze(
     plays(engine).flatMap((play, snapIndex) => {
@@ -404,6 +406,7 @@ export function projectCompletedPlayFrames(
           result,
           patternId: String(play['patternId']),
           lookNameKey: look?.nameKey ?? null,
+          bestDecisionId: look === null ? null : bestDecisionOfLook(look),
         },
       ];
     }),

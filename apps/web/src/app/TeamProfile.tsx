@@ -1,5 +1,7 @@
 import {
   academicStatusVNext,
+  MENTAL_ATTRIBUTE_IDS,
+  PHYSICAL_ATTRIBUTE_IDS,
   nextAcademicCheckpointVNext,
   type AcademicStatusVNext,
   type CareerVNext,
@@ -9,11 +11,14 @@ import {
   nilOfVNext,
   VNEXT_NIL_TUNING,
 } from '@project-saturday/game-core';
+import { programCultureVNext } from '@project-saturday/game-content/content';
 import type { MessageKey } from '@project-saturday/game-content/locales';
 
-import { AthletePortrait } from '../career/AthletePortrait';
 import { useAppTranslation } from '../i18n/i18n';
 import { usePreferences } from './preferences';
+import { TradingCard } from './TradingCard';
+import { ProgramEmblem } from './ProgramEmblem';
+import { UniformPreview } from './Uniform';
 import {
   CLASS_YEAR_KEYS,
   POSITION_ABBR_KEYS,
@@ -36,7 +41,7 @@ import {
   imperialMeasure,
   athleteName,
 } from './content';
-import { METER_COLORS, PORTRAIT } from './theme';
+import { METER_COLORS } from './theme';
 import { Crest, Meter, Panel } from './ui';
 import { benefitNameKey, nilOfferText } from './nil';
 
@@ -51,6 +56,16 @@ const ACADEMIC_KEYS = {
 const gpaText = (gpa: number) => gpa.toFixed(2);
 
 /** Team: where the program stands, the full position room, and the season's schedule. */
+/** Presentation only: the number on the home-jersey preview. */
+const JERSEY_NUMBERS: Readonly<Record<VNextPositionId, string>> = {
+  position_qb: '7',
+  position_rb: '22',
+  position_wr: '11',
+  position_cb: '24',
+  position_lb: '44',
+  position_edge: '91',
+};
+
 export function TeamPanel({
   career,
   mechanics,
@@ -63,6 +78,7 @@ export function TeamPanel({
   if (career.program === null || world === null) return null;
   const programId = career.program.programId;
   const identity = program(programId);
+  const culture = programCultureVNext(programId);
   const record = world.programRecords.find((entry) => entry.programId === programId);
   const rank = world.rankings.find((entry) => entry.programId === programId)?.rank ?? null;
   const rival = mechanics.world.programProfiles.find(
@@ -94,7 +110,7 @@ export function TeamPanel({
   const top = [...world.rankings].sort((a, b) => a.rank - b.rank).slice(0, TOP_RANKINGS);
   return (
     <div className="s2-stack" id="s2-team">
-      <section aria-labelledby="s2-team-title" className="s2-scene">
+      <section aria-labelledby="s2-team-title" className="s2-scene s2-scene--plain">
         <div className="s2-row" style={{ alignItems: 'center', gap: 14 }}>
           <Crest identity={identity} size={64} />
           <div>
@@ -115,6 +131,27 @@ export function TeamPanel({
           </div>
         </div>
         <p className="s2-scene__body">{t(key(identity.descriptionKey))}</p>
+        {culture !== null && (
+          <div className="s2-teamculture">
+            <ProgramEmblem identity={identity} size={72} />
+            <div className="s2-stack" style={{ gap: 6 }}>
+              <p className="s2-display s2-teamculture__mascot">{t(key(culture.mascotKey))}</p>
+              <span className="s2-offer__tags">
+                {culture.atmosphereKeys.map((tag) => (
+                  <span className="s2-tag" key={tag}>
+                    {t(key(tag))}
+                  </span>
+                ))}
+              </span>
+              <p className="s2-offer__tradition">{t(key(culture.traditionKey))}</p>
+            </div>
+            <UniformPreview
+              identity={identity}
+              label={t('v2.team.uniform')}
+              number={JERSEY_NUMBERS[positionId]}
+            />
+          </div>
+        )}
         {familiarNames(career, programId) !== null && (
           <p className="s2-note">
             {t('v2.legacy.familiar', { names: familiarNames(career, programId)! })}
@@ -359,6 +396,15 @@ function NilPanel({ career }: { readonly career: CareerVNext }): React.JSX.Eleme
   );
 }
 
+const PHYSICAL: ReadonlySet<string> = new Set(PHYSICAL_ATTRIBUTE_IDS);
+const MENTAL: ReadonlySet<string> = new Set(MENTAL_ATTRIBUTE_IDS);
+const RATING_GROUP_KEYS = {
+  skills: 'v2.profile.groupSkills',
+  physical: 'v2.profile.groupPhysical',
+  mental: 'v2.profile.groupMental',
+} as const;
+const RATING_GROUP_COLORS = { skills: '#c8ff2e', physical: '#ff8a3d', mental: '#45c8ff' } as const;
+
 export function ProfilePanel({
   career,
   mechanics,
@@ -375,9 +421,27 @@ export function ProfilePanel({
   const personality = profile.personalityTraitIds
     .map((id) => traits.find((trait) => trait.id === id))
     .filter((trait) => trait !== undefined);
-  const ratings = Object.entries(profile.attributes)
-    .filter((entry): entry is [string, { rating: number; xp: number }] => entry[1] !== undefined)
-    .sort((left, right) => right[1].rating - left[1].rating);
+  const ratings = Object.entries(profile.attributes).filter(
+    (entry): entry is [string, { rating: number; xp: number }] => entry[1] !== undefined,
+  );
+  // Grouped the way a scout reads a player: position skills, the body, the mind.
+  const groups = (
+    [
+      ['skills', (id: string) => !PHYSICAL.has(id) && !MENTAL.has(id)],
+      ['physical', (id: string) => PHYSICAL.has(id)],
+      ['mental', (id: string) => MENTAL.has(id)],
+    ] as const
+  ).map(([group, test]) => ({
+    group,
+    entries: ratings
+      .filter(([id]) => test(id))
+      .sort((left, right) => right[1].rating - left[1].rating),
+  }));
+  const school = career.program === null ? null : program(career.program.programId);
+  const headline = (archetype?.priorityAttributeIds ?? []).map((id) => ({
+    label: t(attributeNameKey(id)),
+    value: (profile.attributes as unknown as Record<string, { rating: number }>)[id]?.rating ?? 0,
+  }));
   const totals = seasonTotals(career);
   const live = career.log.filter(({ liveSnapCount }) => liveSnapCount > 0).length;
   const status = academicStatusVNext(profile.state.gpa, mechanics);
@@ -385,62 +449,86 @@ export function ProfilePanel({
   const injury = career.condition.injury;
   return (
     <div className="s2-stack" id="s2-profile">
-      <section aria-labelledby="s2-profile-title" className="s2-scene">
-        <div className="s2-row" style={{ alignItems: 'center', gap: 14 }}>
-          <AthletePortrait
-            appearance={profile.appearance}
-            label={t('v2.player.portrait', { name: athleteName(t, career) })}
-            size={PORTRAIT.compact}
-          />
-          <div>
-            <p className="s2-eyebrow">{t('v2.profile.title')}</p>
-            <h1 className="s2-display s2-size-h1" id="s2-profile-title">
-              {athleteName(t, career)}
-            </h1>
-            <p className="s2-note">
-              {t(POSITION_NAME_KEYS[positionId])}
-              {archetype !== undefined && <> · {t(key(archetype.nameKey))}</>}
-            </p>
-            <p className="s2-note s2-num">
-              {units === 'imperial'
-                ? t(
-                    'v2.profile.measureImperial',
-                    imperialMeasure(profile.heightCm, profile.weightKg),
-                  )
-                : t('v2.profile.measure', {
-                    height: profile.heightCm,
-                    weight: profile.weightKg,
-                  })}{' '}
-              · {t('v2.player.ovr', { ovr: currentOverall(career) })}
-            </p>
-          </div>
+      <section aria-labelledby="s2-profile-title" className="s2-profilehead">
+        <TradingCard
+          appearance={profile.appearance}
+          ariaLabel={t('v2.profile.cardLabel')}
+          backgroundId={profile.recruitingBackgroundId}
+          badge={school === null ? undefined : <Crest identity={school} size={34} />}
+          name={athleteName(t, career)}
+          overall={currentOverall(career)}
+          overallLabel={t('v2.create.overall')}
+          positionId={positionId}
+          ratings={headline}
+          styleKey={archetype?.nameKey ?? null}
+        />
+        <div className="s2-stack s2-profilehead__facts">
+          <p className="s2-eyebrow">{t('v2.profile.title')}</p>
+          <h1 className="s2-display s2-size-h1" id="s2-profile-title">
+            {athleteName(t, career)}
+          </h1>
+          <dl className="s2-facts">
+            <div>
+              <dt>{t('v2.profile.position')}</dt>
+              <dd>
+                {t(POSITION_NAME_KEYS[positionId])}
+                {archetype !== undefined && <> · {t(key(archetype.nameKey))}</>}
+              </dd>
+            </div>
+            <div>
+              <dt>{t('v2.profile.body')}</dt>
+              <dd className="s2-num">
+                {units === 'imperial'
+                  ? t(
+                      'v2.profile.measureImperial',
+                      imperialMeasure(profile.heightCm, profile.weightKg),
+                    )
+                  : t('v2.profile.measure', { height: profile.heightCm, weight: profile.weightKg })}
+              </dd>
+            </div>
+            {background !== undefined && (
+              <div>
+                <dt>{t('v2.profile.background')}</dt>
+                <dd>{t(key(background.nameKey))}</dd>
+              </div>
+            )}
+            {personality.length > 0 && (
+              <div>
+                <dt>{t('v2.profile.traits')}</dt>
+                <dd>{personality.map((trait) => t(key(trait.nameKey))).join(', ')}</dd>
+              </div>
+            )}
+          </dl>
         </div>
-        <p className="s2-note">
-          {background !== undefined && (
-            <>
-              {t('v2.profile.background')}: {t(key(background.nameKey))}
-            </>
-          )}
-          {personality.length > 0 && (
-            <>
-              {' '}
-              · {t('v2.profile.traits')}:{' '}
-              {personality.map((trait) => t(key(trait.nameKey))).join(', ')}
-            </>
-          )}
-        </p>
       </section>
       <div className="s2-grid-2">
         <Panel id="s2-profile-ratings" title={t('v2.profile.ratings')}>
-          <div className="s2-meters">
-            {ratings.map(([attributeId, progress]) => (
-              <Meter
-                color={METER_COLORS.preparation}
-                key={attributeId}
-                label={t(attributeNameKey(attributeId))}
-                value={progress.rating}
-              />
-            ))}
+          <div className="s2-stack">
+            {groups
+              .filter(({ entries }) => entries.length > 0)
+              .map(({ group, entries }) => (
+                <section className="s2-ratinggroup" data-group={group} key={group}>
+                  <h3 className="s2-eyebrow s2-ratinggroup__title">
+                    {t(RATING_GROUP_KEYS[group])}
+                    <span className="s2-ratinggroup__avg s2-num">
+                      {Math.round(
+                        entries.reduce((sum, [, progress]) => sum + progress.rating, 0) /
+                          entries.length,
+                      )}
+                    </span>
+                  </h3>
+                  <div className="s2-meters">
+                    {entries.map(([attributeId, progress]) => (
+                      <Meter
+                        color={RATING_GROUP_COLORS[group]}
+                        key={attributeId}
+                        label={t(attributeNameKey(attributeId))}
+                        value={progress.rating}
+                      />
+                    ))}
+                  </div>
+                </section>
+              ))}
           </div>
         </Panel>
         <div className="s2-stack">

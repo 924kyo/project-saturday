@@ -1,5 +1,5 @@
 // Captures the main screens of a fresh career for visual review (dev tool, not a test).
-// Usage: node scripts/capture-screens.mjs [baseUrl] [outDir] [locale]
+// Usage: node scripts/capture-screens.mjs [baseUrl] [outDir] [locale] [positionIndex 0-5]
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 
@@ -8,6 +8,7 @@ import { chromium } from '@playwright/test';
 const base = process.argv[2] ?? 'http://localhost:5173';
 const out = process.argv[3] ?? 'test-results/screens';
 const locale = process.argv[4] ?? 'ko-KR';
+const positionIndex = Number(process.argv[5] ?? 0);
 mkdirSync(out, { recursive: true });
 
 const viewports = {
@@ -32,18 +33,23 @@ for (const [label, viewport] of Object.entries(viewports)) {
   if ((await page.locator('html').getAttribute('lang')) !== locale)
     await page.locator('.s2-topbar__actions .s2-chipbtn').first().click();
   await shot('create');
+  // Creation starts empty: pick a position, a style, a background and two traits.
+  await page.locator('.s2-tile--position').nth(positionIndex).click();
+  await page.locator('fieldset').nth(1).locator('.s2-tile').first().click();
+  await shot('create-role');
   await primary().click();
+  await page.locator('fieldset').first().locator('.s2-tile').first().click();
   await page.locator('[role=checkbox]:not([disabled])').first().click();
   await page.locator('[role=checkbox][aria-checked=false]:not([disabled])').first().click();
   await primary().click();
-  await page.locator('#s2-name').fill('Jayden Park');
+  await page.locator('.s2-namefield .s2-btn').click();
   await shot('create-look');
   await primary().click();
   await page.locator('.s2-offer').first().waitFor();
   await page.locator('.s2-offer').first().click();
   await shot('recruit');
   await primary().click();
-  await page.locator('.s2-focusgrid').waitFor({ timeout: 10_000 });
+  await page.locator('.s2-focusgroups').waitFor({ timeout: 10_000 });
   await page.locator('.s2-panel__head .s2-chipbtn').first().click();
   await shot('week');
   for (const [index, tab] of ['build', 'team', 'profile'].entries()) {
