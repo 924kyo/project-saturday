@@ -218,7 +218,7 @@ Gate: full multi-season careers complete across all six positions.
 
 ## M9 — Full world/content and legacy history
 
-Active from 2026-09-30 (plan: `docs/exec-plans/active/m9-full-world-and-legacy.md`).
+Complete 2026-09-30 (plan: `docs/exec-plans/completed/m9-full-world-and-legacy.md`; gate: `docs/qa/M9_GATE.md`).
 
 Deliver:
 

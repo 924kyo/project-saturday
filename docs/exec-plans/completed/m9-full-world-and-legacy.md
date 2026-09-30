@@ -1,6 +1,6 @@
 # M9 — Full world, content and legacy history
 
-Status: active 2026-09-30. It follows M8, which closed on its Tier 3 gate. Target M10 is unchanged.
+Status: complete 2026-09-30 (Tier 3 gate met; `docs/qa/M9_GATE.md`). Started 2026-09-30. It follows M8, which closed on its Tier 3 gate. Target M10 is unchanged.
 
 Authoritative inputs:
 - `docs/execution/MASTER_ROADMAP.md` (the M9 deliverables and gate);
@@ -47,4 +47,4 @@ Repeated careers show strong variation and persistent history:
    - cameos: authored reactions that mention alumni when their facts apply.
 4. **Event library to 250+:** (done 2026-09-30; 254 events, 100 cards) themed position-neutral packs (campus, locker room, media, body, family, program, big games), each with paired copy through the shared event kernel.
 5. **Content QA and bilingual editorial pass:** (done 2026-09-30; `docs/qa/M9_EDITORIAL_PASS.md`) an automated copy audit (placeholders, lengths, ICU parity, glossary) and a reviewed pass over new surfaces.
-6. **Gate:** a repeated-career variation harness, a two-career browser journey (history persists), a parity ledger update, and a Tier 3 gate.
+6. **Gate:** (met 2026-09-30; `docs/qa/M9_GATE.md`) a repeated-career variation harness, a two-career browser journey (history persists), a parity ledger update, and a Tier 3 gate.

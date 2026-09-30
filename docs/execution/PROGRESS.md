@@ -8,18 +8,27 @@ M10 — 1.0 Release Candidate (unchanged).
 
 ## Current milestone
 
-M9 — Full world, content and legacy history (started 2026-09-30). Plan: `docs/exec-plans/active/m9-full-world-and-legacy.md`.
+M10 — 1.0 Release Candidate (started 2026-09-30). Plan: `docs/exec-plans/active/m10-release-candidate.md`.
 
 ## Status
 
-M8 is COMPLETE (2026-09-30), and its Tier 3 gate is met:
-- all six positions (QB, RB, WR, CB, LB, EDGE) complete multi-season careers in the real app. The `E2E_FULL=1` matrix passed 41, covering six positions × ko-KR/en-US × phone/desktop/320 plus a Pro Draft declaration journey;
-- the 64-program conference world with a 12-team bracket; the Pro Draft (stock, declaration, endings); NIL with benefits and the locker room; overtime; star impact; a 16-event campus-life pack;
-- the six-position four-season career harness is inside its bands;
-- `pnpm check` is green, the packaged desktop app was rebuilt (0.7.5 NSIS), and the desktop smoke passed;
-- the parity ledger is `docs/qa/M8_SIX_POSITION_PARITY.md`.
+M9 is COMPLETE (2026-09-30), and its Tier 3 gate is met (`docs/qa/M9_GATE.md`):
+- 96 programs in 8 conferences of 12, fictional awards and conference titles, legacy history (snapshot, record book, familiarity, mentors, cameos), 254 events and 100 cards, and a bilingual editorial pass;
+- the six-position harness shows variation across repeated careers;
+- a two-career browser journey shows history persists;
+- `pnpm check` is green; `E2E_FULL=1` passed 42; the desktop build and smoke passed.
+
+M8 is COMPLETE (2026-09-30): see `docs/exec-plans/completed/m8-six-position-beta.md`.
 
 ## Last completed task
+
+The M9 closeout (2026-09-30):
+- the variation harness assertions;
+- the two-career legacy journey;
+- the record book now celebrates only good marks;
+- the Tier 3 gate;
+- the plan is archived at `docs/exec-plans/completed/m9-full-world-and-legacy.md`.
+
 
 M9 step 5, the content QA and bilingual editorial pass (2026-09-30):
 - `copy-audit.test.ts` (placeholders, trademarks, untranslated copy, the 콘퍼런스 glossary, title lengths) now runs in every check;
@@ -60,11 +69,11 @@ The M8 closeout, 2026-09-30:
 
 ## Current / next task
 
-M9 step 6: the gate. It needs a repeated-career variation harness, a two-career browser journey showing history persists, a parity/ledger update, and Tier 3.
+M10 step 1: balance at scale. That means a checked multi-season batch report and fixes for the open balance notes. Then save hardening, performance, accessibility, the browser/PWA matrix, localization QA, hygiene and docs, and the gate.
 
 ## Active exec plan
 
-`docs/exec-plans/active/m9-full-world-and-legacy.md`. Contract: `docs/product-reconciliation/CAREER_VNEXT_CONTRACT.md`.
+`docs/exec-plans/active/m10-release-candidate.md`. M8 and M9 are archived in `docs/exec-plans/completed/`.
 
 ## Current compatibility boundary
 
@@ -76,21 +85,22 @@ M9 step 6: the gate. It needs a repeated-career variation harness, a two-career 
 
 ## Latest green verification
 
-- Tier 3, 2026-09-30 (M8 closeout).
-- `pnpm check`: typecheck, lint, boundaries, localized copy and format; node scripts (10); vitest 844/103 files; content 406; sim 390; e2e 10; build and PWA verified.
-- Browser: `E2E_FULL=1` passed 41 (15 were project-assignment skips).
-- Desktop: `desktop:build` (NSIS 0.7.5) and `desktop:smoke` passed with no errors.
+- Tier 3, 2026-09-30 (M9 closeout).
+- `pnpm check`: typecheck, lint, boundaries, localized copy and format; node scripts (10); vitest 857/107 files; content 414; sim 394; e2e 10; build and PWA verified.
+- Browser: `E2E_FULL=1` passed 42 (16 were project-assignment skips).
+- Desktop: `desktop:build` (NSIS) and `desktop:smoke` passed.
 
 ## Recent checkpoints
 
-1. 2026-09-30: M8 complete (`98a8a73` through the closeout commit). Steps covered LB/EDGE, the conference world, the draft, NIL, overtime, the life pack, and star impact with pacing.
-2. 2026-09-30: R complete (`f62da91`), with the Career VNext app as the only app.
-3. 2026-09-29: V3 cutover (tag `pre-cutover`); V2 core and slice.
+1. 2026-09-30: M9 complete (`18ce04f` through the closeout commit): the 96-program world, awards, legacy, the event library and the editorial pass.
+2. 2026-09-30: M8 complete (`98a8a73` through the closeout commit). Steps covered LB/EDGE, the conference world, the draft, NIL, overtime, the life pack, and star impact with pacing.
+3. 2026-09-30: R complete (`f62da91`), with the Career VNext app as the only app.
+4. 2026-09-29: V3 cutover (tag `pre-cutover`); V2 core and slice.
 
 ## Milestone ledger
 
-- M0 through M7 are complete; M7.5 is absorbed by R; R and M8 are complete.
-- M9 is active. M10 has not started.
+- M0 through M7 are complete; M7.5 is absorbed by R; R, M8 and M9 are complete.
+- M9 is complete. M10 is active.
 
 ## Known issues
 
