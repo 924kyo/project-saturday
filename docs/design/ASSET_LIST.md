@@ -1,6 +1,6 @@
 # Night Game — art asset list
 
-The redesigned UI ships complete without these files: every slot has a CSS fallback (floodlight gradients, grain, turf lines). Drop each finished file at the exact path below and it appears on the next load. No code change is needed.
+**Status (2026-09-30): all 14 files are delivered** and ship in `apps/web/public/art/`. Every slot still has a CSS fallback (floodlight gradients, grain, turf lines). To replace an image, drop the new file at the same path; no code change is needed.
 
 ## Rules for every asset
 

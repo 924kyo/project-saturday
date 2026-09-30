@@ -27,6 +27,12 @@ M8 is COMPLETE (2026-09-30): see `docs/exec-plans/completed/m8-six-position-beta
 
 ## Last completed task
 
+The art drop (2026-09-30): the 14 Night Game images are in `apps/web/public/art/` (all to spec: sizes, transparent position art, each under 400 KB, precached). Two layout fixes after seeing them in place:
+- the position abbreviation became a small tag beside the playbook glyph, clear of the figure;
+- scene art now shows the whole image at the card's height, fading in from the left, and is dimmed under wrapped text on phones.
+
+The playtest checklist is `docs/qa/M11_PLAYTEST.md`.
+
 M11 follow-up and the rc.2 gate (2026-09-30):
 - the living Tactical Board: players act out the look's revealed movements before the call, and the whole field plays toward the saved ball spot after it (presentation only; reduced motion stays still). The board remounts when a result arrives, so its animation starts at 0 instead of jumping to the end;
 - the Korean register: 72 shipped QB/RB/CB tell lines now use -다, and 17 M11 look strings were rephrased; a content test guards the register of every tell;
@@ -146,7 +152,6 @@ The M8 closeout, 2026-09-30:
 
 None required: the durable target (M10) is reached, and rc.2 is gated. Optional follow-ups before a public 1.0:
 - the manual items in `docs/release/KNOWN_LIMITATIONS.md`: screen-reader and native-speaker passes, real devices, play-testing the snap looks, trademark clearance, and desktop signing and the installer wizard;
-- the art assets;
 - content depth (NIL, injuries, awards);
 - the pre-R code cleanup (BACKLOG).
 
@@ -188,8 +193,7 @@ None. M8, M9 and M10 are archived in `docs/exec-plans/completed/`.
 - The NIL catalog is small (10 deals).
 - Unused pre-R aggregates and locale keys are still present (cleanup pending).
 - Installer install/uninstall is unexercised.
-- The 14 optional art images (`docs/design/ASSET_LIST.md`) are not supplied yet; CSS fallbacks ship.
-- The snap looks have not been play-tested by people.
+- The snap looks have not been play-tested by people. The checklist is `docs/qa/M11_PLAYTEST.md`.
 
 ## Hard blockers
 
@@ -197,7 +201,7 @@ None.
 
 ## Resume note
 
-No milestone is active. Before new work, confirm the goal with the user. Candidates are the manual items in `docs/release/KNOWN_LIMITATIONS.md`, the art assets, content depth (NIL, injuries, awards) and the pre-R cleanup. Use the tiered protocol:
+No milestone is active. Before new work, confirm the goal with the user. Candidates are the playtest (`docs/qa/M11_PLAYTEST.md`), the manual items in `docs/release/KNOWN_LIMITATIONS.md`, content depth (NIL, injuries, awards) and the pre-R cleanup. Use the tiered protocol:
 - focused core and content tests in the edit loop;
 - the default e2e plan at feature boundaries;
 - real-browser screenshots for new surfaces;

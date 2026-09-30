@@ -1937,17 +1937,19 @@ body {
   --position-art: url('/art/position-edge.webp');
 }
 
+/* A small tag beside the glyph: the right side of the card belongs to the position art. */
 .s2-tile__abbr {
   position: absolute;
-  top: 4px;
-  right: 14px;
-  font-size: 58px;
+  top: 20px;
+  left: 64px;
+  font-size: 15px;
   font-weight: 900;
-  color: rgba(255, 255, 255, 0.07);
+  letter-spacing: 0.08em;
+  color: var(--ink-3);
   pointer-events: none;
 }
 .s2-tile--position[aria-pressed='true'] .s2-tile__abbr {
-  color: rgba(200, 255, 46, 0.2);
+  color: var(--volt);
 }
 .s2-trade {
   font-size: 13px;
@@ -2229,13 +2231,6 @@ fieldset.s2-stack > legend {
   overflow: hidden;
   background:
     linear-gradient(
-      95deg,
-      rgba(10, 14, 21, 0.96) 0 52%,
-      rgba(10, 14, 21, 0.55) 80%,
-      rgba(10, 14, 21, 0.25)
-    ),
-    var(--scene-art) right center / cover no-repeat,
-    linear-gradient(
       120deg,
       color-mix(in srgb, var(--scene-accent) 30%, transparent),
       transparent 65%
@@ -2244,6 +2239,29 @@ fieldset.s2-stack > legend {
   border-left: 6px solid var(--scene-accent);
   clip-path: var(--cut-shape);
   animation: s2-wipe var(--slow) var(--ease) both;
+}
+/* The scene art: the full 16:9 image at the card's height on the right, fading in from the left
+   so it never shows a hard edge or sits under the text at full strength. */
+.s2-scene::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  aspect-ratio: 16 / 9;
+  max-width: 100%;
+  background: var(--scene-art) right center / cover no-repeat;
+  mask-image: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.55) 35%, #000 65%);
+  pointer-events: none;
+}
+.s2-scene > * {
+  position: relative;
+}
+@media (max-width: 640px) {
+  /* On a phone the text wraps over the art; keep the art a backdrop, not a competitor. */
+  .s2-scene::before {
+    opacity: 0.45;
+  }
 }
 #s2-nil {
   --scene-accent: var(--gold);

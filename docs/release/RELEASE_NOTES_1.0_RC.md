@@ -9,7 +9,7 @@ Date: 2026-09-30 (rc.1), updated for rc.2 (M11). Platforms: an installable offli
   - Before your call, opponents act out the movements your tells revealed: pre-snap motion, then the snap, then how they really move.
   - After it the whole field plays: the line fires, receivers release, and the defense pursues the ball.
   - Reduced motion keeps the board still.
-- **Night Game.** A new floodlit look for every screen: play-call cards you can pick with keys 1–3, a jumbotron scorebug, a VS matchup before kickoff, and rarity-framed skill cards.
+- **Night Game.** A new floodlit look for every screen, with original stadium, locker-room, campus and tunnel backdrops, scene art and position art: play-call cards you can pick with keys 1–3, a jumbotron scorebug, a VS matchup before kickoff, and rarity-framed skill cards.
 - **Wide receiver fix.** WR reads were graded against the wrong scale, so every read counted as missed. They grade correctly now, and all positions share one staff-grade curve for awards and draft stock.
 - **Korean copy.** Tells now read in one consistent narrative voice.
 
@@ -68,6 +68,5 @@ A college football career told one Saturday at a time. You create an athlete, ch
 
 See `docs/release/KNOWN_LIMITATIONS.md`. In short:
 - NIL, injury and award variety is thinner than the long-range target;
-- the optional art images are not included yet (every slot has a built-in fallback);
 - screen-reader and native-speaker reviews are still manual to-dos;
 - the desktop build is unsigned.
