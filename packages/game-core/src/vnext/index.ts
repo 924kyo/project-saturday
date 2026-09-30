@@ -94,3 +94,10 @@ export {
   seasonAwardsVNext,
   VNEXT_AWARD_TUNING,
 } from './awards.js';
+export {
+  programAlumniVNext,
+  recordBookVNext,
+  snapshotLegacyVNext,
+  VNEXT_LEGACY_TUNING,
+  type RecordBookEntryVNext,
+} from './legacy.js';

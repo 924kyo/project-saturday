@@ -21,6 +21,15 @@ M8 is COMPLETE (2026-09-30), and its Tier 3 gate is met:
 
 ## Last completed task
 
+M9 step 3, legacy history (2026-09-30):
+- an alumni snapshot saved into new careers (`vnext/legacy.ts`);
+- a record book (titles, awards, best pick, wins, live games, stat leaders) on the landing screen and at completion;
+- program familiarity on offers, transfers and Team;
+- the mentor scene from the current program's alumni;
+- alumni cameo reactions;
+- verified: `pnpm check` (853 + 410 + 394, e2e 10, build).
+
+
 M9 step 2, awards and championships (2026-09-30):
 - `vnext/awards.ts` covers All-Conference first and second team, Freshman All-American, All-American, per-position awards, Conference Player of the Year and Title Game MVP;
 - awards appear on the review, the alumni plaque and completion (awards and conference titles), and as a draft-stock credit;
@@ -41,7 +50,7 @@ The M8 closeout, 2026-09-30:
 
 ## Current / next task
 
-M9 step 3: legacy history (alumni snapshot, record book, familiarity, mentors, cameos). Then the event library, the editorial pass, and the gate.
+M9 step 4: the event library to 250+. Then the editorial pass and the gate.
 
 ## Active exec plan
 

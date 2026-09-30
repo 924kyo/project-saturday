@@ -158,6 +158,9 @@ export function EventScreen({
   const event = career.flow.event;
   const positionId = career.athlete.profile.positionId as VNextPositionId;
   const text = eventText(event.eventId);
+  // A legacy mentor scene names the alumnus from the career's own snapshot.
+  const mentor = career.legacy?.alumni.find(({ careerId }) => careerId === event.mentorCareerId);
+  const params = { name: mentor?.displayName ?? '' };
   // The command is pure, so resolving each choice against the current save is an exact preview.
   const preview = (choiceId: string) => {
     const result = chooseEventVNext(career, choiceId, mechanics);
@@ -172,9 +175,9 @@ export function EventScreen({
       <section aria-labelledby="s2-scene-title" className="s2-scene" id="s2-event">
         <p className="s2-eyebrow">{t('v2.evt.eyebrow')}</p>
         <h1 className="s2-display s2-size-h1" id="s2-scene-title">
-          {t(text.nameKey)}
+          {t(text.nameKey, params)}
         </h1>
-        <p className="s2-scene__body">{t(text.descriptionKey)}</p>
+        <p className="s2-scene__body">{t(text.descriptionKey, params)}</p>
       </section>
       <div className="s2-grid-2">
         {event.chosenChoiceId === null || resolved === null ? (

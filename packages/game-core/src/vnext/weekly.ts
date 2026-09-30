@@ -1,4 +1,5 @@
 import { relationshipTagsVNext } from './nil.js';
+import { programAlumniVNext, VNEXT_LEGACY_TUNING } from './legacy.js';
 import type { EventMechanicsDefinition, EventStatePredicate } from '../events/types.js';
 import type { InjuryChoiceId } from '../injuries/ids.js';
 import {
@@ -63,7 +64,10 @@ export function careerWeekIndexVNext(career: Pick<CareerVNext, 'season'>): numbe
   return career.season.index * VNEXT_CAREER_WEEK_STRIDE + career.season.weekIndex;
 }
 
-function weekStream(career: CareerVNext, purpose: 'event' | 'injury' | 'life'): RngState {
+function weekStream(
+  career: CareerVNext,
+  purpose: 'event' | 'injury' | 'life' | 'mentor',
+): RngState {
   return createRng(
     `${String(career.seed)}:vnext:${purpose}:${career.season.index}:${career.season.weekIndex}`,
   );
@@ -197,6 +201,8 @@ export function attemptWeeklyEventVNext(
   const positionEvent = attemptPositionEventVNext(career, mechanics);
   if (positionEvent !== null) return positionEvent;
   const weekIndex = careerWeekIndexVNext(career);
+  const mentor = attemptMentorVNext(career, mechanics, weekIndex);
+  if (mentor !== null) return mentor;
   const selected = selectDefenderEvent(
     eventContextVNext(career, weekIndex),
     mechanics.life.events,
@@ -210,6 +216,37 @@ export function attemptWeeklyEventVNext(
     choiceIds: getAvailableDefenderEventChoices(selected.event, []).map(({ id }) => id),
     chosenChoiceId: null,
     effects: null,
+  };
+}
+
+/**
+ * The legacy mentor scene: an alumnus of the current program checks in, on its own stream, at most
+ * once per cooldown. Only the career's saved snapshot is read.
+ */
+function attemptMentorVNext(
+  career: CareerVNext,
+  mechanics: CareerVNextMechanics,
+  weekIndex: number,
+): WeeklyEventVNext | null {
+  const programId = career.program?.programId;
+  if (programId === undefined) return null;
+  const mentors = programAlumniVNext(career, programId);
+  const definition = mechanics.legacyEvents.mentor;
+  const recent = career.condition.recentEvents.some(
+    ({ eventId, weekIndex: week }) =>
+      eventId === definition.id && weekIndex - week <= VNEXT_LEGACY_TUNING.mentorCooldownWeeks,
+  );
+  if (mentors.length === 0 || recent) return null;
+  const roll = nextUint32(weekStream(career, 'mentor'));
+  if (roll.value % 1_000 >= VNEXT_LEGACY_TUNING.mentorChancePermille) return null;
+  const mentor = mentors[nextUint32(roll.nextRng).value % mentors.length]!;
+  return {
+    weekIndex,
+    eventId: definition.id,
+    choiceIds: getAvailableDefenderEventChoices(definition, []).map(({ id }) => id),
+    chosenChoiceId: null,
+    effects: null,
+    mentorCareerId: mentor.careerId,
   };
 }
 
@@ -347,8 +384,10 @@ export function resolveWeeklyEventChoiceVNext(
   const profile = career.athlete.profile;
   const before = profile.state;
   const gaugeBefore = career.athlete.breakthroughGauge;
-  if (event.eventId.startsWith('event_life_')) {
-    const definition = mechanics.life.events.find(({ id }) => id === event.eventId);
+  if (event.eventId.startsWith('event_life_') || event.eventId.startsWith('event_legacy_')) {
+    const definition = [...mechanics.life.events, mechanics.legacyEvents.mentor].find(
+      ({ id }) => id === event.eventId,
+    );
     if (definition === undefined) return null;
     const resolved = resolveDefenderEventChoice(
       eventContextVNext(career, event.weekIndex),

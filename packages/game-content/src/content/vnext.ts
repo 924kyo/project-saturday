@@ -11,6 +11,7 @@ import { buildShippedPositionAlphaSessionCommandMechanics } from './position-alp
 import { skillMechanicsDefinitions } from './skills.js';
 import { defenderCatalog, edgeContent, lbContent } from './defenders.js';
 import { lifeEventMechanics } from './life-events.js';
+import { legacyMentorEvent } from './legacy-events.js';
 import {
   addedPrograms96VNext,
   addedProgramsVNext,
@@ -166,6 +167,7 @@ export function buildCareerVNextMechanics(
     },
     defenders: DEFENDER_CATALOGS,
     life: { events: lifeEventMechanics },
+    legacyEvents: { mentor: legacyMentorEvent },
     // These two deals are written for receivers (route clinic, glove workshop).
     nilOfferPositions: {
       nil_offer_youth_route_clinic: ['position_wr'],

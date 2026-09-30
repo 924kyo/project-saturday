@@ -10,6 +10,7 @@ import {
   type CareerEndingVNext,
   type DraftStockBandVNext,
   nilOfVNext,
+  recordBookVNext,
 } from '@project-saturday/game-core';
 import type { MessageKey } from '@project-saturday/game-content/locales';
 
@@ -24,6 +25,7 @@ import {
   conferenceOf,
   program,
   AWARD_KEYS,
+  familiarNames,
 } from './content';
 import { Nameplate } from './Nameplate';
 import type { PrototypeAlumniView } from './prototype';
@@ -303,6 +305,16 @@ export function OffseasonScreen({
                     <span className={`s2-effect ${option.kind === 'STAY' ? 's2-effect--up' : ''}`}>
                       {t(option.kind === 'STAY' ? 'v2.off.stay' : 'v2.off.transfer')}
                     </span>
+                    {familiarNames(career, option.programId) !== null && (
+                      <>
+                        <br />
+                        <span className="s2-note">
+                          {t('v2.legacy.familiar', {
+                            names: familiarNames(career, option.programId)!,
+                          })}
+                        </span>
+                      </>
+                    )}
                   </span>
                 </span>
                 <span className="s2-offer__path">
@@ -445,6 +457,75 @@ function AlumniPlaque({ alumni }: { readonly alumni: AlumniVNext }): React.JSX.E
   );
 }
 
+const RECORD_KEYS = {
+  record_championships: 'v2.record.championships',
+  record_conference_titles: 'v2.record.conferenceTitles',
+  record_awards: 'v2.record.awards',
+  record_best_pick: 'v2.record.bestPick',
+  record_wins: 'v2.record.wins',
+  record_live_games: 'v2.record.liveGames',
+} as const satisfies Record<string, MessageKey>;
+
+/** The record book: the best mark in each category across every plaque. */
+export function RecordBook({
+  alumni,
+}: {
+  readonly alumni: readonly AlumniVNext[];
+}): React.JSX.Element {
+  const { t } = useAppTranslation();
+  const records = recordBookVNext(alumni).filter(
+    ({ recordId, field }) =>
+      !recordId.startsWith('record_stat_') || STAT_KEYS[field!] !== undefined,
+  );
+  return (
+    <Panel id="s2-record-book" title={t('v2.record.title')}>
+      {records.length === 0 ? (
+        <p className="s2-note">{t('v2.record.empty')}</p>
+      ) : (
+        <ol className="s2-schedule">
+          {records.map((record) => (
+            <li className="s2-schedule__row" key={record.recordId}>
+              <span className="s2-note">
+                {record.field === undefined
+                  ? t(RECORD_KEYS[record.recordId as keyof typeof RECORD_KEYS])
+                  : t('v2.record.stat', { stat: t(STAT_KEYS[record.field]!) })}
+              </span>
+              <span className="s2-schedule__opp">{record.displayName}</span>
+              <strong className="s2-num">
+                {record.recordId === 'record_best_pick'
+                  ? t('v2.record.pick', { value: record.value })
+                  : record.value}
+              </strong>
+            </li>
+          ))}
+        </ol>
+      )}
+    </Panel>
+  );
+}
+
+/** Legacy on the landing screen: the record book and the Alumni Wall across careers. */
+export function LegacyPanel({
+  alumni,
+  prototypes,
+}: {
+  readonly alumni: readonly AlumniVNext[];
+  readonly prototypes: readonly PrototypeAlumniView[];
+}): React.JSX.Element {
+  const { t } = useAppTranslation();
+  return (
+    <section aria-labelledby="s2-legacy-title" className="s2-stack" id="s2-legacy">
+      <h2 className="s2-display s2-size-h2" id="s2-legacy-title">
+        {t('v2.legacy.title')}
+      </h2>
+      <div className="s2-grid-2">
+        <RecordBook alumni={alumni} />
+        <AlumniWall alumni={alumni} prototypes={prototypes} />
+      </div>
+    </section>
+  );
+}
+
 /** The permanent record: this career's plaque, every earlier one, and prototype careers that parse. */
 export function AlumniWall({
   alumni,
@@ -534,6 +615,11 @@ export function CareerCompleteScreen({
           alumni.some(({ careerId }) => careerId === mine.careerId) ? alumni : [...alumni, mine]
         }
         prototypes={prototypes}
+      />
+      <RecordBook
+        alumni={
+          alumni.some(({ careerId }) => careerId === mine.careerId) ? alumni : [...alumni, mine]
+        }
       />
       <div className="s2-actionbar">
         <div className="s2-actionbar__inner">

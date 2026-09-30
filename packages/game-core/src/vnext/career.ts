@@ -50,6 +50,7 @@ import {
   withStarImpactVNext,
 } from './game.js';
 import { createSeasonWorldVNext } from './world.js';
+import { snapshotLegacyVNext } from './legacy.js';
 import { resolveOvertimeVNext } from './overtime.js';
 import {
   attemptNilOfferVNext,
@@ -77,6 +78,7 @@ import {
   CAREER_VNEXT_MODEL,
   CAREER_VNEXT_REGULAR_SEASON_WEEKS,
   CAREER_VNEXT_VERSION,
+  type AlumniVNext,
   type CareerVNext,
   type CareerVNextMechanics,
   type CareerVNextResult,
@@ -94,6 +96,8 @@ export { isVNextPositionId, VNEXT_ROOM_TUNING } from './common.js';
 export interface CreateCareerVNextInput {
   readonly seed: RngSeed;
   readonly identity: PositionPlayerCreationIdentity;
+  /** The Alumni Wall at creation; saved as a bounded snapshot (information and story only). */
+  readonly legacy?: readonly AlumniVNext[];
 }
 
 export function createCareerVNext(
@@ -167,6 +171,9 @@ export function createCareerVNext(
     rng: { career: createRng(`${String(input.seed)}:vnext:career`) },
     athlete,
     build: { equippedSkillIds: [null, null, null, null], ownedSkillIds: [] },
+    ...(input.legacy === undefined || input.legacy.length === 0
+      ? {}
+      : { legacy: snapshotLegacyVNext(input.legacy) }),
     recruiting: { offers, committedProgramId: null },
     program: null,
     season: {

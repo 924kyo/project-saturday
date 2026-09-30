@@ -39,7 +39,7 @@ Repeated careers show strong variation and persistent history:
    - deterministic fictional season awards from saved facts, including all-conference, a position award, player of the year and a freshman award;
    - conference and national titles in the review and on the Alumni Wall;
    - awards feed draft stock (the spec's "awards" dimension).
-3. **Legacy history:**
+3. **Legacy history:** (done 2026-09-30)
    - an alumni snapshot is saved into each new career;
    - record book: career records across alumni;
    - program familiarity: past alumni at a program shown in recruiting, transfers and Team;

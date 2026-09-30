@@ -21,6 +21,7 @@ import {
   programIdentityVNext,
   worldVNext96MechanicsDefinition,
   type ProgramIdentityVNext,
+  legacyMentorContent,
 } from '@project-saturday/game-content/content';
 import type { MessageKey } from '@project-saturday/game-content/locales';
 import {
@@ -34,6 +35,7 @@ import {
   type AwardIdVNext,
   type ProgramId,
   type VNextPositionId,
+  programAlumniVNext,
 } from '@project-saturday/game-core';
 
 import type { AppTranslate } from '../i18n/i18n';
@@ -271,6 +273,12 @@ export const AWARD_KEYS = {
   award_title_game_mvp: 'v2.award.titleGameMvp',
 } as const satisfies Record<AwardIdVNext, MessageKey>;
 
+/** Alumni of a program, from the career's own legacy snapshot (information only). */
+export function familiarNames(career: CareerVNext, programId: ProgramId): string | null {
+  const names = programAlumniVNext(career, programId).map(({ displayName }) => displayName);
+  return names.length === 0 ? null : names.join(', ');
+}
+
 export const ROUND_KEYS = {
   FIRST_ROUND: 'v2.round.firstRound',
   QUARTERFINAL: 'v2.round.quarterfinal',
@@ -394,6 +402,7 @@ const EVENT_TEXT = new Map<string, EventText>(
     ...cbAlphaContent.events,
     ...lbContent.events.map((event) => ({ ...event, choices: [] })),
     ...lifeEventContent.map((event) => ({ ...event, choices: [] })),
+    { ...legacyMentorContent, choices: [] },
     ...edgeContent.events.map((event) => ({ ...event, choices: [] })),
     ...eventContent.events,
   ].map((event) => [event.id, event as EventText]),
@@ -416,7 +425,7 @@ const camel = (value: string) =>
  * choice; WR events already carry specific authored choice copy.
  */
 export function eventChoiceKey(eventId: string, choiceId: string): MessageKey {
-  const shared = /^event_((?:qb|rb|cb|lb|edge|life)_[a-z0-9_]+)$/.exec(eventId);
+  const shared = /^event_((?:qb|rb|cb|lb|edge|life|legacy)_[a-z0-9_]+)$/.exec(eventId);
   if (shared !== null) return key(`v2.evt.${camel(shared[1]!)}.${choiceId.split('_').at(-1)!}`);
   const choice = EVENT_TEXT.get(eventId)?.choices.find(({ id }) => id === choiceId);
   if (choice === undefined) throw new Error(`Missing event choice presentation for ${choiceId}.`);

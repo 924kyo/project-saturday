@@ -64,7 +64,13 @@ export function PostGameScreen({
     .sort((a, b) => b.awardedXp - a.awardedXp)
     .slice(0, 3);
   const sharp = recap.sideline.filter(({ grade }) => grade === 'SHARP').length;
-  const reactions = selectReactions(recap, positionId);
+  const reactions = selectReactions(
+    recap,
+    positionId,
+    career.program === null || career.legacy === undefined
+      ? undefined
+      : { programId: career.program.programId, alumni: career.legacy.alumni },
+  );
   const style = { '--left': us.primary, '--right': them.primary } as CSSProperties;
 
   return (

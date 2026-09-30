@@ -30,6 +30,7 @@ import {
   program,
   traits,
   conferenceOf,
+  familiarNames,
 } from './content';
 import { METER_COLORS, PORTRAIT } from './theme';
 import { Crest, Meter, Panel } from './ui';
@@ -110,6 +111,11 @@ export function TeamPanel({
           </div>
         </div>
         <p className="s2-scene__body">{t(key(identity.descriptionKey))}</p>
+        {familiarNames(career, programId) !== null && (
+          <p className="s2-note">
+            {t('v2.legacy.familiar', { names: familiarNames(career, programId)! })}
+          </p>
+        )}
       </section>
       <div className="s2-grid-2">
         <Panel id="s2-team-depth" title={t('v2.depth.title', { position: abbr })}>

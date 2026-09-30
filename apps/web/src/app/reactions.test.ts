@@ -67,6 +67,37 @@ describe('post-game reactions', () => {
     expect(quiet).toEqual([]);
   });
 
+  it('adds alumni cameos only when saved legacy facts touch the game', () => {
+    const alumnus = {
+      careerId: 'career_alpha',
+      displayName: 'Jordan Reyes',
+      positionId: 'position_qb',
+      programIds: ['program_home'],
+      seasons: 4,
+      championships: 0,
+      conferenceTitles: 0,
+      awards: 0,
+      draftRound: null,
+    } as const;
+    const win = {
+      ...recap({ score: [10, 7] }),
+      opponentProgramId: 'program_rival',
+    } as GameRecapVNext;
+    expect(
+      selectReactions(win, 'position_rb', {
+        programId: 'program_home' as never,
+        alumni: [alumnus as never],
+      }).map(({ id }) => id),
+    ).toEqual(['alumniProud']);
+    expect(
+      selectReactions(win, 'position_rb', {
+        programId: 'program_elsewhere' as never,
+        alumni: [{ ...alumnus, programIds: ['program_rival'] } as never],
+      }).map(({ id }) => id),
+    ).toEqual(['alumniRival']);
+    expect(selectReactions(win, 'position_rb').map(({ id }) => id)).toEqual([]);
+  });
+
   it('rewards a perfect sideline day for a reserve', () => {
     const feed = selectReactions(recap({ live: 0, sideline: ['SHARP', 'SHARP'] }), 'position_wr');
     expect(feed.map(({ id }) => id)).toEqual(['sidelineSharp', 'stayReady']);

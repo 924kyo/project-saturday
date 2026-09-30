@@ -166,3 +166,4 @@ export {
   worldVNextMechanicsDefinition,
 } from './world-vnext.js';
 export { lifeEventContent, lifeEventMechanics } from './life-events.js';
+export { legacyMentorContent, legacyMentorEvent } from './legacy-events.js';

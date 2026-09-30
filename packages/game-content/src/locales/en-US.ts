@@ -20,6 +20,7 @@ import { enUSDraftUiMessages } from './m8-draft-ui.js';
 import { enUSNilUiMessages } from './m8-nil-ui.js';
 import { enUSLifeMessages } from './m8-life.js';
 import { enUSAwardMessages } from './m9-awards.js';
+import { enUSLegacyMessages } from './m9-legacy.js';
 import { enUSM8PositionMessages } from './m8-positions.js';
 import { m7BuildEn } from './m7-builds.js';
 import { m7DirectEn } from './m7-direct.js';
@@ -44,6 +45,7 @@ export const enUSMessages = {
   ...enUSNilUiMessages,
   ...enUSLifeMessages,
   ...enUSAwardMessages,
+  ...enUSLegacyMessages,
   ...enUSEventBatchMessages,
   ...enUSInjuryBatchMessages,
   ...enUSM6UiMessages,

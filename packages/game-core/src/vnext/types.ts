@@ -72,6 +72,8 @@ export type CareerVNextMechanics = PositionAlphaSessionCommandMechanics & {
   readonly defenders: Readonly<Record<DefenderPositionId, DefenderCatalogVNext>>;
   /** NIL offers whose authored copy belongs to specific positions (absent = every position). */
   readonly nilOfferPositions: Readonly<Record<string, readonly VNextPositionId[]>>;
+  /** The legacy mentor scene (M9): an alumnus of the current program checks in. */
+  readonly legacyEvents: { readonly mentor: WeeklyEventDefinitionV2 };
   /** Shared campus-life events every position can draw (M8). */
   readonly life: { readonly events: readonly WeeklyEventDefinitionV2[] };
   /** The M8 64-program conference world, for a season that started there (M9 seasons use `world`). */
@@ -235,6 +237,8 @@ export interface WeeklyEventVNext {
   readonly choiceIds: readonly string[];
   readonly chosenChoiceId: string | null;
   readonly effects: EventEffectsVNext | null;
+  /** The alumnus behind a legacy mentor scene (absent on every other event). */
+  readonly mentorCareerId?: string;
 }
 
 export interface BreakthroughOfferVNext {
@@ -373,6 +377,24 @@ export interface DraftResultVNext {
 
 export type CareerEndingVNext = 'GRADUATED' | 'DECLARED' | 'RETIRED';
 
+/** A plaque as a new career saw it (a bounded, sanitized snapshot). */
+export interface LegacyAlumnusVNext {
+  readonly careerId: string;
+  readonly displayName: string;
+  readonly positionId: VNextPositionId;
+  readonly programIds: readonly ProgramId[];
+  readonly seasons: number;
+  readonly championships: number;
+  readonly conferenceTitles: number;
+  readonly awards: number;
+  readonly draftRound: number | null;
+  readonly ending?: CareerEndingVNext;
+}
+
+export interface LegacyVNext {
+  readonly alumni: readonly LegacyAlumnusVNext[];
+}
+
 export interface OffseasonOptionVNext {
   readonly programId: ProgramId;
   readonly kind: 'STAY' | 'TRANSFER';
@@ -462,6 +484,8 @@ export interface CareerVNext {
   readonly condition: ConditionVNext;
   /** NIL, benefits and the locker room (M8; absent on earlier saves). */
   readonly nil?: NilVNext;
+  /** The Alumni Wall as it stood when this career began (M9; absent on earlier saves). */
+  readonly legacy?: LegacyVNext;
   readonly flow: FlowVNext;
   readonly log: readonly GameRecapVNext[];
   /** One review per completed season. */

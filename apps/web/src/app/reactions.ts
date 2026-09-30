@@ -1,4 +1,9 @@
-import type { GameRecapVNext, VNextPositionId } from '@project-saturday/game-core';
+import type {
+  GameRecapVNext,
+  LegacyAlumnusVNext,
+  ProgramId,
+  VNextPositionId,
+} from '@project-saturday/game-core';
 import type { MessageKey } from '@project-saturday/game-content/locales';
 
 /**
@@ -31,7 +36,13 @@ function bestPlayYards(recap: GameRecapVNext): number {
 export function selectReactions(
   recap: GameRecapVNext,
   positionId: VNextPositionId,
+  legacy?: { readonly programId: ProgramId; readonly alumni: readonly LegacyAlumnusVNext[] },
 ): readonly ReactionView[] {
+  // Cameos: alumni whose saved careers touch this game's programs (information only).
+  const proud = legacy?.alumni.find(({ programIds }) => programIds.includes(legacy.programId));
+  const rival = legacy?.alumni.find(({ programIds }) =>
+    programIds.includes(recap.opponentProgramId),
+  );
   const won = recap.resultId === 'game_result_win';
   const lost = recap.resultId === 'game_result_loss';
   const margin = recap.playerScore - recap.opponentScore;
@@ -78,6 +89,20 @@ export function selectReactions(
       key: 'v2.react.touchdown',
       params: { count: touchdowns },
     },
+    won &&
+      rival !== undefined && {
+        id: 'alumniRival',
+        speaker: 'fans',
+        key: 'v2.react.alumniRival',
+        params: { name: rival.displayName },
+      },
+    won &&
+      proud !== undefined && {
+        id: 'alumniProud',
+        speaker: 'teammate',
+        key: 'v2.react.alumniProud',
+        params: { name: proud.displayName },
+      },
     takeaways > 0 && { id: 'takeaway', speaker: 'fans', key: 'v2.react.takeaway', params: {} },
     sacks > 0 && { id: 'sack', speaker: 'fans', key: 'v2.react.sack', params: {} },
     big >= 20 && {

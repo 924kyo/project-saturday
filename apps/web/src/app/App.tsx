@@ -54,7 +54,12 @@ import {
   hasPrototypeData,
   type PrototypeAlumniView,
 } from './prototype';
-import { CareerCompleteScreen, OffseasonScreen, SeasonReviewScreen } from './SeasonScreens';
+import {
+  CareerCompleteScreen,
+  OffseasonScreen,
+  SeasonReviewScreen,
+  LegacyPanel,
+} from './SeasonScreens';
 import { PostGameScreen, SeasonEndScreen } from './PostGameScreen';
 import { RecruitScreen } from './RecruitScreen';
 import { teamStyle } from './theme';
@@ -164,7 +169,8 @@ export function App({ storage, seedFactory = browserSeed }: AppProps): React.JSX
     if (inFlight.current) return;
     const built = buildCareerVNextMechanics(identity);
     if (built === null) return;
-    const result = createCareerVNext({ seed: seedFactory(), identity }, built);
+    // The Alumni Wall as it stands now becomes this career's legacy snapshot.
+    const result = createCareerVNext({ seed: seedFactory(), identity, legacy: alumni }, built);
     if (result.ok) void publish(result.career);
   }
 
@@ -285,7 +291,10 @@ export function App({ storage, seedFactory = browserSeed }: AppProps): React.JSX
               {t('v2.common.loading')}
             </p>
           ) : career === null || mechanics === null ? (
-            <CreateScreen blocked={blocked} onCreate={create} />
+            <>
+              <CreateScreen blocked={blocked} onCreate={create} />
+              {alumni.length > 0 && <LegacyPanel alumni={alumni} prototypes={prototypeAlumni} />}
+            </>
           ) : flow === 'RECRUITING' ? (
             <RecruitScreen
               blocked={blocked}
