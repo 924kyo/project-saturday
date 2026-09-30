@@ -17,7 +17,7 @@ const rows = {
   ],
   'v2.team.playoffLine': [
     'Twelve teams make the playoff: all eight conference champions and four at-large teams.',
-    '플레이오프에는 12팀이 나선다. 8개 콘퍼런스 우승팀과 성적순 4팀이다.',
+    '플레이오프에는 12팀이 나섭니다. 8개 콘퍼런스 우승팀과 성적순 4팀입니다.',
   ],
 } as const satisfies Record<string, Pair>;
 

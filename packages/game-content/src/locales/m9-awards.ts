@@ -6,7 +6,7 @@ const rows = {
   'v2.awards.none': ['No awards this season.', '이번 시즌 수상 없음.'],
   'v2.awards.help': [
     'Awards come from the staff’s grades, your starts and your team’s results.',
-    '수상은 코치진의 평가, 선발 출전, 팀 성적으로 결정된다.',
+    '수상은 코치진의 평가, 선발 출전, 팀 성적으로 결정됩니다.',
   ],
   'v2.award.positionQb': ['Golden Signal Award', '골든 시그널 상'],
   'v2.award.positionRb': ['Iron Rail Award', '아이언 레일 상'],

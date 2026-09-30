@@ -21,6 +21,13 @@ M8 is COMPLETE (2026-09-30), and its Tier 3 gate is met:
 
 ## Last completed task
 
+M9 step 5, the content QA and bilingual editorial pass (2026-09-30):
+- `copy-audit.test.ts` (placeholders, trademarks, untranslated copy, the 콘퍼런스 glossary, title lengths) now runs in every check;
+- the Korean register is aligned: -다 for narration and choices, -습니다 for help and notices;
+- the pass is recorded in `docs/qa/M9_EDITORIAL_PASS.md`;
+- verified: `pnpm check` (857 + 414 + 394, e2e 10, build).
+
+
 M9 step 4, the event library (2026-09-30): 120 new position-neutral events in six themed packs (campus, locker room, media, body, family, program), from `scripts/life_events_m9_a.py`/`_b.py` through the life-event generator with paired copy. The library has 254 events and 100 cards (enforced by `library.test.ts`). The web build splits the content and locale chunks by size to stay under the 500 kB budget. Verified with `pnpm check` (855 + 412 + 394), then a build and e2e (10) after the chunk change.
 
 
@@ -53,7 +60,7 @@ The M8 closeout, 2026-09-30:
 
 ## Current / next task
 
-M9 step 5: content QA and a bilingual editorial pass. Then the gate.
+M9 step 6: the gate. It needs a repeated-career variation harness, a two-career browser journey showing history persists, a parity/ledger update, and Tier 3.
 
 ## Active exec plan
 

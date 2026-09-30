@@ -17,7 +17,7 @@ const rows = {
   'v2.record.title': ['Record Book', '기록실'],
   'v2.record.empty': [
     'Finish a career to open the record book.',
-    '커리어를 마치면 기록실이 열린다.',
+    '커리어를 마치면 기록실이 열립니다.',
   ],
   'v2.record.championships': ['Most national titles', '최다 전국 우승'],
   'v2.record.conferenceTitles': ['Most conference titles', '최다 콘퍼런스 우승'],
