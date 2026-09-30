@@ -70,6 +70,8 @@ export interface DefenderCatalogVNext {
 
 export type CareerVNextMechanics = PositionAlphaSessionCommandMechanics & {
   readonly defenders: Readonly<Record<DefenderPositionId, DefenderCatalogVNext>>;
+  /** NIL offers whose authored copy belongs to specific positions (absent = every position). */
+  readonly nilOfferPositions: Readonly<Record<string, readonly VNextPositionId[]>>;
   /** Shared campus-life events every position can draw (M8). */
   readonly life: { readonly events: readonly WeeklyEventDefinitionV2[] };
   /** The 32-program alpha world, for a season a pre-M8 save started there (M8 seasons use `world`). */

@@ -43,7 +43,12 @@ import {
   resolveWorldRoundVNext,
   scheduledFixtureVNext,
 } from './season.js';
-import { projectVNextWorldResult, resolveVNextSnap, startVNextGame } from './game.js';
+import {
+  projectVNextWorldResult,
+  resolveVNextSnap,
+  startVNextGame,
+  withStarImpactVNext,
+} from './game.js';
 import { createSeasonWorldVNext } from './world.js';
 import { resolveOvertimeVNext } from './overtime.js';
 import {
@@ -747,11 +752,12 @@ function settleGame(
   const regulation = projectVNextWorldResult(completed, fixture);
   if (regulation === null) return fail('career_vnext.engine_failed');
   // No ties on Saturdays: a regulation tie goes to overtime before the world records it.
+  // Overtime weighs the same matchup the game was played on (star impact included).
   const { result: playerResult, overtime } = resolveOvertimeVNext(
     career,
     fixture,
     regulation,
-    mechanics,
+    withStarImpactVNext(career, mechanics),
   );
   const playerIsHome = fixture.homeProgramId === career.program.programId;
   const playerScore = playerIsHome ? playerResult.homeScore : playerResult.awayScore;

@@ -161,6 +161,11 @@ export function buildCareerVNextMechanics(
     },
     defenders: DEFENDER_CATALOGS,
     life: { events: lifeEventMechanics },
+    // These two deals are written for receivers (route clinic, glove workshop).
+    nilOfferPositions: {
+      nil_offer_youth_route_clinic: ['position_wr'],
+      nil_offer_receiver_glove_workshop: ['position_wr'],
+    },
     // M8: new seasons use the 64-program conference world; a season already in progress on the
     // 32-program alpha world finishes there.
     world: worldVNextMechanicsDefinition,

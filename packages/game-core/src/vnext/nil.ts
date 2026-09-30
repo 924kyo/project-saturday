@@ -164,6 +164,10 @@ export function attemptNilOfferVNext(
     .filter(
       (offer) =>
         !offered.has(offer.id) &&
+        (mechanics.nilOfferPositions[offer.id]?.includes(
+          career.athlete.profile.positionId as never,
+        ) ??
+          true) &&
         state.brand >= offer.requirements.minimumBrand &&
         career.program!.room.projection.rank <= offer.requirements.maximumDepthRank &&
         Math.round(state.gpa * 1_000) >= offer.requirements.minimumGpaMilli &&

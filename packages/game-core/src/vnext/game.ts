@@ -75,7 +75,8 @@ export function starImpactVNext(career: CareerVNext, mechanics: CareerVNextMecha
   return Math.floor((lift * share) / 1_000);
 }
 
-function withStarImpact(
+/** Mechanics for the player's own game: the program profile carries the star lift. */
+export function withStarImpactVNext(
   career: CareerVNext,
   mechanics: CareerVNextMechanics,
 ): CareerVNextMechanics {
@@ -107,7 +108,7 @@ export function startVNextGame(
   academicHold = false,
 ): VNextGameState | null {
   if (career.program === null) return null;
-  const mechanics = withStarImpact(career, baseMechanics);
+  const mechanics = withStarImpactVNext(career, baseMechanics);
   const profile = career.athlete.profile;
   if (profile.positionId === 'position_lb' || profile.positionId === 'position_edge')
     return startDefenderVNextGame(career, fixture, weekIndex, mechanics, academicHold);
