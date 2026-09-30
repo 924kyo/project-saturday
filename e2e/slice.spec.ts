@@ -62,3 +62,24 @@ test.describe('true 320 px layout', () => {
     await playWeek(page, overflow);
   });
 });
+
+// M10: weekly transitions stay responsive on a throttled phone (4× CPU via DevTools emulation).
+test.describe('mobile responsiveness', () => {
+  test.skip(({ isMobile }) => !isMobile, 'Throttled on the phone project only.');
+  test('a full week of transitions stays under 1.5 s each at 4× CPU slowdown', async ({ page }) => {
+    test.setTimeout(180_000);
+    await createCareer(page, 'Tempo Tester');
+    const session = await page.context().newCDPSession(page);
+    await session.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+    const marks: { label: string; at: number }[] = [{ label: 'start', at: Date.now() }];
+    await playWeek(page, async (label) => {
+      marks.push({ label, at: Date.now() });
+    });
+    marks.push({ label: 'next-week', at: Date.now() });
+    const slowest = marks
+      .slice(1)
+      .map((mark, index) => ({ label: mark.label, ms: mark.at - marks[index]!.at }));
+    for (const { label, ms } of slowest) expect(ms, label).toBeLessThan(1_500);
+    await session.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+  });
+});

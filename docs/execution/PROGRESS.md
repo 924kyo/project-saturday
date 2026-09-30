@@ -22,6 +22,12 @@ M8 is COMPLETE (2026-09-30): see `docs/exec-plans/completed/m8-six-position-beta
 
 ## Last completed task
 
+M10 step 3, performance (2026-09-30):
+- `performance.test.ts` sets budgets for every command of a full season (100 ms per command, 60 ms per save round trip, season save under 600 KB). Measured: 2–13 ms per command and 5 ms per round trip;
+- a throttled mobile e2e smoke: a whole week at 4× CPU slowdown with each transition under 1.5 s (measured 3.7 s total);
+- verified: `pnpm check` (866 + 418 + 397, e2e 11, build).
+
+
 M10 step 2, save hardening (2026-09-30):
 - a last-good backup with recovery and a notice;
 - checked save fixtures (v1, pre-M8 v3, current M9) that load and keep playing;
@@ -83,7 +89,7 @@ The M8 closeout, 2026-09-30:
 
 ## Current / next task
 
-M10 step 3: performance budgets. Then accessibility, the browser/PWA matrix, localization QA, hygiene and docs, and the gate.
+M10 step 4: the accessibility pass. Then the browser/PWA matrix, localization QA, hygiene and docs, and the gate.
 
 ## Active exec plan
 

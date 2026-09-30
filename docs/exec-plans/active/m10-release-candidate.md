@@ -21,7 +21,7 @@ Every item in `RELEASE_CHECKLIST.md` is checked with evidence, there are no crit
    - corrupt and old saves recover and are communicated;
    - snapshot and backup recovery;
    - the alumni store survives malformed entries.
-3. **Performance:**
+3. **Performance:** (done 2026-09-30)
    - command latency budgets for week planning, kickoff, snaps and settlement (96-program world), measured in tests;
    - save size across a four-year career;
    - weekly transitions responsive on mobile emulation.
