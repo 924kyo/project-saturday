@@ -686,6 +686,8 @@ describe('Career VNext season arc', () => {
     expect(alumni.seasons).toBe(4);
     expect(alumni.programIds).toEqual(programs);
     expect(alumni.record.wins + alumni.record.losses + alumni.record.ties).toBe(48);
+    // Saturdays do not end tied: overtime settles every regulation tie.
+    expect(alumni.record.ties).toBe(0);
     expect(career.history.map(({ seasonIndex }) => seasonIndex)).toEqual([0, 1, 2, 3]);
     // The log holds only the final season; earlier seasons are summarized in history.
     expect(career.log.every(({ seasonIndex }) => seasonIndex === 3)).toBe(true);

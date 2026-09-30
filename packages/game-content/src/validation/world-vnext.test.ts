@@ -147,6 +147,13 @@ describe('M8 conference world', () => {
     expect(state.postseason.rounds[3]!.results[0]!.advancingProgramId).toBe(
       state.postseason.championProgramId,
     );
+    // Overtime: the conference world has no ties.
+    expect(state.programRecords.every(({ ties }) => ties === 0)).toBe(true);
+    expect(
+      state.regularSeasonResults.some(({ fixtureResults }) =>
+        fixtureResults.some((result) => result !== null && 'overtime' in result),
+      ),
+    ).toBe(true);
   });
 
   it('is deterministic by seed, keeps the player game draw-free, and rejects tampering', () => {

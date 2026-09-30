@@ -78,6 +78,11 @@ export function PostGameScreen({
         <h1 className={`s2-display ${won ? 's2-result-w' : lost ? 's2-result-l' : ''}`}>
           {t(won ? 'v2.gd.win' : lost ? 'v2.gd.loss' : 'v2.gd.tie')}
         </h1>
+        {recap.overtime === true && (
+          <p className="s2-eyebrow" style={{ color: '#fff' }}>
+            {t('v2.post.overtime')}
+          </p>
+        )}
         <div className="s2-final__score s2-display s2-num s2-size-score">
           <Crest identity={us} size={48} />
           <span>{recap.playerScore}</span>

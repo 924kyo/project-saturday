@@ -45,6 +45,7 @@ import {
 } from './season.js';
 import { projectVNextWorldResult, resolveVNextSnap, startVNextGame } from './game.js';
 import { createSeasonWorldVNext } from './world.js';
+import { resolveOvertimeVNext } from './overtime.js';
 import {
   attemptNilOfferVNext,
   brandFromGameVNext,
@@ -743,7 +744,24 @@ function settleGame(
     career.program === null
   )
     return fail('career_vnext.engine_failed');
-  const playerResult = projectVNextWorldResult(completed, fixture);
+  const regulation = projectVNextWorldResult(completed, fixture);
+  if (regulation === null) return fail('career_vnext.engine_failed');
+  // No ties on Saturdays: a regulation tie goes to overtime before the world records it.
+  const { result: playerResult, overtime } = resolveOvertimeVNext(
+    career,
+    fixture,
+    regulation,
+    mechanics,
+  );
+  const playerIsHome = fixture.homeProgramId === career.program.programId;
+  const playerScore = playerIsHome ? playerResult.homeScore : playerResult.awayScore;
+  const opponentScore = playerIsHome ? playerResult.awayScore : playerResult.homeScore;
+  const resultId: GameRecapVNext['resultId'] =
+    playerScore > opponentScore
+      ? 'game_result_win'
+      : playerScore < opponentScore
+        ? 'game_result_loss'
+        : 'game_result_tie';
   const worldAfter = resolveWorldRoundVNext(world, mechanics, playerResult, game.weekIndex);
   if (worldAfter === null) return fail('career_vnext.engine_failed');
   const record = worldAfter.programRecords.find(
@@ -763,9 +781,10 @@ function settleGame(
     weekIndex: game.weekIndex,
     opponentProgramId: game.opponentProgramId,
     isHome: game.isHome,
-    playerScore: summary.playerTeamScore,
-    opponentScore: summary.opponentScore,
-    resultId: summary.resultId,
+    playerScore,
+    opponentScore,
+    resultId,
+    ...(overtime === null ? {} : { overtime: true }),
     liveSnapCount: summary.opportunityCount,
     sideline: game.sideline,
     engine: completed,
@@ -797,7 +816,7 @@ function settleGame(
             profile.state.brand +
               brandFromGameVNext({
                 played: summary.opportunityCount > 0,
-                won: summary.resultId === 'game_result_win',
+                won: resultId === 'game_result_win',
                 coachGrade,
                 postseason: game.round !== undefined,
                 opponentRank: stakes?.opponentRank ?? null,

@@ -287,6 +287,8 @@ export interface GameRecapVNext {
   readonly stakes: GameStakesVNext | null;
   /** True when the game was missed through academic ineligibility (absent = false). */
   readonly academicHold?: boolean;
+  /** True when a regulation tie was decided in overtime (M8; absent = regulation). */
+  readonly overtime?: boolean;
   readonly availabilityId:
     'injury_availability_full' | 'injury_availability_limited' | 'injury_availability_out';
 }

@@ -237,7 +237,7 @@ export function GameDayScreen({
             id="s2-final"
             style={{ fontSize: 44 }}
           >
-            {t(won ? 'v2.gd.win' : lost ? 'v2.gd.loss' : 'v2.gd.tie')}
+            {t(won ? 'v2.gd.win' : lost ? 'v2.gd.loss' : 'v2.gd.regulationTie')}
           </h1>
           <div className="s2-final__score s2-display s2-num">
             <Crest identity={us} size={72} />
@@ -255,7 +255,8 @@ export function GameDayScreen({
               onClick={onContinue}
               type="button"
             >
-              {t('v2.gd.toStory')} <span className="s2-btn__arrow">→</span>
+              {t(won || lost ? 'v2.gd.toStory' : 'v2.gd.toOvertime')}{' '}
+              <span className="s2-btn__arrow">→</span>
             </button>
           </div>
         </div>

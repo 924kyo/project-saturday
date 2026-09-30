@@ -1,7 +1,7 @@
 import { cloneSerializable, deepFreeze } from '../player/immutable.js';
 import { POSITION_IDS, isProgramId, type ProgramId } from '../player/ids.js';
 import { compareCodeUnits } from '../player/order.js';
-import { isRngState, type RngState } from '../random/rng.js';
+import { isRngState, nextUint32, type RngState } from '../random/rng.js';
 import {
   deriveWorldAlphaTables,
   isValidWorldAlphaAggregateResult,
@@ -9,6 +9,7 @@ import {
   projectPositionMatchupFromProfiles,
   simulateWorldAlphaAggregate,
   worldAlphaSimulationTier,
+  type WorldAlphaAggregateGameResult,
   type WorldAlphaGameResult,
   type WorldAlphaGroupStanding,
   type WorldAlphaMechanicsDefinition,
@@ -87,6 +88,78 @@ export interface WorldVNextSeasonState {
   readonly groupStandings: readonly WorldAlphaGroupStanding[];
   readonly rankings: readonly WorldAlphaRanking[];
   readonly postseason: WorldVNextPostseasonState;
+}
+
+/**
+ * Conference-world overtime for aggregate games: a regulation tie takes one more world draw; the
+ * higher expected score is favored, and the winner adds a field goal or a touchdown.
+ */
+export interface WorldVNextOvertime {
+  readonly homeRegulation: number;
+  readonly awayRegulation: number;
+}
+
+function aggregateWithOvertime(
+  fixture: { readonly homeProgramId: ProgramId; readonly awayProgramId: ProgramId },
+  simulated: { readonly result: WorldAlphaAggregateGameResult; readonly rng: RngState },
+): { readonly result: WorldAlphaAggregateGameResult; readonly rng: RngState } {
+  const result = simulated.result;
+  if (result.winnerProgramId !== null) return simulated;
+  const draw = nextUint32(simulated.rng);
+  const homeChance = Math.min(
+    800,
+    Math.max(200, 500 + (result.homeExpectedScore - result.awayExpectedScore) * 25),
+  );
+  const homeWins = draw.value % 1_000 < homeChance;
+  const points = Math.floor(draw.value / 1_000) % 10 < 6 ? 3 : 7;
+  return {
+    rng: draw.nextRng,
+    result: {
+      ...result,
+      homeScore: result.homeScore + (homeWins ? points : 0),
+      awayScore: result.awayScore + (homeWins ? 0 : points),
+      winnerProgramId: homeWins ? fixture.homeProgramId : fixture.awayProgramId,
+      worldRngDrawCountAfter: draw.nextRng.drawCount,
+      overtime: { homeRegulation: result.homeScore, awayRegulation: result.awayScore },
+    } as WorldAlphaAggregateGameResult,
+  };
+}
+
+/** An aggregate result, allowing one conference-world overtime on top of the shipped model. */
+function validAggregate(
+  result: WorldAlphaAggregateGameResult & { readonly overtime?: WorldVNextOvertime },
+  fixture: {
+    readonly id: string;
+    readonly homeProgramId: ProgramId;
+    readonly awayProgramId: ProgramId;
+  },
+  home: WorldAlphaProgramMechanics,
+  away: WorldAlphaProgramMechanics,
+): boolean {
+  const overtime = result.overtime;
+  if (overtime === undefined) return isValidWorldAlphaAggregateResult(result, fixture, home, away);
+  const { overtime: _overtime, ...rest } = result;
+  void _overtime;
+  const regulation = {
+    ...rest,
+    homeScore: overtime.homeRegulation,
+    awayScore: overtime.awayRegulation,
+    winnerProgramId: null,
+    worldRngDrawCountAfter: result.worldRngDrawCountBefore + 2,
+  };
+  const homeDelta = result.homeScore - overtime.homeRegulation;
+  const awayDelta = result.awayScore - overtime.awayRegulation;
+  return (
+    overtime.homeRegulation === overtime.awayRegulation &&
+    isValidWorldAlphaAggregateResult(regulation, fixture, home, away) &&
+    result.worldRngDrawCountAfter === result.worldRngDrawCountBefore + 3 &&
+    ((homeDelta === 0 &&
+      [3, 7].includes(awayDelta) &&
+      result.winnerProgramId === fixture.awayProgramId) ||
+      (awayDelta === 0 &&
+        [3, 7].includes(homeDelta) &&
+        result.winnerProgramId === fixture.homeProgramId))
+  );
 }
 
 type Result<T> =
@@ -360,12 +433,15 @@ export function resolveNextWorldVNextRegularRound(
     if (fixture.id === playerFixture?.id) return cloneSerializable(playerResult!);
     const tier = worldAlphaSimulationTier(state, definition, fixture) as
       'TIER_2_RELEVANT' | 'TIER_3_DISTANT';
-    const simulated = simulateWorldAlphaAggregate(
+    const simulated = aggregateWithOvertime(
       fixture,
-      profileById.get(fixture.homeProgramId)!,
-      profileById.get(fixture.awayProgramId)!,
-      tier,
-      rng,
+      simulateWorldAlphaAggregate(
+        fixture,
+        profileById.get(fixture.homeProgramId)!,
+        profileById.get(fixture.awayProgramId)!,
+        tier,
+        rng,
+      ),
     );
     rng = simulated.rng;
     return simulated.result;
@@ -429,12 +505,15 @@ export function resolveNextWorldVNextPostseasonRound(
     let result: WorldAlphaGameResult;
     if (fixture.id === playerFixture?.id) result = cloneSerializable(playerResult!);
     else {
-      const simulated = simulateWorldAlphaAggregate(
+      const simulated = aggregateWithOvertime(
         fixture,
-        profileById.get(fixture.homeProgramId)!,
-        profileById.get(fixture.awayProgramId)!,
-        'TIER_2_RELEVANT',
-        rng,
+        simulateWorldAlphaAggregate(
+          fixture,
+          profileById.get(fixture.homeProgramId)!,
+          profileById.get(fixture.awayProgramId)!,
+          'TIER_2_RELEVANT',
+          rng,
+        ),
       );
       rng = simulated.rng;
       result = simulated.result;
@@ -513,7 +592,7 @@ export function isWorldVNextSeasonState(
         isValidWorldAlphaPlayerResult(result, fixture)
       );
     if (
-      !isValidWorldAlphaAggregateResult(
+      !validAggregate(
         result,
         fixture,
         profiles.get(fixture.homeProgramId)!,
