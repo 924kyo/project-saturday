@@ -19,7 +19,7 @@ import {
   lifeEventContent,
   injuryContent,
   programIdentityVNext,
-  worldVNextMechanicsDefinition,
+  worldVNext96MechanicsDefinition,
   type ProgramIdentityVNext,
 } from '@project-saturday/game-content/content';
 import type { MessageKey } from '@project-saturday/game-content/locales';
@@ -263,7 +263,7 @@ export const ROUND_KEYS = {
 
 /** The program's conference identity in the conference world (the alpha groups keep their IDs). */
 export function conferenceOf(programId: ProgramId) {
-  const groupId = worldVNextMechanicsDefinition.programProfiles.find(
+  const groupId = worldVNext96MechanicsDefinition.programProfiles.find(
     (entry) => entry.programId === programId,
   )?.groupId;
   return groupId === undefined ? null : conferenceIdentityVNext(groupId);

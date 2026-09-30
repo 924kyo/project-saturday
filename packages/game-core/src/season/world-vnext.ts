@@ -33,12 +33,32 @@ import {
  * world draws in stable fixture-ID order. Only the league shape and the bracket are new.
  */
 export const WORLD_VNEXT_ID = 'world_vnext_64_program' as const;
+export const WORLD_VNEXT_96_ID = 'world_vnext_96_program' as const;
 export const WORLD_VNEXT_CONFERENCE_COUNT = 8 as const;
-export const WORLD_VNEXT_CONFERENCE_SIZE = 8 as const;
-export const WORLD_VNEXT_PROGRAM_COUNT = 64 as const;
 export const WORLD_VNEXT_REGULAR_ROUND_COUNT = 12 as const;
-export const WORLD_VNEXT_CONFERENCE_ROUND_COUNT = 7 as const;
-export const WORLD_VNEXT_FIXTURES_PER_ROUND = 32 as const;
+
+/**
+ * League shapes by definition ID. M8 is eight conferences of 8 (seven conference rounds, then
+ * five non-conference). M9 is eight conferences of 12 (three early non-conference rounds, then
+ * nine conference games from a 12-team round robin). Both use the same bracket and calendar.
+ */
+export const WORLD_VNEXT_SHAPES = Object.freeze({
+  [WORLD_VNEXT_ID]: Object.freeze({
+    conferenceSize: 8,
+    nonConferenceRounds: Object.freeze([8, 9, 10, 11, 12]),
+  }),
+  [WORLD_VNEXT_96_ID]: Object.freeze({
+    conferenceSize: 12,
+    nonConferenceRounds: Object.freeze([1, 2, 3]),
+  }),
+} as const);
+export type WorldVNextId = keyof typeof WORLD_VNEXT_SHAPES;
+
+function shapeOf(definition: WorldAlphaMechanicsDefinition) {
+  return (
+    WORLD_VNEXT_SHAPES as Readonly<Record<string, (typeof WORLD_VNEXT_SHAPES)[WorldVNextId]>>
+  )[definition?.id];
+}
 export const WORLD_VNEXT_QUALIFIER_COUNT = 12 as const;
 export const WORLD_VNEXT_BYE_COUNT = 4 as const;
 
@@ -79,6 +99,8 @@ export type WorldVNextPostseasonState =
 
 export interface WorldVNextSeasonState {
   readonly model: 'world_vnext_season_v1';
+  /** The definition this season runs on (absent = the M8 64-program world). */
+  readonly worldId?: WorldVNextId;
   readonly seasonIndex: number;
   readonly playerProgramId: ProgramId | null;
   readonly rng: RngState;
@@ -185,12 +207,13 @@ const validDefinitions = new WeakSet<object>();
 export function isWorldVNextDefinition(value: unknown): value is WorldAlphaMechanicsDefinition {
   const definition = value as WorldAlphaMechanicsDefinition;
   if (typeof value === 'object' && value !== null && validDefinitions.has(value)) return true;
+  const shape = shapeOf(definition);
   if (
-    definition?.id !== WORLD_VNEXT_ID ||
+    shape === undefined ||
     !Array.isArray(definition.groups) ||
     definition.groups.length !== WORLD_VNEXT_CONFERENCE_COUNT ||
     !Array.isArray(definition.programProfiles) ||
-    definition.programProfiles.length !== WORLD_VNEXT_PROGRAM_COUNT ||
+    definition.programProfiles.length !== WORLD_VNEXT_CONFERENCE_COUNT * shape.conferenceSize ||
     !Array.isArray(definition.regularSeasonRounds) ||
     definition.regularSeasonRounds.length !== WORLD_VNEXT_REGULAR_ROUND_COUNT
   )
@@ -216,7 +239,7 @@ export function isWorldVNextDefinition(value: unknown): value is WorldAlphaMecha
       typeof group?.id !== 'string' ||
       group.id.length === 0 ||
       !Array.isArray(group.programIds) ||
-      group.programIds.length !== WORLD_VNEXT_CONFERENCE_SIZE
+      group.programIds.length !== shape.conferenceSize
     )
       return false;
     for (const programId of group.programIds) {
@@ -239,7 +262,7 @@ export function isWorldVNextDefinition(value: unknown): value is WorldAlphaMecha
       roundNumbers.has(round.roundNumber) ||
       typeof round.id !== 'string' ||
       !Array.isArray(round.fixtures) ||
-      round.fixtures.length !== WORLD_VNEXT_FIXTURES_PER_ROUND
+      round.fixtures.length !== (WORLD_VNEXT_CONFERENCE_COUNT * shape.conferenceSize) / 2
     )
       return false;
     roundNumbers.add(round.roundNumber);
@@ -257,7 +280,11 @@ export function isWorldVNextDefinition(value: unknown): value is WorldAlphaMecha
         return false;
       const conferenceGame =
         conferenceOf.get(fixture.homeProgramId) === conferenceOf.get(fixture.awayProgramId);
-      if (round.roundNumber <= WORLD_VNEXT_CONFERENCE_ROUND_COUNT !== conferenceGame) return false;
+      if (
+        (shape.nonConferenceRounds as readonly number[]).includes(round.roundNumber) ===
+        conferenceGame
+      )
+        return false;
       fixtureIds.add(fixture.id);
       appearances.add(fixture.homeProgramId);
       appearances.add(fixture.awayProgramId);
@@ -380,6 +407,8 @@ export function createWorldVNextSeason(
   }));
   return ok<WorldVNextSeasonState>({
     model: 'world_vnext_season_v1',
+    // The M8 world keeps its original state shape; later worlds name themselves.
+    ...(definition.id === WORLD_VNEXT_ID ? {} : { worldId: definition.id as WorldVNextId }),
     seasonIndex,
     playerProgramId,
     rng,
@@ -414,6 +443,7 @@ export function resolveNextWorldVNextRegularRound(
   if (
     !isWorldVNextDefinition(definition) ||
     state?.model !== 'world_vnext_season_v1' ||
+    (state.worldId ?? WORLD_VNEXT_ID) !== definition.id ||
     !isRngState(state.rng) ||
     state.postseason.type !== 'PENDING' ||
     !integerIn(state.completedRegularSeasonRoundCount, 0, WORLD_VNEXT_REGULAR_ROUND_COUNT - 1)
@@ -465,6 +495,7 @@ export function initializeWorldVNextPostseason(
   if (
     !isWorldVNextDefinition(definition) ||
     state?.model !== 'world_vnext_season_v1' ||
+    (state.worldId ?? WORLD_VNEXT_ID) !== definition.id ||
     state.completedRegularSeasonRoundCount !== WORLD_VNEXT_REGULAR_ROUND_COUNT ||
     state.postseason.type !== 'PENDING'
   )
@@ -487,6 +518,7 @@ export function resolveNextWorldVNextPostseasonRound(
   if (
     !isWorldVNextDefinition(definition) ||
     state?.model !== 'world_vnext_season_v1' ||
+    (state.worldId ?? WORLD_VNEXT_ID) !== definition.id ||
     state.postseason.type !== 'ACTIVE' ||
     !isRngState(state.rng)
   )
@@ -564,6 +596,7 @@ export function isWorldVNextSeasonState(
   if (
     !isWorldVNextDefinition(definition) ||
     state?.model !== 'world_vnext_season_v1' ||
+    (state.worldId ?? WORLD_VNEXT_ID) !== definition.id ||
     !integerIn(state.seasonIndex, 0, 100) ||
     !isRngState(state.rng) ||
     !integerIn(state.completedRegularSeasonRoundCount, 0, WORLD_VNEXT_REGULAR_ROUND_COUNT) ||

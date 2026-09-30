@@ -14,10 +14,12 @@ import {
 import { describe, expect, it } from 'vitest';
 
 import {
+  addedPrograms96VNext,
   addedProgramsVNext,
   conferenceIdentitiesVNext,
   programIdentityVNext,
   worldAlphaMechanicsDefinition,
+  worldVNext96MechanicsDefinition,
   worldVNextMechanicsDefinition,
 } from '../content/index.js';
 import { localeMessages } from '../locales/index.js';
@@ -77,6 +79,54 @@ function playSeason(seed: string, playerProgramId: ProgramId | null) {
 }
 
 describe('M8 conference world', () => {
+  it('ships the M9 96-program world: 8 conferences of 12, 9 conference and 3 early outside games', () => {
+    const world = worldVNext96MechanicsDefinition;
+    expect(isWorldVNextDefinition(world)).toBe(true);
+    expect(world.programProfiles).toHaveLength(96);
+    expect(new Set(world.programProfiles.map(({ programId }) => programId)).size).toBe(96);
+    for (const group of world.groups) expect(group.programIds).toHaveLength(12);
+    // Every M8 profile is unchanged.
+    for (const profile of definition.programProfiles)
+      expect(world.programProfiles).toContainEqual(profile);
+    const conferenceOf = new Map(
+      world.programProfiles.map(({ programId, groupId }) => [programId, groupId]),
+    );
+    const home = new Map<string, number>();
+    const conferenceGames = new Map<string, number>();
+    for (const round of world.regularSeasonRounds)
+      for (const fixture of round.fixtures) {
+        home.set(fixture.homeProgramId, (home.get(fixture.homeProgramId) ?? 0) + 1);
+        const inside =
+          conferenceOf.get(fixture.homeProgramId) === conferenceOf.get(fixture.awayProgramId);
+        expect(inside).toBe(round.roundNumber > 3);
+        if (inside)
+          for (const id of [fixture.homeProgramId, fixture.awayProgramId])
+            conferenceGames.set(id, (conferenceGames.get(id) ?? 0) + 1);
+      }
+    for (const count of home.values()) {
+      expect(count).toBeGreaterThanOrEqual(5);
+      expect(count).toBeLessThanOrEqual(7);
+    }
+    for (const count of conferenceGames.values()) expect(count).toBe(9);
+    const names = addedPrograms96VNext.map(
+      ({ nameKey }) => localeMessages['en-US'][nameKey as never],
+    );
+    expect(new Set(names).size).toBe(32);
+    for (const { id } of addedPrograms96VNext) {
+      const identity = programIdentityVNext(id as ProgramId);
+      for (const key of [identity.nameKey, identity.shortNameKey, identity.descriptionKey]) {
+        expect(localeMessages['en-US'][key as never], key).toBeTruthy();
+        expect(localeMessages['ko-KR'][key as never], key).toBeTruthy();
+      }
+    }
+    // A season names its world, and a 96-program season never validates against 64.
+    const created = createWorldVNextSeason(world, createRng('world-96'), 0, null);
+    if (!created.ok) throw new Error(created.reason);
+    expect(created.value.worldId).toBe('world_vnext_96_program');
+    expect(isWorldVNextSeasonState(definition, created.value)).toBe(false);
+    expect(isWorldVNextSeasonState(world, created.value)).toBe(true);
+  });
+
   it('ships 64 programs in eight conferences with a valid 12-round schedule', () => {
     expect(isWorldVNextDefinition(definition)).toBe(true);
     // The alpha world stays valid and literal for pre-M8 seasons.

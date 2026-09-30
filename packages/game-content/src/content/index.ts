@@ -158,9 +158,11 @@ export {
 } from './vnext.js';
 export { defenderCatalog, edgeContent, lbContent, type DefenderContent } from './defenders.js';
 export {
+  addedPrograms96VNext,
   addedProgramsVNext,
   conferenceIdentitiesVNext,
   conferenceIdentityVNext,
+  worldVNext96MechanicsDefinition,
   worldVNextMechanicsDefinition,
 } from './world-vnext.js';
 export { lifeEventContent, lifeEventMechanics } from './life-events.js';

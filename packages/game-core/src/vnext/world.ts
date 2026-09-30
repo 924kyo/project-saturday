@@ -16,6 +16,7 @@ import {
   projectWorldVNextPositionMatchup,
   resolveNextWorldVNextPostseasonRound,
   resolveNextWorldVNextRegularRound,
+  WORLD_VNEXT_ID,
   type WorldVNextSeasonState,
 } from '../season/world-vnext.js';
 import type { CareerVNextMechanics, PostseasonRoundVNext, SeasonFinishVNext } from './types.js';
@@ -34,9 +35,14 @@ export function isConferenceWorldVNext(world: WorldStateVNext): world is WorldVN
 /** The schedule and profiles that the given season's world runs on. */
 export function worldDefinitionVNext(
   world: WorldStateVNext | null,
-  mechanics: Pick<CareerVNextMechanics, 'world' | 'legacyWorld'>,
+  mechanics: Pick<CareerVNextMechanics, 'world' | 'world64' | 'legacyWorld'>,
 ): WorldAlphaMechanicsDefinition {
-  return world === null || isConferenceWorldVNext(world) ? mechanics.world : mechanics.legacyWorld;
+  if (world === null) return mechanics.world;
+  if (!isConferenceWorldVNext(world)) return mechanics.legacyWorld;
+  // A season keeps the world it started on (the M8 64-program world has no worldId).
+  return (world.worldId ?? WORLD_VNEXT_ID) === mechanics.world.id
+    ? mechanics.world
+    : mechanics.world64;
 }
 
 /** A new season's world, on its season-named stream. */
@@ -74,11 +80,15 @@ export function matchupVNext(
 
 export function resolveRegularRoundVNext(
   world: WorldStateVNext,
-  mechanics: Pick<CareerVNextMechanics, 'world' | 'legacyWorld'>,
+  mechanics: Pick<CareerVNextMechanics, 'world' | 'world64' | 'legacyWorld'>,
   playerResult: WorldAlphaPlayerGameResult | null,
 ): WorldStateVNext | null {
   if (isConferenceWorldVNext(world)) {
-    const resolved = resolveNextWorldVNextRegularRound(world, mechanics.world, playerResult);
+    const resolved = resolveNextWorldVNextRegularRound(
+      world,
+      worldDefinitionVNext(world, mechanics),
+      playerResult,
+    );
     return resolved.ok ? resolved.value : null;
   }
   const resolved = resolveNextWorldAlphaRegularRound(world, mechanics.legacyWorld, playerResult);
@@ -87,21 +97,25 @@ export function resolveRegularRoundVNext(
 
 export function initializePostseasonVNext(
   world: WorldStateVNext,
-  mechanics: Pick<CareerVNextMechanics, 'world' | 'legacyWorld'>,
+  mechanics: Pick<CareerVNextMechanics, 'world' | 'world64' | 'legacyWorld'>,
 ): WorldStateVNext | null {
   const initialized = isConferenceWorldVNext(world)
-    ? initializeWorldVNextPostseason(world, mechanics.world)
+    ? initializeWorldVNextPostseason(world, worldDefinitionVNext(world, mechanics))
     : initializeWorldAlphaPostseason(world, mechanics.legacyWorld);
   return initialized.ok ? initialized.value : null;
 }
 
 export function resolvePostseasonRoundVNext(
   world: WorldStateVNext,
-  mechanics: Pick<CareerVNextMechanics, 'world' | 'legacyWorld'>,
+  mechanics: Pick<CareerVNextMechanics, 'world' | 'world64' | 'legacyWorld'>,
   playerResult: WorldAlphaPlayerGameResult | null,
 ): WorldStateVNext | null {
   const resolved = isConferenceWorldVNext(world)
-    ? resolveNextWorldVNextPostseasonRound(world, mechanics.world, playerResult)
+    ? resolveNextWorldVNextPostseasonRound(
+        world,
+        worldDefinitionVNext(world, mechanics),
+        playerResult,
+      )
     : resolveNextWorldAlphaPostseasonRound(world, mechanics.legacyWorld, playerResult);
   return resolved.ok ? resolved.value : null;
 }

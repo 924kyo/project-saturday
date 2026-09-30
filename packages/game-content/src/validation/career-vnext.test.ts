@@ -14,6 +14,7 @@ import {
   declareForDraftVNext,
   runDraftVNext,
   createWorldAlphaSeason,
+  createWorldVNextSeason,
   equipSkillVNext,
   focusDefinitionsVNext,
   offerCandidatesVNext,
@@ -747,6 +748,76 @@ describe('Career VNext season arc', () => {
       expect(continueSeasonReviewVNext(career, mechanics).ok).toBe(true);
     }
     expect(found, finishes.join(',')).toBe(true);
+  }, 300_000);
+});
+
+describe('Career VNext world compatibility (M9)', () => {
+  it('finishes an M8 64-program season there, then moves to the 96-program world', () => {
+    const identity = identityFor('position_cb', 'archetype_cb_press_man');
+    const mechanics = buildCareerVNextMechanics(identity)!;
+    const created = createCareerVNext({ seed: 'vnext-64-world', identity }, mechanics);
+    if (!created.ok) throw new Error(created.reason);
+    const programId = mechanics.world64.programProfiles[40]!.programId;
+    let career: CareerVNext = {
+      ...created.career,
+      recruiting: {
+        ...created.career.recruiting,
+        offers: [{ ...created.career.recruiting.offers[0]!, programId }],
+      },
+    };
+    const committed = commitProgramVNext(career, programId, mechanics);
+    if (!committed.ok) throw new Error(committed.reason);
+    const world64 = createWorldVNextSeason(
+      mechanics.world64,
+      createRng('vnext-64-world:vnext:world:0'),
+      0,
+      programId,
+    );
+    if (!world64.ok) throw new Error(world64.reason);
+    expect(world64.value.worldId).toBeUndefined();
+    career = { ...committed.career, season: { ...committed.career.season, world: world64.value } };
+    career = parseCareerVNext(serializeCareerVNext(career)!)!;
+    for (let guard = 0; guard < 2_000 && career.flow.type !== 'OFFSEASON'; guard += 1) {
+      const flow = career.flow;
+      const step: CareerVNextResult =
+        flow.type === 'WEEK_PLAN'
+          ? (() => {
+              const open = focusDefinitionsVNext(career, mechanics)
+                .map(({ id }) => id)
+                .filter((id) => isFocusAvailableVNext(career, id, mechanics));
+              return planWeekVNext(career, [open[0]!, open[1]!, open[2]!], mechanics);
+            })()
+          : flow.type === 'BREAKTHROUGH' && flow.offer.chosenSkillId === null
+            ? chooseBreakthroughVNext(career, flow.offer.skillIds[0]!)
+            : flow.type === 'EVENT' && flow.event.chosenChoiceId === null
+              ? chooseEventVNext(career, flow.event.choiceIds[0]!, mechanics)
+              : flow.type === 'NIL' && flow.offer.decision === null
+                ? chooseNilVNext(career, false, mechanics)
+                : flow.type === 'INJURY' && flow.report.availability === null
+                  ? chooseInjuryVNext(career, 'injury_choice_rest_rehab', mechanics)
+                  : flow.type === 'GAME'
+                    ? flow.game.stage === 'PREGAME'
+                      ? kickoffVNext(career, mechanics)
+                      : flow.game.stage === 'SNAP'
+                        ? chooseSnapVNext(career, projectSnapBoardFrame(career)!.decisionIds[0]!)
+                        : continueGameVNext(career, mechanics)
+                    : flow.type === 'POST_GAME'
+                      ? nextWeekVNext(career, mechanics)
+                      : flow.type === 'SEASON_REVIEW'
+                        ? continueSeasonReviewVNext(career, mechanics)
+                        : toGameDayVNext(career, mechanics);
+      if (!step.ok) throw new Error(step.reason);
+      career = step.career;
+    }
+    const world = career.season.world!;
+    expect(world.model === 'world_vnext_season_v1' && world.worldId === undefined).toBe(true);
+    if (career.flow.type !== 'OFFSEASON') throw new Error('offseason');
+    const next = commitOffseasonVNext(career, career.flow.options[0]!.programId, mechanics);
+    if (!next.ok) throw new Error(next.reason);
+    const nextWorld = next.career.season.world!;
+    expect(nextWorld.model === 'world_vnext_season_v1' && nextWorld.worldId).toBe(
+      'world_vnext_96_program',
+    );
   }, 300_000);
 });
 

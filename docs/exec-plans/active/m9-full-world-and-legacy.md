@@ -30,7 +30,7 @@ Repeated careers show strong variation and persistent history:
 
 ## Sequence
 
-1. **96-program world:**
+1. **96-program world:** (done 2026-09-30)
    - 32 new original programs, 4 per conference, giving 8 conferences of 12;
    - a 12-game schedule: 9 conference games from a 12-team round robin, plus 3 non-conference games over distinct conference matchings;
    - the same 12-team bracket and the same 16-week stride;

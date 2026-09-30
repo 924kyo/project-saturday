@@ -74,6 +74,8 @@ export type CareerVNextMechanics = PositionAlphaSessionCommandMechanics & {
   readonly nilOfferPositions: Readonly<Record<string, readonly VNextPositionId[]>>;
   /** Shared campus-life events every position can draw (M8). */
   readonly life: { readonly events: readonly WeeklyEventDefinitionV2[] };
+  /** The M8 64-program conference world, for a season that started there (M9 seasons use `world`). */
+  readonly world64: WorldAlphaMechanicsDefinition;
   /** The 32-program alpha world, for a season a pre-M8 save started there (M8 seasons use `world`). */
   readonly legacyWorld: WorldAlphaMechanicsDefinition;
   readonly wr: {

@@ -11,7 +11,12 @@ import { buildShippedPositionAlphaSessionCommandMechanics } from './position-alp
 import { skillMechanicsDefinitions } from './skills.js';
 import { defenderCatalog, edgeContent, lbContent } from './defenders.js';
 import { lifeEventMechanics } from './life-events.js';
-import { addedProgramsVNext, worldVNextMechanicsDefinition } from './world-vnext.js';
+import {
+  addedPrograms96VNext,
+  addedProgramsVNext,
+  worldVNext96MechanicsDefinition,
+  worldVNextMechanicsDefinition,
+} from './world-vnext.js';
 
 /**
  * The shipped WR card catalog on VNext's WR drills. Skill scopes may only name weekly actions, so a
@@ -166,9 +171,10 @@ export function buildCareerVNextMechanics(
       nil_offer_youth_route_clinic: ['position_wr'],
       nil_offer_receiver_glove_workshop: ['position_wr'],
     },
-    // M8: new seasons use the 64-program conference world; a season already in progress on the
-    // 32-program alpha world finishes there.
-    world: worldVNextMechanicsDefinition,
+    // M9: new seasons use the 96-program world. A season in progress finishes on the world it
+    // started on: the M8 64-program world or the 32-program alpha world.
+    world: worldVNext96MechanicsDefinition,
+    world64: worldVNextMechanicsDefinition,
     legacyWorld: shared.world,
   };
 }
@@ -245,7 +251,7 @@ export const programIdentitiesVNext: readonly ProgramIdentityVNext[] = Object.fr
       crest: crests[index % crests.length]!,
     }),
   ),
-  ...addedProgramsVNext.map((entry, index) =>
+  ...[...addedProgramsVNext, ...addedPrograms96VNext].map((entry, index) =>
     Object.freeze({
       id: entry.id as ProgramId,
       nameKey: entry.nameKey,
