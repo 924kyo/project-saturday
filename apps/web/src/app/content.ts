@@ -16,6 +16,7 @@ import {
   edgeContent,
   eventContent,
   lbContent,
+  lifeEventContent,
   injuryContent,
   programIdentityVNext,
   worldVNextMechanicsDefinition,
@@ -375,6 +376,7 @@ const EVENT_TEXT = new Map<string, EventText>(
     ...rbAlphaContent.events,
     ...cbAlphaContent.events,
     ...lbContent.events.map((event) => ({ ...event, choices: [] })),
+    ...lifeEventContent.map((event) => ({ ...event, choices: [] })),
     ...edgeContent.events.map((event) => ({ ...event, choices: [] })),
     ...eventContent.events,
   ].map((event) => [event.id, event as EventText]),
@@ -397,7 +399,7 @@ const camel = (value: string) =>
  * choice; WR events already carry specific authored choice copy.
  */
 export function eventChoiceKey(eventId: string, choiceId: string): MessageKey {
-  const shared = /^event_((?:qb|rb|cb|lb|edge)_[a-z0-9_]+)$/.exec(eventId);
+  const shared = /^event_((?:qb|rb|cb|lb|edge|life)_[a-z0-9_]+)$/.exec(eventId);
   if (shared !== null) return key(`v2.evt.${camel(shared[1]!)}.${choiceId.split('_').at(-1)!}`);
   const choice = EVENT_TEXT.get(eventId)?.choices.find(({ id }) => id === choiceId);
   if (choice === undefined) throw new Error(`Missing event choice presentation for ${choiceId}.`);

@@ -22,6 +22,22 @@ export interface DefenderEventChoiceEffects {
   readonly gameModifiers: DefenderEventGameModifiers;
 }
 
+/**
+ * The position-neutral weekly event shape these rules run on (defender catalogs and the shared
+ * Career VNext life catalog both use it).
+ */
+export interface WeeklyEventDefinitionV2 {
+  readonly id: `event_${string}`;
+  readonly weight: number;
+  readonly cooldownWeeks: number;
+  readonly requirements: DefenderEventDefinition['requirements'];
+  readonly choices: readonly {
+    readonly id: `event_choice_${string}`;
+    readonly requiresUnlockLevel?: number;
+    readonly effects: DefenderEventChoiceEffects;
+  }[];
+}
+
 export interface DefenderEventChoiceDefinition {
   readonly id: `event_choice_${'lb' | 'edge'}_${string}`;
   readonly requiresUnlockLevel?: number;
@@ -108,7 +124,7 @@ export function isDefenderEventCatalog(
   return true;
 }
 
-function eligible(context: DefenderEventContext, event: DefenderEventDefinition): boolean {
+function eligible(context: DefenderEventContext, event: WeeklyEventDefinitionV2): boolean {
   const requirements = event.requirements;
   const last = context.recentEvents
     .filter(({ eventId }) => eventId === event.id)
@@ -128,12 +144,12 @@ function draw(rng: RngState, maximum: number) {
 }
 
 /** No eligible event or a zero chance consumes no draw; a miss consumes one; a pick two. */
-export function selectDefenderEvent(
+export function selectDefenderEvent<T extends WeeklyEventDefinitionV2>(
   context: DefenderEventContext,
-  catalog: readonly DefenderEventDefinition[],
+  catalog: readonly T[],
   chancePermille: number,
   rng: RngState,
-): { readonly event: DefenderEventDefinition | undefined; readonly rng: RngState } {
+): { readonly event: T | undefined; readonly rng: RngState } {
   if (!integerIn(chancePermille, 0, 1000) || !isRngState(rng))
     throw new Error('Invalid defender event selection input.');
   const pool = [...catalog]
@@ -152,10 +168,10 @@ export function selectDefenderEvent(
   return { event: pool[pool.length - 1], rng: weighted.rng };
 }
 
-export function getAvailableDefenderEventChoices(
-  event: DefenderEventDefinition,
+export function getAvailableDefenderEventChoices<T extends WeeklyEventDefinitionV2>(
+  event: T,
   skills: readonly DefenderSkillDefinition[],
-): readonly DefenderEventChoiceDefinition[] {
+): T['choices'] {
   const level = defenderSkillValue(skills, 'defender_event_choice_unlock');
   return event.choices.filter(
     ({ requiresUnlockLevel }) => requiresUnlockLevel === undefined || level >= requiresUnlockLevel,
@@ -167,7 +183,7 @@ const positive = (value: number, multiplier: number) =>
 
 export function resolveDefenderEventChoice(
   context: DefenderEventContext,
-  event: DefenderEventDefinition,
+  event: WeeklyEventDefinitionV2,
   choiceId: unknown,
   skills: readonly DefenderSkillDefinition[],
 ) {

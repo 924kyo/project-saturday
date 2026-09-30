@@ -30,7 +30,7 @@ import type {
   DefenderPositionId,
   DefenderSkillDefinition,
 } from '../games/defender.js';
-import type { DefenderEventDefinition } from '../games/defender-events.js';
+import type { DefenderEventDefinition, WeeklyEventDefinitionV2 } from '../games/defender-events.js';
 import type {
   KeySnapFamilyMechanicsDefinition,
   KeySnapPatternMechanicsDefinition,
@@ -70,6 +70,8 @@ export interface DefenderCatalogVNext {
 
 export type CareerVNextMechanics = PositionAlphaSessionCommandMechanics & {
   readonly defenders: Readonly<Record<DefenderPositionId, DefenderCatalogVNext>>;
+  /** Shared campus-life events every position can draw (M8). */
+  readonly life: { readonly events: readonly WeeklyEventDefinitionV2[] };
   /** The 32-program alpha world, for a season a pre-M8 save started there (M8 seasons use `world`). */
   readonly legacyWorld: WorldAlphaMechanicsDefinition;
   readonly wr: {

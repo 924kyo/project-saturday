@@ -10,6 +10,7 @@ import { eventMechanicsDefinitions } from './events.js';
 import { buildShippedPositionAlphaSessionCommandMechanics } from './position-alpha-session.js';
 import { skillMechanicsDefinitions } from './skills.js';
 import { defenderCatalog, edgeContent, lbContent } from './defenders.js';
+import { lifeEventMechanics } from './life-events.js';
 import { addedProgramsVNext, worldVNextMechanicsDefinition } from './world-vnext.js';
 
 /**
@@ -159,6 +160,7 @@ export function buildCareerVNextMechanics(
       patterns: keySnapPatternMechanicsDefinitions,
     },
     defenders: DEFENDER_CATALOGS,
+    life: { events: lifeEventMechanics },
     // M8: new seasons use the 64-program conference world; a season already in progress on the
     // 32-program alpha world finishes there.
     world: worldVNextMechanicsDefinition,

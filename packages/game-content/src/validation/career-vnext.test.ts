@@ -237,12 +237,14 @@ describe('Career VNext vertical slice core', () => {
 
 describe('Career VNext weekly lifecycle', () => {
   it('draws weekly events for every position and carries modifiers only into the next game', () => {
+    let lifeEvents = 0;
     for (const [positionId, archetypeId] of identities) {
       const { career, events } = playSeason(
         identityFor(positionId, archetypeId),
         `vnext-events-${positionId}`,
       );
       expect(events.length, positionId).toBeGreaterThan(0);
+      lifeEvents += events.filter((id) => id.startsWith('event_life_')).length;
       expect(career.condition.eventHistory.map(({ eventId }) => eventId)).toEqual(events);
       expect(career.condition.nextGameModifiers).toEqual({
         clueBonus: 0,
@@ -257,6 +259,8 @@ describe('Career VNext weekly lifecycle', () => {
         weeks.set(eventId, weekIndex);
       }
     }
+    // The shared campus-life pack fills some quiet weeks for every position.
+    expect(lifeEvents).toBeGreaterThan(0);
   }, 120_000);
 
   it('caps Saturday snaps by injury availability and still gives decisions', () => {

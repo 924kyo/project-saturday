@@ -15,6 +15,7 @@ import { describe, expect, it } from 'vitest';
 
 import { DEFENDER_CATALOGS } from '../content/vnext.js';
 import { edgeContent, lbContent } from '../content/defenders.js';
+import { lifeEventContent } from '../content/life-events.js';
 import { localeMessages } from '../locales/index.js';
 
 const contentFor = (positionId: DefenderPositionId) =>
@@ -118,4 +119,32 @@ describe('M8 front-seven content', () => {
       }
     });
   }
+});
+
+describe('M8 campus-life event pack', () => {
+  it('ships 16 position-neutral events with paired copy and valid effects', () => {
+    expect(lifeEventContent).toHaveLength(16);
+    const ids = new Set<string>();
+    for (const event of lifeEventContent) {
+      expect(event.id.startsWith('event_life_')).toBe(true);
+      expect(ids.has(event.id)).toBe(false);
+      ids.add(event.id);
+      for (const key of [event.nameKey, event.descriptionKey]) {
+        expect(localeMessages['en-US'][key as never], key).toBeTruthy();
+        expect(localeMessages['ko-KR'][key as never], key).toBeTruthy();
+      }
+      expect(event.choices.length).toBeGreaterThanOrEqual(2);
+      for (const choice of event.choices) {
+        expect(choice.id.startsWith(`event_choice_life_`)).toBe(true);
+        for (const value of [
+          choice.effects.bodyDelta,
+          choice.effects.preparationDelta,
+          choice.effects.confidenceDelta,
+          choice.effects.coachTrustDelta,
+          choice.effects.brandDelta,
+        ])
+          expect(Math.abs(value)).toBeLessThanOrEqual(30);
+      }
+    }
+  });
 });

@@ -17,6 +17,7 @@ import { koKRWorldMessages } from './m8-world.js';
 import { koKRWorldUiMessages } from './m8-world-ui.js';
 import { koKRDraftUiMessages } from './m8-draft-ui.js';
 import { koKRNilUiMessages } from './m8-nil-ui.js';
+import { koKRLifeMessages } from './m8-life.js';
 import { koKRM8PositionMessages } from './m8-positions.js';
 import { m7BuildKo } from './m7-builds.js';
 import { m7DirectKo } from './m7-direct.js';
@@ -39,6 +40,7 @@ export const koKRMessages = {
   ...koKRWorldUiMessages,
   ...koKRDraftUiMessages,
   ...koKRNilUiMessages,
+  ...koKRLifeMessages,
   ...koKREventBatchMessages,
   ...koKRInjuryBatchMessages,
   ...koKRM6UiMessages,

@@ -163,3 +163,4 @@ export {
   conferenceIdentityVNext,
   worldVNextMechanicsDefinition,
 } from './world-vnext.js';
+export { lifeEventContent, lifeEventMechanics } from './life-events.js';

@@ -63,7 +63,7 @@ export function careerWeekIndexVNext(career: Pick<CareerVNext, 'season'>): numbe
   return career.season.index * VNEXT_CAREER_WEEK_STRIDE + career.season.weekIndex;
 }
 
-function weekStream(career: CareerVNext, purpose: 'event' | 'injury'): RngState {
+function weekStream(career: CareerVNext, purpose: 'event' | 'injury' | 'life'): RngState {
   return createRng(
     `${String(career.seed)}:vnext:${purpose}:${career.season.index}:${career.season.weekIndex}`,
   );
@@ -169,8 +169,51 @@ function selectWrEvent(
   return eligible[eligible.length - 1]!;
 }
 
-/** Draws this week's event, or null for a quiet week. Pure: same save, same answer. */
+/** Chance a campus-life event fills a week without a position event. */
+export const VNEXT_LIFE_EVENT_CHANCE_PERMILLE = 250;
+
+function eventContextVNext(career: CareerVNext, weekIndex: number) {
+  const state = career.athlete.profile.state;
+  return {
+    weekIndex,
+    body: state.body,
+    preparation: state.preparation,
+    confidence: state.confidence,
+    coachTrust: state.coachTrust,
+    gpaMilli: Math.round(state.gpa * 1_000),
+    brand: state.brand,
+    recentEvents: career.condition.recentEvents,
+  };
+}
+
+/**
+ * Draws this week's event, or null for a quiet week: the position's own catalog first, then the
+ * shared campus-life catalog on its own stream. Pure: same save, same answer.
+ */
 export function attemptWeeklyEventVNext(
+  career: CareerVNext,
+  mechanics: CareerVNextMechanics,
+): WeeklyEventVNext | null {
+  const positionEvent = attemptPositionEventVNext(career, mechanics);
+  if (positionEvent !== null) return positionEvent;
+  const weekIndex = careerWeekIndexVNext(career);
+  const selected = selectDefenderEvent(
+    eventContextVNext(career, weekIndex),
+    mechanics.life.events,
+    VNEXT_LIFE_EVENT_CHANCE_PERMILLE,
+    weekStream(career, 'life'),
+  );
+  if (selected.event === undefined) return null;
+  return {
+    weekIndex,
+    eventId: selected.event.id,
+    choiceIds: getAvailableDefenderEventChoices(selected.event, []).map(({ id }) => id),
+    chosenChoiceId: null,
+    effects: null,
+  };
+}
+
+function attemptPositionEventVNext(
   career: CareerVNext,
   mechanics: CareerVNextMechanics,
 ): WeeklyEventVNext | null {
@@ -304,6 +347,37 @@ export function resolveWeeklyEventChoiceVNext(
   const profile = career.athlete.profile;
   const before = profile.state;
   const gaugeBefore = career.athlete.breakthroughGauge;
+  if (event.eventId.startsWith('event_life_')) {
+    const definition = mechanics.life.events.find(({ id }) => id === event.eventId);
+    if (definition === undefined) return null;
+    const resolved = resolveDefenderEventChoice(
+      eventContextVNext(career, event.weekIndex),
+      definition,
+      choiceId,
+      [],
+    );
+    if (resolved === null) return null;
+    const next = resolved.nextContext;
+    const state: PlayerState = {
+      ...before,
+      body: next.body,
+      preparation: next.preparation,
+      confidence: next.confidence,
+      coachTrust: next.coachTrust,
+      gpa: next.gpaMilli / 1_000,
+      brand: next.brand,
+    };
+    return {
+      state,
+      gaugeAfter: gaugeBefore,
+      event: {
+        ...event,
+        chosenChoiceId: choiceId,
+        effects: effectsBetween(before, state, 0, resolved.gameModifiers),
+      },
+      modifiers: resolved.gameModifiers,
+    };
+  }
   if (profile.positionId === 'position_wr') {
     const definition = mechanics.wr.events.find(({ id }) => id === event.eventId);
     const choice = definition?.choices.find(({ id }) => id === choiceId);
