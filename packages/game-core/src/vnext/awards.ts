@@ -7,9 +7,9 @@ import type { AwardIdVNext, GameRecapVNext, SeasonReviewVNext, VNextPositionId }
  */
 export const VNEXT_AWARD_TUNING = Object.freeze({
   minimumLiveGames: 8,
-  allConferenceFirst: 63,
-  allConferenceSecond: 60,
-  freshman: 60,
+  allConferenceFirst: 64,
+  allConferenceSecond: 62,
+  freshman: 62,
   allAmerican: 66,
   allAmericanWins: 8,
   positionAward: 68,

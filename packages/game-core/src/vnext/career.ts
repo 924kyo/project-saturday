@@ -1,3 +1,4 @@
+import { resolveWithLookVNext, snapLookVNext } from './looks.js';
 import { deriveCareerId } from '../player/creation.js';
 import type { ProgramId } from '../player/ids.js';
 import {
@@ -688,7 +689,11 @@ export function kickoffVNext(
   });
 }
 
-export function chooseSnapVNext(career: CareerVNext, decisionId: string): CareerVNextResult {
+export function chooseSnapVNext(
+  career: CareerVNext,
+  decisionId: string,
+  mechanics: CareerVNextMechanics,
+): CareerVNextResult {
   if (career.flow.type !== 'GAME' || career.flow.game.stage !== 'SNAP')
     return fail('career_vnext.invalid_phase');
   const game = career.flow.game;
@@ -710,7 +715,17 @@ export function chooseSnapVNext(career: CareerVNext, decisionId: string): Career
   const pending = game.engine.game.type === 'ACTIVE' ? game.engine.game.pendingSnap : null;
   if (pending === null || !(pending.decisionIds as readonly string[]).includes(decisionId))
     return fail('career_vnext.invalid_choice');
-  const engine = resolveVNextSnap(game.engine, decisionId);
+  // The hidden look decides which read wins this snap (M11); the kernel stays literal.
+  const look = snapLookVNext(
+    career,
+    game.weekIndex,
+    { kind: 'LIVE', snapIndex: slot.snapIndex },
+    pending.familyId,
+    mechanics,
+  );
+  const engine = resolveWithLookVNext(game.engine, pending.patternId, look, (state) =>
+    resolveVNextSnap(state, decisionId),
+  );
   if (engine === null) return fail('career_vnext.engine_failed');
   return publish(career, {
     ...career,
@@ -783,7 +798,10 @@ function settleGame(
   const rank = worldAfter.rankings.find(({ programId }) => programId === career.program!.programId);
   const profile = career.athlete.profile;
   const stakes = projectGameStakesVNext(career, game.opponentProgramId, game.isHome, mechanics);
-  const coachGrade = coachGradeVNext(summary.gradeScore, summary.opportunityCount);
+  const coachGrade = coachGradeVNext(
+    calibratedGradeVNext(profile.positionId as VNextPositionId, summary.gradeScore),
+    summary.opportunityCount,
+  );
   const coachTrustAfter = Math.min(
     100,
     Math.max(0, growth.coachTrustBefore + coachTrustDeltaVNext(coachGrade)),
@@ -863,6 +881,18 @@ function settleGame(
  * around that neutral. A Saturday of sideline reps only leaves trust alone (practice owns it).
  */
 export const VNEXT_COACH_GRADE_TUNING = Object.freeze({ neutral: 60, priorSnaps: 2 });
+
+/**
+ * M11: each kernel's box score grades on its own curve (the WR kernel gives +6 per reception, the QB
+ * kernel docks completions and sacks). The staff grade puts every role on the defenders' curve, so
+ * awards, draft stock and coach trust mean the same thing at every position.
+ */
+export const VNEXT_GRADE_CALIBRATION: Readonly<Partial<Record<VNextPositionId, number>>> =
+  Object.freeze({ position_qb: 11, position_rb: 6, position_wr: -17 });
+
+export function calibratedGradeVNext(positionId: VNextPositionId, gradeScore: number): number {
+  return Math.max(0, Math.min(100, gradeScore + (VNEXT_GRADE_CALIBRATION[positionId] ?? 0)));
+}
 
 export function coachGradeVNext(gradeScore: number, liveSnaps: number): number | null {
   if (liveSnaps <= 0) return null;

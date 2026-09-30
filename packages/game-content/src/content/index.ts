@@ -168,3 +168,4 @@ export {
 } from './world-vnext.js';
 export { lifeEventContent, lifeEventMechanics } from './life-events.js';
 export { legacyMentorContent, legacyMentorEvent } from './legacy-events.js';
+export { snapLookCatalogVNext } from './snap-looks.js';

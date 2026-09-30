@@ -21,6 +21,7 @@ import { koKRLifeMessages } from './m8-life.js';
 import { koKRAwardMessages } from './m9-awards.js';
 import { koKRLegacyMessages } from './m9-legacy.js';
 import { koKRM10Messages } from './m10-ui.js';
+import { koKRM11LookMessages } from './m11-looks.js';
 import { koKRM8PositionMessages } from './m8-positions.js';
 import { m7BuildKo } from './m7-builds.js';
 import { m7DirectKo } from './m7-direct.js';
@@ -47,6 +48,7 @@ export const koKRMessages = {
   ...koKRAwardMessages,
   ...koKRLegacyMessages,
   ...koKRM10Messages,
+  ...koKRM11LookMessages,
   ...koKREventBatchMessages,
   ...koKRInjuryBatchMessages,
   ...koKRM6UiMessages,

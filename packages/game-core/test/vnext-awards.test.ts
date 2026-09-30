@@ -47,7 +47,7 @@ describe('VNext season awards', () => {
     ]);
     expect(
       seasonAwardsVNext(
-        { ...base, seasonIndex: 0, averageGrade: 61, depthRank: { start: 3, end: 2 } },
+        { ...base, seasonIndex: 0, averageGrade: 62, depthRank: { start: 3, end: 2 } },
         'position_lb',
         [],
       ),

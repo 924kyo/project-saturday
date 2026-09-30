@@ -10,6 +10,9 @@ export default defineConfig({
   build: {
     rolldownOptions: {
       output: {
+        // Size-split content chunks import each other; keep module bodies in source order so a
+        // chunk boundary can never run a catalog before the modules it reads.
+        strictExecutionOrder: true,
         codeSplitting: {
           groups: [
             {

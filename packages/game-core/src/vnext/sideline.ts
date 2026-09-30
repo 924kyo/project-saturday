@@ -1,3 +1,4 @@
+import { snapLookVNext } from './looks.js';
 import { createRng, nextUint32, type RngState } from '../random/rng.js';
 import type {
   CareerVNext,
@@ -69,7 +70,16 @@ export function createSidelineReps(
       rng = swap.rng;
       [order[index], order[swap.value]] = [order[swap.value]!, order[index]!];
     }
-    const best = [...pattern.decisionFits].sort((left, right) => right.fit - left.fit)[0]!;
+    // The hidden look (M11) owns the winning read; content without looks keeps the pattern's.
+    const look = snapLookVNext(
+      career,
+      weekIndex,
+      { kind: 'SIDELINE', repIndex },
+      pattern.familyId,
+      mechanics,
+    );
+    const fits = look?.fits ?? pattern.decisionFits;
+    const best = [...fits].sort((left, right) => right.fit - left.fit)[0]!;
     reps.push({
       repIndex,
       period: Math.min(4, repIndex + 1) as 1 | 2 | 3 | 4,
@@ -80,7 +90,7 @@ export function createSidelineReps(
       chosenDecisionId: null,
       grade: null,
       bestDecisionId: best.decisionId,
-      solidDecisionIds: pattern.decisionFits
+      solidDecisionIds: fits
         .filter(({ decisionId, fit }) => decisionId !== best.decisionId && fit >= SOLID_FIT)
         .map(({ decisionId }) => decisionId),
     });

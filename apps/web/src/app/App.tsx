@@ -366,13 +366,18 @@ export function App({
               blocked={blocked}
               career={career}
               mechanics={mechanics}
-              onChoose={(id) => run((c) => chooseSnapVNext(c, id))}
+              onChoose={(id) => run((c, m) => chooseSnapVNext(c, id, m))}
               onContinue={() => run(continueGameVNext)}
               onKickoff={() => run(kickoffVNext)}
               reducedMotion={reducedMotion}
             />
           ) : flow === 'POST_GAME' ? (
-            <PostGameScreen blocked={blocked} career={career} onNext={() => run(nextWeekVNext)} />
+            <PostGameScreen
+              blocked={blocked}
+              career={career}
+              mechanics={mechanics}
+              onNext={() => run(nextWeekVNext)}
+            />
           ) : flow === 'SEASON_REVIEW' ? (
             <SeasonReviewScreen
               blocked={blocked}

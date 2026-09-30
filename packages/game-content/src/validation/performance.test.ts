@@ -87,7 +87,11 @@ it('keeps every command and save round trip of a full season within budget', () 
           ? run('kickoff', () => kickoffVNext(career, mechanics))
           : flow.game.stage === 'SNAP'
             ? run('snap', () =>
-                chooseSnapVNext(career, projectSnapBoardFrame(career)!.decisionIds[0]!),
+                chooseSnapVNext(
+                  career,
+                  projectSnapBoardFrame(career, mechanics)!.decisionIds[0]!,
+                  mechanics,
+                ),
               )
             : run('continue', () => continueGameVNext(career, mechanics));
     else if (flow.type === 'POST_GAME')

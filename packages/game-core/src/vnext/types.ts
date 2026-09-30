@@ -1,3 +1,4 @@
+import type { SnapLookCatalogVNext } from './looks.js';
 import type { InjuryAvailabilityEvidence, NewInjuryEvidence } from '../injuries/types.js';
 import type { EventMechanicsDefinition } from '../events/types.js';
 import type { ProgramId } from '../player/ids.js';
@@ -72,6 +73,8 @@ export type CareerVNextMechanics = PositionAlphaSessionCommandMechanics & {
   readonly defenders: Readonly<Record<DefenderPositionId, DefenderCatalogVNext>>;
   /** NIL offers whose authored copy belongs to specific positions (absent = every position). */
   readonly nilOfferPositions: Readonly<Record<string, readonly VNextPositionId[]>>;
+  /** Hidden snap looks per decision family (M11): the winning read, tells and board picture. */
+  readonly looks: SnapLookCatalogVNext;
   /** Generated `given|family` name pairs VNext never shows (they read as real people; M10). */
   readonly reservedNamePairs: readonly string[];
   /** The legacy mentor scene (M9): an alumnus of the current program checks in. */

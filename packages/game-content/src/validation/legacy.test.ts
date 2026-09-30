@@ -141,7 +141,11 @@ describe('M9 legacy history', () => {
                       ? flow.game.stage === 'PREGAME'
                         ? kickoffVNext(career, mechanics)
                         : flow.game.stage === 'SNAP'
-                          ? chooseSnapVNext(career, projectSnapBoardFrame(career)!.decisionIds[0]!)
+                          ? chooseSnapVNext(
+                              career,
+                              projectSnapBoardFrame(career, mechanics)!.decisionIds[0]!,
+                              mechanics,
+                            )
                           : continueGameVNext(career, mechanics)
                       : flow.type === 'POST_GAME'
                         ? nextWeekVNext(career, mechanics)

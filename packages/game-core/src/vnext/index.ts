@@ -56,8 +56,23 @@ export {
   type LivePlayFrame,
   type PlayOutcomeKindVNext,
   type SnapBoardFrame,
+  type SnapLookFrameVNext,
   type SnapSituationFrame,
 } from './frames.js';
+export {
+  SNAP_LOOK_ACTORS,
+  SNAP_LOOK_MOVES,
+  SNAP_LOOK_STANCES,
+  bestDecisionOfLook,
+  snapLookVNext,
+  type SnapLookActor,
+  type SnapLookCatalogVNext,
+  type SnapLookDefinitionVNext,
+  type SnapLookMove,
+  type SnapLookMoveId,
+  type SnapLookStance,
+  type SnapLookStanceKey,
+} from './looks.js';
 export {
   CAREER_VNEXT_MAX_BYTES,
   isCareerVNext,

@@ -164,12 +164,12 @@ export function runM10BalanceCareer(
         kickoffBody.push(career.athlete.profile.state.body);
         career = ok(kickoffVNext(career, mechanics));
       } else if (flow.game.stage === 'SNAP') {
-        const frame = projectSnapBoardFrame(career)!;
+        const frame = projectSnapBoardFrame(career, mechanics)!;
         const choice =
           frame.kind === 'SIDELINE'
             ? flow.game.sideline[frame.repNumber - 1]!.bestDecisionId
             : frame.decisionIds[frame.snapNumber % 3]!;
-        career = ok(chooseSnapVNext(career, choice));
+        career = ok(chooseSnapVNext(career, choice, mechanics));
       } else career = ok(continueGameVNext(career, mechanics));
     } else if (flow.type === 'POST_GAME') career = ok(nextWeekVNext(career, mechanics));
     else if (flow.type === 'SEASON_REVIEW')

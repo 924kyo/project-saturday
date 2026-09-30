@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react';
 import {
   projectCompletedPlayFrames,
   type CareerVNext,
+  type CareerVNextMechanics,
   type VNextPositionId,
 } from '@project-saturday/game-core';
 
@@ -15,6 +16,7 @@ import {
   attributeNameKey,
   currentOverall,
   gameText,
+  key,
   playHeadlineKey,
   practiceBand,
   program,
@@ -26,10 +28,12 @@ import { METER_COLORS } from './theme';
 
 export function PostGameScreen({
   career,
+  mechanics,
   blocked,
   onNext,
 }: {
   readonly career: CareerVNext;
+  readonly mechanics: CareerVNextMechanics;
   readonly blocked: boolean;
   readonly onNext: () => void;
 }): React.JSX.Element | null {
@@ -49,7 +53,11 @@ export function PostGameScreen({
   const stats = Object.entries(summary.statLine as unknown as Record<string, number>).filter(
     ([field, value]) => value !== 0 && STAT_KEYS[field] !== undefined,
   );
-  const plays = projectCompletedPlayFrames(positionId, recap.engine)
+  const plays = projectCompletedPlayFrames(positionId, recap.engine, {
+    career,
+    weekIndex: recap.weekIndex,
+    mechanics,
+  })
     .map((play, index) => ({ ...play, index }))
     .sort(
       (a, b) =>
@@ -169,7 +177,12 @@ export function PostGameScreen({
                       </strong>
                       <br />
                       <span className="s2-note">
-                        {t(gameText.pattern(positionId, play.patternId).nameKey as MessageKey)} ·{' '}
+                        {play.lookNameKey !== null
+                          ? t(key(play.lookNameKey))
+                          : t(
+                              gameText.pattern(positionId, play.patternId).nameKey as MessageKey,
+                            )}{' '}
+                        ·{' '}
                         {t(
                           gameText.decision(positionId, play.result.decisionId)
                             .nameKey as MessageKey,

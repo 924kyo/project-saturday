@@ -158,13 +158,13 @@ it('keeps Body a budget, trust recoverable, growth visible and Saturdays decisiv
               if (career.athlete.profile.state.body < 30) stats.lowBodyWeeks += 1;
               career = ok(kickoffVNext(career, mechanics));
             } else if (flow.game.stage === 'SNAP') {
-              const frame = projectSnapBoardFrame(career)!;
+              const frame = projectSnapBoardFrame(career, mechanics)!;
               // A thoughtful player: sideline best read, live decisions rotate.
               const choice =
                 frame.kind === 'SIDELINE' && career.flow.type === 'GAME'
                   ? career.flow.game.sideline[frame.repNumber - 1]!.bestDecisionId
                   : frame.decisionIds[frame.kind === 'LIVE' ? frame.snapNumber % 3 : 0]!;
-              career = ok(chooseSnapVNext(career, choice));
+              career = ok(chooseSnapVNext(career, choice, mechanics));
             } else career = ok(continueGameVNext(career, mechanics));
           } else if (flow.type === 'POST_GAME') {
             const recap = flow.recap;

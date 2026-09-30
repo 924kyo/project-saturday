@@ -8,7 +8,7 @@ import {
 import { edgeContent, lbContent } from '@project-saturday/game-content/content';
 import { describe, expect, it } from 'vitest';
 
-import { buildScene, pathD, resultMotion, techniquePath } from './board';
+import { buildScene, lookArrows, pathD, resultMotion, techniquePath } from './board';
 
 const catalogs: Readonly<Record<VNextPositionId, readonly { readonly id: string }[]>> = {
   position_qb: qbAlphaContent.decisions,
@@ -44,7 +44,18 @@ function frame(positionId: VNextPositionId, decisionIds: readonly string[]): Sna
     meanwhile: { playerTeam: 0, opponent: 0 },
     look:
       positionId === 'position_wr'
-        ? { coverageId: 'game_coverage_press_man', leverageId: 'game_leverage_inside' }
+        ? {
+            lookId: 'look_wr_test',
+            familyNameKey: 'family',
+            familyPromptKey: 'prompt',
+            stance: { corner: 'press', leverage: 'inside', shell: 'one_high' },
+            tellKeys: [],
+            moves: [
+              { actor: 'cb_top', to: 'press_jam', reveal: 1 },
+              { actor: 'fs', to: 'rotate_middle', reveal: 0 },
+            ],
+            reveal: null,
+          }
         : null,
     result: null,
   };
@@ -62,6 +73,27 @@ describe('tactical board geometry', () => {
       expect(new Set(drawn).size).toBe(ids.length);
     },
   );
+
+  it('draws the look: stance moves the defenders, revealed moves become arrows', () => {
+    const ids = gameContent.decisions.slice(0, 3).map(({ id }) => id);
+    const pressed = frame('position_wr', ids);
+    const scene = buildScene(pressed, 'position_wr', false);
+    // Press puts the corner on the receiver; one-high sends a safety to the middle.
+    expect(scene.cb.x - scene.wr.x).toBeLessThan(20);
+    expect(scene.actors.fs!.y).toBe(110);
+    const arrows = lookArrows(scene, pressed);
+    expect(arrows.map(({ actor, kind }) => `${actor}:${kind}`)).toEqual([
+      'cb_top:read',
+      'fs:presnap',
+    ]);
+    expect(arrows.every(({ d }) => d.startsWith('M'))).toBe(true);
+    expect(
+      lookArrows(
+        buildScene(frame('position_qb', ids), 'position_qb', false),
+        frame('position_qb', ids),
+      ),
+    ).toEqual([]);
+  });
 
   it('places the WR defender by the authored leverage and replays only saved facts', () => {
     const ids = gameContent.decisions.slice(0, 3).map(({ id }) => id);

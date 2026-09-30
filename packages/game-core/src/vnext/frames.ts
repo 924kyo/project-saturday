@@ -1,8 +1,17 @@
 import { deepFreeze } from '../player/immutable.js';
 import type { TacticalSnapContextV1 } from '../games/tactical-context-v1.js';
 import type { TacticalSnapResultV1 } from '../games/tactical-alpha-v1.js';
+import {
+  bestDecisionOfLook,
+  snapLookVNext,
+  type SnapLookDefinitionVNext,
+  type SnapLookMove,
+  type SnapLookSlotVNext,
+  type SnapLookStance,
+} from './looks.js';
 import type {
   CareerVNext,
+  CareerVNextMechanics,
   GameDayVNext,
   SidelineRepGradeVNext,
   SidelineRepVNext,
@@ -48,6 +57,50 @@ export function readQuality(fit: number): SidelineRepGradeVNext {
   return fit >= 85 ? 'SHARP' : fit >= 65 ? 'SOLID' : 'MISSED';
 }
 
+/**
+ * The hidden look as the athlete can read it: before the snap only the tells their preparation
+ * earned and the movements those tells expose; after the result, the whole picture and the answer.
+ */
+export interface SnapLookFrameVNext {
+  readonly lookId: string;
+  readonly familyNameKey: string;
+  readonly familyPromptKey: string;
+  readonly stance: SnapLookStance;
+  readonly tellKeys: readonly string[];
+  readonly moves: readonly SnapLookMove[];
+  /** Present only once the snap is resolved. */
+  readonly reveal: {
+    readonly nameKey: string;
+    readonly bestDecisionId: string;
+    readonly allTellKeys: readonly string[];
+  } | null;
+}
+
+function lookFrame(
+  look: SnapLookDefinitionVNext,
+  mechanics: Pick<CareerVNextMechanics, 'looks'>,
+  shown: number,
+  resolved: boolean,
+): SnapLookFrameVNext {
+  const family = mechanics.looks.families[look.familyId];
+  const count = resolved ? look.tellKeys.length : Math.max(0, Math.min(3, shown));
+  return {
+    lookId: look.id,
+    familyNameKey: family?.nameKey ?? look.nameKey,
+    familyPromptKey: family?.promptKey ?? look.nameKey,
+    stance: look.stance,
+    tellKeys: look.tellKeys.slice(0, count),
+    moves: look.moves.filter(({ reveal }) => resolved || reveal <= count),
+    reveal: resolved
+      ? {
+          nameKey: look.nameKey,
+          bestDecisionId: bestDecisionOfLook(look),
+          allTellKeys: look.tellKeys,
+        }
+      : null,
+  };
+}
+
 export type SnapBoardFrame =
   | {
       readonly kind: 'LIVE';
@@ -61,8 +114,8 @@ export type SnapBoardFrame =
       readonly situation: SnapSituationFrame;
       /** Points both teams scored in the background since the athlete's previous live snap. */
       readonly meanwhile: { readonly playerTeam: number; readonly opponent: number };
-      /** Authored defensive look when the owning content records it (WR coverage/leverage). */
-      readonly look: { readonly coverageId: string; readonly leverageId: string } | null;
+      /** The hidden look (M11), or null for content without authored looks. */
+      readonly look: SnapLookFrameVNext | null;
       readonly result: LivePlayFrame | null;
     }
   | {
@@ -75,6 +128,7 @@ export type SnapBoardFrame =
       readonly familyId: string;
       readonly decisionIds: readonly string[];
       readonly revealedClueIds: readonly string[];
+      readonly look: SnapLookFrameVNext | null;
       readonly result: {
         readonly decisionId: string;
         readonly grade: SidelineRepGradeVNext;
@@ -190,13 +244,6 @@ function meanwhile(
   };
 }
 
-function lookOf(source: unknown): { coverageId: string; leverageId: string } | null {
-  const record = source as { coverageId?: unknown; leverageId?: unknown };
-  return typeof record.coverageId === 'string' && typeof record.leverageId === 'string'
-    ? { coverageId: record.coverageId, leverageId: record.leverageId }
-    : null;
-}
-
 function plays(engine: VNextGameState): readonly AnyPlay[] {
   return engine.game.keyPlayLog as unknown as readonly AnyPlay[];
 }
@@ -205,6 +252,7 @@ function sidelineFrame(
   positionId: VNextPositionId,
   rep: SidelineRepVNext,
   total: number,
+  look: SnapLookFrameVNext | null,
 ): SnapBoardFrame {
   return {
     kind: 'SIDELINE',
@@ -216,6 +264,7 @@ function sidelineFrame(
     familyId: rep.familyId,
     decisionIds: rep.decisionIds,
     revealedClueIds: rep.revealedClueIds,
+    look,
     result:
       rep.chosenDecisionId === null || rep.grade === null
         ? null
@@ -228,7 +277,10 @@ function sidelineFrame(
 }
 
 /** Frame for the current Saturday slot: pending decision in SNAP, saved outcome in RESULT. */
-export function projectSnapBoardFrame(career: CareerVNext): SnapBoardFrame | null {
+export function projectSnapBoardFrame(
+  career: CareerVNext,
+  mechanics: Pick<CareerVNextMechanics, 'looks'>,
+): SnapBoardFrame | null {
   if (career.flow.type !== 'GAME') return null;
   const game: GameDayVNext = career.flow.game;
   if ((game.stage !== 'SNAP' && game.stage !== 'RESULT') || game.engine === null) return null;
@@ -237,9 +289,18 @@ export function projectSnapBoardFrame(career: CareerVNext): SnapBoardFrame | nul
   const positionId = career.athlete.profile.positionId as VNextPositionId;
   if (slot.kind === 'SIDELINE') {
     const rep = game.sideline[slot.repIndex];
-    return rep === undefined
-      ? null
-      : deepFreeze(sidelineFrame(positionId, rep, game.sideline.length));
+    if (rep === undefined) return null;
+    const look = snapLookVNext(career, game.weekIndex, slot, rep.familyId, mechanics);
+    return deepFreeze(
+      sidelineFrame(
+        positionId,
+        rep,
+        game.sideline.length,
+        look === null
+          ? null
+          : lookFrame(look, mechanics, rep.revealedClueIds.length, rep.chosenDecisionId !== null),
+      ),
+    );
   }
   const liveTotal = game.slots.filter(({ kind }) => kind === 'LIVE').length;
   const log = plays(game.engine);
@@ -253,6 +314,7 @@ export function projectSnapBoardFrame(career: CareerVNext): SnapBoardFrame | nul
       revealedClueIds: readonly string[];
     };
     if (pending.tacticalContext === undefined) return null;
+    const look = snapLookVNext(career, game.weekIndex, slot, pending.familyId, mechanics);
     return deepFreeze({
       kind: 'LIVE',
       positionId,
@@ -264,7 +326,8 @@ export function projectSnapBoardFrame(career: CareerVNext): SnapBoardFrame | nul
       revealedClueIds: pending.revealedClueIds,
       situation: situation(pending.tacticalContext),
       meanwhile: meanwhile(log, slot.snapIndex, pending.tacticalContext.score),
-      look: lookOf(pending),
+      look:
+        look === null ? null : lookFrame(look, mechanics, pending.revealedClueIds.length, false),
       result: null,
     });
   }
@@ -272,6 +335,7 @@ export function projectSnapBoardFrame(career: CareerVNext): SnapBoardFrame | nul
     (AnyPlay & { patternId: string; familyId: string }) | undefined;
   if (play?.tacticalResult === undefined) return null;
   const before = play.tacticalResult.before;
+  const look = snapLookVNext(career, game.weekIndex, slot, play.familyId, mechanics);
   return deepFreeze({
     kind: 'LIVE',
     positionId,
@@ -283,7 +347,7 @@ export function projectSnapBoardFrame(career: CareerVNext): SnapBoardFrame | nul
     revealedClueIds: before.revealedClueIds,
     situation: situation(before),
     meanwhile: meanwhile(log, slot.snapIndex, before.score),
-    look: lookOf(play),
+    look: look === null ? null : lookFrame(look, mechanics, before.revealedClueIds.length, true),
     result: livePlayFrame(positionId, play),
   });
 }
@@ -292,18 +356,42 @@ export function projectSnapBoardFrame(career: CareerVNext): SnapBoardFrame | nul
 export function projectCompletedPlayFrames(
   positionId: VNextPositionId,
   engine: VNextGameState,
+  /** When given, each play names the hidden look it was played against (M11). */
+  looks?: {
+    readonly career: Pick<CareerVNext, 'seed' | 'season' | 'athlete'>;
+    readonly weekIndex: number;
+    readonly mechanics: Pick<CareerVNextMechanics, 'looks'>;
+  },
 ): readonly {
   readonly situation: SnapSituationFrame;
   readonly result: LivePlayFrame;
   readonly patternId: string;
+  readonly lookNameKey: string | null;
 }[] {
   return deepFreeze(
-    plays(engine).flatMap((play) => {
+    plays(engine).flatMap((play, snapIndex) => {
       const result = livePlayFrame(positionId, play);
       const tactical = play.tacticalResult;
-      return result === null || tactical === undefined
-        ? []
-        : [{ situation: situation(tactical.before), result, patternId: String(play['patternId']) }];
+      if (result === null || tactical === undefined) return [];
+      const slot: SnapLookSlotVNext = { kind: 'LIVE', snapIndex };
+      const look =
+        looks === undefined
+          ? null
+          : snapLookVNext(
+              looks.career,
+              looks.weekIndex,
+              slot,
+              String(play['familyId']),
+              looks.mechanics,
+            );
+      return [
+        {
+          situation: situation(tactical.before),
+          result,
+          patternId: String(play['patternId']),
+          lookNameKey: look?.nameKey ?? null,
+        },
+      ];
     }),
   );
 }

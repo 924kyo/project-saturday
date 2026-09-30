@@ -159,7 +159,7 @@ function playSeason(
         const kicked = career.flow.type === 'GAME' ? career.flow.game : null;
         decisionsPerGame.push(kicked?.slots.length ?? 0);
       } else if (game.stage === 'SNAP') {
-        const frame = projectSnapBoardFrame(career)!;
+        const frame = projectSnapBoardFrame(career, mechanics)!;
         expect(frame).not.toBeNull();
         expect(frame.result).toBeNull();
         const choice =
@@ -167,9 +167,9 @@ function playSeason(
             ? ((career.flow.type === 'GAME' &&
                 career.flow.game.sideline[frame.repNumber - 1]!.bestDecisionId) as string)
             : frame.decisionIds[0]!;
-        expect(chooseSnapVNext(career, 'not_a_decision').ok).toBe(false);
-        career = adopt(chooseSnapVNext(career, choice));
-        const resolved = projectSnapBoardFrame(career)!;
+        expect(chooseSnapVNext(career, 'not_a_decision', mechanics).ok).toBe(false);
+        career = adopt(chooseSnapVNext(career, choice, mechanics));
+        const resolved = projectSnapBoardFrame(career, mechanics)!;
         expect(resolved.result).not.toBeNull();
         if (resolved.kind === 'LIVE') {
           expect(resolved.situation.lineOfScrimmageYards).toBeGreaterThanOrEqual(0);
@@ -626,7 +626,11 @@ describe('Career VNext season arc', () => {
                     ? flow.game.stage === 'PREGAME'
                       ? kickoffVNext(career, mechanics)
                       : flow.game.stage === 'SNAP'
-                        ? chooseSnapVNext(career, projectSnapBoardFrame(career)!.decisionIds[0]!)
+                        ? chooseSnapVNext(
+                            career,
+                            projectSnapBoardFrame(career, mechanics)!.decisionIds[0]!,
+                            mechanics,
+                          )
                         : continueGameVNext(career, mechanics)
                     : flow.type === 'POST_GAME'
                       ? nextWeekVNext(career, mechanics)
@@ -799,7 +803,11 @@ describe('Career VNext world compatibility (M9)', () => {
                     ? flow.game.stage === 'PREGAME'
                       ? kickoffVNext(career, mechanics)
                       : flow.game.stage === 'SNAP'
-                        ? chooseSnapVNext(career, projectSnapBoardFrame(career)!.decisionIds[0]!)
+                        ? chooseSnapVNext(
+                            career,
+                            projectSnapBoardFrame(career, mechanics)!.decisionIds[0]!,
+                            mechanics,
+                          )
                         : continueGameVNext(career, mechanics)
                     : flow.type === 'POST_GAME'
                       ? nextWeekVNext(career, mechanics)
@@ -884,7 +892,11 @@ describe('Career VNext world compatibility (M8)', () => {
                     ? flow.game.stage === 'PREGAME'
                       ? kickoffVNext(career, mechanics)
                       : flow.game.stage === 'SNAP'
-                        ? chooseSnapVNext(career, projectSnapBoardFrame(career)!.decisionIds[0]!)
+                        ? chooseSnapVNext(
+                            career,
+                            projectSnapBoardFrame(career, mechanics)!.decisionIds[0]!,
+                            mechanics,
+                          )
                         : continueGameVNext(career, mechanics)
                     : flow.type === 'POST_GAME'
                       ? nextWeekVNext(career, mechanics)

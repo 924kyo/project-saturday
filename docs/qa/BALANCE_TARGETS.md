@@ -129,3 +129,20 @@ M10 tuning:
 - rest credit on an injury is clamped to the weeks that remain, so a one-week knock no longer advertises a credit it cannot use.
 
 The harness rotates live decisions rather than playing well, so the first round (stock ≥80) belongs to strong players at strong programs, not to this sample.
+
+### M11 update (2026-09-30): snap looks and one grade curve
+
+The same report after snap looks, the WR fit-scale fix and grade calibration:
+
+| Measure | Value | Band |
+| --- | --- | --- |
+| Seasons reaching the 12-team bracket | 28‰ | 20–300‰ |
+| Seasons with an award | 201‰ | 50–400‰ |
+| Seasons ending as the starter | 826‰ | 400–900‰ |
+| Careers drafted / first round | 417‰ / 0‰ | 150–800‰ / <250‰ |
+| Kickoff confidence (mean) | 72.4 | 45–80 |
+| Brand at career end | 72.2 | <90 |
+
+Award seasons by position (of 24): QB 1, RB 3, WR 8, CB 4, LB 4, EDGE 9. Before M11 QB had none and WR was graded on a broken scale. Tuning:
+- staff-grade calibration: QB +11, RB +6, WR −17 on the kernel box score, so every role sits on the defenders' curve;
+- award thresholds: All-Conference first 64, second 62, Freshman All-American 62.
