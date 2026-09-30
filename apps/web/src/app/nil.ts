@@ -3,7 +3,7 @@ import { offFieldContent } from '@project-saturday/game-content';
 import type { MessageKey } from '@project-saturday/game-content/locales';
 
 import type { AppTranslate } from '../i18n/i18n';
-import { formatNumber, key } from './content';
+import { formatUsd, key } from './content';
 
 /** NIL presentation lookups: authored offer, benefit and category copy by stable ID. */
 const STATE_KEYS = {
@@ -70,9 +70,7 @@ export function nilEffectChips(
         };
       case 'nil_funds_delta_usd':
         return {
-          text: t('v2.nil.funds', {
-            value: `${effect.deltaUsd > 0 ? '+' : '−'}${formatNumber(locale, Math.abs(effect.deltaUsd))}`,
-          }),
+          text: t('v2.nil.funds', { value: formatUsd(locale, effect.deltaUsd, true) }),
           value: effect.deltaUsd,
         };
       case 'nil_relationship_delta':

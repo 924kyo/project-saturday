@@ -1,6 +1,6 @@
-# Project Saturday — Windows snapshot
+# Project Saturday — Windows desktop build
 
-The Tauri 2 shell embeds the same production React/Vite game as the browser/PWA. There is no native gameplay implementation and no Vite server or network requirement for basic play. This is an **unsigned M7.5 development snapshot**, not M10 release approval.
+The Tauri 2 shell embeds the same production React/Vite game as the browser/PWA. There is no native gameplay implementation and no Vite server or network requirement for basic play. Version `1.0.0-rc.1` is the **unsigned 1.0 release candidate** build (M10).
 
 ## Commands
 
@@ -18,21 +18,26 @@ Prerequisites: Node/Corepack/pnpm from the root package, Rust MSVC toolchain, Vi
 
 The NSIS installer contains Korean and English, installs per user, and embeds the offline WebView2 installer. The larger installer size is intentional; it avoids a runtime download during offline installation. See [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) and [Windows installer options](https://v2.tauri.app/distribute/windows-installer/).
 
-## Produced artifacts — 2026-09-14 17:59 KST
+## Produced artifacts — 2026-09-30 16:30 KST (M10 gate)
 
-- Application: `C:\project-saturday\apps\desktop\src-tauri\target\x86_64-pc-windows-msvc\release\project-saturday.exe` — 8,762,368 bytes.
-- NSIS installer: `C:\project-saturday\apps\desktop\src-tauri\target\x86_64-pc-windows-msvc\release\bundle\nsis\Project Saturday_0.7.5_x64-setup.exe` — 217,762,512 bytes.
-- Application SHA-256: `C1315A3D5D43B9C33B793715B851BD3125323C4FFBFD000E256EC669ACD801A2`.
-- Installer SHA-256: `4A2BC3FE3D4813429D09BC58E369AF611B47F03EBDEBCB4A15D636F89A8F09E8`.
+- Application: `apps/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/project-saturday.exe` — 8,872,960 bytes, SHA-256 `70292901CCEF4ECAE955DA8FCDAA39E4CD3F87D95E00C29640A9C75B166ADA47`.
+- NSIS installer: `apps/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/Project Saturday_1.0.0-rc.1_x64-setup.exe` — 217,493,840 bytes, SHA-256 `8F4934C08BA9EDC17C831CD386C2F74F954E48C433B1B2779C26688335DBA4B7`.
 
-The application executable is launch-tested. The installer was generated successfully but its installation/uninstallation wizard has **not** been exercised; no claim of that validation is made. Outputs are ignored build artifacts and must be rebuilt on another checkout. No signing, public publishing or remote deployment occurred.
+The application executable is launch-tested. The installer was generated, but its install and uninstall wizard has **not** been exercised, and this README makes no claim about it. Outputs are ignored build artifacts and must be rebuilt on another checkout. No signing, publishing or deployment occurred.
 
-## Verified and remaining checks
+## Verified checks
 
-Production build/export/PWA checks and focused desktop configuration tests pass. The actual release WebView2 app passes offline cold launch and reload, Korean RB creation, all five destinations, a real RB key snap and post-game, process exit and offline relaunch with exact complete save-envelope equality, Career Hub Continue/cancel/New/Abandon, and English CB creation. The test blocks network through a deliberately unavailable proxy and CDP offline mode; bundled assets still load at `http://tauri.localhost`, not a dev server. It retains the isolated profile, full pre-relaunch envelope, report and screenshots under `test-results/desktop-snapshot/`. The debug connection exists only in the test process's environment, not shipping configuration. See [Playwright WebView2 testing](https://playwright.dev/docs/next/webview2).
+`scripts/desktop-smoke.mjs` drives the actual release WebView2 app (Career VNext UI) in an isolated profile with the network blocked (an unavailable proxy plus CDP offline mode). Bundled assets load from `http://tauri.localhost`, not a dev server. It checks:
+- packaged offline launch and reload;
+- ko-KR creation through the production UI;
+- the This week, Build, Team and Profile tabs;
+- a full Saturday;
+- exact save-envelope equality across process exit and an offline relaunch;
+- en-US creation;
+- New Career cancel and confirm, then an en-US CB creation.
 
-The computer-use helper located the native window but screenshot capture failed with `foreground window did not report a process id`; actual WebView2 screenshots were captured and visually inspected instead. Visual review found existing added-position portrait/header overlap and unlabeled visible Home meters. These are recorded in the mandatory M7.5 B6 parity plan, not hidden by the functional test pass. This snapshot is playable, not a claim that M7.5 presentation or four-position UX parity is complete.
+The profile, report and screenshots are kept under `test-results/desktop-snapshot/`. The debug connection exists only in the test process's environment, never in shipping configuration.
 
-Default desktop storage belongs to the stable app identity `com.projectsaturday.game`, separate from normal browser profiles. Existing save codecs, migrations, locks and Hub operations are unchanged. Do not delete browser storage to start another career. Cross-browser save import/export is not added in this snapshot.
+Default desktop storage belongs to the stable app identity `com.projectsaturday.game`, separate from normal browser profiles. Saves use the same Career VNext codec, backup and Alumni Wall as the browser. Use New Career to start another career; don't delete storage. Cross-browser save import and export is not included (`docs/release/KNOWN_LIMITATIONS.md`).
 
-Rebuild at meaningful UI/Game Day phase gates, save/writer changes, milestone closeout or requested playable snapshots—not after every atomic edit. Resume B1 after this bounded packaging checkpoint; B6 and full Phase C still block M8.
+Rebuild at milestone gates, after save changes, or when a playable snapshot is requested, not after every atomic edit.

@@ -4,13 +4,18 @@
 
 ## Target
 
-M10 — 1.0 Release Candidate (unchanged).
+M10 — 1.0 Release Candidate: **reached** (2026-09-30).
 
 ## Current milestone
 
-M10 — 1.0 Release Candidate (started 2026-09-30). Plan: `docs/exec-plans/active/m10-release-candidate.md`.
+None active. M10 is complete. Plan: `docs/exec-plans/completed/m10-release-candidate.md`.
 
 ## Status
+
+M10 is COMPLETE (2026-09-30). Every item in `RELEASE_CHECKLIST.md` is checked, with evidence in `docs/release/READINESS_REPORT.md`:
+- the Tier 3 run: `pnpm check` green (874 + 420 + 397 tests, e2e 20, build verified); `E2E_FULL=1` 52 passed (Chromium phone, 320 px and desktop, plus WebKit iPhone 14); the desktop `1.0.0-rc.1` build and smoke passed;
+- the release docs: `docs/release/` (release notes, readiness report, known limitations, spec conformance);
+- there are no critical or high defects; the manual to-dos before a public 1.0 are listed in `KNOWN_LIMITATIONS.md`.
 
 M9 is COMPLETE (2026-09-30), and its Tier 3 gate is met (`docs/qa/M9_GATE.md`):
 - 96 programs in 8 conferences of 12, fictional awards and conference titles, legacy history (snapshot, record book, familiarity, mentors, cameos), 254 events and 100 cards, and a bilingual editorial pass;
@@ -22,6 +27,12 @@ M8 is COMPLETE (2026-09-30): see `docs/exec-plans/completed/m8-six-position-beta
 
 ## Last completed task
 
+M10 step 8, the gate (2026-09-30):
+- NIL money uses Intl USD formatting;
+- the desktop version is `1.0.0-rc.1`, and its README is refreshed with this build's artifacts and hashes;
+- the Tier 3 run is complete, the checklist is checked, the readiness report is written, and the plan is archived.
+
+
 M10 step 7, hygiene and documentation (2026-09-30):
 - the originality review (`docs/qa/M10_ORIGINALITY_REVIEW.md`); a fix means Career VNext never shows generated full names that read as real players or a coach;
 - the app now requests persistent storage after the first save of a session (it was dropped at the R cutover);
@@ -30,7 +41,7 @@ M10 step 7, hygiene and documentation (2026-09-30):
 
 
 M10 step 6, localization QA (2026-09-30):
-- numbers use the app language, not the device default: NIL fund totals and fund chips go through `formatNumber` with grouping;
+- NIL money is formatted as US dollars with `Intl` in the app language, not the device default (`formatUsd`: $2,500 in en-US, US$2,500 in ko-KR, signed on effect chips);
 - en-US Profile shows height and weight in feet, inches and pounds, matching creation's imperial input, while ko-KR stays metric (`v2.profile.measureImperial`);
 - the 320 px layout test covers both locales and the Week, Build, Team and Profile tabs;
 - every step of the two-season career journeys (both locales, all six positions under `E2E_FULL=1`) asserts no raw message key on screen and no Hangul in en-US.
@@ -120,11 +131,11 @@ The M8 closeout, 2026-09-30:
 
 ## Current / next task
 
-M10 step 8: the gate. Check every `RELEASE_CHECKLIST.md` item with evidence, run Tier 3 (`pnpm check`, `E2E_FULL=1` matrix including WebKit, desktop build and smoke), write `docs/release/READINESS_REPORT.md`, and mark M10 complete.
+None required: the durable target (M10) is reached. Optional follow-ups before a public 1.0 are the manual items in `docs/release/KNOWN_LIMITATIONS.md`: screen-reader and native-speaker passes, real devices, trademark clearance, and desktop signing and the installer wizard. The content-depth growth there (NIL, injuries, patterns, awards) and the pre-R code cleanup (BACKLOG) are also optional.
 
 ## Active exec plan
 
-`docs/exec-plans/active/m10-release-candidate.md`. M8 and M9 are archived in `docs/exec-plans/completed/`.
+None. M8, M9 and M10 are archived in `docs/exec-plans/completed/`.
 
 ## Current compatibility boundary
 

@@ -23,7 +23,7 @@ const rows = {
   'v2.nil.lockerRoom': ['Locker room', '라커룸'],
   'v2.nil.benefit': ['+1 {benefit}', '+1 {benefit}'],
   'v2.nil.title': ['Name, image and likeness', '이름·이미지·초상권(NIL)'],
-  'v2.nil.fundsTotal': ['Earned: ${value}', '수입: ${value}'],
+  'v2.nil.fundsTotal': ['Earned: {value}', '수입: {value}'],
   'v2.nil.brand': ['Brand {value}', '브랜드 {value}'],
   'v2.nil.lockerRoomLine': ['Locker room {value}: {effect}', '라커룸 {value}: {effect}'],
   'v2.nil.lockerRoomHigh': ['teammates lift your practice (+2)', '동료들이 연습을 끌어올린다(+2)'],

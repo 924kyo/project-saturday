@@ -279,9 +279,14 @@ export function familiarNames(career: CareerVNext, programId: ProgramId): string
   return names.length === 0 ? null : names.join(', ');
 }
 
-/** Numbers in the app's language (never the device default). */
-export function formatNumber(locale: string | undefined, value: number): string {
-  return new Intl.NumberFormat(locale ?? 'ko-KR').format(value);
+/** In-world money is US dollars in both languages (`LOCALIZATION.md`); signed for effect chips. */
+export function formatUsd(locale: string | undefined, value: number, signed = false): string {
+  return new Intl.NumberFormat(locale ?? 'ko-KR', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+    ...(signed ? { signDisplay: 'exceptZero' as const } : {}),
+  }).format(value);
 }
 
 /** Height and weight in feet/inches and pounds (en-US convention for American football). */

@@ -1,6 +1,6 @@
 # M10 — 1.0 release candidate
 
-Status: active 2026-09-30. It follows M9, which closed on its Tier 3 gate. This is the durable target (`TARGET.md`).
+Status: COMPLETE 2026-09-30 (gate: `docs/release/READINESS_REPORT.md`). Opened 2026-09-30. It follows M9, which closed on its Tier 3 gate. This is the durable target (`TARGET.md`).
 
 Authoritative inputs:
 - `docs/execution/MASTER_ROADMAP.md` (the M10 deliverables);
@@ -38,4 +38,4 @@ Every item in `RELEASE_CHECKLIST.md` is checked with evidence, there are no crit
    - known limitations;
    - specs and ADRs match the implementation;
    - release notes and the readiness report.
-8. **Gate:** checklist complete, Tier 3, `PROGRESS.md` marks M10 complete.
+8. **Gate:** (done 2026-09-30) checklist complete, Tier 3, `PROGRESS.md` marks M10 complete.

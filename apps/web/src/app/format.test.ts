@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatNumber, imperialMeasure } from './content';
+import { formatUsd, imperialMeasure } from './content';
 
 describe('locale formatting (M10)', () => {
-  it('formats numbers in the app language, not the device default', () => {
-    expect(formatNumber('en-US', 11250)).toBe('11,250');
-    expect(formatNumber('ko-KR', 11250)).toBe('11,250');
-    expect(formatNumber(undefined, 0)).toBe('0');
+  it('formats in-world dollars in the app language, not the device default', () => {
+    expect(formatUsd('en-US', 11250)).toBe('$11,250');
+    expect(formatUsd('ko-KR', 11250)).toBe('US$11,250');
+    expect(formatUsd('en-US', 2500, true)).toBe('+$2,500');
+    expect(formatUsd('en-US', -800, true)).toBe('-$800');
+    expect(formatUsd(undefined, 0)).toBe('US$0');
   });
 
   it('converts creation measurements to feet, inches and pounds for en-US', () => {

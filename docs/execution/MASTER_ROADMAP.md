@@ -235,6 +235,8 @@ Gate: repeated careers demonstrate strong variation and persistent history.
 
 ## M10 — 1.0 release candidate
 
+Complete 2026-09-30 (plan: `docs/exec-plans/completed/m10-release-candidate.md`; gate: `docs/release/READINESS_REPORT.md`).
+
 Deliver:
 
 - balance pass using large simulation batches;

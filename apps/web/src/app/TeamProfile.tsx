@@ -31,7 +31,7 @@ import {
   traits,
   conferenceOf,
   familiarNames,
-  formatNumber,
+  formatUsd,
   imperialMeasure,
 } from './content';
 import { METER_COLORS, PORTRAIT } from './theme';
@@ -325,7 +325,7 @@ function NilPanel({ career }: { readonly career: CareerVNext }): React.JSX.Eleme
     <Panel id="s2-profile-nil" title={t('v2.nil.title')}>
       <p className="s2-num">
         <strong>
-          {t('v2.nil.fundsTotal', { value: formatNumber(i18n.resolvedLanguage, nil.fundsUsd) })}
+          {t('v2.nil.fundsTotal', { value: formatUsd(i18n.resolvedLanguage, nil.fundsUsd) })}
         </strong>{' '}
         · {t('v2.nil.brand', { value: career.athlete.profile.state.brand })}
       </p>

@@ -49,7 +49,7 @@ Status key:
 | CAREER_MANAGEMENT | Met, adapted | New Career with confirmation keeps the Alumni Wall. No reset-all-data control |
 | SAVE_SYSTEM | Met, adapted | Lean integrity: a checksummed envelope with structural validation, a last-good backup with recovery, checked migration fixtures, persistent storage requested. The M7.5 registry and replay contracts apply to historical data only |
 | UX_AND_FLOW | Met | One focal action per screen, Week/Build/Team/Profile tabs, contextual help |
-| LOCALIZATION | Met | ko-KR and en-US in every change; Intl number formatting in the app language; en-US ft-in/lb |
+| LOCALIZATION | Met | ko-KR and en-US in every change; Intl USD currency formatting in the app language; en-US ft-in/lb |
 | ART_AND_PRESENTATION | Met | Original "Saturday Broadcast" design system, generated crests, program palettes with contrast-safe ink |
 | CONTENT_DENSITY | Partial | See the table in `KNOWN_LIMITATIONS.md` |
 | BALANCE_PHILOSOPHY | Met | Checked 36-career report with bands (`docs/qa/BALANCE_TARGETS.md`) |

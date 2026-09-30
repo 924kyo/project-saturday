@@ -6,7 +6,7 @@
 
 ## Current target
 
-**M10 — 1.0 Release Candidate**
+**M10 — 1.0 Release Candidate** — reached 2026-09-30 (`docs/release/READINESS_REPORT.md`).
 
 Codex should progress through the milestones in `MASTER_ROADMAP.md` in order, automatically, until M10 acceptance is complete or a hard blocker is recorded.
 
