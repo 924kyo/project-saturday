@@ -811,16 +811,19 @@ function settleGame(
           confidence: next.state.confidence,
           coachTrust: coachTrustAfter,
           // Saturdays build the name that NIL offers read.
+          // A name grows fast early and slower once it is known (gains halve from 50).
           brand: Math.min(
             100,
             profile.state.brand +
-              brandFromGameVNext({
-                played: summary.opportunityCount > 0,
-                won: resultId === 'game_result_win',
-                coachGrade,
-                postseason: game.round !== undefined,
-                opponentRank: stakes?.opponentRank ?? null,
-              }),
+              Math.floor(
+                brandFromGameVNext({
+                  played: summary.opportunityCount > 0,
+                  won: resultId === 'game_result_win',
+                  coachGrade,
+                  postseason: game.round !== undefined,
+                  opponentRank: stakes?.opponentRank ?? null,
+                }) / (profile.state.brand >= 50 ? 2 : 1),
+              ),
           ),
         },
       },

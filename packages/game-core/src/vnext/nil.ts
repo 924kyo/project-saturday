@@ -42,10 +42,10 @@ export const VNEXT_NIL_TUNING = Object.freeze({
     played: 1,
     win: 1,
     strongGrade: 70,
-    strongGame: 2,
-    postseason: 1,
-    rankedWin: 1,
-    offseasonFade: 2,
+    strongGame: 1,
+    postseason: 2,
+    rankedWin: 2,
+    offseasonFade: 6,
   },
 });
 

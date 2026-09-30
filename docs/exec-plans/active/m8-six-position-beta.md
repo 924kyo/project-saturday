@@ -49,5 +49,5 @@ All automated gates pass. The balance harness covers all six positions.
    - a declare/return offseason decision from year three;
    - a draft ending (round or undrafted) on the Alumni Wall.
 5. **Deeper off-field:** (done 2026-09-30; more events move to step 6's library) VNext NIL offers and obligations through the off-field kernel, which makes the dormant NIL/relationship card lines live; more events.
-6. **Library and balance at scale:** a larger skill/content library, a six-position balance harness, and multi-season simulations.
+6. **Library and balance at scale:** (done 2026-09-30) a larger skill/content library, a six-position balance harness, and multi-season simulations.
 7. **Gate:** the six-position Cartesian journey matrix, the parity ledger, and a Tier 3 gate.

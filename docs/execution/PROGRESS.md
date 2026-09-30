@@ -20,9 +20,21 @@ R is COMPLETE (2026-09-30). The gate met is:
 
 The plan is archived at `docs/exec-plans/completed/r-product-reconciliation.md`.
 
-M8 steps 1–5 are complete (2026-09-30): six positions, the 64-program conference world, the Pro Draft, and NIL with the locker room. Next is step 6, the library and balance at scale.
+M8 steps 1–6 are complete (2026-09-30): six positions, the 64-program conference world, the Pro Draft, NIL with the locker room, and balance at scale. Next is step 7, the M8 gate.
 
 ## Last completed task
+
+M8 step 6, library and balance at scale (2026-09-30):
+- overtime: VNext player games and conference-world games no longer end tied;
+- a shared 16-event campus-life pack for every position, with the event kernel generalized to serve it;
+- `career-vnext-careers.test.ts`, a six-position four-season harness with a thoughtful player (balanced plans, best sideline reads, accepts NIL, climbs to the strongest transfer). It prints the career table and asserts bands: no ties, some bracket seasons but under 60%, NIL in most careers, and the draft for some but not all;
+- tuning from the harness:
+  - star impact: a starter lifts their own team's ratings in their games by 0.7 per overall point above 60, at most 10 (half for rotation players);
+  - transfer targets track ability at 0.8;
+  - game brand gains halve from 50, and brand fades 6 each offseason;
+- results: 6 of 48 seasons reach the bracket (mostly after climbing), 7 of 12 careers are drafted (rounds 4–7), and NIL reaches every career;
+- verified: `pnpm check` (844 + 406 + 390 tests).
+
 
 M8 step 5, NIL and relationships in VNext (2026-09-30):
 - `vnext/nil.ts` runs NIL through the shared off-field arithmetic. There is one offer attempt per regular-season week on a `:vnext:nil` stream (never during an obligation), and each offer comes once a career. An accept/decline scene follows. Rewards get the equipped NIL multiplier. An obligation costs practice score (5 per focus of cost) plus its authored weekly effects until it is fulfilled;

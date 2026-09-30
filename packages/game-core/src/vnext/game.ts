@@ -24,6 +24,7 @@ import {
   type DefenderPositionId,
 } from '../games/defender.js';
 import { gameHooksVNext, packageSnapBonusVNext } from './build.js';
+import { overallVNext } from './common.js';
 import type { CareerVNext, CareerVNextMechanics, VNextGameState } from './types.js';
 
 /**
@@ -45,14 +46,68 @@ function sharedContext(career: CareerVNext): PositionAlphaGameContext {
   } as unknown as PositionAlphaGameContext;
 }
 
+/**
+ * Star impact (M8): a starter lifts their own team. For the player's games only, the program's
+ * offense and defense ratings gain 0.7 point per overall point above 60 (at most 10; half that
+ * for a rotation player). The world's other games and the saved profiles are unchanged.
+ */
+export const VNEXT_STAR_IMPACT_TUNING = Object.freeze({
+  neutralOverall: 60,
+  perPointPermille: 700,
+  maximum: 10,
+});
+
+export function starImpactVNext(career: CareerVNext, mechanics: CareerVNextMechanics): number {
+  const role = career.program?.room.projection.roleId;
+  const share = role === 'depth_role_starter' ? 1_000 : role === 'depth_role_rotation' ? 500 : 0;
+  const tuning = VNEXT_STAR_IMPACT_TUNING;
+  const lift = Math.min(
+    tuning.maximum,
+    Math.max(
+      0,
+      Math.floor(
+        ((overallVNext(career.athlete.profile, mechanics) - tuning.neutralOverall) *
+          tuning.perPointPermille) /
+          1_000,
+      ),
+    ),
+  );
+  return Math.floor((lift * share) / 1_000);
+}
+
+function withStarImpact(
+  career: CareerVNext,
+  mechanics: CareerVNextMechanics,
+): CareerVNextMechanics {
+  const lift = starImpactVNext(career, mechanics);
+  const programId = career.program?.programId;
+  if (lift === 0 || programId === undefined) return mechanics;
+  return {
+    ...mechanics,
+    world: {
+      ...mechanics.world,
+      programProfiles: mechanics.world.programProfiles.map((profile) =>
+        profile.programId === programId
+          ? {
+              ...profile,
+              offenseRating: Math.min(95, profile.offenseRating + lift),
+              defenseRating: Math.min(95, profile.defenseRating + lift),
+            }
+          : profile,
+      ),
+    },
+  };
+}
+
 export function startVNextGame(
   career: CareerVNext,
   fixture: WorldAlphaFixtureMechanics,
   weekIndex: number,
-  mechanics: CareerVNextMechanics,
+  baseMechanics: CareerVNextMechanics,
   academicHold = false,
 ): VNextGameState | null {
   if (career.program === null) return null;
+  const mechanics = withStarImpact(career, baseMechanics);
   const profile = career.athlete.profile;
   if (profile.positionId === 'position_lb' || profile.positionId === 'position_edge')
     return startDefenderVNextGame(career, fixture, weekIndex, mechanics, academicHold);

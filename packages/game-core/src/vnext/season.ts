@@ -313,7 +313,8 @@ export function offseasonOptionsVNext(
   const current = career.program.programId;
   const recruiting = derivePositionRecruitingProfile(career.athlete.profile, mechanics.room, 0);
   if (recruiting === undefined) return null;
-  const target = 50 + Math.round((recruiting.abilityScore - 50) * 0.6);
+  // A proven college player's market tracks ability more closely than a recruit's (M8 tuning).
+  const target = 50 + Math.round((recruiting.abilityScore - 50) * 0.8);
   const ranked = mechanics.world.programProfiles
     .filter(({ programId }) => programId !== current)
     .map(({ programId }) => ({

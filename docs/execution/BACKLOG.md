@@ -316,5 +316,5 @@ Detailed tasks may be decomposed when the preceding milestone stabilizes. Use `M
 ### M8 balance notes (for step 6)
 
 - [x] (Done: VNext overtime, 2026-09-30.) Player-game ties are frequent (two or three a season), because the detailed kernel's background scores run low. Decide on an original deterministic overtime or tiebreak rule in the owning core, with history compatibility for recorded ties.
-- [ ] Recruits at building/competitive programs go about 4-8 and seldom win a conference. Check whether the climb (transfer up, development) gives a realistic playoff path. Tune in the six-position harness, not in presentation.
-- [ ] Draft stock over sampled careers is 55-65 at weaker programs (late round or undrafted). Recheck the bands once the playoff path and production (staff grades) are tuned.
+- [x] (Done: star impact and transfer targets, 2026-09-30; 6/48 seasons reach the bracket in the career harness.) Recruits at building/competitive programs go about 4-8 and seldom win a conference. Check whether the climb (transfer up, development) gives a realistic playoff path. Tune in the six-position harness, not in presentation.
+- [x] (Rechecked 2026-09-30: 7/12 drafted, rounds 4–7; round 1 needs a star at a strong program.) Draft stock over sampled careers is 55-65 at weaker programs (late round or undrafted). Recheck the bands once the playoff path and production (staff grades) are tuned.
