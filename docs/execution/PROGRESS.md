@@ -22,6 +22,13 @@ M8 is COMPLETE (2026-09-30): see `docs/exec-plans/completed/m8-six-position-beta
 
 ## Last completed task
 
+M10 step 2, save hardening (2026-09-30):
+- a last-good backup with recovery and a notice;
+- checked save fixtures (v1, pre-M8 v3, current M9) that load and keep playing;
+- validated Alumni Wall plaques;
+- verified: `pnpm check` (865 + 417 + 397, e2e 10, build).
+
+
 M10 step 1, balance at scale (2026-09-30):
 - the testkit `m10-balance` report: 36 four-year careers, checked byte for byte, with band assertions;
 - confidence reversion (no more saturation), and a truthful rest credit on short injuries;
@@ -76,7 +83,7 @@ The M8 closeout, 2026-09-30:
 
 ## Current / next task
 
-M10 step 2: save and migration hardening. Then performance, accessibility, the browser/PWA matrix, localization QA, hygiene and docs, and the gate.
+M10 step 3: performance budgets. Then accessibility, the browser/PWA matrix, localization QA, hygiene and docs, and the gate.
 
 ## Active exec plan
 

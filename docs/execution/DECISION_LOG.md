@@ -637,3 +637,4 @@ Append concise implementation/product decisions that do not warrant their own AD
   - cameo reactions from saved program facts.
 
   The record book is a pure projection over plaques, shown on the landing screen and at completion. Legacy never changes the athlete, the offers or ratings (tested).
+- 2026-09-30 (M10 step 2): the save keeps a last-good backup. Each save first copies the previous checksum-valid envelope to `career-vnext-backup`. A current save that fails its checksum or parse restores from the backup, and the player sees a notice. When both fail, the app reports `corrupt` and never guesses. Checked save fixtures (a v1 recruiting save, a pre-M8 v3 alpha-world season, and a current M9 Game Day save with NIL and legacy) must load and keep playing in every future version; they are exact artifacts excluded from formatting. The Alumni Wall loads only plaques whose every displayed field is well-formed.

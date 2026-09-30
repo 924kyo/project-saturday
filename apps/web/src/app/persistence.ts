@@ -1,4 +1,5 @@
 import {
+  isVNextPositionId,
   parseCareerVNext,
   serializeCareerVNext,
   type AlumniVNext,
@@ -9,6 +10,8 @@ import type { StorageAdapter } from '../storage';
 
 /** The new save line lives beside (never inside) prototype records. */
 export const VNEXT_CAREER_ID = 'career-vnext' as const;
+/** The last good save before the current one (M10): corruption falls back to it. */
+export const VNEXT_BACKUP_ID = 'career-vnext-backup' as const;
 const LOCK = 'career-vnext-save';
 
 interface VNextSaveEnvelope {
@@ -31,22 +34,36 @@ function checksum(text: string): string {
 export type LoadVNextResult =
   | { readonly status: 'none' }
   | { readonly status: 'ok'; readonly career: CareerVNext; readonly updatedAt: string }
+  /** The current save was unreadable; the last good save was restored. */
+  | { readonly status: 'recovered'; readonly career: CareerVNext; readonly updatedAt: string }
   | { readonly status: 'corrupt' };
 
-export async function loadCareerVNext(storage: StorageAdapter): Promise<LoadVNextResult> {
-  const envelope = await storage.get<VNextSaveEnvelope>('currentCareer', VNEXT_CAREER_ID);
-  if (envelope === undefined) return { status: 'none' };
-  if (
-    envelope.model !== 'career_vnext_save' ||
-    envelope.version !== 1 ||
-    typeof envelope.json !== 'string' ||
-    checksum(`${envelope.updatedAt}|${envelope.json}`) !== envelope.checksum
-  )
-    return { status: 'corrupt' };
+function validEnvelope(envelope: unknown): envelope is VNextSaveEnvelope {
+  const value = envelope as VNextSaveEnvelope | undefined;
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    value.model === 'career_vnext_save' &&
+    value.version === 1 &&
+    typeof value.json === 'string' &&
+    typeof value.updatedAt === 'string' &&
+    checksum(`${value.updatedAt}|${value.json}`) === value.checksum
+  );
+}
+
+function read(envelope: unknown): { career: CareerVNext; updatedAt: string } | null {
+  if (!validEnvelope(envelope)) return null;
   const career = parseCareerVNext(envelope.json);
-  return career === null
-    ? { status: 'corrupt' }
-    : { status: 'ok', career, updatedAt: envelope.updatedAt };
+  return career === null ? null : { career, updatedAt: envelope.updatedAt };
+}
+
+export async function loadCareerVNext(storage: StorageAdapter): Promise<LoadVNextResult> {
+  const envelope = await storage.get<unknown>('currentCareer', VNEXT_CAREER_ID);
+  if (envelope === undefined) return { status: 'none' };
+  const current = read(envelope);
+  if (current !== null) return { status: 'ok', ...current };
+  const backup = read(await storage.get<unknown>('currentCareer', VNEXT_BACKUP_ID));
+  return backup === null ? { status: 'corrupt' } : { status: 'recovered', ...backup };
 }
 
 export async function saveCareerVNext(
@@ -65,13 +82,19 @@ export async function saveCareerVNext(
       checksum: checksum(`${updatedAt}|${json}`),
       json,
     };
+    // Keep the previous good save as the backup before replacing it.
+    const previous = await storage.get<unknown>('currentCareer', VNEXT_CAREER_ID);
+    if (validEnvelope(previous)) await storage.put('currentCareer', VNEXT_BACKUP_ID, previous);
     await storage.put('currentCareer', VNEXT_CAREER_ID, envelope);
     return updatedAt;
   });
 }
 
 export async function clearCareerVNext(storage: StorageAdapter): Promise<void> {
-  await storage.runExclusive(LOCK, () => storage.delete('currentCareer', VNEXT_CAREER_ID));
+  await storage.runExclusive(LOCK, async () => {
+    await storage.delete('currentCareer', VNEXT_CAREER_ID);
+    await storage.delete('currentCareer', VNEXT_BACKUP_ID);
+  });
 }
 
 /** Alumni Wall: finished careers, kept beside (never inside) the live save and prototype records. */
@@ -92,13 +115,40 @@ function isAlumniEnvelope(value: unknown): value is AlumniEnvelope {
   );
 }
 
+/** A stored plaque is shown only if every field the wall reads has the right shape. */
+function isPlaque(entry: unknown): entry is AlumniVNext {
+  const value = entry as AlumniVNext | undefined;
+  const count = (field: unknown) => Number.isSafeInteger(field) && (field as number) >= 0;
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof value.careerId === 'string' &&
+    typeof value.displayName === 'string' &&
+    isVNextPositionId(value.positionId) &&
+    Array.isArray(value.programIds) &&
+    value.programIds.length > 0 &&
+    value.programIds.every((id) => typeof id === 'string') &&
+    count(value.seasons) &&
+    count(value.championships) &&
+    typeof value.record === 'object' &&
+    value.record !== null &&
+    count(value.record.wins) &&
+    count(value.record.losses) &&
+    count(value.record.ties) &&
+    count(value.liveGames) &&
+    Array.isArray(value.statTotals) &&
+    value.statTotals.every(
+      (total) => typeof total?.field === 'string' && Number.isSafeInteger(total.value),
+    ) &&
+    count(value.finalOverall) &&
+    count(value.bestDepthRank) &&
+    typeof value.bestFinish === 'string'
+  );
+}
+
 export async function loadAlumniVNext(storage: StorageAdapter): Promise<readonly AlumniVNext[]> {
   const stored = await storage.get<unknown>('profile', VNEXT_ALUMNI_ID);
-  return isAlumniEnvelope(stored)
-    ? stored.entries.filter(
-        (entry) => typeof entry?.careerId === 'string' && typeof entry.displayName === 'string',
-      )
-    : [];
+  return isAlumniEnvelope(stored) ? stored.entries.filter(isPlaque) : [];
 }
 
 /** Idempotent by career: re-entering the completed career never duplicates its plaque. */

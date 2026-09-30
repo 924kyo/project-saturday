@@ -84,7 +84,7 @@ export function App({ storage, seedFactory = browserSeed }: AppProps): React.JSX
   const locale = (i18n.resolvedLanguage ?? DEFAULT_LOCALE) as SupportedLocale;
   const [career, setCareer] = useState<CareerVNext | null>(null);
   const [booting, setBooting] = useState(true);
-  const [notice, setNotice] = useState<'corrupt' | null>(null);
+  const [notice, setNotice] = useState<'corrupt' | 'recovered' | null>(null);
   const [pending, setPending] = useState<CareerVNext | null>(null);
   const [saving, setSaving] = useState(false);
   const [confirmNew, setConfirmNew] = useState(false);
@@ -105,8 +105,9 @@ export function App({ storage, seedFactory = browserSeed }: AppProps): React.JSX
     let active = true;
     void loadCareerVNext(storage).then((loaded) => {
       if (!active) return;
-      if (loaded.status === 'ok') setCareer(loaded.career);
+      if (loaded.status === 'ok' || loaded.status === 'recovered') setCareer(loaded.career);
       if (loaded.status === 'corrupt') setNotice('corrupt');
+      if (loaded.status === 'recovered') setNotice('recovered');
       setBooting(false);
     });
     void hasPrototypeData(storage)
@@ -265,6 +266,11 @@ export function App({ storage, seedFactory = browserSeed }: AppProps): React.JSX
                 {t('v2.prototype.dismiss')}
               </button>
             </div>
+          </div>
+        )}
+        {notice === 'recovered' && (
+          <div className="s2-banner" role="status">
+            <p>{t('v2.save.recovered')}</p>
           </div>
         )}
         {notice === 'corrupt' && (

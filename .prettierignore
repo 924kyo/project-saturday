@@ -14,3 +14,5 @@ pnpm-lock.yaml
 .desktop-tools
 apps/desktop/src-tauri/target
 apps/desktop/src-tauri/gen
+# Checked save fixtures are exact artifacts (M10).
+packages/game-content/src/validation/fixtures
