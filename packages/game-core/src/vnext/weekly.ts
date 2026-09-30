@@ -677,13 +677,24 @@ export function injuryChoiceAvailabilityVNext(
   if (injury === null) return null;
   const definition = mechanics.injuries.outcomes.find(({ id }) => id === injury.outcomeId);
   if (definition === undefined) return null;
-  return deriveInjuryChoiceAvailability(
+  const availability = deriveInjuryChoiceAvailability(
     career.athlete.profile.state,
     careerWeekIndexVNext(career),
     definition,
     choiceId as InjuryChoiceId,
     mechanics.injuries.tuning,
   );
+  // Rest credit can only shorten weeks that remain after this one (M10: truthful evidence, so a
+  // one-week knock never advertises a credit it cannot use).
+  return availability === null
+    ? null
+    : {
+        ...availability,
+        recoveryCreditWeeks: Math.min(
+          availability.recoveryCreditWeeks,
+          Math.max(0, injury.remainingWeeks - 1),
+        ),
+      };
 }
 
 /** Weekly recovery: one week passes (plus any rest credit); a healed injury clears. */

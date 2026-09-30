@@ -13,7 +13,7 @@ Every item in `RELEASE_CHECKLIST.md` is checked with evidence, there are no crit
 
 ## Sequence
 
-1. **Balance at scale:**
+1. **Balance at scale:** (done 2026-09-30; `packages/testkit/reports/m10-balance.jsonl`)
    - a checked, reproducible multi-season batch report (six positions, several strategies and seeds) covering distributions for role, overall, injuries, bracket rate, awards, NIL, draft and endings;
    - fix the open balance notes: confidence saturation, rest credit on short injuries, brand ceiling.
 2. **Save and migration hardening:**

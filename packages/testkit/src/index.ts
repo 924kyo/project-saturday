@@ -239,3 +239,13 @@ export type {
   M2OfferStrategyReport,
   M2SkillBuildReport,
 } from './simulations/m2-skill-build.js';
+export {
+  formatM10BalanceReport,
+  M10_BALANCE_POSITIONS,
+  M10_BALANCE_SEEDS,
+  M10_BALANCE_STRATEGIES,
+  runM10BalanceCareer,
+  runM10BalanceReport,
+  type M10BalanceCareer,
+  type M10BalanceSummary,
+} from './simulations/m10-balance.js';

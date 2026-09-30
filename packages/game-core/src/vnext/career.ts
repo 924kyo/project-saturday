@@ -885,6 +885,9 @@ export function coachTrustDeltaVNext(coachGrade: number | null): number {
             : -3;
 }
 
+/** Weekly confidence reversion: a fifth of the distance to the anchor, rounded. */
+export const VNEXT_CONFIDENCE_TUNING = Object.freeze({ anchor: 60, divisor: 5 });
+
 function advanceWeek(career: CareerVNext, mechanics: CareerVNextMechanics): CareerVNextResult {
   const profile = career.athlete.profile;
   const rollover = derivePositionAlphaRolloverV2(
@@ -906,6 +909,19 @@ function advanceWeek(career: CareerVNext, mechanics: CareerVNextMechanics): Care
           ...profile.state,
           body: rollover.bodyAfter,
           preparation: rollover.preparationAfter,
+          // Confidence drifts back toward its anchor each week, so it tracks recent form rather
+          // than saturating (M10 balance).
+          confidence: Math.min(
+            100,
+            Math.max(
+              0,
+              profile.state.confidence +
+                Math.round(
+                  (VNEXT_CONFIDENCE_TUNING.anchor - profile.state.confidence) /
+                    VNEXT_CONFIDENCE_TUNING.divisor,
+                ),
+            ),
+          ),
         },
       },
     },

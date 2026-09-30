@@ -16,6 +16,7 @@
     "profile:m6": "corepack pnpm --filter @project-saturday/game-core build && corepack pnpm --filter @project-saturday/game-content build && tsc -p tsconfig.build.json && node dist/profile-m6-cli.js",
     "profile:m7": "corepack pnpm --filter @project-saturday/game-core build && corepack pnpm --filter @project-saturday/game-content build && tsc -p tsconfig.build.json && node dist/profile-m7-cli.js",
     "profile:m7-current": "corepack pnpm --filter @project-saturday/game-core build && corepack pnpm --filter @project-saturday/game-content build && tsc -p tsconfig.build.json && node dist/profile-m7-current-cli.js",
+    "report:m10-balance": "corepack pnpm --filter @project-saturday/game-core build && corepack pnpm --filter @project-saturday/game-content build && tsc -p tsconfig.build.json && node dist/balance-report-cli.js",
     "report:roster": "corepack pnpm --filter @project-saturday/game-core build && corepack pnpm --filter @project-saturday/game-content build && tsc -p tsconfig.build.json && node dist/roster-report-cli.js",
     "report:development": "corepack pnpm --filter @project-saturday/game-core build && corepack pnpm --filter @project-saturday/game-content build && tsc -p tsconfig.build.json && node dist/report-cli.js",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.test.json",

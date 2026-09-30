@@ -106,3 +106,26 @@ All unchanged 1 MB/1,000 ms/codec guards pass. Peak compressed history page acro
 
 
 The checked `packages/testkit/reports/m6-off-field-transfer-baseline.jsonl` contains six literal careers with 295–399 exact round trips each. It crosses all three recruit tiers, archetypes, and starting program bands; three relationship strategies and all up/flat/down results; safe/ineligible inputs and eligible/warning/ineligible checkpoint outcomes; all accept+fulfill, accept+default, and decline NIL policies; three Stay and three transfer decisions; every staff-change outcome in the projected world, including one selected scheme shift; and developmental, reserve, and starter next-season roles. Seven original NIL offers appear. This is a compact coverage matrix, not evidence for target transfer, academic-risk, NIL uptake, staff-change, or role percentages.
+
+## M10 release balance (2026-09-30)
+
+`packages/testkit/reports/m10-balance.jsonl` is produced by `pnpm --filter @project-saturday/testkit report:m10-balance` and checked byte for byte by `m10-balance.test.ts`. It covers 36 deterministic four-year Career VNext careers: six positions, three weekly strategies (balanced: two drills and recovery, climbing to the strongest transfer; grind: three drills, staying; study: drill, film and study hall, staying, declining NIL) and two seeds.
+
+| Measure | Value | Band |
+| --- | --- | --- |
+| Seasons reaching the 12-team bracket | 35‰ | 20–300‰ |
+| Seasons with an award | 160‰ | 50–400‰ |
+| Seasons ending as the starter | 757‰ | 400–900‰ |
+| Careers drafted / first round | 333‰ / 0‰ | 150–800‰ / <250‰ |
+| Careers with a NIL deal | 667‰ | >500‰ |
+| Overall growth per season | +4.3 | 2–7 |
+| Kickoff confidence (mean) | 70.9 | 45–80 (it saturated at 80–97 before M10) |
+| Brand at career end | 70.7 | <90 |
+| Kickoff Body: balanced / study / grind | 73 / 24 / 12 | ordered |
+| Injuries per season: balanced / study / grind | 0.8 / 1.9 / 2.6 | grind highest, <4 |
+
+M10 tuning:
+- confidence reverts a fifth of the way to 60 each week;
+- rest credit on an injury is clamped to the weeks that remain, so a one-week knock no longer advertises a credit it cannot use.
+
+The harness rotates live decisions rather than playing well, so the first round (stock ≥80) belongs to strong players at strong programs, not to this sample.

@@ -22,6 +22,13 @@ M8 is COMPLETE (2026-09-30): see `docs/exec-plans/completed/m8-six-position-beta
 
 ## Last completed task
 
+M10 step 1, balance at scale (2026-09-30):
+- the testkit `m10-balance` report: 36 four-year careers, checked byte for byte, with band assertions;
+- confidence reversion (no more saturation), and a truthful rest credit on short injuries;
+- `docs/qa/BALANCE_TARGETS.md` has the M10 table;
+- verified: `pnpm check` (860 + 414 + 397, e2e 10, build).
+
+
 The M9 closeout (2026-09-30):
 - the variation harness assertions;
 - the two-career legacy journey;
@@ -69,7 +76,7 @@ The M8 closeout, 2026-09-30:
 
 ## Current / next task
 
-M10 step 1: balance at scale. That means a checked multi-season batch report and fixes for the open balance notes. Then save hardening, performance, accessibility, the browser/PWA matrix, localization QA, hygiene and docs, and the gate.
+M10 step 2: save and migration hardening. Then performance, accessibility, the browser/PWA matrix, localization QA, hygiene and docs, and the gate.
 
 ## Active exec plan
 
@@ -104,10 +111,7 @@ M10 step 1: balance at scale. That means a checked multi-season batch report and
 
 ## Known issues
 
-- Balance notes still open:
-  - confidence saturates high on sensible plans;
-  - rest credit on a one-week injury is inert;
-  - brand reaches about 100 for four-year starters.
+- Balance: the first round of the Pro Draft needs elite play at a strong program (none in the 36-career harness, by design).
 - The NIL catalog is small (10 deals; M9's content scale grows it).
 - Unused pre-R aggregates and locale keys are still present (cleanup pending).
 - Installer install/uninstall is unexercised.
