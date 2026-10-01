@@ -1,3 +1,4 @@
+import { informationBaseScore, informationTierTells } from './information.js';
 import { cloneSerializable, deepFreeze } from '../player/immutable.js';
 import {
   isPlayerId,
@@ -431,18 +432,6 @@ function draw(rng: RngState, minimum: number, maximum: number) {
   };
 }
 
-/** The position's reading attribute: linebackers read keys, edge rushers read the tackle's set. */
-function readingScore(player: DefenderPlayerGameState): number {
-  const attributes = player.attributes;
-  return player.positionId === 'position_lb'
-    ? rating(attributes, 'attribute_lb_run_recognition')
-    : Math.round(
-        (rating(attributes, 'attribute_edge_get_off') +
-          rating(attributes, 'attribute_edge_edge_setting')) /
-          2,
-      );
-}
-
 function withPendingSnap(
   active: Omit<ActiveDefenderGame, 'pendingSnap'>,
   snapIndex: number,
@@ -450,17 +439,12 @@ function withPendingSnap(
   const pattern = active.patterns[(active.input.weekIndex * 3 + snapIndex * 5) % 8]!;
   const player = active.input.player;
   const informationScore = clamp(
-    Math.round(
-      (rating(player.attributes, 'attribute_football_iq') * 350 +
-        readingScore(player) * 400 +
-        player.state.preparation * 250) /
-        1000,
-    ),
+    informationBaseScore(player.positionId, player.attributes, player.state.preparation),
     0,
     100,
   );
   const clueCount = clamp(
-    (informationScore >= 62 ? 2 : informationScore >= 42 ? 1 : 0) +
+    informationTierTells(player.positionId, informationScore) +
       skillValue(active.equippedSkills, 'defender_information_clue_bonus', pattern.familyId).value +
       active.input.eventModifiers.clueBonus,
     0,

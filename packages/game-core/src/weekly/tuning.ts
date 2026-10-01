@@ -3,8 +3,11 @@ import { BODY_BOUNDS, isIntegerWithinBounds } from '../player/bounds.js';
 export const WEEKLY_ACTION_PLAN_SIZE = 3 as const;
 export const ATTRIBUTE_XP_PER_RATING = 100 as const;
 
-/** Widened for Career VNext development pacing; shipped catalogs stay within their authored 50. */
-export const WEEKLY_ACTION_BASE_XP_BOUNDS = Object.freeze({ min: 1, max: 100 });
+/**
+ * Widened for Career VNext development pacing; shipped catalogs stay within their authored 50.
+ * M12: 200 leaves room for camp and potential multipliers on top of VNext's tripled focus XP.
+ */
+export const WEEKLY_ACTION_BASE_XP_BOUNDS = Object.freeze({ min: 1, max: 200 });
 export const WEEKLY_ACTION_ATTRIBUTE_TARGET_MAX = 3 as const;
 export const WEEKLY_ACTION_TAG_ID_MAX = 8 as const;
 export const WEEKLY_ACTION_BODY_DELTA_BOUNDS = Object.freeze({ min: -40, max: 40 });

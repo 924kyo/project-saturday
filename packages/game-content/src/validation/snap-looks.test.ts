@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  advanceCalendarVNext,
   SNAP_LOOK_ACTORS,
   SNAP_LOOK_MOVES,
   SNAP_LOOK_STANCES,
@@ -167,6 +168,8 @@ function play(positionId: string, archetypeId: string, seed: string, weeks: numb
       while (plan.length < 3) plan.push(open[plan.length]!);
       career = ok(planWeekVNext(career, plan as typeof open, mechanics));
     } else if (flow.type === 'PRACTICE_REPORT') career = ok(toGameDayVNext(career, mechanics));
+    else if (flow.type === 'CAMP' || flow.type === 'MIDSEASON')
+      career = ok(advanceCalendarVNext(career, mechanics)!);
     else if (flow.type === 'BREAKTHROUGH')
       career = ok(
         flow.offer.chosenSkillId === null

@@ -1,4 +1,5 @@
 import {
+  advanceCalendarVNext,
   chooseBreakthroughVNext,
   chooseEventVNext,
   chooseInjuryVNext,
@@ -129,27 +130,29 @@ describe('M9 legacy history', () => {
                   .filter((id) => isFocusAvailableVNext(career, id, mechanics));
                 return planWeekVNext(career, [open[0]!, open[1]!, open[2]!], mechanics);
               })()
-            : flow.type === 'BREAKTHROUGH' && flow.offer.chosenSkillId === null
-              ? chooseBreakthroughVNext(career, flow.offer.skillIds[0]!)
-              : flow.type === 'EVENT' && flow.event.chosenChoiceId === null
-                ? chooseEventVNext(career, flow.event.choiceIds[0]!, mechanics)
-                : flow.type === 'NIL' && flow.offer.decision === null
-                  ? chooseNilVNext(career, false, mechanics)
-                  : flow.type === 'INJURY' && flow.report.availability === null
-                    ? chooseInjuryVNext(career, 'injury_choice_rest_rehab', mechanics)
-                    : flow.type === 'GAME'
-                      ? flow.game.stage === 'PREGAME'
-                        ? kickoffVNext(career, mechanics)
-                        : flow.game.stage === 'SNAP'
-                          ? chooseSnapVNext(
-                              career,
-                              projectSnapBoardFrame(career, mechanics)!.decisionIds[0]!,
-                              mechanics,
-                            )
-                          : continueGameVNext(career, mechanics)
-                      : flow.type === 'POST_GAME'
-                        ? nextWeekVNext(career, mechanics)
-                        : toGameDayVNext(career, mechanics);
+            : flow.type === 'CAMP' || flow.type === 'MIDSEASON'
+              ? advanceCalendarVNext(career, mechanics)!
+              : flow.type === 'BREAKTHROUGH' && flow.offer.chosenSkillId === null
+                ? chooseBreakthroughVNext(career, flow.offer.skillIds[0]!)
+                : flow.type === 'EVENT' && flow.event.chosenChoiceId === null
+                  ? chooseEventVNext(career, flow.event.choiceIds[0]!, mechanics)
+                  : flow.type === 'NIL' && flow.offer.decision === null
+                    ? chooseNilVNext(career, false, mechanics)
+                    : flow.type === 'INJURY' && flow.report.availability === null
+                      ? chooseInjuryVNext(career, 'injury_choice_rest_rehab', mechanics)
+                      : flow.type === 'GAME'
+                        ? flow.game.stage === 'PREGAME'
+                          ? kickoffVNext(career, mechanics)
+                          : flow.game.stage === 'SNAP'
+                            ? chooseSnapVNext(
+                                career,
+                                projectSnapBoardFrame(career, mechanics)!.decisionIds[0]!,
+                                mechanics,
+                              )
+                            : continueGameVNext(career, mechanics)
+                        : flow.type === 'POST_GAME'
+                          ? nextWeekVNext(career, mechanics)
+                          : toGameDayVNext(career, mechanics);
         career = ok(step);
         if (flow.type === 'SEASON_REVIEW') break;
       }

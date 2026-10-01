@@ -158,6 +158,93 @@ export interface PracticeReportVNext {
   readonly benefitsUsed?: readonly OffFieldBenefitId[];
   /** Weekly effects of an active NIL obligation (absent = none). */
   readonly obligationApplied?: readonly NilEffectApplicationEvidenceV1[];
+  /** M12: the coach's midseason focus as this week settled it (absent = none active). */
+  readonly coachFocus?: CoachFocusWeekVNext;
+}
+
+/** M12 development calendar: offseason programs (one per offseason). */
+export type OffseasonProgramIdVNext =
+  | 'offseason_strength'
+  | 'offseason_speed'
+  | 'offseason_film'
+  | 'offseason_clinic'
+  | 'offseason_classes';
+
+/** The coach's midseason focus (M12): a drill to run in two of the next three weeks. */
+export interface CoachFocusVNext {
+  readonly seasonIndex: number;
+  readonly focusId: string;
+  readonly attributeId: string;
+  readonly reason: 'KEY_ATTRIBUTE' | 'MISSED_READS';
+  /** First week (season-local index) that counts, and the first week that no longer does. */
+  readonly fromWeek: number;
+  readonly untilWeek: number;
+  readonly required: number;
+  readonly done: number;
+  readonly outcome: 'ACTIVE' | 'MET' | 'MISSED';
+}
+
+/** How a practice week moved the coach's focus. */
+export interface CoachFocusWeekVNext {
+  readonly counted: boolean;
+  readonly done: number;
+  readonly required: number;
+  readonly outcome: CoachFocusVNext['outcome'];
+  /** Applied only on the week the outcome settles. */
+  readonly trustDelta: number;
+  readonly xp: number;
+  readonly gauge: number;
+}
+
+/** M12: the development calendar around the weekly plan (absent on earlier saves = nothing yet). */
+export interface DevelopmentVNext {
+  readonly camps: readonly {
+    readonly seasonIndex: number;
+    readonly focusIds: readonly string[];
+    readonly practiceScore: number;
+  }[];
+  readonly reviews: readonly {
+    readonly seasonIndex: number;
+    readonly decision: 'ACCEPTED' | 'DECLINED';
+  }[];
+  readonly focus: CoachFocusVNext | null;
+  readonly focusHistory: readonly CoachFocusVNext[];
+  /** The offseason program chosen before season `seasonIndex`. */
+  readonly offseason: readonly {
+    readonly seasonIndex: number;
+    readonly programId: OffseasonProgramIdVNext;
+  }[];
+}
+
+/** Preseason camp (M12): three emphases at boosted XP before week one; a first role battle. */
+export interface CampReportVNext {
+  readonly seasonIndex: number;
+  readonly focuses: readonly [
+    PositionFocusEvidenceV2,
+    PositionFocusEvidenceV2,
+    PositionFocusEvidenceV2,
+  ];
+  readonly grade: PositionPracticeGradeProjection;
+  readonly practiceScore: number;
+  readonly depth: PositionDepthUpdateEvidence;
+  readonly gaugeBefore: number;
+  readonly gaugeAfter: number;
+  /** The XP multiplier camp applied (potential × camp), permille. */
+  readonly xpPermille: number;
+}
+
+/** The midseason checkpoint (M12): where the season stands and the coach's suggested focus. */
+export interface MidseasonReviewVNext {
+  readonly seasonIndex: number;
+  readonly weekIndex: number;
+  readonly record: { readonly wins: number; readonly losses: number; readonly ties: number };
+  readonly liveSnaps: number;
+  readonly sharpReads: number;
+  readonly averageGrade: number | null;
+  readonly overall: { readonly start: number; readonly now: number };
+  readonly depthRank: { readonly start: number; readonly now: number };
+  readonly suggestion: Pick<CoachFocusVNext, 'focusId' | 'attributeId' | 'reason'>;
+  readonly decision: 'ACCEPTED' | 'DECLINED' | null;
 }
 
 /** NIL and the locker room in VNext (absent on pre-M8 saves = the empty baseline). */
@@ -458,6 +545,10 @@ export interface AlumniVNext {
 export type FlowVNext =
   | { readonly type: 'RECRUITING' }
   | { readonly type: 'WEEK_PLAN' }
+  /** M12 preseason camp: the report is null until the emphases are chosen. */
+  | { readonly type: 'CAMP'; readonly report: CampReportVNext | null }
+  /** M12 midseason checkpoint after week six. */
+  | { readonly type: 'MIDSEASON'; readonly review: MidseasonReviewVNext }
   | { readonly type: 'PRACTICE_REPORT'; readonly report: PracticeReportVNext }
   | {
       readonly type: 'BREAKTHROUGH';
@@ -515,6 +606,8 @@ export interface CareerVNext {
   readonly nil?: NilVNext;
   /** The Alumni Wall as it stood when this career began (M9; absent on earlier saves). */
   readonly legacy?: LegacyVNext;
+  /** M12: camp, midseason focus and offseason programs (absent on earlier saves). */
+  readonly development?: DevelopmentVNext;
   readonly flow: FlowVNext;
   readonly log: readonly GameRecapVNext[];
   /** One review per completed season. */

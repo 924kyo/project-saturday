@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  advanceCalendarVNext,
   bestDecisionOfLook,
   chooseBreakthroughVNext,
   chooseEventVNext,
@@ -49,7 +50,7 @@ const situation = {
   period: 3 as const,
   secondsRemaining: 400,
   offense: 'PLAYER' as const,
-  down: 3 as const,
+  down: 3 as 1 | 2 | 3 | 4,
   distanceYards: 6,
   lineOfScrimmageYards: 40,
   firstDownYards: 46,
@@ -234,6 +235,8 @@ function season(positionId: VNextPositionId, archetypeId: string, seed: string, 
       );
       while (plan.length < 3) plan.push(ids.find((id) => !plan.includes(id))!);
       career = ok(planWeekVNext(career, plan, mechanics));
+    } else if (flow.type === 'CAMP' || flow.type === 'MIDSEASON') {
+      career = ok(advanceCalendarVNext(career, mechanics)!);
     } else if (flow.type === 'BREAKTHROUGH' && flow.offer.chosenSkillId === null)
       career = ok(chooseBreakthroughVNext(career, flow.offer.skillIds[0]!));
     else if (flow.type === 'EVENT' && flow.event.chosenChoiceId === null)

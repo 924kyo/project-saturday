@@ -24,6 +24,7 @@ import { koKRM10Messages } from './m10-ui.js';
 import { koKRM11LookMessages } from './m11-looks.js';
 import { koKRM12Messages } from './m12-ui.js';
 import { koKRM12MatchMessages } from './m12-match.js';
+import { koKRM12DevelopmentMessages } from './m12-development.js';
 import { koKRM12ProgramMessages } from './m12-programs.js';
 import { koKRM8PositionMessages } from './m8-positions.js';
 import { m7BuildKo } from './m7-builds.js';
@@ -54,6 +55,7 @@ export const koKRMessages = {
   ...koKRM11LookMessages,
   ...koKRM12Messages,
   ...koKRM12MatchMessages,
+  ...koKRM12DevelopmentMessages,
   ...koKRM12ProgramMessages,
   ...koKREventBatchMessages,
   ...koKRInjuryBatchMessages,

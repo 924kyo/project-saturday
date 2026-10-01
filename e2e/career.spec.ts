@@ -79,7 +79,8 @@ for (const entry of plan) {
       if (kind === 'snap') snaps += 1;
       if (kind === 'review') reviews += 1;
       if (kind === 'offseason') {
-        await expect(page.locator('.s2-focusgroups')).toBeVisible();
+        // M12: a new season opens at preseason camp.
+        await expect(page.locator('#s2-camp')).toBeVisible();
         transferred = (await programAt()).split('·')[0]!.trim() !== firstProgram;
       }
       if (kind === 'complete') break;

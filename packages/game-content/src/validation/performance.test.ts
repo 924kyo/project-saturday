@@ -1,4 +1,5 @@
 import {
+  advanceCalendarVNext,
   chooseBreakthroughVNext,
   chooseEventVNext,
   chooseInjuryVNext,
@@ -71,6 +72,8 @@ it('keeps every command and save round trip of a full season within budget', () 
         .map(({ id }) => id)
         .filter((id) => isFocusAvailableVNext(career, id, mechanics));
       career = run('plan', () => planWeekVNext(career, [open[0]!, open[1]!, open[2]!], mechanics));
+    } else if (flow.type === 'CAMP' || flow.type === 'MIDSEASON') {
+      career = run('calendar', () => advanceCalendarVNext(career, mechanics)!);
     } else if (flow.type === 'BREAKTHROUGH' && flow.offer.chosenSkillId === null)
       career = run('card', () => chooseBreakthroughVNext(career, flow.offer.skillIds[0]!));
     else if (flow.type === 'EVENT' && flow.event.chosenChoiceId === null)

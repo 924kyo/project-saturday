@@ -93,7 +93,9 @@ const WR_DRILL_TAGS = {
  * a budget.
  */
 export const VNEXT_DEVELOPMENT_TUNING = Object.freeze({
-  focusXpMultiplier: 3,
+  /** M12: 3 → 2.6, so preseason camp, the coach's focus and offseason programs add growth
+   * opportunities without simply inflating it (harness: 4.4 → 5.6 per season at ×3). */
+  focusXpMultiplier: 2.6,
   maximumBaseXp: 100,
   recoveryBodyDelta: 20,
 });
@@ -107,7 +109,7 @@ function developed<T extends { readonly attributeXp: readonly { readonly baseXp:
       ...entry,
       baseXp: Math.min(
         VNEXT_DEVELOPMENT_TUNING.maximumBaseXp,
-        entry.baseXp * VNEXT_DEVELOPMENT_TUNING.focusXpMultiplier,
+        Math.round(entry.baseXp * VNEXT_DEVELOPMENT_TUNING.focusXpMultiplier),
       ),
     })),
   };

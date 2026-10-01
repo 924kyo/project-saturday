@@ -274,7 +274,9 @@ describe('M12 pregame line, clock and copy', () => {
     for (const reason of EXECUTION_REASONS_VNEXT)
       for (const locale of ['en-US', 'ko-KR'] as const)
         expect(
-          (localeMessages[locale] as Record<string, string>)[`v2.exec.${reason}`],
+          (localeMessages[locale] as Record<string, string>)[
+            `v2.exec.${reason.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase())}`
+          ],
           `${locale} v2.exec.${reason}`,
         ).toBeTruthy();
   });

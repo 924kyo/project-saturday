@@ -3,6 +3,8 @@ import {
   CAREER_VNEXT_SEASONS,
   type AlumniVNext,
   type CareerVNext,
+  type CareerVNextMechanics,
+  type OffseasonProgramIdVNext,
   type ProgramId,
   type SeasonFinishVNext,
   type VNextPositionId,
@@ -27,6 +29,7 @@ import {
   AWARD_KEYS,
   familiarNames,
 } from './content';
+import { OffseasonProgramPicker } from './Development';
 import { Nameplate } from './Nameplate';
 import type { PrototypeAlumniView } from './prototype';
 import { inkOn } from './theme';
@@ -250,19 +253,25 @@ export function SeasonReviewScreen({
 /** Stay or transfer: every option previews the exact room the athlete would join next season. */
 export function OffseasonScreen({
   career,
+  mechanics,
   blocked,
   onCommit,
   onRetire,
   onDeclare,
 }: {
   readonly career: CareerVNext;
+  readonly mechanics: CareerVNextMechanics;
   readonly blocked: boolean;
-  readonly onCommit: (programId: ProgramId) => void;
+  readonly onCommit: (
+    programId: ProgramId,
+    offseasonProgramId: OffseasonProgramIdVNext | null,
+  ) => void;
   readonly onRetire: () => void;
   readonly onDeclare: () => void;
 }): React.JSX.Element | null {
   const { t } = useAppTranslation();
   const [selected, setSelected] = useState<ProgramId | null>(null);
+  const [summer, setSummer] = useState<OffseasonProgramIdVNext | null>(null);
   const [retiring, setRetiring] = useState(false);
   const [declaring, setDeclaring] = useState(false);
   const stock = career.history.at(-1)?.draftStock;
@@ -392,6 +401,12 @@ export function OffseasonScreen({
           );
         })}
       </div>
+      <OffseasonProgramPicker
+        career={career}
+        mechanics={mechanics}
+        onChange={setSummer}
+        value={summer}
+      />
       {canDeclareVNext(career) && stock !== undefined && (
         <Panel id="s2-declare" title={t('v2.draft.declare')}>
           <p className="s2-note">
@@ -459,7 +474,7 @@ export function OffseasonScreen({
           <button
             className="s2-btn s2-btn--block"
             disabled={choice === undefined || blocked}
-            onClick={() => choice !== undefined && onCommit(choice.programId)}
+            onClick={() => choice !== undefined && onCommit(choice.programId, summer)}
             type="button"
           >
             {choice === undefined

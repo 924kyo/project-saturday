@@ -35,6 +35,16 @@ import {
   type VNextPositionId,
 } from './types.js';
 import { createConditionVNext, VNEXT_CAREER_WEEK_STRIDE } from './weekly.js';
+import { VNEXT_RIVAL_TUNING } from './rivals.js';
+import {
+  developmentOfVNext,
+  grantAttributeXpVNext,
+  isOffseasonProgramIdVNext,
+  offseasonProgramXpVNext,
+  offseasonStartStateVNext,
+  potentialPermilleVNext,
+} from './development.js';
+import type { OffseasonProgramIdVNext } from './types.js';
 import { canDeclareVNext, draftStockVNext, runDraftVNext } from './draft.js';
 import { seasonAwardsVNext } from './awards.js';
 import { VNEXT_NIL_TUNING } from './nil.js';
@@ -240,6 +250,65 @@ function carriedTrust(career: CareerVNext, stay: boolean, mechanics: CareerVNext
       );
 }
 
+/**
+ * M12 (playtest report: after one promotion every later season was a starter's): the transfer
+ * portal. Each offseason the strongest incoming freshman's slot goes instead to an experienced
+ * transfer near the athlete's level, plus the program's talent premium, drawn from
+ * `:vnext:portal:<season>:<program>`. A starter's job is re-earned in camp; a weak program's
+ * newcomer rarely beats an incumbent, a strong program's often can.
+ */
+export const VNEXT_PORTAL_TUNING = Object.freeze({
+  /** Talent around the athlete's: ability + premium + (0…spread) − below. */
+  spread: 8,
+  below: 0,
+  /** The staff recruited him: trust and experience of an established upperclassman. */
+  trustBonus: 22,
+  experienceBonus: 20,
+});
+
+export function withPortalArrivalVNext(
+  career: CareerVNext,
+  programId: ProgramId,
+  competitors: readonly PositionRoomCompetitor[],
+  seasonIndex: number,
+  mechanics: CareerVNextMechanics,
+): readonly PositionRoomCompetitor[] {
+  const freshmen = competitors
+    .map((entry, index) => ({ entry, index }))
+    .filter(({ entry }) => entry.classYear === 1);
+  if (freshmen.length === 0) return competitors;
+  const target = freshmen.sort(
+    (left, right) => right.entry.talentFit - left.entry.talentFit || left.index - right.index,
+  )[0]!;
+  const tuning = VNEXT_PORTAL_TUNING;
+  const positionId = career.athlete.profile.positionId as VNextPositionId;
+  const premium =
+    Math.round(
+      ((programRating(mechanics, programId, positionId) -
+        VNEXT_ROOM_TUNING.neutralProgramRating) *
+        VNEXT_ROOM_TUNING.premiumPerRatingPointPermille) /
+        1000,
+    ) + VNEXT_ROOM_TUNING.premiumOffset;
+  const draw =
+    nextUint32(createRng(`${String(career.seed)}:vnext:portal:${seasonIndex}:${programId}`)).value %
+    (tuning.spread + 1);
+  const talent = Math.max(
+    10,
+    Math.min(95, overallOf(career, mechanics) + premium + draw - tuning.below),
+  );
+  const portal: PositionRoomCompetitor = {
+    ...target.entry,
+    classYear: 3,
+    talentFit: Math.max(target.entry.talentFit, talent),
+    coachTrust: Math.min(100, VNEXT_ROOM_TUNING.competitorTrustBase + tuning.trustBonus),
+    experienceReadiness: Math.min(
+      100,
+      VNEXT_ROOM_TUNING.experienceReadinessBase + tuning.experienceBonus,
+    ),
+  };
+  return competitors.map((entry, index) => (index === target.index ? portal : entry));
+}
+
 /** Next season's room: returning players age a year, seniors graduate, freshmen arrive. */
 export function nextSeasonRoomVNext(
   career: CareerVNext,
@@ -276,7 +345,7 @@ export function nextSeasonRoomVNext(
       .map((competitor) => ({
         ...competitor,
         classYear: (competitor.classYear + 1) as 2 | 3 | 4,
-        talentFit: Math.min(100, competitor.talentFit + 2),
+        talentFit: Math.min(100, competitor.talentFit + VNEXT_RIVAL_TUNING.offseasonTalentGain),
         coachTrust: Math.min(100, competitor.coachTrust + 5),
         experienceReadiness: Math.min(100, competitor.experienceReadiness + 8),
       }));
@@ -291,6 +360,7 @@ export function nextSeasonRoomVNext(
       }));
     competitors = [...returning, ...incoming].slice(0, fresh.length);
     if (competitors.length < fresh.length) return null;
+    competitors = withPortalArrivalVNext(career, programId, competitors, seasonIndex, mechanics);
   }
   const room = buildPositionRoomSeason(
     {
@@ -445,15 +515,21 @@ export function declareForDraftVNext(career: CareerVNext): CareerVNextResult {
   });
 }
 
-/** Commits to staying or transferring; the next season starts at the week planner. */
+/**
+ * Commits to staying or transferring, with an optional offseason program (M12). The next season
+ * opens at preseason camp.
+ */
 export function commitOffseasonVNext(
   career: CareerVNext,
   programId: ProgramId,
   mechanics: CareerVNextMechanics,
+  offseasonProgramId: OffseasonProgramIdVNext | null = null,
 ): CareerVNextResult {
   if (career.flow.type !== 'OFFSEASON' || career.program === null)
     return fail('career_vnext.invalid_phase');
   if (!career.flow.options.some((option) => option.programId === programId))
+    return fail('career_vnext.invalid_choice');
+  if (offseasonProgramId !== null && !isOffseasonProgramIdVNext(offseasonProgramId))
     return fail('career_vnext.invalid_choice');
   const next = nextSeasonRoomVNext(career, programId, mechanics);
   if (next === null) return fail('career_vnext.engine_failed');
@@ -462,20 +538,42 @@ export function commitOffseasonVNext(
   const world = createSeasonWorldVNext(String(career.seed), seasonIndex, programId, mechanics);
   if (world === null) return fail('career_vnext.engine_failed');
   const profile = career.athlete.profile;
+  // M12 offseason program: XP at next season's potential, and where that season starts.
+  const nextSeason = { athlete: career.athlete, season: { ...career.season, index: seasonIndex } };
+  const programXp =
+    offseasonProgramId === null
+      ? []
+      : offseasonProgramXpVNext(
+          career,
+          offseasonProgramId,
+          mechanics,
+          potentialPermilleVNext(nextSeason),
+        );
+  const attributes = programXp.reduce(
+    (current, { attributeId, xp }) => grantAttributeXpVNext(current, attributeId, xp),
+    profile.attributes,
+  );
+  const start = offseasonStartStateVNext(
+    {
+      ...profile.state,
+      // The name fades a little without Saturdays.
+      brand: Math.max(0, profile.state.brand - VNEXT_NIL_TUNING.brand.offseasonFade),
+    },
+    offseasonProgramId,
+  );
+  const development = developmentOfVNext(career);
   return publish(career, {
     ...career,
     athlete: {
       ...career.athlete,
       profile: {
         ...profile,
-        // The offseason heals and resets preparation for a new playbook year; the name fades a
-        // little without Saturdays.
+        attributes,
+        // The offseason heals and resets preparation for a new playbook year (or the program's start).
         state: {
           ...profile.state,
-          body: 100,
-          preparation: 50,
+          ...start,
           coachTrust: next.coachTrust,
-          brand: Math.max(0, profile.state.brand - VNEXT_NIL_TUNING.brand.offseasonFade),
         },
       },
     },
@@ -493,7 +591,16 @@ export function commitOffseasonVNext(
       injuryHistory: career.condition.injuryHistory,
       eventHistory: career.condition.eventHistory,
     },
-    flow: { type: 'WEEK_PLAN' },
+    development: {
+      ...development,
+      focus: null,
+      offseason:
+        offseasonProgramId === null
+          ? development.offseason
+          : [...development.offseason, { seasonIndex, programId: offseasonProgramId }],
+    },
+    // M12: every season opens with preseason camp.
+    flow: { type: 'CAMP', report: null },
     // The log is this season's games; finished seasons live on as reviews in `history`.
     log: [],
   });

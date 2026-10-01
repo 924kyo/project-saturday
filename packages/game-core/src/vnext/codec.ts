@@ -14,6 +14,8 @@ export const CAREER_VNEXT_MAX_BYTES = 1_000_000;
 const FLOW_TYPES = new Set([
   'RECRUITING',
   'WEEK_PLAN',
+  'CAMP',
+  'MIDSEASON',
   'PRACTICE_REPORT',
   'BREAKTHROUGH',
   'EVENT',
@@ -80,6 +82,17 @@ export function isCareerVNext(value: unknown): value is CareerVNext {
     log.length > SEASON_WEEKS * CAREER_VNEXT_SEASONS ||
     !Array.isArray(history) ||
     history.length > CAREER_VNEXT_SEASONS
+  )
+    return false;
+  // M12 optional state: present means well-formed.
+  const development = value['development'];
+  if (
+    development !== undefined &&
+    (!record(development) ||
+      !Array.isArray(development['camps']) ||
+      !Array.isArray(development['reviews']) ||
+      !Array.isArray(development['focusHistory']) ||
+      !Array.isArray(development['offseason']))
   )
     return false;
   const tokens = athlete['nameTokens'];

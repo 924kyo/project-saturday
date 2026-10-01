@@ -20,6 +20,22 @@ export async function createCareer(page: Page, name: string): Promise<void> {
   await page.locator('.s2-offer').last().click();
   await primaryAction(page).click();
   await expect(page.locator('.s2-nameplate')).toBeVisible({ timeout: 10_000 });
+  await passCamp(page);
+}
+
+/** M12 preseason camp: take the coach's camp plan, run it, then go to week one's planner. */
+export async function passCamp(
+  page: Page,
+  onScreen?: (label: string) => Promise<void>,
+): Promise<void> {
+  await expect(page.locator('#s2-camp')).toBeVisible({ timeout: 10_000 });
+  await page.locator('section:has(#s2-camp) .s2-panel__head .s2-chipbtn').click();
+  await onScreen?.('camp');
+  await primaryAction(page).click();
+  await expect(page.locator('#s2-camp-report')).toBeVisible();
+  await onScreen?.('camp-report');
+  await primaryAction(page).click();
+  await expect(page.locator('.s2-focusgroups')).toBeVisible({ timeout: 10_000 });
 }
 
 /** Passes the optional weekly scenes (midweek event, medical check); each stops only to decide. */

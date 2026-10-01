@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   awardStockPointsVNext,
+  VNEXT_AWARD_TUNING,
   seasonAwardsVNext,
   type GameRecapVNext,
   type SeasonReviewVNext,
@@ -47,7 +48,15 @@ describe('VNext season awards', () => {
     ]);
     expect(
       seasonAwardsVNext(
-        { ...base, seasonIndex: 0, averageGrade: 72, depthRank: { start: 3, end: 2 } },
+        {
+          ...base,
+          seasonIndex: 0,
+          averageGrade: Math.max(
+            VNEXT_AWARD_TUNING.allConferenceSecond,
+            VNEXT_AWARD_TUNING.freshman,
+          ),
+          depthRank: { start: 3, end: 2 },
+        },
         'position_lb',
         [],
       ),

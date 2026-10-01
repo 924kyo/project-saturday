@@ -36,7 +36,7 @@ async function visible(page: Page, selector: string): Promise<boolean> {
 }
 
 export type CareerStep =
-  'plan' | 'offseason' | 'choice' | 'snap' | 'continue' | 'review' | 'complete';
+  'camp' | 'plan' | 'offseason' | 'choice' | 'snap' | 'continue' | 'review' | 'complete';
 
 /** Performs exactly one saved command and reports which screen it acted on. */
 export async function step(page: Page): Promise<CareerStep> {
@@ -44,7 +44,11 @@ export async function step(page: Page): Promise<CareerStep> {
   if (await visible(page, '#s2-complete')) return 'complete';
   const before = await savedRevision(page);
   let kind: CareerStep;
-  if (await visible(page, '.s2-focusgroups')) {
+  if (await visible(page, '#s2-camp')) {
+    // M12 preseason camp: the coach's camp plan.
+    await page.locator('section:has(#s2-camp) .s2-panel__head .s2-chipbtn').click();
+    kind = 'camp';
+  } else if (await visible(page, '.s2-focusgroups')) {
     await page.locator('.s2-panel__head .s2-chipbtn').first().click();
     kind = 'plan';
   } else if (await visible(page, '#s2-offseason')) {

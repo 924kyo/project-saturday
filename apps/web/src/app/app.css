@@ -3290,3 +3290,56 @@ fieldset.s2-stack > legend {
   outline: 2px solid var(--volt);
   outline-offset: 2px;
 }
+
+/* M12 development: disclosures, key-value lists and option cards. */
+.s2-disclosure {
+  margin-top: 8px;
+}
+.s2-disclosure > summary {
+  cursor: pointer;
+  padding: 6px 0;
+  font-weight: 700;
+  color: var(--ink-2);
+}
+.s2-disclosure > summary:focus-visible {
+  outline: 2px solid var(--volt);
+  outline-offset: 2px;
+}
+.s2-kv {
+  display: grid;
+  gap: 4px;
+  margin: 6px 0;
+  padding: 0;
+  list-style: none;
+}
+.s2-kv > li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.s2-option {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  padding: 12px 14px;
+  text-align: left;
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.s2-option:hover {
+  border-color: var(--volt);
+}
+.s2-option:focus-visible {
+  outline: 2px solid var(--volt);
+  outline-offset: 2px;
+}
+.s2-option--on {
+  border-color: var(--volt);
+  box-shadow: inset 4px 0 0 var(--volt);
+  background: var(--surface-3);
+}

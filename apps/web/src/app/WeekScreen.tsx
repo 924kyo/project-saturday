@@ -34,6 +34,7 @@ import {
   athleteName,
 } from './content';
 import { BuildPanel } from './BuildView';
+import { DevelopmentGuide, Milestones, PlanPreview, PotentialLine } from './Development';
 import { readLastPlan, rememberPlan } from './plan-memory';
 import { GrowthList } from './Growth';
 import { mergeGrowth, type AttributeGrowth } from './growth-model';
@@ -377,6 +378,19 @@ function Report({
                 </span>
               </li>
             )}
+            {report.coachFocus !== undefined && report.coachFocus.outcome !== 'ACTIVE' && (
+              <li>
+                <span>
+                  {report.coachFocus.outcome === 'MET'
+                    ? t('v2.focus.met', {
+                        trust: report.coachFocus.trustDelta,
+                        xp: report.coachFocus.xp,
+                        gauge: report.coachFocus.gauge,
+                      })
+                    : t('v2.focus.missed', { trust: report.coachFocus.trustDelta })}
+                </span>
+              </li>
+            )}
             {(report.benefitsUsed ?? []).map((benefitId) => (
               <li key={benefitId}>
                 <span>{t('v2.report.benefitUsed', { benefit: t(benefitNameKey(benefitId)) })}</span>
@@ -605,6 +619,16 @@ export function WeekScreen({
         <p className="s2-eyebrow">{t('v2.week.nextUp')}</p>
         <h2 className="s2-display s2-next__title">{t('v2.week.planTitle')}</h2>
         <Opponent career={career} mechanics={mechanics} />
+        <PotentialLine career={career} />
+        {career.development?.focus != null && career.development.focus.outcome === 'ACTIVE' && (
+          <p className="s2-note">
+            {t('v2.focus.progress', {
+              focus: t(focusText(career.development.focus.focusId).nameKey),
+              done: career.development.focus.done,
+              required: career.development.focus.required,
+            })}
+          </p>
+        )}
       </div>
       <div className="s2-grid-2">
         <Panel
@@ -743,7 +767,10 @@ export function WeekScreen({
               </p>
             )}
           </Panel>
+          <PlanPreview career={career} mechanics={mechanics} picks={picks} />
+          <Milestones career={career} mechanics={mechanics} />
           <DepthSlice career={career} />
+          <DevelopmentGuide career={career} mechanics={mechanics} />
         </div>
       </div>
       <div className="s2-actionbar">

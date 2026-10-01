@@ -1,3 +1,4 @@
+import { informationBaseScore, informationTierTells } from './information.js';
 import {
   prepareTacticalAlphaSnapV1,
   resolveTacticalAlphaBackgroundV1,
@@ -442,13 +443,13 @@ function pending(active: Omit<ActiveRbGame, 'pendingSnap'>, snapIndex: number): 
   const relationshipInformationScoreModifier =
     active.input.relationshipInformationScoreModifier ?? 0;
   const finalScore = clamp(
-    Math.round((footballIqScore * 350 + visionScore * 400 + preparationScore * 250) / 1_000) +
+    informationBaseScore('position_rb', active.input.player.attributes, preparationScore) +
       relationshipInformationScoreModifier,
     0,
     100,
   );
   const clueCount = clamp(
-    (finalScore >= 65 ? 2 : finalScore >= 45 ? 1 : 0) + skillClueBonus + eventClueBonus,
+    informationTierTells('position_rb', finalScore) + skillClueBonus + eventClueBonus,
     0,
     3,
   );

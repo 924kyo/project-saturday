@@ -25,7 +25,7 @@ import {
   ROUND_KEYS,
   athleteShortName,
 } from './content';
-import { explanationLines } from './explanation';
+import { camelKey, explanationLines } from './explanation';
 import { TacticalBoard } from './TacticalBoard';
 import { usePreferences } from './preferences';
 import { Crest, Meter } from './ui';
@@ -54,7 +54,7 @@ function outlookChip(stakes: GameStakesVNext): {
       : stakes.band === 'TOSS_UP'
         ? 'balanced'
         : 'challenge';
-  return { label: `v2.stakes.band.${stakes.band}`, tone };
+  return { label: `v2.stakes.band.${camelKey(stakes.band)}` as MessageKey, tone };
 }
 
 function downText(t: AppTranslate, frame: Extract<SnapBoardFrame, { kind: 'LIVE' }>): string {

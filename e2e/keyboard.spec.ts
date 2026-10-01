@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
-import { primaryAction } from './support/slice';
+import { passCamp, primaryAction } from './support/slice';
 
 /**
  * M10 keyboard and motion gates. The keyboard journey reaches each control with Tab and activates
@@ -43,6 +43,12 @@ test('a Saturday is playable with the keyboard alone', async ({ page, isMobile }
   await expect(page.locator('.s2-offer')).toHaveCount(4);
   await tabTo(page, page.locator('.s2-offer').first());
   await tabTo(page, primaryAction(page));
+  // M12 preseason camp, by keyboard: the coach's camp plan, run it, then week one.
+  await expect(page.locator('#s2-camp')).toBeVisible({ timeout: 10_000 });
+  await tabTo(page, page.locator('section:has(#s2-camp) .s2-panel__head .s2-chipbtn'));
+  await tabTo(page, primaryAction(page));
+  await expect(page.locator('#s2-camp-report')).toBeVisible();
+  await tabTo(page, primaryAction(page));
   await expect(page.locator('.s2-focusgroups')).toBeVisible({ timeout: 10_000 });
   await tabTo(page, page.locator('.s2-panel__head .s2-chipbtn').first());
   await tabTo(page, primaryAction(page));
@@ -79,7 +85,7 @@ test.describe('reduced motion', () => {
     await primaryAction(page).click();
     await page.locator('.s2-offer').first().click();
     await primaryAction(page).click();
-    await expect(page.locator('.s2-focusgroups')).toBeVisible({ timeout: 10_000 });
+    await passCamp(page);
     await page.locator('.s2-panel__head .s2-chipbtn').first().click();
     await primaryAction(page).click();
     await expect(page.locator('.s2-grade')).toBeVisible();

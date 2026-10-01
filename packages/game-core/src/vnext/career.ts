@@ -1,5 +1,18 @@
-import { rivalWeekVNext } from './rivals.js';
+import { rivalWeekVNext, VNEXT_RIVAL_TUNING } from './rivals.js';
 import { withVariedClockVNext } from './clock.js';
+import {
+  backgroundProfileVNext,
+  campFocusIdsVNext,
+  coachSuggestionVNext,
+  developmentOfVNext,
+  focusDefinitionsVNext,
+  grantAttributeXpVNext,
+  potentialPermilleVNext,
+  recommendedCampVNext,
+  resolveFocusPlanVNext,
+  settleCoachFocusVNext,
+  VNEXT_DEVELOPMENT_CALENDAR,
+} from './development.js';
 import { liveReadScoreVNext } from './frames.js';
 import { liveSnapLookVNext, resolveWithLookVNext } from './looks.js';
 import { deriveCareerId } from '../player/creation.js';
@@ -15,17 +28,10 @@ import {
 import { createRng, nextUint32, type RngSeed, type RngState } from '../random/rng.js';
 import type { SkillId } from '../skills/ids.js';
 import { derivePositionAlphaRolloverV2 } from '../season/position-alpha-focus-v2.js';
-import {
-  createCommonPositionProficiencyUses,
-  type PositionFocusEvidenceV2,
-  type PositionFocusId,
-} from '../weekly/position-focus.js';
-import { resolvePositionFocusWithSkills } from '../weekly/position-focus-skills.js';
+import { createCommonPositionProficiencyUses } from '../weekly/position-focus.js';
 import {
   attemptBreakthroughVNext,
   breakthroughStateVNext,
-  loadoutVNext,
-  skillDefinitionsVNext,
   VNEXT_BREAKTHROUGH_THRESHOLD,
   VNEXT_BUILD_SLOTS,
 } from './build.js';
@@ -70,6 +76,7 @@ import {
   academicStatusVNext,
   assessInjuryWeekVNext,
   attemptWeeklyEventVNext,
+  injuryRiskBreakdownVNext,
   createConditionVNext,
   injuryChoiceAvailabilityVNext,
   NEUTRAL_GAME_MODIFIERS,
@@ -120,7 +127,12 @@ export function createCareerVNext(
   });
   if (!created.ok) return fail('career_vnext.invalid_input');
   const profile = created.player;
-  const recruiting = derivePositionRecruitingProfile(profile, mechanics.room, 0);
+  // M12: the recruiting background sets the recruit's standing (better or later first offers).
+  const recruiting = derivePositionRecruitingProfile(
+    profile,
+    mechanics.room,
+    backgroundProfileVNext(profile.recruitingBackgroundId).recruitStanding,
+  );
   if (recruiting === undefined) return fail('career_vnext.invalid_input');
   const positionId = profile.positionId as VNextPositionId;
   const tokens = input.nameTokens;
@@ -234,18 +246,13 @@ export function commitProgramVNext(
     recruiting: { ...career.recruiting, committedProgramId: programId },
     program: { programId, room: context },
     season: { ...career.season, world, startRank: context.projection.rank },
-    flow: { type: 'WEEK_PLAN' },
+    development: developmentOfVNext(career),
+    // M12: every season opens with preseason camp.
+    flow: { type: 'CAMP', report: null },
   });
 }
 
-/** Focus catalog for the athlete's position: position training plus shared focuses. */
-export function focusDefinitionsVNext(career: CareerVNext, mechanics: CareerVNextMechanics) {
-  const positionId = career.athlete.profile.positionId;
-  return [
-    ...mechanics.trainingActions.filter((action) => action.positionId === positionId),
-    ...mechanics.commonFocuses,
-  ];
-}
+export { focusDefinitionsVNext };
 
 export function planWeekVNext(
   career: CareerVNext,
@@ -257,56 +264,19 @@ export function planWeekVNext(
   if (!Array.isArray(focusIds) || focusIds.length !== 3) return fail('career_vnext.invalid_choice');
   const definitions = focusDefinitionsVNext(career, mechanics);
   const profile = career.athlete.profile;
-  let state = {
-    model: 'position_focus_state_v2' as const,
-    training: {
-      positionId: profile.positionId as VNextPositionId,
-      attributes: profile.attributes,
-      proficiencyUses: career.athlete.proficiencyUses,
-      state: {
-        body: profile.state.body,
-        preparation: profile.state.preparation,
-        confidence: profile.state.confidence,
-      },
-    },
-    sharedProficiencyUses: career.athlete.sharedProficiencyUses,
-    gpa: profile.state.gpa,
+  // M12: the background's potential scales this season's focus XP.
+  const resolved = resolveFocusPlanVNext(
+    career,
+    focusIds,
+    mechanics,
+    potentialPermilleVNext(career),
+  );
+  if (resolved === null) return fail('career_vnext.invalid_choice');
+  const evidence = resolved.evidence;
+  const state = {
+    training: { attributes: resolved.attributes, state: resolved.state },
+    gpa: resolved.gpa,
   };
-  const evidence: PositionFocusEvidenceV2[] = [];
-  // Equipped cards shape each focus through the shared skill-aware resolver.
-  const loadout = loadoutVNext(career, mechanics);
-  const cards = skillDefinitionsVNext(mechanics);
-  for (const [index, focusId] of focusIds.entries()) {
-    const definition = definitions.find(({ id }) => id === focusId);
-    const tagIds = mechanics.skillBuilds.actionTags[focusId as PositionFocusId];
-    if (definition === undefined || tagIds === undefined)
-      return fail('career_vnext.invalid_choice');
-    const resolved = resolvePositionFocusWithSkills(
-      state,
-      definition,
-      mechanics.trainingConfig,
-      career.condition.injury,
-      mechanics.focusInjuryPolicies,
-      loadout,
-      cards,
-      {
-        id: definition.id,
-        bodyDelta: definition.bodyDelta,
-        attributeXp: definition.attributeXp,
-        tagIds,
-      } as never,
-      {
-        body: state.training.state.body,
-        actionId: definition.id,
-        actionIndex: index as 0 | 1 | 2,
-        planActionIds: focusIds,
-        previousActionId: index === 0 ? null : focusIds[index - 1]!,
-      } as never,
-    );
-    if (!resolved.ok) return fail('career_vnext.invalid_choice');
-    state = resolved.next;
-    evidence.push(resolved.evidence);
-  }
   // The room practices too: teammates' form and growth move before the depth update reads them.
   const room = rivalWeekVNext(
     career.program.room,
@@ -343,31 +313,57 @@ export function planWeekVNext(
     mechanics.room,
   );
   if (!updated.ok) return fail('career_vnext.engine_failed');
+  // M12: the coach's midseason focus counts this week and settles (reward or miss) when due.
+  const focus = settleCoachFocusVNext(
+    developmentOfVNext(career),
+    career.season.index,
+    career.season.weekIndex,
+    focusIds,
+  );
+  const coachFocus = focus.week;
+  const focusAttributeId = career.development?.focus?.attributeId ?? null;
+  const attributesAfter =
+    coachFocus !== null && coachFocus.xp > 0 && focusAttributeId !== null
+      ? grantAttributeXpVNext(state.training.attributes, focusAttributeId, coachFocus.xp)
+      : state.training.attributes;
+  const coachTrustAfter = Math.max(
+    0,
+    Math.min(100, updated.evidence.coachTrust.after + (coachFocus?.trustDelta ?? 0)),
+  );
   const gaugeBefore = career.athlete.breakthroughGauge;
   // A complete collection holds the gauge at full rather than filling toward nothing.
   const gaugeCap = breakthroughStateVNext(career, mechanics).complete
     ? VNEXT_BREAKTHROUGH_THRESHOLD
     : 160;
-  const gaugeAfter = Math.min(gaugeCap, gaugeBefore + grade.breakthroughGaugePoints);
+  const gaugeAfter = Math.min(
+    gaugeCap,
+    gaugeBefore + grade.breakthroughGaugePoints + (coachFocus?.gauge ?? 0),
+  );
   return publish(career, {
     ...career,
     athlete: {
       ...career.athlete,
       profile: {
         ...profile,
-        attributes: state.training.attributes,
+        attributes: attributesAfter,
         state: {
           ...offField.state,
-          coachTrust: updated.evidence.coachTrust.after,
+          coachTrust: coachTrustAfter,
         },
       },
-      proficiencyUses: state.training.proficiencyUses,
-      sharedProficiencyUses: state.sharedProficiencyUses,
+      proficiencyUses: resolved.proficiencyUses,
+      sharedProficiencyUses: resolved.sharedProficiencyUses,
       breakthroughGauge: gaugeAfter,
     },
-    program: { ...career.program, room: updated.context },
+    program: {
+      ...career.program,
+      room: { ...updated.context, playerCoachTrust: coachTrustAfter },
+    },
     season: { ...career.season, sidelineCredit: 0 },
     nil: offField.nil,
+    ...(career.development === undefined && coachFocus === null
+      ? {}
+      : { development: focus.development }),
     flow: {
       type: 'PRACTICE_REPORT',
       report: {
@@ -382,8 +378,145 @@ export function planWeekVNext(
         offFieldDelta: offField.practiceDelta,
         benefitsUsed: offField.benefitsUsed,
         obligationApplied: offField.obligationApplied,
+        ...(coachFocus === null ? {} : { coachFocus }),
       },
     },
+  });
+}
+
+/**
+ * Preseason camp (M12): three emphases from the week's catalog (no recovery or study hall) at camp
+ * XP, a first role battle against the room's own camp week, and the gauge points of a practice
+ * week. Camp includes its own recovery: Body and Preparation stand where they were.
+ */
+export function chooseCampVNext(
+  career: CareerVNext,
+  focusIds: readonly string[],
+  mechanics: CareerVNextMechanics,
+): CareerVNextResult {
+  if (career.flow.type !== 'CAMP' || career.flow.report !== null || career.program === null)
+    return fail('career_vnext.invalid_phase');
+  const open = campFocusIdsVNext(career, mechanics);
+  if (
+    !Array.isArray(focusIds) ||
+    focusIds.length !== 3 ||
+    !focusIds.every((id) => open.includes(id))
+  )
+    return fail('career_vnext.invalid_choice');
+  const xpPermille = Math.round(
+    (potentialPermilleVNext(career) * VNEXT_DEVELOPMENT_CALENDAR.campXpPermille) / 1000,
+  );
+  const resolved = resolveFocusPlanVNext(career, focusIds, mechanics, xpPermille);
+  if (resolved === null) return fail('career_vnext.invalid_choice');
+  const room = rivalWeekVNext(
+    career.program.room,
+    career.seed,
+    career.season.index,
+    VNEXT_DEVELOPMENT_CALENDAR.campRivalWeek,
+    mechanics.room,
+    VNEXT_RIVAL_TUNING.campGrowthDraws,
+  );
+  const grade = derivePositionPracticeGrade(
+    [resolved.evidence[0], resolved.evidence[1], resolved.evidence[2]],
+    room.projection.roleId,
+  );
+  const practiceScore = Math.max(0, Math.min(100, grade.score));
+  const updated = updatePositionRoomAfterPractice(
+    room,
+    resolved.attributes,
+    practiceScore,
+    mechanics.room,
+  );
+  if (!updated.ok) return fail('career_vnext.engine_failed');
+  const profile = career.athlete.profile;
+  const gaugeBefore = career.athlete.breakthroughGauge;
+  const gaugeCap = breakthroughStateVNext(career, mechanics).complete
+    ? VNEXT_BREAKTHROUGH_THRESHOLD
+    : 160;
+  const gaugeAfter = Math.min(gaugeCap, gaugeBefore + grade.breakthroughGaugePoints);
+  const development = developmentOfVNext(career);
+  return publish(career, {
+    ...career,
+    athlete: {
+      ...career.athlete,
+      profile: {
+        ...profile,
+        attributes: resolved.attributes,
+        state: {
+          ...profile.state,
+          confidence: resolved.state.confidence,
+          coachTrust: updated.evidence.coachTrust.after,
+        },
+      },
+      proficiencyUses: resolved.proficiencyUses,
+      sharedProficiencyUses: resolved.sharedProficiencyUses,
+      breakthroughGauge: gaugeAfter,
+    },
+    program: { ...career.program, room: updated.context },
+    season: { ...career.season, startRank: updated.context.projection.rank },
+    development: {
+      ...development,
+      camps: [
+        ...development.camps,
+        { seasonIndex: career.season.index, focusIds: [...focusIds], practiceScore },
+      ],
+    },
+    flow: {
+      type: 'CAMP',
+      report: {
+        seasonIndex: career.season.index,
+        focuses: resolved.evidence,
+        grade,
+        practiceScore,
+        depth: updated.evidence,
+        gaugeBefore,
+        gaugeAfter,
+        xpPermille,
+      },
+    },
+  });
+}
+
+/** Camp report: on to the first week's plan. */
+export function continueCampVNext(career: CareerVNext): CareerVNextResult {
+  if (career.flow.type !== 'CAMP' || career.flow.report === null)
+    return fail('career_vnext.invalid_phase');
+  return publish(career, { ...career, flow: { type: 'WEEK_PLAN' } });
+}
+
+/**
+ * The midseason checkpoint (M12): accept the coach's focus (run it in two of the next three weeks
+ * for trust, XP and gauge; miss it and trust slips a point) or decline it. Either way the season
+ * continues at the week planner.
+ */
+export function decideMidseasonVNext(career: CareerVNext, accept: boolean): CareerVNextResult {
+  if (career.flow.type !== 'MIDSEASON' || career.flow.review.decision !== null)
+    return fail('career_vnext.invalid_phase');
+  if (typeof accept !== 'boolean') return fail('career_vnext.invalid_choice');
+  const review = career.flow.review;
+  const development = developmentOfVNext(career);
+  const tuning = VNEXT_DEVELOPMENT_CALENDAR;
+  return publish(career, {
+    ...career,
+    development: {
+      ...development,
+      reviews: [
+        ...development.reviews,
+        { seasonIndex: review.seasonIndex, decision: accept ? 'ACCEPTED' : 'DECLINED' },
+      ],
+      focus: accept
+        ? {
+            seasonIndex: review.seasonIndex,
+            ...review.suggestion,
+            fromWeek: review.weekIndex,
+            untilWeek: review.weekIndex + tuning.focusWindowWeeks,
+            required: tuning.focusRequiredWeeks,
+            done: 0,
+            outcome: 'ACTIVE',
+          }
+        : development.focus,
+    },
+    flow: { type: 'WEEK_PLAN' },
   });
 }
 
@@ -1026,9 +1159,51 @@ function advanceWeek(career: CareerVNext, mechanics: CareerVNextMechanics): Care
     flow: { type: 'WEEK_PLAN' },
   };
   // After the regular season (and between postseason rounds) the world decides what comes next.
-  return weekIndex >= CAREER_VNEXT_REGULAR_SEASON_WEEKS
-    ? afterScheduleStep(career, next, mechanics)
-    : publish(career, next);
+  if (weekIndex >= CAREER_VNEXT_REGULAR_SEASON_WEEKS)
+    return afterScheduleStep(career, next, mechanics);
+  // M12: the midseason checkpoint, once a season, after the sixth game.
+  const reviewed = developmentOfVNext(career).reviews.some(
+    ({ seasonIndex }) => seasonIndex === career.season.index,
+  );
+  if (weekIndex === VNEXT_DEVELOPMENT_CALENDAR.midseasonWeek && !reviewed)
+    return publish(career, {
+      ...next,
+      development: developmentOfVNext(career),
+      flow: { type: 'MIDSEASON', review: midseasonReview(next, mechanics) },
+    });
+  return publish(career, next);
+}
+
+function midseasonReview(career: CareerVNext, mechanics: CareerVNextMechanics) {
+  const games = career.log.filter((recap) => (recap.seasonIndex ?? 0) === career.season.index);
+  const plays = games.flatMap(
+    (recap) => recap.engine.game.keyPlayLog as unknown as readonly { decisionFit?: number }[],
+  );
+  const grades = games
+    .map(({ coachGrade }) => coachGrade)
+    .filter((grade): grade is number => typeof grade === 'number');
+  const record = games.at(-1)?.recordAfter ?? { wins: 0, losses: 0, ties: 0 };
+  return {
+    seasonIndex: career.season.index,
+    weekIndex: career.season.weekIndex,
+    record,
+    liveSnaps: plays.length,
+    sharpReads: plays.filter((play) => (play.decisionFit ?? 0) >= 85).length,
+    averageGrade:
+      grades.length === 0
+        ? null
+        : Math.round(grades.reduce((sum, grade) => sum + grade, 0) / grades.length),
+    overall: {
+      start: career.season.startOverall,
+      now: overallVNext(career.athlete.profile, mechanics),
+    },
+    depthRank: {
+      start: career.season.startRank,
+      now: career.program?.room.projection.rank ?? career.season.startRank,
+    },
+    suggestion: coachSuggestionVNext(career, mechanics),
+    decision: null,
+  };
 }
 
 export function nextWeekVNext(
@@ -1039,4 +1214,53 @@ export function nextWeekVNext(
   if (career.flow.type === 'SEASON_END') return afterScheduleStep(career, career, mechanics);
   if (career.flow.type !== 'POST_GAME') return fail('career_vnext.invalid_phase');
   return advanceWeek(career, mechanics);
+}
+
+/**
+ * M12 plan preview: what this exact plan would do to the athlete, from the same command (pure).
+ * Only the athlete's own numbers are returned; teammates' practice weeks stay hidden until played.
+ */
+export function previewWeekPlanVNext(
+  career: CareerVNext,
+  focusIds: readonly string[],
+  mechanics: CareerVNextMechanics,
+) {
+  const planned = planWeekVNext(career, focusIds, mechanics);
+  if (!planned.ok || planned.career.flow.type !== 'PRACTICE_REPORT') return null;
+  const report = planned.career.flow.report;
+  const [first, , third] = report.focuses;
+  const trainingLoad = Math.max(0, first.bodyBefore - third.bodyAfter);
+  const state = planned.career.athlete.profile.state;
+  return {
+    focuses: report.focuses,
+    grade: report.grade,
+    practiceScore: report.practiceScore,
+    body: { before: career.athlete.profile.state.body, after: state.body },
+    preparation: { before: career.athlete.profile.state.preparation, after: state.preparation },
+    gpa: { before: career.athlete.profile.state.gpa, after: state.gpa },
+    gauge: { before: report.gaugeBefore, after: report.gaugeAfter },
+    overall: {
+      before: overallVNext(career.athlete.profile, mechanics),
+      after: overallVNext(planned.career.athlete.profile, mechanics),
+    },
+    coachFocus: report.coachFocus ?? null,
+    risk: injuryRiskBreakdownVNext(planned.career, trainingLoad, mechanics),
+  };
+}
+
+/**
+ * Drives the M12 calendar stops with default choices (the coach's recommended camp, accepting the
+ * midseason focus or not): for harnesses, tests and quick play. Null outside camp and midseason.
+ */
+export function advanceCalendarVNext(
+  career: CareerVNext,
+  mechanics: CareerVNextMechanics,
+  acceptFocus = true,
+): CareerVNextResult | null {
+  if (career.flow.type === 'CAMP')
+    return career.flow.report === null
+      ? chooseCampVNext(career, recommendedCampVNext(career, mechanics), mechanics)
+      : continueCampVNext(career);
+  if (career.flow.type === 'MIDSEASON') return decideMidseasonVNext(career, acceptFocus);
+  return null;
 }

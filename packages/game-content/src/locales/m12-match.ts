@@ -14,79 +14,76 @@ const rows = {
     '당신이 본 단서는 {look}에도 들어맞았고, 그 경우라면 당신의 선택이 맞습니다. 단서가 하나 더 있었다면 구분할 수 있었습니다.',
   ],
   // Execution: what happened to the athlete's own action.
-  'v2.exec.qb_incomplete': ['The throw didn’t connect.', '패스가 연결되지 않았습니다.'],
-  'v2.exec.qb_interception': ['A defender got to the throw first.', '수비가 먼저 공에 닿았습니다.'],
-  'v2.exec.qb_sack': [
+  'v2.exec.qbIncomplete': ['The throw didn’t connect.', '패스가 연결되지 않았습니다.'],
+  'v2.exec.qbInterception': ['A defender got to the throw first.', '수비가 먼저 공에 닿았습니다.'],
+  'v2.exec.qbSack': [
     'The rush got home before the ball came out.',
     '공을 던지기 전에 러시가 먼저 도착했습니다.',
   ],
-  'v2.exec.qb_sack_fumble': [
+  'v2.exec.qbSackFumble': [
     'The rush got home and knocked the ball loose.',
     '러시가 들어와 공까지 떨어뜨렸습니다.',
   ],
-  'v2.exec.qb_run_fumble': [
+  'v2.exec.qbRunFumble': [
     'The run gained ground, but the ball came loose.',
     '전진은 했지만 공을 놓쳤습니다.',
   ],
-  'v2.exec.qb_throwaway': [
+  'v2.exec.qbThrowaway': [
     'Throwing it away gave up the down to protect the ball: no turnover risk taken.',
     '공을 버려 이번 다운은 포기했지만, 턴오버 위험은 없앴습니다.',
   ],
-  'v2.exec.rb_stuffed': [
+  'v2.exec.rbStuffed': [
     'The hole closed before you got through.',
     '구멍이 닫혀 빠져나가지 못했습니다.',
   ],
-  'v2.exec.rb_fumble': ['Contact knocked the ball loose.', '접촉 순간 공을 놓쳤습니다.'],
-  'v2.exec.rb_catch_fumble': [
+  'v2.exec.rbFumble': ['Contact knocked the ball loose.', '접촉 순간 공을 놓쳤습니다.'],
+  'v2.exec.rbCatchFumble': [
     'The catch was made, but the ball came out on contact.',
     '공은 잡았지만 태클에 공을 놓쳤습니다.',
   ],
-  'v2.exec.rb_protection_miss': [
-    'The rusher beat your block.',
-    '러셔가 당신의 블로킹을 뚫었습니다.',
-  ],
-  'v2.exec.wr_incomplete': ['The catch point went against you.', '포구 경합에서 밀렸습니다.'],
-  'v2.exec.wr_drop': [
+  'v2.exec.rbProtectionMiss': ['The rusher beat your block.', '러셔가 당신의 블로킹을 뚫었습니다.'],
+  'v2.exec.wrIncomplete': ['The catch point went against you.', '포구 경합에서 밀렸습니다.'],
+  'v2.exec.wrDrop': [
     'The ball was there, and it came out of your hands.',
     '공은 정확히 왔지만 손에서 빠졌습니다.',
   ],
-  'v2.exec.wr_interception': [
+  'v2.exec.wrInterception': [
     'The defender won the catch point and took it away.',
     '수비가 포구 지점을 이겨 공을 가로챘습니다.',
   ],
-  'v2.exec.wr_not_targeted': [
+  'v2.exec.wrNotTargeted': [
     'The ball went elsewhere this snap.',
     '이번 스냅에는 공이 다른 곳으로 갔습니다.',
   ],
-  'v2.exec.cb_strip_missed': [
+  'v2.exec.cbStripMissed': [
     'Going for the ball loosened the wrap-up: the ball stayed in and he slipped through.',
     '공을 노리느라 태클이 느슨해졌고, 공은 빠지지 않은 채 상대가 빠져나갔습니다.',
   ],
-  'v2.exec.cb_strip_held': [
+  'v2.exec.cbStripHeld': [
     'The ball stayed in, but you still brought him down.',
     '공은 빠지지 않았지만 끝까지 잡아 쓰러뜨렸습니다.',
   ],
-  'v2.exec.cb_tackle_missed': [
+  'v2.exec.cbTackleMissed': [
     'You got there but couldn’t finish the tackle.',
     '도착은 했지만 태클을 마무리하지 못했습니다.',
   ],
-  'v2.exec.cb_catch_allowed': [
+  'v2.exec.cbCatchAllowed': [
     'The receiver made the catch in your coverage.',
     '당신이 맡은 리시버가 공을 잡았습니다.',
   ],
-  'v2.exec.cb_touchdown_allowed': [
+  'v2.exec.cbTouchdownAllowed': [
     'The catch went all the way for a score.',
     '그 캐치가 그대로 득점으로 이어졌습니다.',
   ],
-  'v2.exec.def_gain_allowed': [
+  'v2.exec.defGainAllowed': [
     'The play got past your spot.',
     '플레이가 당신의 자리를 지나갔습니다.',
   ],
-  'v2.exec.def_missed_tackle': [
+  'v2.exec.defMissedTackle': [
     'The aggressive angle overran the ball carrier.',
     '공격적인 각도로 들어가다 볼 캐리어를 지나쳤습니다.',
   ],
-  'v2.exec.def_no_play': ['The play went away from you.', '플레이가 반대쪽으로 갔습니다.'],
+  'v2.exec.defNoPlay': ['The play went away from you.', '플레이가 반대쪽으로 갔습니다.'],
   'v2.exec.won': ['Your part came off.', '당신의 플레이는 성공했습니다.'],
   'v2.exec.chanceSuccess': [
     'This call had a {chance}% chance to come off.',
@@ -147,11 +144,11 @@ const rows = {
   ],
   'v2.sit.noPlay': ['The ball went elsewhere.', '공은 다른 곳으로 갔습니다.'],
   // Pregame: five-band line and what the snaps represent.
-  'v2.stakes.band.HEAVY_FAVORITE': ['Heavy favorite', '압도적 우세'],
-  'v2.stakes.band.FAVORITE': ['Favored', '우세'],
-  'v2.stakes.band.TOSS_UP': ['Toss-up', '박빙'],
-  'v2.stakes.band.UNDERDOG': ['Underdog', '열세'],
-  'v2.stakes.band.HEAVY_UNDERDOG': ['Heavy underdog', '큰 열세'],
+  'v2.stakes.band.heavyFavorite': ['Heavy favorite', '압도적 우세'],
+  'v2.stakes.band.favorite': ['Favored', '우세'],
+  'v2.stakes.band.tossUp': ['Toss-up', '박빙'],
+  'v2.stakes.band.underdog': ['Underdog', '열세'],
+  'v2.stakes.band.heavyUnderdog': ['Heavy underdog', '큰 열세'],
   'v2.stakes.bandHelp': [
     'The line compares the two teams at your position’s matchup, before any snap is played.',
     '경기 전, 당신 포지션의 맞대결 기준으로 두 팀을 비교한 전망입니다.',

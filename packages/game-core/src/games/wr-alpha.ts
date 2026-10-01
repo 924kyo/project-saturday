@@ -1,3 +1,4 @@
+import { informationBaseScore, informationTierTells } from './information.js';
 import { cloneSerializable, deepFreeze } from '../player/immutable.js';
 import type { PlayerId, ProgramId } from '../player/ids.js';
 import {
@@ -198,12 +199,7 @@ function withPendingSnap(active: ActiveBase, snapIndex: number): ActiveWrAlphaGa
   if (family === undefined) return undefined;
   const player = active.input.player;
   const informationScore = clamp(
-    Math.round(
-      (rating(player.attributes, 'attribute_football_iq') * 400 +
-        rating(player.attributes, 'attribute_wr_route_running') * 250 +
-        player.state.preparation * 350) /
-        1_000,
-    ),
+    informationBaseScore('position_wr', player.attributes, player.state.preparation),
     0,
     100,
   );
@@ -211,7 +207,7 @@ function withPendingSnap(active: ActiveBase, snapIndex: number): ActiveWrAlphaGa
   const clueBonus = (active.input.gameHooks ?? [])
     .filter(({ hookId }) => hookId === 'game_hook_coverage_clue_bonus')
     .reduce((sum, { valueMilli }) => sum + Math.trunc(valueMilli / 1_000), 0);
-  const clueCount = (informationScore >= 62 ? 2 : informationScore >= 42 ? 1 : 0) + clueBonus;
+  const clueCount = informationTierTells('position_wr', informationScore) + clueBonus;
   const revealedClueIds = pattern.clueIds.slice(0, clueCount);
   const prepared = prepareTacticalAlphaSnapV1({
     gameId: active.input.gameId,

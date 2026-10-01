@@ -15,6 +15,10 @@ export interface ExplanationLines {
   readonly situation: string;
 }
 
+/** Message keys are camelCase segments; reason IDs are snake_case. */
+export const camelKey = (id: string) =>
+  id.toLowerCase().replace(/_([a-z0-9])/g, (_, letter: string) => letter.toUpperCase());
+
 const DEFENSE: ReadonlySet<string> = new Set(['position_cb', 'position_lb', 'position_edge']);
 
 export function explanationLines(
@@ -46,7 +50,7 @@ export function explanationLines(
   const executionLine = (): string => {
     const reason = execution.reasonId;
     const parts: string[] = [
-      reason === null ? t('v2.exec.won') : t(key(`v2.exec.${reason}`) as MessageKey),
+      reason === null ? t('v2.exec.won') : t(key(`v2.exec.${camelKey(reason)}`) as MessageKey),
     ];
     if (execution.chancePermille !== null && reason !== null && execution.verdict !== 'NEUTRAL')
       parts.push(

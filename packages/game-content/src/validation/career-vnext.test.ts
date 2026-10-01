@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  advanceCalendarVNext,
   chooseBreakthroughVNext,
   chooseEventVNext,
   chooseInjuryVNext,
@@ -28,6 +29,7 @@ import {
   toGameDayVNext,
   VNEXT_BREAKTHROUGH_THRESHOLD,
   type CareerVNext,
+  type CareerVNextMechanics,
   type CareerVNextResult,
   type PositionPlayerCreationIdentity,
 } from '@project-saturday/game-core';
@@ -37,6 +39,18 @@ import {
   defaultWrAppearance,
   programIdentityVNext,
 } from '../content/index.js';
+
+/** Commits and runs the coach's preseason camp (M12), landing on week one's planner. */
+function commitThroughCamp(
+  career: CareerVNext,
+  programId: Parameters<typeof commitProgramVNext>[1],
+  mechanics: CareerVNextMechanics,
+): CareerVNextResult {
+  let result = commitProgramVNext(career, programId, mechanics);
+  for (let step = 0; step < 2 && result.ok; step += 1)
+    result = advanceCalendarVNext(result.career, mechanics) ?? result;
+  return result;
+}
 
 const identities = [
   ['position_qb', 'archetype_qb_field_general'],
@@ -116,6 +130,8 @@ function playSeason(
           ? [open[0]!, open[1]!, 'action_recovery']
           : [open[0]!, open[1]!, open[2]!];
       career = adopt(planWeekVNext(career, plan, mechanics));
+    } else if (career.flow.type === 'CAMP' || career.flow.type === 'MIDSEASON') {
+      career = adopt(advanceCalendarVNext(career, mechanics)!);
     } else if (career.flow.type === 'PRACTICE_REPORT') {
       career = adopt(toGameDayVNext(career, mechanics));
     } else if (career.flow.type === 'BREAKTHROUGH') {
@@ -322,7 +338,7 @@ describe('Career VNext weekly lifecycle', () => {
     const mechanics = buildCareerVNextMechanics(identity)!;
     const created = createCareerVNext({ seed: 'vnext-migrate', identity }, mechanics);
     if (!created.ok) throw new Error(created.reason);
-    const committed = commitProgramVNext(
+    const committed = commitThroughCamp(
       created.career,
       created.career.recruiting.offers[0]!.programId,
       mechanics,
@@ -394,7 +410,7 @@ describe('Career VNext build', () => {
         mechanics,
       );
       if (!created.ok) throw new Error(created.reason);
-      const committed = commitProgramVNext(
+      const committed = commitThroughCamp(
         created.career,
         created.career.recruiting.offers[0]!.programId,
         mechanics,
@@ -433,9 +449,11 @@ describe('Career VNext build', () => {
                 ? chooseNilVNext(next, true, mechanics)
                 : flow.type === 'INJURY' && flow.report.availability === null
                   ? chooseInjuryVNext(next, 'injury_choice_play_limited', mechanics)
-                  : flow.type === 'BREAKTHROUGH' && flow.offer.chosenSkillId === null
-                    ? chooseBreakthroughVNext(next, flow.offer.skillIds[0]!)
-                    : toGameDayVNext(next, mechanics);
+                  : flow.type === 'CAMP' || flow.type === 'MIDSEASON'
+                    ? advanceCalendarVNext(next, mechanics)!
+                    : flow.type === 'BREAKTHROUGH' && flow.offer.chosenSkillId === null
+                      ? chooseBreakthroughVNext(next, flow.offer.skillIds[0]!)
+                      : toGameDayVNext(next, mechanics);
           if (!step.ok) throw new Error(step.reason);
           next = step.career;
         }
@@ -458,7 +476,7 @@ describe('Career VNext build', () => {
     const mechanics = buildCareerVNextMechanics(identity)!;
     const created = createCareerVNext({ seed: 'vnext-wr-hooks', identity }, mechanics);
     if (!created.ok) throw new Error(created.reason);
-    const committed = commitProgramVNext(
+    const committed = commitThroughCamp(
       created.career,
       created.career.recruiting.offers[0]!.programId,
       mechanics,
@@ -524,7 +542,7 @@ describe('Career VNext academics', () => {
         mechanics,
       );
       if (!created.ok) throw new Error(created.reason);
-      const committed = commitProgramVNext(
+      const committed = commitThroughCamp(
         created.career,
         created.career.recruiting.offers[0]!.programId,
         mechanics,
@@ -560,9 +578,11 @@ describe('Career VNext academics', () => {
                 ? chooseNilVNext(career, true, mechanics)
                 : flow.type === 'INJURY' && flow.report.availability === null
                   ? chooseInjuryVNext(career, 'injury_choice_play_limited', mechanics)
-                  : flow.type === 'BREAKTHROUGH' && flow.offer.chosenSkillId === null
-                    ? chooseBreakthroughVNext(career, flow.offer.skillIds[0]!)
-                    : toGameDayVNext(career, mechanics);
+                  : flow.type === 'CAMP' || flow.type === 'MIDSEASON'
+                    ? advanceCalendarVNext(career, mechanics)!
+                    : flow.type === 'BREAKTHROUGH' && flow.offer.chosenSkillId === null
+                      ? chooseBreakthroughVNext(career, flow.offer.skillIds[0]!)
+                      : toGameDayVNext(career, mechanics);
           if (!step.ok) throw new Error(step.reason);
           career = step.career;
         }
@@ -614,48 +634,53 @@ describe('Career VNext season arc', () => {
                 mechanics,
               );
             })()
-          : flow.type === 'BREAKTHROUGH' && flow.offer.chosenSkillId === null
-            ? chooseBreakthroughVNext(career, flow.offer.skillIds[0]!)
-            : flow.type === 'EVENT' && flow.event.chosenChoiceId === null
-              ? chooseEventVNext(career, flow.event.choiceIds[0]!, mechanics)
-              : flow.type === 'NIL' && flow.offer.decision === null
-                ? chooseNilVNext(career, true, mechanics)
-                : flow.type === 'INJURY' && flow.report.availability === null
-                  ? chooseInjuryVNext(career, 'injury_choice_rest_rehab', mechanics)
-                  : flow.type === 'GAME'
-                    ? flow.game.stage === 'PREGAME'
-                      ? kickoffVNext(career, mechanics)
-                      : flow.game.stage === 'SNAP'
-                        ? chooseSnapVNext(
-                            career,
-                            projectSnapBoardFrame(career, mechanics)!.decisionIds[0]!,
-                            mechanics,
-                          )
-                        : continueGameVNext(career, mechanics)
-                    : flow.type === 'POST_GAME'
-                      ? nextWeekVNext(career, mechanics)
-                      : flow.type === 'SEASON_REVIEW'
-                        ? continueSeasonReviewVNext(career, mechanics)
-                        : flow.type === 'OFFSEASON'
-                          ? (() => {
-                              // Stay after season one, then take the first transfer, then stay.
-                              expect(flow.options).toHaveLength(4);
-                              expect(flow.options[0]!.kind).toBe('STAY');
-                              expect(
-                                new Set(flow.options.map(({ programId }) => programId)).size,
-                              ).toBe(4);
-                              // Declaring opens after the junior season (season index 2).
-                              const declared = declareForDraftVNext(career);
-                              expect(declared.ok).toBe(career.season.index >= 2);
-                              if (declared.ok && declared.career.flow.type === 'CAREER_COMPLETE') {
-                                expect(declared.career.flow.alumni.ending).toBe('DECLARED');
-                                expect(declared.career.flow.alumni.draft).toBeDefined();
-                              }
-                              const pick =
-                                career.season.index === 1 ? flow.options[1]! : flow.options[0]!;
-                              return commitOffseasonVNext(career, pick.programId, mechanics);
-                            })()
-                          : toGameDayVNext(career, mechanics);
+          : flow.type === 'CAMP' || flow.type === 'MIDSEASON'
+            ? advanceCalendarVNext(career, mechanics)!
+            : flow.type === 'BREAKTHROUGH' && flow.offer.chosenSkillId === null
+              ? chooseBreakthroughVNext(career, flow.offer.skillIds[0]!)
+              : flow.type === 'EVENT' && flow.event.chosenChoiceId === null
+                ? chooseEventVNext(career, flow.event.choiceIds[0]!, mechanics)
+                : flow.type === 'NIL' && flow.offer.decision === null
+                  ? chooseNilVNext(career, true, mechanics)
+                  : flow.type === 'INJURY' && flow.report.availability === null
+                    ? chooseInjuryVNext(career, 'injury_choice_rest_rehab', mechanics)
+                    : flow.type === 'GAME'
+                      ? flow.game.stage === 'PREGAME'
+                        ? kickoffVNext(career, mechanics)
+                        : flow.game.stage === 'SNAP'
+                          ? chooseSnapVNext(
+                              career,
+                              projectSnapBoardFrame(career, mechanics)!.decisionIds[0]!,
+                              mechanics,
+                            )
+                          : continueGameVNext(career, mechanics)
+                      : flow.type === 'POST_GAME'
+                        ? nextWeekVNext(career, mechanics)
+                        : flow.type === 'SEASON_REVIEW'
+                          ? continueSeasonReviewVNext(career, mechanics)
+                          : flow.type === 'OFFSEASON'
+                            ? (() => {
+                                // Stay after season one, then take the first transfer, then stay.
+                                expect(flow.options).toHaveLength(4);
+                                expect(flow.options[0]!.kind).toBe('STAY');
+                                expect(
+                                  new Set(flow.options.map(({ programId }) => programId)).size,
+                                ).toBe(4);
+                                // Declaring opens after the junior season (season index 2).
+                                const declared = declareForDraftVNext(career);
+                                expect(declared.ok).toBe(career.season.index >= 2);
+                                if (
+                                  declared.ok &&
+                                  declared.career.flow.type === 'CAREER_COMPLETE'
+                                ) {
+                                  expect(declared.career.flow.alumni.ending).toBe('DECLARED');
+                                  expect(declared.career.flow.alumni.draft).toBeDefined();
+                                }
+                                const pick =
+                                  career.season.index === 1 ? flow.options[1]! : flow.options[0]!;
+                                return commitOffseasonVNext(career, pick.programId, mechanics);
+                              })()
+                            : toGameDayVNext(career, mechanics);
       if (flow.type === 'POST_GAME' && flow.recap.round !== undefined) postseasonGames += 1;
       const before = career;
       career = adopt(step);
@@ -769,7 +794,7 @@ describe('Career VNext world compatibility (M9)', () => {
         offers: [{ ...created.career.recruiting.offers[0]!, programId }],
       },
     };
-    const committed = commitProgramVNext(career, programId, mechanics);
+    const committed = commitThroughCamp(career, programId, mechanics);
     if (!committed.ok) throw new Error(committed.reason);
     const world64 = createWorldVNextSeason(
       mechanics.world64,
@@ -791,29 +816,31 @@ describe('Career VNext world compatibility (M9)', () => {
                 .filter((id) => isFocusAvailableVNext(career, id, mechanics));
               return planWeekVNext(career, [open[0]!, open[1]!, open[2]!], mechanics);
             })()
-          : flow.type === 'BREAKTHROUGH' && flow.offer.chosenSkillId === null
-            ? chooseBreakthroughVNext(career, flow.offer.skillIds[0]!)
-            : flow.type === 'EVENT' && flow.event.chosenChoiceId === null
-              ? chooseEventVNext(career, flow.event.choiceIds[0]!, mechanics)
-              : flow.type === 'NIL' && flow.offer.decision === null
-                ? chooseNilVNext(career, false, mechanics)
-                : flow.type === 'INJURY' && flow.report.availability === null
-                  ? chooseInjuryVNext(career, 'injury_choice_rest_rehab', mechanics)
-                  : flow.type === 'GAME'
-                    ? flow.game.stage === 'PREGAME'
-                      ? kickoffVNext(career, mechanics)
-                      : flow.game.stage === 'SNAP'
-                        ? chooseSnapVNext(
-                            career,
-                            projectSnapBoardFrame(career, mechanics)!.decisionIds[0]!,
-                            mechanics,
-                          )
-                        : continueGameVNext(career, mechanics)
-                    : flow.type === 'POST_GAME'
-                      ? nextWeekVNext(career, mechanics)
-                      : flow.type === 'SEASON_REVIEW'
-                        ? continueSeasonReviewVNext(career, mechanics)
-                        : toGameDayVNext(career, mechanics);
+          : flow.type === 'CAMP' || flow.type === 'MIDSEASON'
+            ? advanceCalendarVNext(career, mechanics)!
+            : flow.type === 'BREAKTHROUGH' && flow.offer.chosenSkillId === null
+              ? chooseBreakthroughVNext(career, flow.offer.skillIds[0]!)
+              : flow.type === 'EVENT' && flow.event.chosenChoiceId === null
+                ? chooseEventVNext(career, flow.event.choiceIds[0]!, mechanics)
+                : flow.type === 'NIL' && flow.offer.decision === null
+                  ? chooseNilVNext(career, false, mechanics)
+                  : flow.type === 'INJURY' && flow.report.availability === null
+                    ? chooseInjuryVNext(career, 'injury_choice_rest_rehab', mechanics)
+                    : flow.type === 'GAME'
+                      ? flow.game.stage === 'PREGAME'
+                        ? kickoffVNext(career, mechanics)
+                        : flow.game.stage === 'SNAP'
+                          ? chooseSnapVNext(
+                              career,
+                              projectSnapBoardFrame(career, mechanics)!.decisionIds[0]!,
+                              mechanics,
+                            )
+                          : continueGameVNext(career, mechanics)
+                      : flow.type === 'POST_GAME'
+                        ? nextWeekVNext(career, mechanics)
+                        : flow.type === 'SEASON_REVIEW'
+                          ? continueSeasonReviewVNext(career, mechanics)
+                          : toGameDayVNext(career, mechanics);
       if (!step.ok) throw new Error(step.reason);
       career = step.career;
     }
@@ -844,7 +871,7 @@ describe('Career VNext world compatibility (M8)', () => {
         offers: [{ ...created.career.recruiting.offers[0]!, programId }],
       },
     };
-    const committed = commitProgramVNext(career, programId, mechanics);
+    const committed = commitThroughCamp(career, programId, mechanics);
     if (!committed.ok) throw new Error(committed.reason);
     const legacy = createWorldAlphaSeason(
       mechanics.legacyWorld,
@@ -880,29 +907,31 @@ describe('Career VNext world compatibility (M8)', () => {
                 .filter((id) => isFocusAvailableVNext(career, id, mechanics));
               return planWeekVNext(career, [open[0]!, open[1]!, open[2]!], mechanics);
             })()
-          : flow.type === 'BREAKTHROUGH' && flow.offer.chosenSkillId === null
-            ? chooseBreakthroughVNext(career, flow.offer.skillIds[0]!)
-            : flow.type === 'EVENT' && flow.event.chosenChoiceId === null
-              ? chooseEventVNext(career, flow.event.choiceIds[0]!, mechanics)
-              : flow.type === 'NIL' && flow.offer.decision === null
-                ? chooseNilVNext(career, true, mechanics)
-                : flow.type === 'INJURY' && flow.report.availability === null
-                  ? chooseInjuryVNext(career, 'injury_choice_rest_rehab', mechanics)
-                  : flow.type === 'GAME'
-                    ? flow.game.stage === 'PREGAME'
-                      ? kickoffVNext(career, mechanics)
-                      : flow.game.stage === 'SNAP'
-                        ? chooseSnapVNext(
-                            career,
-                            projectSnapBoardFrame(career, mechanics)!.decisionIds[0]!,
-                            mechanics,
-                          )
-                        : continueGameVNext(career, mechanics)
-                    : flow.type === 'POST_GAME'
-                      ? nextWeekVNext(career, mechanics)
-                      : flow.type === 'SEASON_REVIEW'
-                        ? continueSeasonReviewVNext(career, mechanics)
-                        : toGameDayVNext(career, mechanics);
+          : flow.type === 'CAMP' || flow.type === 'MIDSEASON'
+            ? advanceCalendarVNext(career, mechanics)!
+            : flow.type === 'BREAKTHROUGH' && flow.offer.chosenSkillId === null
+              ? chooseBreakthroughVNext(career, flow.offer.skillIds[0]!)
+              : flow.type === 'EVENT' && flow.event.chosenChoiceId === null
+                ? chooseEventVNext(career, flow.event.choiceIds[0]!, mechanics)
+                : flow.type === 'NIL' && flow.offer.decision === null
+                  ? chooseNilVNext(career, true, mechanics)
+                  : flow.type === 'INJURY' && flow.report.availability === null
+                    ? chooseInjuryVNext(career, 'injury_choice_rest_rehab', mechanics)
+                    : flow.type === 'GAME'
+                      ? flow.game.stage === 'PREGAME'
+                        ? kickoffVNext(career, mechanics)
+                        : flow.game.stage === 'SNAP'
+                          ? chooseSnapVNext(
+                              career,
+                              projectSnapBoardFrame(career, mechanics)!.decisionIds[0]!,
+                              mechanics,
+                            )
+                          : continueGameVNext(career, mechanics)
+                      : flow.type === 'POST_GAME'
+                        ? nextWeekVNext(career, mechanics)
+                        : flow.type === 'SEASON_REVIEW'
+                          ? continueSeasonReviewVNext(career, mechanics)
+                          : toGameDayVNext(career, mechanics);
       if (!step.ok) throw new Error(step.reason);
       career = step.career;
     }

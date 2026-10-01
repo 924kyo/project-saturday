@@ -597,11 +597,27 @@ export interface InjuryWeekVNext {
   readonly availability: InjuryAvailabilityEvidence | null;
 }
 
-export function injuryRiskVNext(
+/**
+ * M12 (playtest report: "Low risk" had no causes): the pregame injury risk, part by part, from the
+ * same rule the injury check uses. All values are permille; `total` is what the check rolls.
+ */
+export interface InjuryRiskBreakdownVNext {
+  readonly base: number;
+  readonly bodyDeficit: number;
+  readonly durability: number;
+  readonly workload: number;
+  readonly trainingLoad: number;
+  readonly positionExposure: number;
+  /** Equipped Body cards' multiplier (1000 = none). */
+  readonly cardMultiplierPermille: number;
+  readonly total: number;
+}
+
+export function injuryRiskBreakdownVNext(
   career: CareerVNext,
   trainingLoad: number,
   mechanics: CareerVNextMechanics,
-): number | null {
+): InjuryRiskBreakdownVNext | null {
   const profile = career.athlete.profile;
   const projection = career.program?.room.projection;
   if (projection === undefined) return null;
@@ -620,19 +636,31 @@ export function injuryRiskVNext(
   const tuning = VNEXT_INJURY_TUNING;
   const weighted = (value: number, permille: number) => Math.floor((value * permille) / 1_000);
   const deficit = 100 - profile.state.body;
-  const base =
-    tuning.basePermille +
-    Math.floor((deficit * deficit) / tuning.bodyCurveDivisor) +
-    weighted(exposure.durabilityRiskPermille, tuning.durabilityWeightPermille) +
-    weighted(exposure.workloadRiskPermille, tuning.workloadWeightPermille) +
-    weighted(exposure.trainingRiskPermille, tuning.trainingWeightPermille) +
-    weighted(exposure.positionExposurePermille, tuning.positionWeightPermille);
+  const parts = {
+    base: tuning.basePermille,
+    bodyDeficit: Math.floor((deficit * deficit) / tuning.bodyCurveDivisor),
+    durability: weighted(exposure.durabilityRiskPermille, tuning.durabilityWeightPermille),
+    workload: weighted(exposure.workloadRiskPermille, tuning.workloadWeightPermille),
+    trainingLoad: weighted(exposure.trainingRiskPermille, tuning.trainingWeightPermille),
+    positionExposure: weighted(exposure.positionExposurePermille, tuning.positionWeightPermille),
+  };
+  const cardMultiplierPermille = injuryRiskMultiplierVNext(career, mechanics);
+  const base = Object.values(parts).reduce((sum, value) => sum + value, 0);
   // Body cards with an injury-risk multiplier scale the whole pregame risk.
-  return clamp(
-    Math.round((base * injuryRiskMultiplierVNext(career, mechanics)) / 1_000),
+  const total = clamp(
+    Math.round((base * cardMultiplierPermille) / 1_000),
     0,
     tuning.maximumPermille,
   );
+  return { ...parts, cardMultiplierPermille, total };
+}
+
+export function injuryRiskVNext(
+  career: CareerVNext,
+  trainingLoad: number,
+  mechanics: CareerVNextMechanics,
+): number | null {
+  return injuryRiskBreakdownVNext(career, trainingLoad, mechanics)?.total ?? null;
 }
 
 function neutralAvailability(career: CareerVNext, out: boolean): InjuryAvailabilityEvidence {

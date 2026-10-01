@@ -8,15 +8,18 @@ import type { AwardIdVNext, GameRecapVNext, SeasonReviewVNext, VNextPositionId }
 export const VNEXT_AWARD_TUNING = Object.freeze({
   minimumLiveGames: 8,
   // Playtest round 1: grades now weigh the read, so a player who reads well grades higher.
-  allConferenceFirst: 74,
-  allConferenceSecond: 72,
-  freshman: 72,
-  allAmerican: 76,
+  // M12: +1 across the board. A right read now also executes better (scene rules v2) and the
+  // calendar adds growth: a two-in-three reader's award seasons went 18 → 25 of 48 at the old
+  // cut; +1 returns them to 18 of 48 (the pre-M12 level), +2 overshot to 11 (career harness).
+  allConferenceFirst: 75,
+  allConferenceSecond: 73,
+  freshman: 73,
+  allAmerican: 77,
   allAmericanWins: 8,
-  positionAward: 78,
+  positionAward: 79,
   positionAwardLiveGames: 10,
-  playerOfYear: 75,
-  titleGameMvp: 78,
+  playerOfYear: 76,
+  titleGameMvp: 79,
 });
 
 export const POSITION_AWARD_IDS = Object.freeze({

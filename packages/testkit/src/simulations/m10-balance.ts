@@ -1,4 +1,5 @@
 import {
+  advanceCalendarVNext,
   chooseBreakthroughVNext,
   chooseEventVNext,
   chooseInjuryVNext,
@@ -155,6 +156,8 @@ export function runM10BalanceCareer(
     const flow = career.flow;
     if (flow.type === 'WEEK_PLAN')
       career = ok(planWeekVNext(career, plan(career, mechanics, strategy), mechanics));
+    else if (flow.type === 'CAMP' || flow.type === 'MIDSEASON')
+      career = ok(advanceCalendarVNext(career, mechanics)!);
     else if (flow.type === 'BREAKTHROUGH' && flow.offer.chosenSkillId === null)
       career = ok(chooseBreakthroughVNext(career, flow.offer.skillIds[0]!));
     else if (flow.type === 'EVENT' && flow.event.chosenChoiceId === null) {

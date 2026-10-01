@@ -64,6 +64,13 @@ export {
 } from './games/tactical-context-v1.js';
 export type { TacticalPositionId, TacticalSnapContextV1 } from './games/tactical-context-v1.js';
 export {
+  INFORMATION_RULES,
+  informationBaseScore,
+  informationTierTells,
+  readingScore,
+  type InformationPositionId,
+} from './games/information.js';
+export {
   SCENE_RULES_V2,
   SCENE_RULES_V2_TUNING,
   SCENE_RULES_VERSION,

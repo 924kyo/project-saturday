@@ -74,6 +74,16 @@ async function createAthlete(user: ReturnType<typeof userEvent.setup>, name: str
   await user.click(screen.getByRole('button', { name: 'Start recruiting' }));
 }
 
+/** M12 preseason camp: the coach's camp plan, the report, then week one. */
+async function passCamp(user: ReturnType<typeof userEvent.setup>): Promise<void> {
+  expect(
+    await screen.findByRole('heading', { name: 'Pick three camp emphases' }),
+  ).toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: 'Coach’s camp plan' }));
+  await user.click(screen.getByRole('button', { name: 'Run camp' }));
+  await user.click(await screen.findByRole('button', { name: /To week one/ }));
+}
+
 describe('App vertical slice', () => {
   it('asks the browser to keep the save once, after the first real save', async () => {
     const user = userEvent.setup();
@@ -86,6 +96,7 @@ describe('App vertical slice', () => {
     const offers = await screen.findAllByRole('listitem');
     await user.click(within(offers[0]!).getByRole('button'));
     await user.click(screen.getByRole('button', { name: /^Commit to / }));
+    await passCamp(user);
     expect(await screen.findByRole('heading', { name: 'Pick three focuses' })).toBeInTheDocument();
     expect(requestPersistence).toHaveBeenCalledTimes(1);
   });
@@ -102,6 +113,7 @@ describe('App vertical slice', () => {
     expect(offers).toHaveLength(4);
     await user.click(within(offers[3]!).getByRole('button'));
     await user.click(screen.getByRole('button', { name: /^Commit to / }));
+    await passCamp(user);
 
     expect(await screen.findByRole('heading', { name: 'Pick three focuses' })).toBeInTheDocument();
     // The week's four destinations: Team, Profile and Build read the same save.
@@ -187,6 +199,7 @@ describe('App vertical slice', () => {
     await createAthlete(user, 'First Slot');
     await user.click(within(await screen.findByRole('list')).getAllByRole('button')[0]!);
     await user.click(screen.getByRole('button', { name: /^Commit to / }));
+    await passCamp(user);
     expect(await screen.findByRole('heading', { name: 'Pick three focuses' })).toBeInTheDocument();
 
     // A second career goes into an empty slot; the first stays saved.

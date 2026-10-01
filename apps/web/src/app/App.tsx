@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   chooseBreakthroughVNext,
+  chooseCampVNext,
   chooseEventVNext,
+  continueCampVNext,
+  decideMidseasonVNext,
   chooseInjuryVNext,
   chooseSnapVNext,
   commitOffseasonVNext,
@@ -39,6 +42,7 @@ import { requestPersistentStorage, type StorageAdapter } from '../storage';
 import './app.css';
 import { program } from './content';
 import { CreateScreen } from './CreateScreen';
+import { CampScreen, MidseasonScreen } from './Development';
 import { GameDayScreen } from './GameDayScreen';
 import {
   clearCareerVNext,
@@ -414,6 +418,20 @@ export function App({
                 onCommit={(id: ProgramId) => run((c, m) => commitProgramVNext(c, id, m))}
                 reducedMotion={reducedMotion}
               />
+            ) : flow === 'CAMP' ? (
+              <CampScreen
+                blocked={blocked}
+                career={career}
+                mechanics={mechanics}
+                onCamp={(ids) => run((c, m) => chooseCampVNext(c, ids, m))}
+                onContinue={() => run((c) => continueCampVNext(c))}
+              />
+            ) : flow === 'MIDSEASON' ? (
+              <MidseasonScreen
+                blocked={blocked}
+                career={career}
+                onDecide={(accept) => run((c) => decideMidseasonVNext(c, accept))}
+              />
             ) : flow === 'WEEK_PLAN' || flow === 'PRACTICE_REPORT' ? (
               <WeekScreen
                 blocked={blocked}
@@ -481,7 +499,10 @@ export function App({
               <OffseasonScreen
                 blocked={blocked}
                 career={career}
-                onCommit={(id) => run((c, m) => commitOffseasonVNext(c, id, m))}
+                mechanics={mechanics}
+                onCommit={(id, programId) =>
+                  run((c, m) => commitOffseasonVNext(c, id, m, programId))
+                }
                 onRetire={() => run((c) => retireVNext(c))}
                 onDeclare={() => run((c) => declareForDraftVNext(c))}
               />

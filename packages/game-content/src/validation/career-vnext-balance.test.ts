@@ -1,5 +1,6 @@
 import { expect, it } from 'vitest';
 import {
+  advanceCalendarVNext,
   chooseBreakthroughVNext,
   chooseEventVNext,
   chooseNilVNext,
@@ -143,6 +144,8 @@ it('keeps Body a budget, trust recoverable, growth visible and Saturdays decisiv
           if (flow.type === 'WEEK_PLAN') {
             stats.weeks += 1;
             career = ok(planWeekVNext(career, plan(career, mechanics, strategy), mechanics));
+          } else if (flow.type === 'CAMP' || flow.type === 'MIDSEASON') {
+            career = ok(advanceCalendarVNext(career, mechanics)!);
           } else if (flow.type === 'BREAKTHROUGH' && flow.offer.chosenSkillId === null)
             career = ok(chooseBreakthroughVNext(career, flow.offer.skillIds[0]!));
           else if (flow.type === 'EVENT' && flow.event.chosenChoiceId === null)

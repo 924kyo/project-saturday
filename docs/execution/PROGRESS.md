@@ -22,7 +22,11 @@ M10 is complete (plan: `docs/exec-plans/completed/m10-release-candidate.md`), an
   - MATCH-01…15 and VER-02…06;
   - tests: m12-match, m12-match-season, m12-copy, m12-role-events and headlines;
   - EN/KO screenshots.
-  - Restart point: Phase 2, the development calendar and explanations (DEV-01…09, CRE-02 potential).
+- 2026-10-01: Phase 2 (development) is done.
+  - DEV-01…06 and 09 are verified complete.
+  - DEV-07, 08 and CRE-02 are in progress: harness validation in Phase 10, academic support in Phase 4, OVR weights in Phase 3.
+  - A Phase 1 locale-key regression was found and fixed (see DECISION_LOG).
+  - Restart point: Phase 3, creation and identity (CRE-01…10).
 
 ## Status
 

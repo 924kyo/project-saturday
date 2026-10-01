@@ -49,8 +49,17 @@ for (const [label, viewport] of Object.entries(viewports)) {
   await page.locator('.s2-offer').first().click();
   await shot('recruit');
   await primary().click();
+  // M12 preseason camp: the coach's camp plan, the report, then week one.
+  await page.locator('#s2-camp').waitFor({ timeout: 10_000 });
+  await page.locator('section:has(#s2-camp) .s2-panel__head .s2-chipbtn').click();
+  await shot('camp');
+  await primary().click();
+  await page.locator('#s2-camp-report').waitFor({ timeout: 10_000 });
+  await shot('camp-report');
+  await primary().click();
   await page.locator('.s2-focusgroups').waitFor({ timeout: 10_000 });
   await page.locator('.s2-panel__head .s2-chipbtn').first().click();
+  await page.locator('#s2-guide').evaluate((element) => element.setAttribute('open', ''));
   await shot('week');
   for (const [index, tab] of ['build', 'team', 'profile'].entries()) {
     await page

@@ -81,21 +81,28 @@ describe('the room competes', () => {
   });
 
   it('lets the room grow over a season, youngest fastest', () => {
-    let current = room;
-    for (let week = 0; week < 12; week += 1)
-      current = rivalWeekVNext(current, career.seed, 0, week, mechanics.room);
-    const grew = (classYear: number) =>
-      current.competitors
-        .filter((entry) => entry.classYear === classYear)
-        .reduce((sum, entry) => {
-          const before = room.competitors.find(({ id }) => id === entry.id)!;
-          return sum + entry.talentFit - before.talentFit;
-        }, 0);
-    expect(
-      current.competitors.some(
-        (entry, index) => entry.talentFit > room.competitors[index]!.talentFit,
-      ),
-    ).toBe(true);
-    expect(grew(1) + grew(2)).toBeGreaterThanOrEqual(grew(3) + grew(4));
+    // Growth is a per-player chance by class year, so the claim is about many rooms, not one:
+    // twelve rooms (four seeds × three programs), one season each.
+    let younger = 0;
+    let older = 0;
+    let anyGrowth = false;
+    for (const seed of ['rivals-probe', 'rivals-a', 'rivals-b', 'rivals-c']) {
+      const fresh = ok(createCareerVNext({ seed, identity }, mechanics));
+      for (const offer of fresh.recruiting.offers.slice(0, 3)) {
+        const start = ok(commitProgramVNext(fresh, offer.programId, mechanics)).program!.room;
+        let current = start;
+        for (let week = 0; week < 12; week += 1)
+          current = rivalWeekVNext(current, seed, 0, week, mechanics.room);
+        for (const entry of current.competitors) {
+          const before = start.competitors.find(({ id }) => id === entry.id)!;
+          const gain = entry.talentFit - before.talentFit;
+          if (gain > 0) anyGrowth = true;
+          if (entry.classYear <= 2) younger += gain;
+          else older += gain;
+        }
+      }
+    }
+    expect(anyGrowth).toBe(true);
+    expect(younger).toBeGreaterThan(older);
   });
 });
