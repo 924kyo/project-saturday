@@ -1,6 +1,7 @@
 import { useState, type CSSProperties } from 'react';
 import type { ProgramIdentityVNext } from '@project-saturday/game-content/content';
 
+import { assetUrl } from './asset-url';
 import { inkOn } from './theme';
 
 /** Four cuts, chosen from the crest so a program always wears the same one. */
@@ -28,7 +29,7 @@ export function UniformPreview({
   const [artReady, setArtReady] = useState(false);
   const style = STYLE_BY_CREST[identity.crest];
   const ink = inkOn(identity.primary);
-  const base = `/art/uniforms/${style}-base.webp`;
+  const base = assetUrl(`art/uniforms/${style}-base.webp`);
   return (
     <figure
       aria-label={label}
@@ -39,7 +40,7 @@ export function UniformPreview({
           '--c1': identity.primary,
           '--c2': identity.secondary,
           '--base': `url('${base}')`,
-          '--trim': `url('/art/uniforms/${style}-trim.webp')`,
+          '--trim': `url('${assetUrl(`art/uniforms/${style}-trim.webp`)}')`,
         } as CSSProperties
       }
     >

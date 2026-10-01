@@ -5,8 +5,11 @@ import { defineConfig } from 'vitest/config';
 import { VitePWA } from 'vite-plugin-pwa';
 
 const applicationName = localeMessages[DEFAULT_LOCALE]['app.title'];
+// GitHub Pages serves a project site under /<repo>/; local builds and the desktop shell use /.
+const base = process.env['PAGES_BASE'] ?? '/';
 
 export default defineConfig({
+  base,
   build: {
     rolldownOptions: {
       output: {
@@ -57,31 +60,31 @@ export default defineConfig({
       includeManifestIcons: false,
       registerType: 'prompt',
       manifest: {
-        id: '/',
+        id: base,
         lang: DEFAULT_LOCALE,
         name: applicationName,
         short_name: applicationName,
-        start_url: '/',
-        scope: '/',
+        start_url: base,
+        scope: base,
         display: 'standalone',
         orientation: 'portrait-primary',
         background_color: '#071522',
         theme_color: '#071522',
         icons: [
           {
-            src: '/pwa-192x192.png',
+            src: 'pwa-192x192.png',
             sizes: '192x192',
             type: 'image/png',
             purpose: 'any',
           },
           {
-            src: '/pwa-512x512.png',
+            src: 'pwa-512x512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any',
           },
           {
-            src: '/maskable-icon-512x512.png',
+            src: 'maskable-icon-512x512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable',
@@ -92,7 +95,7 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         // Self-hosted display fonts must be precached, or the broadcast face is lost offline.
         globPatterns: ['**/*.{css,html,ico,js,png,svg,webp,woff2}'],
-        navigateFallback: '/index.html',
+        navigateFallback: `${base}index.html`,
       },
     }),
   ],

@@ -2,6 +2,8 @@ import './athlete-portrait.css';
 import { useState } from 'react';
 import type { PlayerAppearance } from '@project-saturday/game-core';
 
+import { assetUrl } from '../app/asset-url';
+
 export interface AthletePortraitProps {
   readonly appearance: PlayerAppearance;
   readonly label: string;
@@ -12,7 +14,7 @@ function optionalId(value: string | null): string {
   return value ?? 'none';
 }
 
-const ART = '/art/portrait';
+const ART = assetUrl('art/portrait');
 const tail = (id: string, prefix: string) => id.slice(prefix.length);
 
 /**

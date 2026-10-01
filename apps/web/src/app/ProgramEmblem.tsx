@@ -5,6 +5,7 @@ import {
 } from '@project-saturday/game-content/content';
 
 import { useAppTranslation } from '../i18n/i18n';
+import { assetUrl } from './asset-url';
 import { key } from './content';
 import { inkOn } from './theme';
 
@@ -24,7 +25,7 @@ export function ProgramEmblem({
   const [artReady, setArtReady] = useState(false);
   const culture = programCultureVNext(identity.id);
   if (culture === null) return null;
-  const art = `/art/mascots/${culture.emblem}.webp`;
+  const art = assetUrl(`art/mascots/${culture.emblem}.webp`);
   return (
     <span
       aria-label={t(key(culture.mascotKey))}
