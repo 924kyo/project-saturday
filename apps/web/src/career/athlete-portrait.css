@@ -434,3 +434,14 @@
   -webkit-mask-repeat: no-repeat;
   -webkit-mask-position: center;
 }
+/* The painted bust keeps its 4:5 shape, sits larger on cards, and fades out at the chest. */
+.athlete-portrait--painted {
+  height: auto;
+}
+.athlete-portrait--painted[data-size='profile'] {
+  --portrait-width: 15rem;
+}
+.athlete-portrait--painted .athlete-portrait__bust {
+  -webkit-mask-image: linear-gradient(180deg, #000 80%, transparent);
+  mask-image: linear-gradient(180deg, #000 80%, transparent);
+}

@@ -3233,3 +3233,18 @@ fieldset.s2-stack > legend {
 .s2-scene--plain::before {
   display: none;
 }
+.s2-playercard .athlete-portrait--painted {
+  justify-self: center;
+}
+@media (max-width: 959px) {
+  /* Phones lay the card out in a row: a small bust beside the name, like the drawn figure. */
+  .s2-playercard .athlete-portrait--painted[data-size] {
+    --portrait-width: 4.5rem;
+  }
+}
+@media (max-width: 959px) {
+  /* Keep room for the series plate under the compact card's content. */
+  .s2-playercard.s2-tcard {
+    padding-bottom: 50px;
+  }
+}
