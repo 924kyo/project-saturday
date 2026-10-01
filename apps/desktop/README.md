@@ -1,6 +1,6 @@
 # Project Saturday — Windows desktop build
 
-The Tauri 2 shell embeds the same production React/Vite game as the browser/PWA. There is no native gameplay implementation and no Vite server or network requirement for basic play. Version `1.0.0-rc.2` is the **unsigned 1.0 release candidate** build (M11; rc.1 was the M10 gate).
+The Tauri 2 shell embeds the same production React/Vite game as the browser/PWA. There is no native gameplay implementation and no Vite server or network requirement for basic play. Version `1.0.0-rc.3` is the **unsigned 1.0 release candidate** build (playtest round 1 and the round-2 art; rc.2 was the M11 gate, rc.1 the M10 gate).
 
 ## Commands
 
@@ -18,10 +18,10 @@ Prerequisites: Node/Corepack/pnpm from the root package, Rust MSVC toolchain, Vi
 
 The NSIS installer contains Korean and English, installs per user, and embeds the offline WebView2 installer. The larger installer size is intentional; it avoids a runtime download during offline installation. See [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) and [Windows installer options](https://v2.tauri.app/distribute/windows-installer/).
 
-## Produced artifacts — 2026-09-30 21:41 KST (rc.2 gate)
+## Produced artifacts — 2026-10-01 10:51 KST (rc.3)
 
-- Application: `apps/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/project-saturday.exe` — 8,996,352 bytes, SHA-256 `3E8DBA7FDC13FD3F28DE59E26907B00360F29DDEEA585D96CB1EDBA167626543`.
-- NSIS installer: `apps/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/Project Saturday_1.0.0-rc.2_x64-setup.exe` — 217,618,422 bytes, SHA-256 `ABA848BB06EB385C1E1CC5794627FB5E00BCC1F26A79870A4028B7206AD500C8`.
+- Application: `apps/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/project-saturday.exe` — 12,122,624 bytes, SHA-256 `265BB494C4A27B9EED64E55C09717C61F93C1BFCD530CCBA3843D76054469EA1`.
+- NSIS installer: `apps/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/Project Saturday_1.0.0-rc.3_x64-setup.exe` — 220,757,841 bytes, SHA-256 `8107E1994299316457909A6BDEE817C7CCA429C253A037FC69DAAB70AF0C5C70`.
 
 The application executable is launch-tested. The installer was generated, but its install and uninstall wizard has **not** been exercised, and this README makes no claim about it. Outputs are ignored build artifacts and must be rebuilt on another checkout. No signing, publishing or deployment occurred.
 
@@ -34,7 +34,7 @@ The application executable is launch-tested. The installer was generated, but it
 - a full Saturday;
 - exact save-envelope equality across process exit and an offline relaunch;
 - en-US creation;
-- New Career cancel and confirm, then an en-US CB creation.
+- save slots: an en-US CB career in slot 2, then resuming slot 1 unchanged.
 
 The profile, report and screenshots are kept under `test-results/desktop-snapshot/`. The debug connection exists only in the test process's environment, never in shipping configuration.
 

@@ -2377,7 +2377,7 @@ dependencies = [
 
 [[package]]
 name = "project-saturday"
-version = "1.0.0-rc.2"
+version = "1.0.0-rc.3"
 dependencies = [
  "tauri",
  "tauri-build",
