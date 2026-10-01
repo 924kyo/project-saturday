@@ -78,7 +78,7 @@ Shared prompt suffix: *dramatic rim-lit athlete figure in a plain dark uniform a
 
 # Round 2 (playtest round 1): mascots, uniforms and painted portraits
 
-Everything in this round is already wired, each with a working fallback: a missing file changes nothing. Drop a finished file at its exact path and it shows up on the next load.
+**Status (2026-10-01): all 112 files are delivered** and checked against this spec. Every slot keeps its fallback: a missing file changes nothing. Drop a finished file at its exact path and it shows up on the next load.
 
 Shared rules:
 - WebP with an alpha channel, and the same originality rules as above.

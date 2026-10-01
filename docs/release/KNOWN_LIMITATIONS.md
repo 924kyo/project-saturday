@@ -40,7 +40,7 @@ The first four rows and the snap looks meet the direction. NIL, injuries and awa
 ## Distribution
 
 - **Desktop:** the Windows Tauri build is unsigned. The executable is launch-tested, but the installer wizard has not been exercised (`apps/desktop/README.md`). The icon is temporary.
-- **Art:** the 14 Night Game images (`docs/design/ASSET_LIST.md`: backdrops, scene art, position art) ship in `apps/web/public/art/` and are precached for offline play. Every slot keeps its CSS fallback. The athlete portrait, program crests and the logo are still drawn in code; painted versions are optional polish.
+- **Art:** the 14 Night Game images (`docs/design/ASSET_LIST.md`: backdrops, scene art, position art) ship in `apps/web/public/art/` and are precached for offline play. Every slot keeps its CSS fallback. Round 2 added 24 mascot emblems, 8 uniform layers and 80 painted portrait layers. Program crests and the logo are still drawn in code.
 - Before commercial distribution:
   - a trademark clearance search for the product name and the program names;
   - the Barlow Condensed OFL notice in the about text or store listing (`docs/qa/M10_ORIGINALITY_REVIEW.md`).

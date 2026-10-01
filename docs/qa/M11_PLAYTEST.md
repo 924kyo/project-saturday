@@ -85,7 +85,7 @@ About 20 rows are enough to judge B2, B4 and B5.
 ## General feel (one line each)
 
 - Did any screen feel slow, cluttered or confusing (especially the new post-game and profile)?
-- The drawn portraits and mascot medallions are placeholders until round-2 art arrives. Does anything else still look unfinished?
+- With the round-2 art in, check the painted portraits (creation, nameplate, profile), the mascot medallions and the home jersey on several schools. Does any combination of skin, face and hair look misaligned, or any school color make a jersey or emblem hard to read?
 - Keyboard only: can you play a whole Saturday with Tab, Enter and 1–3?
 - Close the tab mid-game, reopen it, and check it resumes at the same snap in the same slot.
 
@@ -97,4 +97,4 @@ Send the filled tables (or just the ✗ items) and the snap log. The most useful
 - reads that felt unfair, with the situation title and look name;
 - confusing text, with the exact wording.
 
-Round-2 art to make is in `docs/design/ASSET_LIST.md`, under "Round 2": 24 mascot emblems, 8 uniform layers and 80 portrait layers. Each appears as soon as its file is added.
+All round-2 art is in (`docs/design/ASSET_LIST.md`, "Round 2").
