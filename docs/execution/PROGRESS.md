@@ -8,7 +8,17 @@ M10 — 1.0 Release Candidate: **reached** (2026-09-30). Current build: `1.0.0-r
 
 ## Current milestone
 
-None active. M10 is complete (plan: `docs/exec-plans/completed/m10-release-candidate.md`), and the M11 follow-ups are complete.
+**M12 — Career Revision (active, 2026-10-01).**
+- Plan: `docs/exec-plans/active/m12-career-revision.md`.
+- Requirements matrix and definition of done: `docs/execution/M12_REQUIREMENTS.md`.
+- Sources: the user's M12 scope prompt plus `PLAYTEST_REPORT_EN.md`, `UPDATED_BUILD_REGRESSION_EN.md` and `INITIAL_DESIGN_EN.md` (in the user's Downloads, summarized in the matrix).
+
+M10 is complete (plan: `docs/exec-plans/completed/m10-release-candidate.md`), and the M11 follow-ups are complete.
+
+### M12 progress log
+
+- 2026-10-01: audit done; matrix and plan written.
+  - Restart point: Phase 1, match feedback (MATCH-01…15).
 
 ## Status
 
