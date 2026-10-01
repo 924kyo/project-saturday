@@ -151,7 +151,7 @@ function mappedDraw(rng: RngState, maximumExclusive: number) {
  * Rotation-contest scenes assume the athlete is still fighting for reps (playtest round 2: a CB1
  * was asked to compete for a rotation spot). A starter never draws them.
  */
-const ROTATION_CONTEST_EVENT_IDS: ReadonlySet<string> = new Set([
+export const ROTATION_CONTEST_EVENT_IDS: ReadonlySet<string> = new Set([
   'event_cb_secondary_rotation',
   'event_rb_room_rotation',
   'event_lb_room_rotation',

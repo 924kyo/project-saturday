@@ -2,8 +2,10 @@ import {
   prepareTacticalAlphaSnapV1,
   resolveTacticalAlphaBackgroundV1,
   resolveTacticalFieldV1,
-  SCENE_RULES_VERSION,
+  SCENE_RULES_V2_TUNING,
+  sceneRulesAt,
   TACTICAL_GAME_RULES_VERSION,
+  type SceneRulesVersion,
   type TacticalSnapResultV1,
 } from './tactical-alpha-v1.js';
 import { matchesTacticalSnapContextV1, type TacticalSnapContextV1 } from './tactical-context-v1.js';
@@ -131,7 +133,7 @@ export interface CbGameStartInput {
    * air is thrown at the player, a catch already made is a catch, and a strip after the catch
    * is a forced fumble rather than an interception. Absent, the literal historical rules apply.
    */
-  readonly sceneRules?: typeof SCENE_RULES_VERSION;
+  readonly sceneRules?: SceneRulesVersion;
   readonly gameId: `game_cb_${string}`;
   readonly weekIndex: number;
   readonly playerProgramId: ProgramId;
@@ -776,7 +778,8 @@ export function resolveCbSnap(a: ActiveCbGame, decisionId: unknown): CbGameResul
     950,
   );
   // Scene rules: the scene already says where the ball is.
-  const scene = a.input.sceneRules === SCENE_RULES_VERSION;
+  const scene = sceneRulesAt(a.input.sceneRules, 1);
+  const executionRules = sceneRulesAt(a.input.sceneRules, 2);
   const airborne = scene && p.familyId === 'key_snap_family_cb_ball';
   const afterCatch = scene && p.familyId === 'key_snap_family_cb_tackle';
   const targeted = airborne || afterCatch || target.value < targetChancePermille;
@@ -811,8 +814,17 @@ export function resolveCbSnap(a: ActiveCbGame, decisionId: unknown): CbGameResul
     700,
   );
   const completed = afterCatch || (targeted && completion.value < completionRiskPermille);
-  // After the catch, a ball-hunting call is a strip: it forces a fumble or misses the tackle.
-  const stripped = afterCatch && d.mode === 'BALL' && takeaway.value < takeawayChancePermille;
+  // After the catch, a ball-hunting call is a strip. v1: it forces a fumble or misses the tackle.
+  // v2 (M12): the strip scales with the decision score (a right read helps) and a missed strip can
+  // still wrap up, at the call's lower tackle chance.
+  const stripChancePermille = executionRules
+    ? clamp(
+        takeawayChancePermille + (finalScore - 50) * SCENE_RULES_V2_TUNING.stripPerScorePoint,
+        0,
+        SCENE_RULES_V2_TUNING.stripMaximum,
+      )
+    : takeawayChancePermille;
+  const stripped = afterCatch && d.mode === 'BALL' && takeaway.value < stripChancePermille;
   const intercepted =
     !afterCatch &&
     targeted &&
@@ -824,7 +836,9 @@ export function resolveCbSnap(a: ActiveCbGame, decisionId: unknown): CbGameResul
   const tackleAttempt = completed && (d.mode === 'TACKLE' || afterCatch);
   const tackleMade =
     stripped ||
-    (tackleAttempt && d.mode === 'TACKLE' && execution.value < disruptionChancePermille);
+    (tackleAttempt &&
+      (d.mode === 'TACKLE' || (executionRules && afterCatch && d.mode === 'BALL')) &&
+      execution.value < disruptionChancePermille);
   let yardsAllowed = completed
     ? Math.max(0, p.baseYardsAllowed + yards.value - (tackleMade ? 3 : 0))
     : 0;
@@ -890,7 +904,8 @@ export function resolveCbSnap(a: ActiveCbGame, decisionId: unknown): CbGameResul
       targetChancePermille,
       disruptionChancePermille,
       completionRiskPermille,
-      takeawayChancePermille,
+      takeawayChancePermille:
+        afterCatch && d.mode === 'BALL' ? stripChancePermille : takeawayChancePermille,
       touchdownRiskPermille: p.touchdownRiskPermille,
       releaseRoll: release.value,
       executionRoll: execution.value,

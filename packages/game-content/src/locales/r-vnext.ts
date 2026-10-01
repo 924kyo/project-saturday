@@ -181,7 +181,7 @@ export const koKRVNextMessages = {
   'v2.read.solid': '무난한 판단',
   'v2.read.missed': '판단 미스',
   'v2.read.sharpHelp': '상대가 보여 준 그림을 정확히 읽었습니다.',
-  'v2.read.solidHelp': '나쁘지 않았지만 더 좋은 선택이 있었습니다.',
+  'v2.read.solidHelp': '부분적으로 유효한 선택: 무난으로 평가되지만 더 좋은 선택이 있었습니다.',
   'v2.read.missedHelp': '단서와 반대로 움직였습니다.',
   'v2.sideline.sharp': '코치가 고개를 끄덕였다',
   'v2.sideline.solid': '괜찮은 판단',
@@ -455,7 +455,8 @@ export const enUSVNextMessages = {
   'v2.read.solid': 'Solid read',
   'v2.read.missed': 'Missed read',
   'v2.read.sharpHelp': 'You read exactly what the look was telling you.',
-  'v2.read.solidHelp': 'Not bad, but there was a better option.',
+  'v2.read.solidHelp':
+    'Partially effective: a workable call that grades Solid, with a better option available.',
   'v2.read.missedHelp': 'You went against what the clues were telling you.',
   'v2.sideline.sharp': 'The coach nods',
   'v2.sideline.solid': 'Decent read',

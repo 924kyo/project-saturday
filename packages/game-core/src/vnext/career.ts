@@ -1,6 +1,7 @@
 import { rivalWeekVNext } from './rivals.js';
+import { withVariedClockVNext } from './clock.js';
 import { liveReadScoreVNext } from './frames.js';
-import { resolveWithLookVNext, snapLookVNext } from './looks.js';
+import { liveSnapLookVNext, resolveWithLookVNext } from './looks.js';
 import { deriveCareerId } from '../player/creation.js';
 import type { ProgramId } from '../player/ids.js';
 import {
@@ -684,14 +685,15 @@ export function kickoffVNext(
   const game = career.flow.game;
   const fixture = scheduledFixtureVNext(career, mechanics);
   if (fixture === null || fixture.id !== game.fixtureId) return fail('career_vnext.engine_failed');
-  const engine = startVNextGame(
+  const started = startVNextGame(
     career,
     fixture,
     game.weekIndex,
     mechanics,
     game.academicHold === true,
   );
-  if (engine === null) return fail('career_vnext.engine_failed');
+  if (started === null) return fail('career_vnext.engine_failed');
+  const engine = withVariedClockVNext(started, career.seed, career.season.index, game.weekIndex);
   const liveCount = engine.game.type === 'ACTIVE' ? engine.game.input.opportunityCount : 0;
   const repCount = Math.max(0, CAREER_VNEXT_MIN_GAME_DECISIONS - liveCount);
   const sideline = createSidelineReps(career, game.weekIndex, repCount, mechanics);
@@ -699,6 +701,11 @@ export function kickoffVNext(
     ...sideline.map(({ repIndex }) => ({ kind: 'SIDELINE' as const, repIndex })),
     ...Array.from({ length: liveCount }, (_, snapIndex) => ({ kind: 'LIVE' as const, snapIndex })),
   ];
+  // M12 look variety: this game saves its looks and avoids the last two games' looks.
+  const avoidLookIds = career.log
+    .filter((recap) => (recap.seasonIndex ?? 0) === career.season.index)
+    .slice(-2)
+    .flatMap(({ lookIds = [] }) => lookIds.filter((id): id is string => id !== null));
   return publish(career, {
     ...career,
     rng: { career: engine.game.rng },
@@ -711,6 +718,8 @@ export function kickoffVNext(
         sideline,
         slots,
         cursor: 0,
+        lookIds: [],
+        avoidLookIds: [...new Set(avoidLookIds)],
       },
     },
   });
@@ -743,25 +752,28 @@ export function chooseSnapVNext(
   if (pending === null || !(pending.decisionIds as readonly string[]).includes(decisionId))
     return fail('career_vnext.invalid_choice');
   // The hidden look decides which read wins this snap (M11); the kernel stays literal.
-  const look = snapLookVNext(
-    career,
-    game.weekIndex,
-    { kind: 'LIVE', snapIndex: slot.snapIndex },
-    pending.familyId,
-    mechanics,
-  );
-  const engine = resolveWithLookVNext(
+  const look = liveSnapLookVNext(career, game, slot.snapIndex, pending.familyId, mechanics);
+  const resolved = resolveWithLookVNext(
     game.engine,
     pending.patternId,
     look,
     (state) => resolveVNextSnap(state, decisionId),
     decisionId,
   );
-  if (engine === null) return fail('career_vnext.engine_failed');
+  if (resolved === null) return fail('career_vnext.engine_failed');
+  const engine = withVariedClockVNext(resolved, career.seed, career.season.index, game.weekIndex);
   return publish(career, {
     ...career,
     rng: { career: engine.game.rng },
-    flow: { type: 'GAME', game: { ...game, engine, stage: 'RESULT' } },
+    flow: {
+      type: 'GAME',
+      game: {
+        ...game,
+        engine,
+        stage: 'RESULT',
+        ...(game.lookIds === undefined ? {} : { lookIds: [...game.lookIds, look?.id ?? null] }),
+      },
+    },
   });
 }
 
@@ -849,6 +861,7 @@ function settleGame(
     opponentScore,
     resultId,
     ...(overtime === null ? {} : { overtime: true }),
+    ...(game.lookIds === undefined ? {} : { lookIds: game.lookIds }),
     liveSnapCount: summary.opportunityCount,
     sideline: game.sideline,
     engine: completed,

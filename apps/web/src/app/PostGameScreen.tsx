@@ -1,6 +1,9 @@
 import type { CSSProperties } from 'react';
 import {
+  explainGamePlaysVNext,
+  gameScoreSplitVNext,
   projectCompletedPlayFrames,
+  selectGameHighlightsVNext,
   type CareerVNext,
   type CareerVNextMechanics,
   type VNextPositionId,
@@ -13,7 +16,6 @@ import {
   ROUND_KEYS,
   STAT_KEYS,
   READ_KEYS,
-  playVerdict,
   VERDICT_KEYS,
   athleteName,
   currentOverall,
@@ -24,6 +26,7 @@ import {
   program,
   athleteShortName,
 } from './content';
+import { explanationLines } from './explanation';
 import { GrowthList } from './Growth';
 import { mergeGrowth } from './growth-model';
 import { Nameplate } from './Nameplate';
@@ -63,15 +66,23 @@ export function PostGameScreen({
     career,
     weekIndex: recap.weekIndex,
     mechanics,
+    ...(recap.lookIds === undefined ? {} : { lookIds: recap.lookIds }),
   }).map((play, index) => ({ ...play, index }));
-  const plays = [...allPlays]
-    .sort(
-      (a, b) =>
-        Number(b.result.outcome === 'TOUCHDOWN' || b.result.outcome === 'TURNOVER') -
-          Number(a.result.outcome === 'TOUCHDOWN' || a.result.outcome === 'TURNOVER') ||
-        Math.abs(b.result.yards) - Math.abs(a.result.yards),
-    )
-    .slice(0, 3);
+  // M12: the story picks plays by leverage (down, quarter, margin, outcome), not raw yards, and a
+  // play that went the athlete's way is always eligible (regression report P9).
+  const explanations = explainGamePlaysVNext(
+    career,
+    recap.engine,
+    recap.weekIndex,
+    mechanics,
+    recap.lookIds,
+  );
+  const highlights = selectGameHighlightsVNext(explanations);
+  const plays = highlights.defining.map((index) => allPlays[index]!).filter(Boolean);
+  const split = gameScoreSplitVNext(recap.engine, {
+    playerTeam: recap.playerScore,
+    opponent: recap.opponentScore,
+  });
   const verdict = practiceBand(recap.coachGrade ?? summary.gradeScore);
   const grown = mergeGrowth(growth.attributeXp);
   const sharp = recap.sideline.filter(({ grade }) => grade === 'SHARP').length;
@@ -124,11 +135,22 @@ export function PostGameScreen({
     lede.push(t('v2.news.reads', { sharp: liveSharp, total: allPlays.length }));
   else if (recap.sideline.length > 0)
     lede.push(t('v2.news.sideline', { sharp, total: recap.sideline.length }));
-  // "Play of the game" is a good play for the athlete; otherwise the decisive one is the turning point.
-  const highlight = plays.find(({ result }) => playVerdict(positionId, result.outcome) === 'good');
-  if (highlight !== undefined) lede.push(t('v2.news.best', { play: headline(highlight) }));
-  else if (plays[0] !== undefined)
-    lede.push(t('v2.news.turningPoint', { play: headline(plays[0]) }));
+  // "Play of the game" is the athlete's best positive snap; without one, the snap that mattered most.
+  if (highlights.playOfGame !== null)
+    lede.push(t('v2.news.best', { play: headline(allPlays[highlights.playOfGame]!) }));
+  else if (highlights.turningPoint !== null)
+    lede.push(t('v2.news.turningPointWhy', { play: headline(allPlays[highlights.turningPoint]!) }));
+  if (allPlays.length > 0)
+    lede.push(
+      t('v2.post.contribution', {
+        us: us.monogram,
+        them: them.monogram,
+        a: split.onSnaps.playerTeam,
+        b: split.onSnaps.opponent,
+        c: split.elsewhere.playerTeam,
+        d: split.elsewhere.opponent,
+      }),
+    );
   if (recap.liveSnapCount > 0) lede.push(t('v2.news.grade', { band: verdict }));
 
   return (
@@ -282,7 +304,8 @@ export function PostGameScreen({
                     {t('v2.post.gradeWhy', {
                       reads: recap.gradeParts.reads,
                       box: recap.gradeParts.box,
-                    })}
+                    })}{' '}
+                    {t('v2.post.gradeScale')}
                   </span>
                 )}
               </p>
@@ -359,6 +382,20 @@ export function PostGameScreen({
                           </span>
                         )}
                       <span className="s2-note">{headline(play)}</span>
+                      {explanations[play.index] !== undefined && (
+                        <span className="s2-note">
+                          {(() => {
+                            const lines = explanationLines(
+                              t,
+                              positionId,
+                              explanations[play.index]!,
+                              decisionName,
+                              playReview,
+                            );
+                            return `${lines.execution} ${lines.situation}`;
+                          })()}
+                        </span>
+                      )}
                     </span>
                     <span
                       className={`s2-effect ${play.result.readQuality === 'MISSED' ? 's2-effect--down' : 's2-effect--up'}`}

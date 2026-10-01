@@ -18,7 +18,11 @@ M10 is complete (plan: `docs/exec-plans/completed/m10-release-candidate.md`), an
 ### M12 progress log
 
 - 2026-10-01: audit done; matrix and plan written.
-  - Restart point: Phase 1, match feedback (MATCH-01…15).
+- 2026-10-01: Phase 1 (match feedback) is verified complete:
+  - MATCH-01…15 and VER-02…06;
+  - tests: m12-match, m12-match-season, m12-copy, m12-role-events and headlines;
+  - EN/KO screenshots.
+  - Restart point: Phase 2, the development calendar and explanations (DEV-01…09, CRE-02 potential).
 
 ## Status
 

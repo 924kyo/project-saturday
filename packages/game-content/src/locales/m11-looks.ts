@@ -83,8 +83,8 @@ const rows = {
     '수비 둘이 양쪽에서 당신에게 달려든다.',
   ],
   'v2.look.qbClosing.tell2': [
-    'The marker is still three yards away.',
-    '목표 지점이 아직 3야드 남았다.',
+    'Mid-run, the marker is still three yards ahead.',
+    '달리는 도중인데, 목표 지점이 아직 3야드 앞이다.',
   ],
   'v2.look.qbClosing.tell3': [
     'A safety is already coming downhill.',
@@ -173,7 +173,7 @@ const rows = {
     'The quarterback drops back. Find your rusher.',
     '쿼터백이 드롭한다. 막을 러셔를 찾는다.',
   ],
-  'v2.look.rbDropEight.name': ['Drop eight', '드롭 에잇'],
+  'v2.look.rbDropEight.name': ['Drop seven', '드롭 세븐'],
   'v2.look.rbDropEight.tell1': [
     'The linebackers bail at the snap.',
     '라인배커들이 스냅과 함께 물러난다.',
@@ -259,8 +259,8 @@ const rows = {
   ],
   'v2.look.rbOverflow.tell3': ['The edge crashes down.', '에지가 안으로 무너진다.'],
   'v2.lookFamily.wrRelease.prompt': [
-    'The corner is waiting at the line. Win your release.',
-    '코너가 라인에서 기다린다. 릴리스를 이긴다.',
+    'Read where the corner lines up, then win your release off the line.',
+    '코너가 어디에 서는지 읽고, 출발에서 이긴다.',
   ],
   'v2.look.wrBoundaryJam.tell1': [
     'The corner presses on your outside shoulder.',

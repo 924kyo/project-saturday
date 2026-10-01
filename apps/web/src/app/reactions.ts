@@ -1,8 +1,9 @@
-import type {
-  GameRecapVNext,
-  LegacyAlumnusVNext,
-  ProgramId,
-  VNextPositionId,
+import {
+  isUpsetWinVNext,
+  type GameRecapVNext,
+  type LegacyAlumnusVNext,
+  type ProgramId,
+  type VNextPositionId,
 } from '@project-saturday/game-core';
 import type { MessageKey } from '@project-saturday/game-content/locales';
 
@@ -61,14 +62,16 @@ export function selectReactions(
   const big = defense ? 0 : bestPlayYards(recap);
   const sharpReps = recap.sideline.filter(({ grade }) => grade === 'SHARP').length;
   const candidates: (ReactionView | false)[] = [
-    won &&
-      stakes?.opponentRank != null &&
-      (stakes.playerRank === null || stakes.playerRank > stakes.opponentRank) && {
-        id: 'upset',
-        speaker: 'media',
-        key: 'v2.react.upset',
-        params: { rank: stakes.opponentRank },
-      },
+    // An upset is a win the pregame line did not expect (M12: the same band shown before kickoff).
+    isUpsetWinVNext(won, stakes) &&
+      (stakes?.opponentRank != null
+        ? {
+            id: 'upset',
+            speaker: 'media',
+            key: 'v2.react.upset',
+            params: { rank: stakes.opponentRank },
+          }
+        : { id: 'upset', speaker: 'media', key: 'v2.react.upsetUnranked', params: {} }),
     won &&
       stakes?.rivalry === true && {
         id: 'rivalWin',

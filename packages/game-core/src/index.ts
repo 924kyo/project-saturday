@@ -64,6 +64,13 @@ export {
 } from './games/tactical-context-v1.js';
 export type { TacticalPositionId, TacticalSnapContextV1 } from './games/tactical-context-v1.js';
 export {
+  SCENE_RULES_V2,
+  SCENE_RULES_V2_TUNING,
+  SCENE_RULES_VERSION,
+  sceneRulesAt,
+  type SceneRulesVersion,
+} from './games/tactical-alpha-v1.js';
+export {
   EVENT_COMMAND_FAILURE_REASONS,
   EVENT_INTEGER_STATE_IDS,
   EVENT_PREDICATE_OPERATOR_IDS,

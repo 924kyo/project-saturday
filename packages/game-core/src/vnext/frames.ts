@@ -3,12 +3,13 @@ import type { TacticalSnapContextV1 } from '../games/tactical-context-v1.js';
 import type { TacticalSnapResultV1 } from '../games/tactical-alpha-v1.js';
 import {
   bestDecisionOfLook,
+  liveSnapLookVNext,
   snapLookVNext,
   type SnapLookDefinitionVNext,
   type SnapLookMove,
-  type SnapLookSlotVNext,
   type SnapLookStance,
 } from './looks.js';
+import { explainLivePlayVNext, type SnapExplanationVNext } from './explain.js';
 import type {
   CareerVNext,
   CareerVNextMechanics,
@@ -328,7 +329,7 @@ export function projectSnapBoardFrame(
       revealedClueIds: readonly string[];
     };
     if (pending.tacticalContext === undefined) return null;
-    const look = snapLookVNext(career, game.weekIndex, slot, pending.familyId, mechanics);
+    const look = liveSnapLookVNext(career, game, slot.snapIndex, pending.familyId, mechanics);
     return deepFreeze({
       kind: 'LIVE',
       positionId,
@@ -349,7 +350,7 @@ export function projectSnapBoardFrame(
     (AnyPlay & { patternId: string; familyId: string }) | undefined;
   if (play?.tacticalResult === undefined) return null;
   const before = play.tacticalResult.before;
-  const look = snapLookVNext(career, game.weekIndex, slot, play.familyId, mechanics);
+  const look = liveSnapLookVNext(career, game, slot.snapIndex, play.familyId, mechanics);
   return deepFreeze({
     kind: 'LIVE',
     positionId,
@@ -375,6 +376,8 @@ export function projectCompletedPlayFrames(
     readonly career: Pick<CareerVNext, 'seed' | 'season' | 'athlete'>;
     readonly weekIndex: number;
     readonly mechanics: Pick<CareerVNextMechanics, 'looks'>;
+    /** The game's saved looks (M12 recaps); absent = derived as before. */
+    readonly lookIds?: readonly (string | null)[];
   },
 ): readonly {
   readonly situation: SnapSituationFrame;
@@ -389,14 +392,16 @@ export function projectCompletedPlayFrames(
       const result = livePlayFrame(positionId, play);
       const tactical = play.tacticalResult;
       if (result === null || tactical === undefined) return [];
-      const slot: SnapLookSlotVNext = { kind: 'LIVE', snapIndex };
       const look =
         looks === undefined
           ? null
-          : snapLookVNext(
+          : liveSnapLookVNext(
               looks.career,
-              looks.weekIndex,
-              slot,
+              {
+                weekIndex: looks.weekIndex,
+                ...(looks.lookIds === undefined ? {} : { lookIds: looks.lookIds }),
+              },
+              snapIndex,
               String(play['familyId']),
               looks.mechanics,
             );
@@ -411,4 +416,112 @@ export function projectCompletedPlayFrames(
       ];
     }),
   );
+}
+
+function gameAttributes(
+  engine: VNextGameState,
+  fallback: Readonly<Record<string, { readonly rating: number } | undefined>>,
+): Readonly<Record<string, { readonly rating: number } | undefined>> {
+  const input = (engine.game as unknown as { input?: { player?: { attributes?: unknown } } }).input;
+  const attributes = input?.player?.attributes;
+  return typeof attributes === 'object' && attributes !== null
+    ? (attributes as Readonly<Record<string, { readonly rating: number } | undefined>>)
+    : fallback;
+}
+
+/**
+ * M12: the three-part explanation (read · execution · situation) for every live play of a game, in
+ * play order. Pure: it reads the saved plays and the derived looks only.
+ */
+export function explainGamePlaysVNext(
+  career: Pick<CareerVNext, 'seed' | 'season' | 'athlete'>,
+  engine: VNextGameState,
+  weekIndex: number,
+  mechanics: CareerVNextMechanics,
+  /** The game's saved looks (M12); absent = derived as before. */
+  lookIds?: readonly (string | null)[],
+): readonly SnapExplanationVNext[] {
+  const positionId = career.athlete.profile.positionId as VNextPositionId;
+  const attributes = gameAttributes(
+    engine,
+    career.athlete.profile.attributes as unknown as Readonly<
+      Record<string, { readonly rating: number } | undefined>
+    >,
+  );
+  return deepFreeze(
+    plays(engine).flatMap((play, snapIndex) => {
+      const frame = livePlayFrame(positionId, play);
+      const tactical = play.tacticalResult;
+      if (frame === null || tactical === undefined) return [];
+      const look = liveSnapLookVNext(
+        career,
+        { weekIndex, ...(lookIds === undefined ? {} : { lookIds }) },
+        snapIndex,
+        String(play['familyId']),
+        mechanics,
+      );
+      return [
+        explainLivePlayVNext({
+          positionId,
+          play,
+          frame,
+          before: situation(tactical.before),
+          seenTells: tactical.before.revealedClueIds.length,
+          look,
+          attributes,
+          mechanics,
+        }),
+      ];
+    }),
+  );
+}
+
+/** The explanation of the snap on screen in RESULT (null before the call or on the sideline). */
+export function explainCurrentSnapVNext(
+  career: CareerVNext,
+  mechanics: CareerVNextMechanics,
+): SnapExplanationVNext | null {
+  if (career.flow.type !== 'GAME' || career.flow.game.stage !== 'RESULT') return null;
+  const game = career.flow.game;
+  const slot = game.slots[game.cursor];
+  if (slot === undefined || slot.kind !== 'LIVE' || game.engine === null) return null;
+  return (
+    explainGamePlaysVNext(career, game.engine, game.weekIndex, mechanics, game.lookIds)[
+      slot.snapIndex
+    ] ?? null
+  );
+}
+
+/**
+ * M12 (playtest report: a good personal game in a team loss): points scored on the athlete's own
+ * snaps versus the rest of the game, from each play's saved score before and after.
+ */
+export function gameScoreSplitVNext(
+  engine: VNextGameState,
+  final: { readonly playerTeam: number; readonly opponent: number },
+): {
+  readonly onSnaps: { readonly playerTeam: number; readonly opponent: number };
+  readonly elsewhere: { readonly playerTeam: number; readonly opponent: number };
+} {
+  const onSnaps = plays(engine).reduce(
+    (sum, play) => {
+      const tactical = play.tacticalResult;
+      if (tactical === undefined) return sum;
+      return {
+        playerTeam:
+          sum.playerTeam +
+          Math.max(0, tactical.scoreAfter.playerTeam - tactical.before.score.playerTeam),
+        opponent:
+          sum.opponent + Math.max(0, tactical.scoreAfter.opponent - tactical.before.score.opponent),
+      };
+    },
+    { playerTeam: 0, opponent: 0 },
+  );
+  return deepFreeze({
+    onSnaps,
+    elsewhere: {
+      playerTeam: Math.max(0, final.playerTeam - onSnaps.playerTeam),
+      opponent: Math.max(0, final.opponent - onSnaps.opponent),
+    },
+  });
 }

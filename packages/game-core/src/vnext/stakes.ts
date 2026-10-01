@@ -8,6 +8,11 @@ export interface GameStakesVNext {
   readonly opponentProgramId: ProgramId;
   readonly isHome: boolean;
   readonly outlook: 'ADVANTAGE' | 'BALANCED' | 'CHALLENGE';
+  /**
+   * M12: the five-band pregame line (absent on recaps saved before M12). The three-band outlook put
+   * 85% of games at "toss-up"; the bands follow the observed matchup-score spread.
+   */
+  readonly band?: OutlookBandVNext;
   readonly rivalry: boolean;
   readonly playerRank: number | null;
   readonly opponentRank: number | null;
@@ -20,6 +25,44 @@ export interface GameStakesVNext {
 }
 
 export const RANKED_CUTOFF = 25;
+
+export type OutlookBandVNext =
+  'HEAVY_FAVORITE' | 'FAVORITE' | 'TOSS_UP' | 'UNDERDOG' | 'HEAVY_UNDERDOG';
+
+/** Matchup-score cut-offs (p10 46, p25 49, p50 52, p75 55, p90 59 across 864 shipped matchups). */
+export const VNEXT_OUTLOOK_BANDS = Object.freeze({
+  heavyFavorite: 59,
+  favorite: 55,
+  tossUpLow: 50,
+  underdog: 46,
+});
+
+export function outlookBandVNext(matchupScore: number): OutlookBandVNext {
+  const bands = VNEXT_OUTLOOK_BANDS;
+  return matchupScore >= bands.heavyFavorite
+    ? 'HEAVY_FAVORITE'
+    : matchupScore >= bands.favorite
+      ? 'FAVORITE'
+      : matchupScore >= bands.tossUpLow
+        ? 'TOSS_UP'
+        : matchupScore >= bands.underdog
+          ? 'UNDERDOG'
+          : 'HEAVY_UNDERDOG';
+}
+
+/** A win the pregame line did not expect (pre-M12 recaps: a win over a better-ranked team). */
+export function isUpsetWinVNext(
+  won: boolean,
+  stakes: Pick<GameStakesVNext, 'band' | 'playerRank' | 'opponentRank'> | null,
+): boolean {
+  if (!won || stakes === null) return false;
+  if (stakes.band !== undefined)
+    return stakes.band === 'UNDERDOG' || stakes.band === 'HEAVY_UNDERDOG';
+  return (
+    stakes.opponentRank !== null &&
+    (stakes.playerRank === null || stakes.playerRank > stakes.opponentRank)
+  );
+}
 
 export function projectGameStakesVNext(
   career: CareerVNext,
@@ -51,6 +94,7 @@ export function projectGameStakesVNext(
     opponentProgramId,
     isHome,
     outlook: matchup.outlook,
+    band: outlookBandVNext(matchup.matchupScore),
     rivalry: profile?.rivalProgramId === opponentProgramId,
     playerRank: rank(programId),
     opponentRank: rank(opponentProgramId),

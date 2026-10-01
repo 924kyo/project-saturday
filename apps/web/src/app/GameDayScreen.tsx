@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import {
+  explainCurrentSnapVNext,
   projectGameStakesVNext,
   projectSnapBoardFrame,
   type CareerVNextMechanics,
@@ -16,7 +17,6 @@ import {
   DOWN_KEYS,
   POSITION_ABBR_KEYS,
   READ_KEYS,
-  playVerdict,
   ROLE_KEYS,
   gameText,
   key,
@@ -25,6 +25,7 @@ import {
   ROUND_KEYS,
   athleteShortName,
 } from './content';
+import { explanationLines } from './explanation';
 import { TacticalBoard } from './TacticalBoard';
 import { usePreferences } from './preferences';
 import { Crest, Meter } from './ui';
@@ -39,6 +40,22 @@ const OUTLOOK_KEYS = {
   BALANCED: 'v2.stakes.balanced',
   CHALLENGE: 'v2.stakes.challenge',
 } as const satisfies Record<GameStakesVNext['outlook'], MessageKey>;
+
+/** Five-band pregame line (M12); the chip color keeps the three-way outlook classes. */
+function outlookChip(stakes: GameStakesVNext): {
+  readonly label: MessageKey;
+  readonly tone: string;
+} {
+  if (stakes.band === undefined)
+    return { label: OUTLOOK_KEYS[stakes.outlook], tone: stakes.outlook.toLowerCase() };
+  const tone =
+    stakes.band === 'HEAVY_FAVORITE' || stakes.band === 'FAVORITE'
+      ? 'advantage'
+      : stakes.band === 'TOSS_UP'
+        ? 'balanced'
+        : 'challenge';
+  return { label: `v2.stakes.band.${stakes.band}`, tone };
+}
 
 function downText(t: AppTranslate, frame: Extract<SnapBoardFrame, { kind: 'LIVE' }>): string {
   const s = frame.situation;
@@ -94,6 +111,10 @@ export function GameDayScreen({
     };
   }, [career, mechanics]);
   const frame = useMemo(() => projectSnapBoardFrame(career, mechanics), [career, mechanics]);
+  const explanation = useMemo(
+    () => explainCurrentSnapVNext(career, mechanics),
+    [career, mechanics],
+  );
   const choosing =
     career.flow.type === 'GAME' && career.flow.game.stage === 'SNAP' && frame !== null && !blocked;
   // Play-call shortcuts: 1–3 pick the matching card (never while typing).
@@ -174,8 +195,11 @@ export function GameDayScreen({
           </h1>
           {stakes !== null && (
             <div className="s2-stakes" aria-label={t('v2.stakes.title')}>
-              <span className={`s2-stakes__chip s2-stakes__chip--${stakes.outlook.toLowerCase()}`}>
-                {t(OUTLOOK_KEYS[stakes.outlook])}
+              <span
+                className={`s2-stakes__chip s2-stakes__chip--${outlookChip(stakes).tone}`}
+                title={t('v2.stakes.bandHelp')}
+              >
+                {t(outlookChip(stakes).label)}
               </span>
               {stakes.rivalry && (
                 <span className="s2-stakes__chip s2-stakes__chip--rivalry">
@@ -234,6 +258,7 @@ export function GameDayScreen({
                 )}
               </ul>
             )}
+            {(plan?.live ?? 0) > 0 && <p className="s2-note">{t('v2.gd.keyMoments')}</p>}
           </div>
           <div className="s2-panel">
             <div className="s2-meters">
@@ -346,49 +371,11 @@ export function GameDayScreen({
   const decisionName = (decisionId: string) =>
     t(gameText.decision(positionId, decisionId).nameKey as MessageKey);
   const chosenId = result?.decisionId ?? sideline?.result?.decisionId ?? null;
-  // Feedback is calibrated to what the athlete could actually see (playtest round 2).
-  const reveal = look?.reveal ?? null;
-  const hiddenTell =
-    reveal !== null && seen < reveal.allTellKeys.length ? reveal.allTellKeys[seen]! : null;
-  const readHelp = (quality: 'SHARP' | 'SOLID' | 'MISSED', decisionId: string): string => {
-    if (quality === 'MISSED' && hiddenTell !== null)
-      return playReview
-        ? t('v2.read.missedLimitedTell', { tell: t(key(hiddenTell)) })
-        : t('v2.read.missedLimited');
-    if (
-      quality === 'SHARP' &&
-      playReview &&
-      reveal !== null &&
-      reveal.bestDecisionId !== decisionId
-    )
-      return t('v2.read.sharpAlternative', { best: decisionName(reveal.bestDecisionId) });
-    return t(READ_KEYS[quality].help);
-  };
-  const defense = ['position_cb', 'position_lb', 'position_edge'].includes(positionId);
-  const resultWhy = (): string | null => {
-    if (result === null || live === null) return null;
-    const verdict = playVerdict(positionId, result.outcome);
-    // A defender who gives up yards short of the line to gain still won the down.
-    if (
-      defense &&
-      result.outcome !== 'TOUCHDOWN' &&
-      result.outcome !== 'TURNOVER' &&
-      result.yards > 0 &&
-      result.yards < live.situation.distanceYards
-    )
-      return t('v2.read.shortOfFirstDown', {
-        yards: result.yards,
-        distance: live.situation.distanceYards,
-      });
-    if (result.readQuality === 'SHARP' && verdict === 'bad')
-      return result.playResultId === 'THROW_AWAY'
-        ? t('v2.read.throwawayWhy')
-        : t('v2.read.rightReadBadPlay');
-    if (result.readQuality === 'MISSED' && verdict === 'good')
-      return t('v2.read.wrongReadGoodPlay');
-    return null;
-  };
-  const why = resultWhy();
+  // M12: read, execution and the down are explained separately, from the saved play evidence.
+  const lines =
+    explanation === null
+      ? null
+      : explanationLines(t, positionId, explanation, decisionName, playReview);
   const preparationMaxed = career.athlete.profile.state.preparation >= 100;
 
   return (
@@ -487,9 +474,20 @@ export function GameDayScreen({
                   >
                     {t(READ_KEYS[result.readQuality].name)}
                   </span>{' '}
-                  <span className="s2-note">{readHelp(result.readQuality, result.decisionId)}</span>
+                  <span className="s2-note">{lines?.read}</span>
                 </p>
-                {why !== null && <p className="s2-note s2-lowerthird__why">{why}</p>}
+                {lines !== null && (
+                  <dl className="s2-explain">
+                    <div className="s2-explain__row">
+                      <dt>{t('v2.explain.execution')}</dt>
+                      <dd>{lines.execution}</dd>
+                    </div>
+                    <div className="s2-explain__row">
+                      <dt>{t('v2.explain.situation')}</dt>
+                      <dd>{lines.situation}</dd>
+                    </div>
+                  </dl>
+                )}
               </div>
             </div>
           )}

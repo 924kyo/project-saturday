@@ -96,8 +96,8 @@ const rows = {
     '본 단서만으로는 여러 룩이 가능했습니다. 준비를 더 하면 둘을 가르는 단서가 보입니다.',
   ],
   'v2.read.sharpAlternative': [
-    'A sound read. {best} was the best call here.',
-    '좋은 판단입니다. 이 상황의 최선은 {best}였습니다.',
+    'A safe alternative: it still grades Sharp. {best} was the single best call here.',
+    '안전한 대안: 여전히 정확한 판단으로 평가됩니다. 이 상황의 단 하나의 최선은 {best}였습니다.',
   ],
   'v2.read.shortOfFirstDown': [
     'They gained {yards}, but {distance} were needed: no first down.',

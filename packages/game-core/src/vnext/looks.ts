@@ -1,4 +1,4 @@
-import { SCENE_RULES_VERSION } from '../games/tactical-alpha-v1.js';
+import { SCENE_RULES_V2 } from '../games/tactical-alpha-v1.js';
 import { createRng, nextUint32 } from '../random/rng.js';
 import type {
   CareerVNext,
@@ -148,6 +148,46 @@ export function bestDecisionOfLook(look: SnapLookDefinitionVNext): string {
   return [...look.fits].sort((left, right) => right.fit - left.fit)[0]!.decisionId;
 }
 
+/**
+ * M12 look variety, for games kicked off after the update (`GameDayVNext.lookIds` present). The
+ * looks a game used are saved, so the next pick reads saved facts instead of re-deriving earlier
+ * slots:
+ * - no look repeats inside the game (as before);
+ * - looks from the athlete's last two games are avoided while a fresh one remains;
+ * - the snap right after a look of the same family never shows the same first tell ("twin prompts",
+ *   regression report), while another first tell remains.
+ */
+export interface SnapLookContextVNext {
+  /** Looks already used by this game's earlier live snaps. */
+  readonly usedLookIds: readonly string[];
+  /** Looks from recent games, avoided while an alternative remains. */
+  readonly avoidLookIds: readonly string[];
+  /** The look of the previous live snap (null for the first). */
+  readonly previousLookId: string | null;
+}
+
+function weightedPick(
+  pool: readonly SnapLookDefinitionVNext[],
+  seed: string,
+): SnapLookDefinitionVNext {
+  const weight = pool.reduce((sum, look) => sum + look.weight, 0);
+  let cursor = nextUint32(createRng(seed)).value % weight;
+  for (const look of pool) {
+    if (cursor < look.weight) return look;
+    cursor -= look.weight;
+  }
+  return pool.at(-1)!;
+}
+
+/** Keeps `filtered` only when it leaves at least one look. */
+function narrow(
+  pool: readonly SnapLookDefinitionVNext[],
+  keep: (look: SnapLookDefinitionVNext) => boolean,
+): readonly SnapLookDefinitionVNext[] {
+  const filtered = pool.filter(keep);
+  return filtered.length > 0 ? filtered : pool;
+}
+
 /** The look hidden in one Saturday slot. Null when the family has no authored looks. */
 export function snapLookVNext(
   career: Pick<CareerVNext, 'seed' | 'season' | 'athlete'>,
@@ -155,6 +195,7 @@ export function snapLookVNext(
   slot: SnapLookSlotVNext,
   familyId: string,
   mechanics: Pick<CareerVNextMechanics, 'looks'>,
+  context?: SnapLookContextVNext,
 ): SnapLookDefinitionVNext | null {
   const positionId = career.athlete.profile.positionId as VNextPositionId;
   const candidates = mechanics.looks.looks
@@ -162,34 +203,82 @@ export function snapLookVNext(
     .sort((left, right) => left.id.localeCompare(right.id));
   const total = candidates.reduce((sum, look) => sum + look.weight, 0);
   if (candidates.length === 0 || total <= 0) return null;
+  const live = slot.kind === 'LIVE';
+  if (live && context !== undefined) {
+    const previous = mechanics.looks.looks.find(({ id }) => id === context.previousLookId);
+    // Priority: no repeat in the game, then no back-to-back twin, then freshness across games.
+    let pool = narrow(candidates, (look) => !context.usedLookIds.includes(look.id));
+    if (previous !== undefined && previous.familyId === familyId)
+      pool = narrow(pool, (look) => look.tellKeys[0] !== previous.tellKeys[0]);
+    pool = narrow(pool, (look) => !context.avoidLookIds.includes(look.id));
+    return weightedPick(
+      pool,
+      `${String(career.seed)}:vnext:look:${career.season.index}:${weekIndex}:live${slot.snapIndex}`,
+    );
+  }
   // No look repeats inside one game (playtest round 2): slot k draws from the family's looks
   // minus those slots 0..k-1 would have drawn for it. It needs no game context and stays derived:
   // an earlier snap of this family got exactly that earlier pick, so it can never come back.
   // With five looks and at most five live snaps (or reps), a fresh look is always left.
-  const live = slot.kind === 'LIVE';
   const last = live ? slot.snapIndex : slot.repIndex;
   const used = new Set<string>();
   let picked: SnapLookDefinitionVNext = candidates[0]!;
   for (let index = 0; index <= last; index += 1) {
     const open = candidates.filter((look) => !used.has(look.id));
     const pool = open.length > 0 ? open : candidates;
-    const weight = pool.reduce((sum, look) => sum + look.weight, 0);
     const tag = live ? `live${index}` : `rep${index}`;
-    let cursor =
-      nextUint32(
-        createRng(`${String(career.seed)}:vnext:look:${career.season.index}:${weekIndex}:${tag}`),
-      ).value % weight;
-    picked = pool.at(-1)!;
-    for (const look of pool) {
-      if (cursor < look.weight) {
-        picked = look;
-        break;
-      }
-      cursor -= look.weight;
-    }
+    picked = weightedPick(
+      pool,
+      `${String(career.seed)}:vnext:look:${career.season.index}:${weekIndex}:${tag}`,
+    );
     used.add(picked.id);
   }
   return picked;
+}
+
+/** The look context for a live snap of a game that saves its looks (null for older games). */
+export function liveLookContextVNext(
+  game: {
+    readonly lookIds?: readonly (string | null)[];
+    readonly avoidLookIds?: readonly string[];
+  },
+  snapIndex: number,
+): SnapLookContextVNext | undefined {
+  if (game.lookIds === undefined) return undefined;
+  const earlier = game.lookIds.slice(0, snapIndex);
+  return {
+    usedLookIds: earlier.filter((id): id is string => id !== null),
+    avoidLookIds: game.avoidLookIds ?? [],
+    previousLookId: earlier.at(-1) ?? null,
+  };
+}
+
+/**
+ * The look a live snap was played against: the saved one when the game records looks, otherwise
+ * the pre-M12 derivation (identical to what that game resolved with).
+ */
+export function liveSnapLookVNext(
+  career: Pick<CareerVNext, 'seed' | 'season' | 'athlete'>,
+  game: {
+    readonly weekIndex: number;
+    readonly lookIds?: readonly (string | null)[];
+    readonly avoidLookIds?: readonly string[];
+  },
+  snapIndex: number,
+  familyId: string,
+  mechanics: Pick<CareerVNextMechanics, 'looks'>,
+): SnapLookDefinitionVNext | null {
+  const saved = game.lookIds?.[snapIndex];
+  if (saved !== undefined)
+    return saved === null ? null : (mechanics.looks.looks.find(({ id }) => id === saved) ?? null);
+  return snapLookVNext(
+    career,
+    game.weekIndex,
+    { kind: 'LIVE', snapIndex },
+    familyId,
+    mechanics,
+    liveLookContextVNext(game, snapIndex),
+  );
 }
 
 type PatternLike = {
@@ -265,14 +354,15 @@ export function resolveWithLookVNext(
     chosenFit !== undefined && typeof modifiers?.decisionScoreFlat === 'number'
       ? readEdge(chosenFit)
       : 0;
-  // For this one resolve the kernel sees the look's fits, the read edge and scene rules
-  // (outcomes that never contradict the scene); its stored input and patterns are handed back.
+  // For this one resolve the kernel sees the look's fits, the read edge and scene rules v2
+  // (outcomes that never contradict the scene, and execution that follows the read); its stored
+  // input and patterns are handed back.
   const patchedInput =
     input === undefined
       ? undefined
       : {
           ...input,
-          sceneRules: SCENE_RULES_VERSION,
+          sceneRules: SCENE_RULES_V2,
           ...(edge === 0
             ? {}
             : {

@@ -1418,6 +1418,32 @@ body {
   gap: 6px;
   padding: 14px 16px;
 }
+/* M12: execution and the down, each on its own labeled line. */
+.s2-explain {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+}
+.s2-explain__row {
+  display: grid;
+  grid-template-columns: minmax(64px, max-content) 1fr;
+  gap: 10px;
+  align-items: baseline;
+}
+.s2-explain dt {
+  font-family: var(--display);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.s2-explain dd {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.4;
+}
 .s2-lowerthird__headline {
   font-size: clamp(28px, 6vw, 44px);
   font-weight: 900;

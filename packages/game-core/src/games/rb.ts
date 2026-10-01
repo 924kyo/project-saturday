@@ -2,7 +2,10 @@ import {
   prepareTacticalAlphaSnapV1,
   resolveTacticalAlphaBackgroundV1,
   resolveTacticalFieldV1,
+  SCENE_RULES_V2_TUNING,
+  sceneRulesAt,
   TACTICAL_GAME_RULES_VERSION,
+  type SceneRulesVersion,
   type TacticalSnapResultV1,
 } from './tactical-alpha-v1.js';
 import { matchesTacticalSnapContextV1, type TacticalSnapContextV1 } from './tactical-context-v1.js';
@@ -149,6 +152,8 @@ export interface RbGameStartInput {
   readonly eventModifiers: RbEventGameModifiers;
   /** Absent on historical inputs; current relationship evidence contributes score, not free clues. */
   readonly relationshipInformationScoreModifier?: number;
+  /** Scene-consistent outcomes, set by VNext for one resolve only (absent on historical inputs). */
+  readonly sceneRules?: SceneRulesVersion;
   readonly rng: RngState;
 }
 
@@ -832,7 +837,11 @@ export function resolveRbSnap(active: ActiveRbGame, decisionId: unknown): RbGame
     pattern.baseFumbleRiskPermille +
       decision.fumbleRiskModifierPermille +
       fumbleSkill.value +
-      (contacted ? 45 : 0),
+      (contacted ? 45 : 0) +
+      // v2 (M12): a misread runs into contact unprepared; a sharp read protects the ball.
+      (sceneRulesAt(active.input.sceneRules, 2)
+        ? (60 - fit) * SCENE_RULES_V2_TUNING.rbFumblePerFitPoint
+        : 0),
     0,
     700,
   );

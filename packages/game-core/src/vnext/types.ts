@@ -223,6 +223,13 @@ export interface GameDayVNext {
   readonly academicHold?: boolean;
   /** Postseason round for weeks after the regular season (absent = regular season). */
   readonly round?: PostseasonRoundVNext;
+  /**
+   * M12: the look each live snap was played against, in snap order (present on games kicked off
+   * after M12; absent = looks are derived as before).
+   */
+  readonly lookIds?: readonly (string | null)[];
+  /** M12: looks from the athlete's previous two games, avoided while a fresh look remains. */
+  readonly avoidLookIds?: readonly string[];
 }
 
 export type PostseasonRoundVNext = 'FIRST_ROUND' | 'QUARTERFINAL' | 'SEMIFINAL' | 'FINAL';
@@ -319,6 +326,8 @@ export interface GameRecapVNext {
   readonly academicHold?: boolean;
   /** True when a regulation tie was decided in overtime (M8; absent = regulation). */
   readonly overtime?: boolean;
+  /** M12: the look each live snap was played against (absent before M12). */
+  readonly lookIds?: readonly (string | null)[];
   readonly availabilityId:
     'injury_availability_full' | 'injury_availability_limited' | 'injury_availability_out';
 }

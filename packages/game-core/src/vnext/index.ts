@@ -40,7 +40,10 @@ export {
 } from './build.js';
 export {
   academicStatusVNext,
+  attemptWeeklyEventVNext,
   careerWeekIndexVNext,
+  fitsRoleVNext,
+  ROTATION_CONTEST_EVENT_IDS,
   nextAcademicCheckpointVNext,
   type AcademicStatusVNext,
   injuryRiskVNext,
@@ -50,8 +53,19 @@ export {
   VNEXT_CAREER_WEEK_STRIDE,
   VNEXT_EVENT_CHANCE_PERMILLE,
 } from './weekly.js';
-export { projectGameStakesVNext, RANKED_CUTOFF, type GameStakesVNext } from './stakes.js';
 export {
+  isUpsetWinVNext,
+  outlookBandVNext,
+  projectGameStakesVNext,
+  RANKED_CUTOFF,
+  VNEXT_OUTLOOK_BANDS,
+  type GameStakesVNext,
+  type OutlookBandVNext,
+} from './stakes.js';
+export {
+  explainCurrentSnapVNext,
+  explainGamePlaysVNext,
+  gameScoreSplitVNext,
   livePlayFrame,
   liveReadScoreVNext,
   READ_GRADE_POINTS_VNEXT,
@@ -65,14 +79,36 @@ export {
   type SnapSituationFrame,
 } from './frames.js';
 export {
+  clockFromElapsedVNext,
+  snapElapsedSecondsVNext,
+  VNEXT_CLOCK_TUNING,
+  withVariedClockVNext,
+} from './clock.js';
+export {
+  EXECUTION_REASONS_VNEXT,
+  explainLivePlayVNext,
+  RISK_REASONS_VNEXT,
+  selectGameHighlightsVNext,
+  snapLeverageVNext,
+  type ExecutionReasonVNext,
+  type ExecutionVerdictVNext,
+  type GameHighlightsVNext,
+  type ReadBasisVNext,
+  type SituationKindVNext,
+  type SnapExplanationVNext,
+} from './explain.js';
+export {
   SNAP_LOOK_ACTORS,
   SNAP_LOOK_MOVES,
   SNAP_LOOK_STANCES,
   bestDecisionOfLook,
+  liveLookContextVNext,
+  liveSnapLookVNext,
   READ_EDGE_VNEXT,
   snapLookVNext,
   type SnapLookActor,
   type SnapLookCatalogVNext,
+  type SnapLookContextVNext,
   type SnapLookDefinitionVNext,
   type SnapLookMove,
   type SnapLookMoveId,
@@ -89,6 +125,7 @@ export {
   activePostseasonRoundVNext,
   conferenceChampionVNext,
   isConferenceWorldVNext,
+  matchupVNext,
   seasonFinishVNext,
   worldDefinitionVNext,
   type WorldStateVNext,

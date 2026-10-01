@@ -13,6 +13,31 @@ export const TACTICAL_GAME_RULES_VERSION = 'tactical_game_v1' as const;
  * Kernels apply it only when the input names it, so historical sessions stay literal.
  */
 export const SCENE_RULES_VERSION = 'scene_rules_v1' as const;
+/**
+ * M12: the right read also improves execution where the kernels left it out. A strip after the catch
+ * scales with the decision score and a missed strip can still wrap up; a QB's interception risk and
+ * an RB's fumble risk move with the read's fit. v2 includes every v1 rule.
+ */
+export const SCENE_RULES_V2 = 'scene_rules_v2' as const;
+export type SceneRulesVersion = typeof SCENE_RULES_VERSION | typeof SCENE_RULES_V2;
+
+/** True when the input names scene rules at or above `level` (1 = v1, 2 = v2). */
+export function sceneRulesAt(value: unknown, level: 1 | 2): boolean {
+  return level === 1
+    ? value === SCENE_RULES_VERSION || value === SCENE_RULES_V2
+    : value === SCENE_RULES_V2;
+}
+
+/** M12 execution tuning for scene rules v2 (all permille). */
+export const SCENE_RULES_V2_TUNING = Object.freeze({
+  /** Strip chance after the catch: + this per decision-score point above 50. */
+  stripPerScorePoint: 6,
+  stripMaximum: 650,
+  /** QB interception risk: + this per fit point below 60 (a sharp read lowers it). */
+  qbTurnoverPerFitPoint: 2,
+  /** RB fumble risk: + this per fit point below 60. */
+  rbFumblePerFitPoint: 1,
+});
 export const TACTICAL_ALPHA_TUNING = Object.freeze({
   touchdownPermille: 250,
   fieldGoalPermille: 150,
