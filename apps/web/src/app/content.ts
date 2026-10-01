@@ -458,6 +458,7 @@ const PLAY_KEYS: Readonly<Record<string, MessageKey>> = {
   'position_cb:INTERCEPTION': 'v2.play.cb.interception',
   'position_cb:TACKLE': 'v2.play.cb.tackle',
   'position_cb:MISSED_TACKLE': 'v2.play.cb.missedTackle',
+  'position_cb:FORCED_FUMBLE': 'v2.play.cb.forcedFumble',
   ...Object.fromEntries(
     (['position_lb', 'position_edge'] as const).flatMap((positionId) =>
       Object.entries(DEFENDER_PLAY_KEYS).map(([result, messageKey]) => [
@@ -474,11 +475,22 @@ const NO_GAIN_KEYS: Readonly<Record<string, MessageKey>> = {
   'position_rb:RECEPTION': 'v2.play.rb.receptionNoGain',
 };
 
+/** A lost fumble changes what the play meant: it leads the headline, not the yardage. */
+const FUMBLE_KEYS: Readonly<Record<string, MessageKey>> = {
+  'position_qb:SACK': 'v2.play.sackFumble',
+  'position_qb:SCRAMBLE': 'v2.play.runFumble',
+  'position_rb:RUSH': 'v2.play.runFumble',
+  'position_rb:RECEPTION': 'v2.play.catchFumble',
+};
+
 export function playHeadlineKey(
   positionId: VNextPositionId,
   playResultId: string,
   yards?: number,
+  outcome?: string,
 ): MessageKey {
+  const fumble = outcome === 'TURNOVER' ? FUMBLE_KEYS[`${positionId}:${playResultId}`] : undefined;
+  if (fumble !== undefined) return fumble;
   const noGain =
     yards !== undefined && yards <= 0 ? NO_GAIN_KEYS[`${positionId}:${playResultId}`] : undefined;
   if (noGain !== undefined) return noGain;

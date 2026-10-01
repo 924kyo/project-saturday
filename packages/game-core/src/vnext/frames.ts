@@ -192,7 +192,7 @@ export function livePlayFrame(positionId: VNextPositionId, play: AnyPlay): LiveP
     // Defensive success is a stop or takeaway; allowed yards are the opponent's gain.
     yards = num(play, 'yardsAllowed');
     touchdown = num(play, 'touchdownAllowed') > 0;
-    turnover = num(play, 'interception') > 0;
+    turnover = num(play, 'interception') > 0 || play.playResult === 'FORCED_FUMBLE';
     stop = ['COVERED', 'PASS_DEFENDED', 'TACKLE', 'NO_TARGET'].includes(play.playResult);
   }
   const defense =

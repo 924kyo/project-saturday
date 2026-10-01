@@ -35,6 +35,7 @@ export {
   offerCandidatesVNext,
   skillDefinitionsVNext,
   VNEXT_BREAKTHROUGH_THRESHOLD,
+  breakthroughStateVNext,
   VNEXT_BUILD_SLOTS,
 } from './build.js';
 export {

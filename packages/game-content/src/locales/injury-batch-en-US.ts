@@ -7,7 +7,7 @@ export const enUSInjuryBatchMessages = {
     'Keep a small opportunity package and gain 2 Coach Trust, but spend 3 Body with no recovery bonus.',
   'injuries.outcomes.strideLimit.name': 'Stride restriction',
   'injuries.outcomes.strideLimit.description':
-    'A short-lived movement restriction limits this week’s offensive opportunities.',
+    'A short-lived movement restriction limits this week’s game opportunities.',
   'injuries.outcomes.contactLimit.name': 'Contact restriction',
   'injuries.outcomes.contactLimit.description':
     'Contact tolerance is limited for one week, leaving only a narrow package available.',

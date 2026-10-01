@@ -76,6 +76,74 @@ const rows = {
   'v2.play.rb.rushStuffed': ['{name} is stopped at the line', '{name}, 라인에서 막혔다'],
   'v2.play.rb.receptionNoGain': ['{name} catches it, no gain', '{name}, 패스는 받았지만 전진 실패'],
   'v2.team.uniform': ['Home jersey', '홈 유니폼'],
+  // Playtest round 2: results that never contradict the scene, and calibrated feedback.
+  'v2.play.sackFumble': ['{name} is sacked and loses the ball', '{name}, 색을 당하며 공을 놓쳤다'],
+  'v2.play.runFumble': [
+    '{name} gains {yards}, then loses the ball',
+    '{name}, {yards}야드를 달렸지만 공을 놓쳤다',
+  ],
+  'v2.play.catchFumble': [
+    '{name} makes the catch, then loses the ball',
+    '{name}, 패스를 받았지만 공을 놓쳤다',
+  ],
+  'v2.play.cb.forcedFumble': ['{name} strips it loose!', '{name}, 공을 쳐내 펌블을 만들었다!'],
+  'v2.read.missedLimitedTell': [
+    'The tells you saw fit more than one look. The next tell would have told them apart: “{tell}”',
+    '본 단서만으로는 여러 룩이 가능했습니다. 다음 단서가 둘을 갈라 줬을 것입니다: “{tell}”',
+  ],
+  'v2.read.missedLimited': [
+    'The tells you saw fit more than one look. More preparation shows the tell that tells them apart.',
+    '본 단서만으로는 여러 룩이 가능했습니다. 준비를 더 하면 둘을 가르는 단서가 보입니다.',
+  ],
+  'v2.read.sharpAlternative': [
+    'A sound read. {best} was the best call here.',
+    '좋은 판단입니다. 이 상황의 최선은 {best}였습니다.',
+  ],
+  'v2.read.shortOfFirstDown': [
+    'They gained {yards}, but {distance} were needed: no first down.',
+    '{yards}야드를 내줬지만 {distance}야드가 필요했습니다. 퍼스트 다운은 막았습니다.',
+  ],
+  'v2.read.throwawayWhy': [
+    'Throwing it away gave up this play but avoided a sack or a turnover. The staff grades the read.',
+    '공을 버려 이번 플레이는 포기했지만 색과 턴오버는 피했습니다. 코치진은 판단을 평가합니다.',
+  ],
+  'v2.look.moreTellsCapped': [
+    '{count, plural, one {# more tell} other {# more tells}} hidden. Preparation is maxed: Football IQ, an information card or a scouting event can still add one.',
+    '{count, plural, other {단서 #개가 더 숨어 있습니다. 준비는 최대치입니다. 풋볼 IQ, 정보 카드, 스카우팅 이벤트로 더 얻을 수 있습니다}}',
+  ],
+  'v2.post.gradeLabel': ['Game grade {band}', '경기 평가 {band}'],
+  'v2.post.gradeWhy': [
+    'Reads {reads} and box score {box}, weighed equally.',
+    '판단 {reads}점과 경기 기록 {box}점을 같은 비중으로 반영했습니다.',
+  ],
+  'v2.news.turningPoint': ['Turning point: {play}.', '승부처: {play}.'],
+  'v2.review.expand': ['Every snap, with the best read', '모든 스냅과 최선의 판단 보기'],
+  'v2.week.reusePlan': ['Last week’s plan', '지난주 훈련 그대로'],
+  'v2.report.gaugeComplete': [
+    'Card collection complete: every card for your position is yours.',
+    '카드 수집 완료: 포지션의 모든 카드를 모았습니다.',
+  ],
+  'v2.report.gaugeLastCards': [
+    '{count, plural, one {# card left} other {# cards left}} for your position: the next offer is smaller.',
+    '{count, plural, other {포지션 카드가 #장 남았습니다. 다음 제안은 남은 카드만 나옵니다}}',
+  ],
+  'v2.settings.motion': ['Board animation', '보드 애니메이션'],
+  'v2.settings.motionSystem': ['Follow system', '시스템 설정 따름'],
+  'v2.settings.motionOn': ['On', '켜기'],
+  'v2.settings.motionOff': ['Off', '끄기'],
+  'v2.settings.motionHelp': [
+    'With “Follow system”, turning Windows animation effects off also stops the board. Choose On to keep it moving.',
+    '“시스템 설정 따름”이면 Windows의 애니메이션 효과를 끌 때 보드도 멈춥니다. 계속 움직이려면 켜기를 고르세요.',
+  ],
+  'v2.off.lastSeason': ['Last season {wins}–{losses}', '지난 시즌 {wins}승 {losses}패'],
+  'v2.off.whyOffer': ['They want you for: {reason}', '제안 이유: {reason}'],
+  'v2.off.reasonRole': ['an immediate role', '즉시 주전 경쟁 기회'],
+  'v2.off.reasonReach': ['a bigger stage', '더 큰 무대'],
+  'v2.off.reasonFit': ['your fit in their scheme', '전술 적합도'],
+  'v2.report.overallHelp': [
+    'Overall sums up the ratings that matter most for your position, so it moves in steps: XP above still counts toward the next point.',
+    '종합 능력치는 포지션에 가장 중요한 능력치를 요약하므로 계단식으로 오릅니다. 위의 경험치는 다음 1점으로 계속 쌓입니다.',
+  ],
   // Save slots.
   'v2.slots.open': ['Saves', '저장 슬롯'],
   'v2.slots.eyebrow': ['Careers', '커리어'],

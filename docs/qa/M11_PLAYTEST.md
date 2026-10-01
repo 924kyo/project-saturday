@@ -36,6 +36,25 @@ Your note number is in brackets.
 | R17 | Breakthrough [9] | The gauge fills at 50 now. Your first card offer should come by about week 3; equip it in **Build** and see it apply. | |
 | R18 | Profile [10] | A trading card (overall, position, style, series plate, program crest) sits beside the facts. Ratings are grouped as Position skills / Physical / Mental, each with its average. | |
 
+## P. Fixes from the written playtest report (2026-10-01)
+
+| # | Where | Check | ✓ |
+| --- | --- | --- | --- |
+| P1 | QB scramble | Slide early never ends in a breakaway touchdown. | |
+| P2 | CB, ball in the air | When the scene says the ball is already in the air, you are always targeted (never "Nobody throws at you"). | |
+| P3 | CB, after the catch | When the scene says the catch is made, the result is a tackle, a missed tackle or a forced fumble, never a pass breakup or an interception. Attacking the strip can force a fumble. | |
+| P4 | Headlines | A fumble shows in the play headline (sack-fumble, run fumble, catch fumble), not only in the box score. | |
+| P5 | Read feedback | With few tells visible, a missed read says the information was limited. A Solid read says there was a sharper option. Short-of-the-sticks plays, throwaways, and right-read/bad-play cases each explain themselves. | |
+| P6 | Preparation | When preparation is already at the cap, the pregame says more tells are not available from prep. | |
+| P7 | Looks | No look repeats within one game. | |
+| P8 | Breakthrough | When fewer than three cards are left, the remaining ones are offered; a complete collection stops the gauge at 50/50 and the report says so. | |
+| P9 | Post-game | "Play of the game" is a good play for you; otherwise the news says "Turning point". The coach's verdict explains the grade (reads and box score, weighed equally). Play Review is folded until you open it. | |
+| P10 | Events | Rotation-contest events (fighting for a rotation spot) no longer reach a starter. | |
+| P11 | Week | After week 1, a **Last week's plan** chip reuses your previous three focuses. The practice report explains why overall can stay the same while XP grows. | |
+| P12 | Offseason | Transfer offers show last season's record, why the school calls (reach / fit / role) and strength pips. | |
+| P13 | Settings | **Motion**: System / On / Off. On plays the board even when Windows animation effects are off. | |
+| P14 | Schools | Every program has at least two atmosphere tags. | |
+
 ## Snap looks: are they readable? (the core test)
 
 Play **one season as a QB** and **one as a CB or LB**. For every live snap, add a row to the snap log below.

@@ -147,6 +147,14 @@ TRADITIONS = {
     'tide': ('Kickoff is set by the tide chart for the pregame boat parade.', '경기 전 보트 퍼레이드에 맞춰 킥오프 시간을 물때표로 정한다.'),
 }
 
+TRADITION_TAGS = {
+    'bell': 'historic', 'night': 'night', 'walkon': 'bluecollar', 'band': 'loud', 'rivalry': 'loud',
+    'silent': 'loud', 'lanterns': 'night', 'march': 'historic', 'stone': 'historic', 'horn': 'coastal',
+    'snow': 'cold', 'homecoming': 'historic', 'helmet': 'bluecollar', 'flag': 'loud', 'drum': 'loud',
+    'goalpost': 'historic', 'sunrise': 'bluecollar', 'lights': 'night', 'library': 'academic',
+    'torch': 'loud', 'hymn': 'historic', 'sand': 'desert', 'rally': 'loud', 'tide': 'coastal',
+}
+
 ATMOSPHERES = {
     'loud': ('Loud crowd', '뜨거운 관중'),
     'academic': ('Academic', '학구적'),
@@ -231,8 +239,11 @@ def main() -> None:
                 break
             if any(re.search(r'\b' + re.escape(word), text) for word in words):
                 tags.append(tag)
-        if not tags:
-            tags.append('smalltown')
+        # Two to three tags for every school: a school's own tradition supplies one when its name
+        # and description alone give fewer than two.
+        for extra in (TRADITION_TAGS[tradition], 'historic', 'loud', 'bluecollar'):
+            if len(tags) < 2 and extra not in tags:
+                tags.append(extra)
         key = camel(suffix)
         messages[f'v2.program.{key}.mascot'] = (mascot_en, mascot_ko)
         rows.append({'programId': pid, 'mascotKey': f'v2.program.{key}.mascot', 'emblem': emblem,

@@ -3248,3 +3248,19 @@ fieldset.s2-stack > legend {
     padding-bottom: 50px;
   }
 }
+
+/* Post-game: why the grade, and the full review folded until asked for. */
+.s2-gradewhy {
+  display: block;
+  margin-top: 4px;
+}
+.s2-reviewfold > summary {
+  cursor: pointer;
+  padding: 8px 0;
+  font-weight: 700;
+  color: var(--volt);
+}
+.s2-reviewfold > summary:focus-visible {
+  outline: 2px solid var(--volt);
+  outline-offset: 2px;
+}

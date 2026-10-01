@@ -7,7 +7,7 @@ export const koKRInjuryBatchMessages = {
     '적은 출전 기회와 코치 신뢰 2를 얻는 대신 몸 상태 3을 소모하고 추가 회복은 받지 않습니다.',
   'injuries.outcomes.strideLimit.name': '보폭 제한',
   'injuries.outcomes.strideLimit.description':
-    '짧은 움직임 제한으로 이번 주 공격 출전 기회가 줄어듭니다.',
+    '짧은 움직임 제한으로 이번 주 경기 출전 기회가 줄어듭니다.',
   'injuries.outcomes.contactLimit.name': '접촉 제한',
   'injuries.outcomes.contactLimit.description':
     '한 주 동안 접촉 부하가 제한되어 좁은 패키지만 소화할 수 있습니다.',

@@ -13,6 +13,7 @@ import {
   ROUND_KEYS,
   STAT_KEYS,
   READ_KEYS,
+  playVerdict,
   VERDICT_KEYS,
   athleteName,
   currentOverall,
@@ -84,10 +85,13 @@ export function PostGameScreen({
   const style = { '--left': us.primary, '--right': them.primary } as CSSProperties;
   const decisionName = (id: string) => t(gameText.decision(positionId, id).nameKey as MessageKey);
   const headline = (play: (typeof allPlays)[number]) =>
-    t(playHeadlineKey(positionId, play.result.playResultId, play.result.yards), {
-      name: lastName,
-      yards: Math.abs(play.result.yards),
-    });
+    t(
+      playHeadlineKey(positionId, play.result.playResultId, play.result.yards, play.result.outcome),
+      {
+        name: lastName,
+        yards: Math.abs(play.result.yards),
+      },
+    );
   // The news report: headline and lede from saved facts only.
   const names = {
     name: athleteName(t, career),
@@ -120,7 +124,11 @@ export function PostGameScreen({
     lede.push(t('v2.news.reads', { sharp: liveSharp, total: allPlays.length }));
   else if (recap.sideline.length > 0)
     lede.push(t('v2.news.sideline', { sharp, total: recap.sideline.length }));
-  if (plays[0] !== undefined) lede.push(t('v2.news.best', { play: headline(plays[0]) }));
+  // "Play of the game" is a good play for the athlete; otherwise the decisive one is the turning point.
+  const highlight = plays.find(({ result }) => playVerdict(positionId, result.outcome) === 'good');
+  if (highlight !== undefined) lede.push(t('v2.news.best', { play: headline(highlight) }));
+  else if (plays[0] !== undefined)
+    lede.push(t('v2.news.turningPoint', { play: headline(plays[0]) }));
   if (recap.liveSnapCount > 0) lede.push(t('v2.news.grade', { band: verdict }));
 
   return (
@@ -225,7 +233,12 @@ export function PostGameScreen({
                     <span>
                       <strong>
                         {t(
-                          playHeadlineKey(positionId, play.result.playResultId, play.result.yards),
+                          playHeadlineKey(
+                            positionId,
+                            play.result.playResultId,
+                            play.result.yards,
+                            play.result.outcome,
+                          ),
                           {
                             name: lastName,
                             yards: Math.abs(play.result.yards),
@@ -258,12 +271,20 @@ export function PostGameScreen({
               <span
                 className="s2-grade"
                 role="img"
-                aria-label={t('v2.report.gradeLabel', { band: verdict })}
+                aria-label={t('v2.post.gradeLabel', { band: verdict })}
               >
                 {recap.liveSnapCount > 0 ? verdict : '—'}
               </span>
               <p>
                 {t(recap.liveSnapCount > 0 ? VERDICT_KEYS[verdict] : 'v2.post.verdict.sideline')}
+                {recap.gradeParts !== undefined && recap.gradeParts.reads !== null && (
+                  <span className="s2-note s2-gradewhy">
+                    {t('v2.post.gradeWhy', {
+                      reads: recap.gradeParts.reads,
+                      box: recap.gradeParts.box,
+                    })}
+                  </span>
+                )}
               </p>
             </div>
           </Panel>
@@ -312,37 +333,42 @@ export function PostGameScreen({
         )}
         {playReview && allPlays.length > 0 && (
           <Panel className="s2-panel--wide" id="s2-playreview" title={t('v2.review.title')}>
-            <ol className="s2-review">
-              {allPlays.map((play) => (
-                <li className="s2-review__row" key={play.index}>
-                  <span className="s2-play__tag">
-                    {t('v2.post.quarter', { period: play.situation.period })}
-                  </span>
-                  <span className="s2-stack" style={{ gap: 2 }}>
-                    <strong>
-                      {play.lookNameKey !== null
-                        ? t(key(play.lookNameKey))
-                        : t(gameText.pattern(positionId, play.patternId).nameKey as MessageKey)}
-                    </strong>
-                    <span>
-                      {t('v2.review.yourCall', { decision: decisionName(play.result.decisionId) })}
+            <details className="s2-reviewfold">
+              <summary>{t('v2.review.expand')}</summary>
+              <ol className="s2-review">
+                {allPlays.map((play) => (
+                  <li className="s2-review__row" key={play.index}>
+                    <span className="s2-play__tag">
+                      {t('v2.post.quarter', { period: play.situation.period })}
                     </span>
-                    {play.bestDecisionId !== null &&
-                      play.bestDecisionId !== play.result.decisionId && (
-                        <span className="s2-up">
-                          {t('v2.review.best', { decision: decisionName(play.bestDecisionId) })}
-                        </span>
-                      )}
-                    <span className="s2-note">{headline(play)}</span>
-                  </span>
-                  <span
-                    className={`s2-effect ${play.result.readQuality === 'MISSED' ? 's2-effect--down' : 's2-effect--up'}`}
-                  >
-                    {t(READ_KEYS[play.result.readQuality].name)}
-                  </span>
-                </li>
-              ))}
-            </ol>
+                    <span className="s2-stack" style={{ gap: 2 }}>
+                      <strong>
+                        {play.lookNameKey !== null
+                          ? t(key(play.lookNameKey))
+                          : t(gameText.pattern(positionId, play.patternId).nameKey as MessageKey)}
+                      </strong>
+                      <span>
+                        {t('v2.review.yourCall', {
+                          decision: decisionName(play.result.decisionId),
+                        })}
+                      </span>
+                      {play.bestDecisionId !== null &&
+                        play.bestDecisionId !== play.result.decisionId && (
+                          <span className="s2-up">
+                            {t('v2.review.best', { decision: decisionName(play.bestDecisionId) })}
+                          </span>
+                        )}
+                      <span className="s2-note">{headline(play)}</span>
+                    </span>
+                    <span
+                      className={`s2-effect ${play.result.readQuality === 'MISSED' ? 's2-effect--down' : 's2-effect--up'}`}
+                    >
+                      {t(READ_KEYS[play.result.readQuality].name)}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </details>
           </Panel>
         )}
       </div>

@@ -27,6 +27,12 @@ M8 is COMPLETE (2026-09-30): see `docs/exec-plans/completed/m8-six-position-beta
 
 ## Last completed task
 
+The written playtest report (2026-10-01): the P1/P2 items are addressed (see DECISION_LOG).
+- Scene rules: no slide touchdown; a CB ball in the air is always targeted; an after-catch CB snap is a tackle, a missed tackle or a forced fumble.
+- No repeated look within a game; the breakthrough gauge cannot stall; role-aware rotation events; the draft was re-based.
+- Calibrated read feedback, fumble headlines, grade explanation, Turning point, folded Play Review, last week's plan, offseason offer facts, a Motion setting.
+- The checks are section P of `docs/qa/M11_PLAYTEST.md`. Deferred: the pregame fixed clock, Toss-up previews, Team/Profile sub-tabs, Korean jargon help, cross-career rewards, creation point allocation.
+
 Playtest round 1 (2026-10-01): the user's first playtest notes, all addressed.
 - Five save slots and a Settings panel (units, Play Review).
 - Creation starts empty, with a trading-card preview, a foil series plate and bilingual suggested names.
@@ -180,6 +186,7 @@ None. M8, M9 and M10 are archived in `docs/exec-plans/completed/`.
 
 ## Latest green verification
 
+- Tier 2, 2026-10-01 (the playtest-report round): `pnpm check` green, with vitest 895, content 436, sim 398, e2e 20 and the build. The WebKit slice journey has a 90 s budget.
 - Tier 3, 2026-09-30 (the rc.2 gate).
 - `pnpm check`: typecheck, lint, boundaries, localized copy and format; vitest 887 (116 files); content 430; sim 397; e2e 20; build and PWA verified.
 - Browser: `E2E_FULL=1` passed 52 (22 were project-assignment skips), including WebKit iPhone 14.

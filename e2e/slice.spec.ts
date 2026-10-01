@@ -6,6 +6,8 @@ test.describe('career slice journey', () => {
   test('create, recruit, practice, play Saturday and reach the next week, then resume after reload', async ({
     page,
   }) => {
+    // A whole week end to end: Windows WebKit needs ~20s alone and more under a parallel run.
+    test.setTimeout(90_000);
     const errors: string[] = [];
     page.on('pageerror', (error) => errors.push(error.message));
     await createCareer(page, 'Marcus Hale');

@@ -147,6 +147,23 @@ function mappedDraw(rng: RngState, maximumExclusive: number) {
   };
 }
 
+/**
+ * Rotation-contest scenes assume the athlete is still fighting for reps (playtest round 2: a CB1
+ * was asked to compete for a rotation spot). A starter never draws them.
+ */
+const ROTATION_CONTEST_EVENT_IDS: ReadonlySet<string> = new Set([
+  'event_cb_secondary_rotation',
+  'event_rb_room_rotation',
+  'event_lb_room_rotation',
+  'event_edge_d_line_rotation',
+  'event_late_rotation_rep',
+]);
+
+export function fitsRoleVNext(career: CareerVNext) {
+  const starter = career.program?.room.projection.roleId === 'depth_role_starter';
+  return (event: { readonly id: string }) => !(starter && ROTATION_CONTEST_EVENT_IDS.has(event.id));
+}
+
 function selectWrEvent(
   career: CareerVNext,
   catalog: readonly EventMechanicsDefinition[],
@@ -159,7 +176,7 @@ function selectWrEvent(
     ...(optionAccess ? ['tag_skill_event_option_access'] : []),
   ]);
   const eligible = catalog
-    .filter((event) => wrEligible(career, event, tags))
+    .filter((event) => wrEligible(career, event, tags) && fitsRoleVNext(career)(event))
     .sort((left, right) => (left.id < right.id ? -1 : left.id > right.id ? 1 : 0));
   if (eligible.length === 0) return null;
   const chance = mappedDraw(weekStream(career, 'event'), 1_000);
@@ -205,7 +222,7 @@ export function attemptWeeklyEventVNext(
   if (mentor !== null) return mentor;
   const selected = selectDefenderEvent(
     eventContextVNext(career, weekIndex),
-    mechanics.life.events,
+    mechanics.life.events.filter(fitsRoleVNext(career)),
     VNEXT_LIFE_EVENT_CHANCE_PERMILLE,
     weekStream(career, 'life'),
   );
@@ -290,7 +307,7 @@ function attemptPositionEventVNext(
         brand: state.brand,
         recentEvents: career.condition.recentEvents,
       },
-      catalog.events,
+      catalog.events.filter(fitsRoleVNext(career)),
       VNEXT_EVENT_CHANCE_PERMILLE,
       weekStream(career, 'event'),
     );
@@ -316,7 +333,12 @@ function attemptPositionEventVNext(
   const skills = equipped(career);
   try {
     if (profile.positionId === 'position_qb') {
-      const result = selectQbEvent(context, mechanics.qb.events, VNEXT_EVENT_CHANCE_PERMILLE, rng);
+      const result = selectQbEvent(
+        context,
+        mechanics.qb.events.filter(fitsRoleVNext(career)),
+        VNEXT_EVENT_CHANCE_PERMILLE,
+        rng,
+      );
       if (result.event === undefined) return null;
       const owned = mechanics.qb.skills.filter(({ id }) => skills.includes(id));
       return pending(
@@ -325,7 +347,12 @@ function attemptPositionEventVNext(
       );
     }
     if (profile.positionId === 'position_rb') {
-      const result = selectRbEvent(context, mechanics.rb.events, VNEXT_EVENT_CHANCE_PERMILLE, rng);
+      const result = selectRbEvent(
+        context,
+        mechanics.rb.events.filter(fitsRoleVNext(career)),
+        VNEXT_EVENT_CHANCE_PERMILLE,
+        rng,
+      );
       if (result.event === undefined) return null;
       const owned = mechanics.rb.skills.filter(({ id }) => skills.includes(id));
       return pending(
@@ -333,7 +360,12 @@ function attemptPositionEventVNext(
         getAvailableRbEventChoices(result.event, owned).map(({ id }) => id),
       );
     }
-    const result = selectCbEvent(context, mechanics.cb.events, VNEXT_EVENT_CHANCE_PERMILLE, rng);
+    const result = selectCbEvent(
+      context,
+      mechanics.cb.events.filter(fitsRoleVNext(career)),
+      VNEXT_EVENT_CHANCE_PERMILLE,
+      rng,
+    );
     if (result.event === undefined) return null;
     const owned = mechanics.cb.skills.filter(({ id }) => skills.includes(id));
     return pending(

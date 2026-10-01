@@ -304,6 +304,11 @@ export interface GameRecapVNext {
   readonly coachTrust: { readonly before: number; readonly after: number };
   /** The staff's grade: the engine grade weighted toward neutral on few live snaps (absent = none). */
   readonly coachGrade?: number | null;
+  /**
+   * What the staff weighed (playtest round 2, optional): the calibrated box score and the mean
+   * read grade of the live snaps, each 0-100, before the live-snap volume prior.
+   */
+  readonly gradeParts?: { readonly box: number; readonly reads: number | null };
   readonly body: { readonly before: number; readonly after: number };
   readonly confidence: { readonly before: number; readonly after: number };
   readonly recordAfter: { readonly wins: number; readonly losses: number; readonly ties: number };

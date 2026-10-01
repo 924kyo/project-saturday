@@ -59,14 +59,35 @@ export function offerCandidatesVNext(
     .sort((left, right) => (left.skillId < right.skillId ? -1 : 1));
 }
 
-/** A full gauge buys an offer of three unowned cards from a named stream; null otherwise. */
+/**
+ * Where the card collection stands (playtest round 2). The gauge used to keep filling with no offer
+ * once fewer than three unowned cards were left; now the last cards are offered as they are, and an
+ * exhausted collection is shown as complete.
+ */
+export function breakthroughStateVNext(
+  career: CareerVNext,
+  mechanics: CareerVNextMechanics,
+): { readonly remaining: number; readonly complete: boolean } {
+  const remaining = offerCandidatesVNext(career, mechanics).length;
+  return { remaining, complete: remaining === 0 };
+}
+
+/** A full gauge buys an offer of up to three unowned cards from a named stream; null otherwise. */
 export function attemptBreakthroughVNext(
   career: CareerVNext,
   mechanics: CareerVNextMechanics,
 ): BreakthroughOfferVNext | null {
   if (career.athlete.breakthroughGauge < VNEXT_BREAKTHROUGH_THRESHOLD) return null;
   const candidates = offerCandidatesVNext(career, mechanics);
-  if (candidates.length < 3) return null;
+  if (candidates.length === 0) return null;
+  // The last one or two cards are offered as they are: nothing left to sample.
+  if (candidates.length < 3)
+    return {
+      weekIndex: career.season.weekIndex,
+      skillIds: candidates.map(({ skillId }) => skillId),
+      chosenSkillId: null,
+      slotIndex: null,
+    };
   const sampled = sampleOfferIds(
     createRng(
       `${String(career.seed)}:vnext:breakthrough:${career.season.index}:${career.season.weekIndex}`,

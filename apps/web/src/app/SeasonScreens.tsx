@@ -271,6 +271,16 @@ export function OffseasonScreen({
   const positionId = career.athlete.profile.positionId as VNextPositionId;
   const abbr = t(POSITION_ABBR_KEYS[positionId]);
   const choice = options.find(({ programId }) => programId === selected);
+  // Facts that tell the options apart (playtest round 2): strength, last season, and why they call.
+  const currentRating = options.find(({ kind }) => kind === 'STAY')?.programRating ?? null;
+  const records = career.season.world?.programRecords ?? [];
+  const strength = (rating: number) => Math.max(1, Math.min(5, Math.round((rating - 50) / 7)));
+  const reasonKey = (rating: number) =>
+    currentRating === null || Math.abs(rating - currentRating) <= 3
+      ? 'v2.off.reasonFit'
+      : rating > currentRating
+        ? 'v2.off.reasonReach'
+        : 'v2.off.reasonRole';
   return (
     <div className="s2-stack">
       <Nameplate career={career} />
@@ -322,6 +332,38 @@ export function OffseasonScreen({
                         </span>
                       </>
                     )}
+                  </span>
+                </span>
+                <span className="s2-offer__culture">
+                  <span className="s2-offer__tags">
+                    {(() => {
+                      const record = records.find(
+                        ({ programId }) => programId === option.programId,
+                      );
+                      return record === undefined ? null : (
+                        <span className="s2-tag">
+                          {t('v2.off.lastSeason', { wins: record.wins, losses: record.losses })}
+                        </span>
+                      );
+                    })()}
+                    {option.kind === 'TRANSFER' && (
+                      <span className="s2-tag">
+                        {t('v2.off.whyOffer', { reason: t(reasonKey(option.programRating)) })}
+                      </span>
+                    )}
+                  </span>
+                  <span className="s2-pips" style={{ gridTemplateColumns: '1fr' }}>
+                    <span>
+                      {t('v2.recruit.strength')}
+                      <span aria-hidden="true" className="s2-pip-row">
+                        {[1, 2, 3, 4, 5].map((index) => (
+                          <span
+                            className={`s2-pip ${index <= strength(option.programRating) ? 's2-pip--on' : ''}`}
+                            key={index}
+                          />
+                        ))}
+                      </span>
+                    </span>
                   </span>
                 </span>
                 <span className="s2-offer__path">

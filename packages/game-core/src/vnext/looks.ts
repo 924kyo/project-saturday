@@ -1,3 +1,4 @@
+import { SCENE_RULES_VERSION } from '../games/tactical-alpha-v1.js';
 import { createRng, nextUint32 } from '../random/rng.js';
 import type {
   CareerVNext,
@@ -161,17 +162,34 @@ export function snapLookVNext(
     .sort((left, right) => left.id.localeCompare(right.id));
   const total = candidates.reduce((sum, look) => sum + look.weight, 0);
   if (candidates.length === 0 || total <= 0) return null;
-  const tag = slot.kind === 'LIVE' ? `live${slot.snapIndex}` : `rep${slot.repIndex}`;
-  const roll =
-    nextUint32(
-      createRng(`${String(career.seed)}:vnext:look:${career.season.index}:${weekIndex}:${tag}`),
-    ).value % total;
-  let cursor = roll;
-  for (const look of candidates) {
-    if (cursor < look.weight) return look;
-    cursor -= look.weight;
+  // No look repeats inside one game (playtest round 2): slot k draws from the family's looks
+  // minus those slots 0..k-1 would have drawn for it. It needs no game context and stays derived:
+  // an earlier snap of this family got exactly that earlier pick, so it can never come back.
+  // With five looks and at most five live snaps (or reps), a fresh look is always left.
+  const live = slot.kind === 'LIVE';
+  const last = live ? slot.snapIndex : slot.repIndex;
+  const used = new Set<string>();
+  let picked: SnapLookDefinitionVNext = candidates[0]!;
+  for (let index = 0; index <= last; index += 1) {
+    const open = candidates.filter((look) => !used.has(look.id));
+    const pool = open.length > 0 ? open : candidates;
+    const weight = pool.reduce((sum, look) => sum + look.weight, 0);
+    const tag = live ? `live${index}` : `rep${index}`;
+    let cursor =
+      nextUint32(
+        createRng(`${String(career.seed)}:vnext:look:${career.season.index}:${weekIndex}:${tag}`),
+      ).value % weight;
+    picked = pool.at(-1)!;
+    for (const look of pool) {
+      if (cursor < look.weight) {
+        picked = look;
+        break;
+      }
+      cursor -= look.weight;
+    }
+    used.add(picked.id);
   }
-  return candidates.at(-1)!;
+  return picked;
 }
 
 type PatternLike = {
@@ -181,7 +199,10 @@ type PatternLike = {
 type ActiveLike = {
   readonly type: 'ACTIVE';
   readonly patterns: readonly PatternLike[];
-  readonly input?: { readonly eventModifiers?: { readonly decisionScoreFlat?: number } };
+  readonly input?: {
+    readonly eventModifiers?: { readonly decisionScoreFlat?: number };
+    readonly sceneRules?: string;
+  };
 };
 
 /**
@@ -244,33 +265,39 @@ export function resolveWithLookVNext(
     chosenFit !== undefined && typeof modifiers?.decisionScoreFlat === 'number'
       ? readEdge(chosenFit)
       : 0;
+  // For this one resolve the kernel sees the look's fits, the read edge and scene rules
+  // (outcomes that never contradict the scene); its stored input and patterns are handed back.
+  const patchedInput =
+    input === undefined
+      ? undefined
+      : {
+          ...input,
+          sceneRules: SCENE_RULES_VERSION,
+          ...(edge === 0
+            ? {}
+            : {
+                eventModifiers: {
+                  ...modifiers,
+                  decisionScoreFlat: modifiers!.decisionScoreFlat! + edge,
+                },
+              }),
+        };
   const resolved = resolve({
     ...engine,
     game: {
       ...engine.game,
       patterns: patched,
-      ...(edge === 0
-        ? {}
-        : {
-            input: {
-              ...input,
-              eventModifiers: {
-                ...modifiers,
-                decisionScoreFlat: modifiers!.decisionScoreFlat! + edge,
-              },
-            },
-          }),
+      ...(patchedInput === undefined ? {} : { input: patchedInput }),
     },
   } as unknown as VNextGameState);
   if (resolved === null) return null;
-  // Hand back the kernel's own patterns and input: the look and the read edge were for this snap.
   const next = resolved.game as unknown as { patterns?: unknown; input?: unknown };
   return {
     ...resolved,
     game: {
       ...resolved.game,
       ...(Array.isArray(next.patterns) ? { patterns: original } : {}),
-      ...(edge !== 0 && next.input !== undefined ? { input } : {}),
+      ...(patchedInput !== undefined && next.input !== undefined ? { input } : {}),
     },
   } as unknown as VNextGameState;
 }

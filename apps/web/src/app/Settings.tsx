@@ -2,6 +2,12 @@ import { useAppTranslation } from '../i18n/i18n';
 import type { Preferences } from './preferences';
 
 const UNIT_OPTIONS: readonly Preferences['units'][] = ['metric', 'imperial'];
+const MOTION_OPTIONS: readonly Preferences['motion'][] = ['system', 'on', 'off'];
+const MOTION_KEYS = {
+  system: 'v2.settings.motionSystem',
+  on: 'v2.settings.motionOn',
+  off: 'v2.settings.motionOff',
+} as const;
 
 /** Device settings: units and Play Review. Language stays on its own top-bar switch. */
 export function SettingsPanel({
@@ -34,6 +40,23 @@ export function SettingsPanel({
             </button>
           ))}
         </div>
+      </fieldset>
+      <fieldset className="s2-settings__row">
+        <legend className="s2-eyebrow">{t('v2.settings.motion')}</legend>
+        <div className="s2-swatches" role="group">
+          {MOTION_OPTIONS.map((motion) => (
+            <button
+              aria-pressed={preferences.motion === motion}
+              className="s2-swatch"
+              key={motion}
+              onClick={() => onChange({ ...preferences, motion })}
+              type="button"
+            >
+              {t(MOTION_KEYS[motion])}
+            </button>
+          ))}
+        </div>
+        <p className="s2-note">{t('v2.settings.motionHelp')}</p>
       </fieldset>
       <div className="s2-settings__row">
         <label className="s2-toggle">

@@ -8,23 +8,32 @@ export interface Preferences {
   readonly units: 'metric' | 'imperial';
   /** After each snap, reveal the real look and its answer; after the game, the play-by-play review. */
   readonly playReview: boolean;
+  /**
+   * Board animation: follow the device's reduced-motion setting, or override it. Windows "Animation
+   * effects: off" reports reduced motion, which used to stop the board with no way to turn it on.
+   */
+  readonly motion: 'system' | 'on' | 'off';
 }
 
 export const PREFERENCES_ID = 'preferences' as const;
 
 export function defaultPreferences(locale: string): Preferences {
   // First launch only: afterwards the stored choice stands whatever the language.
-  return { units: locale === 'en-US' ? 'imperial' : 'metric', playReview: true };
+  return { units: locale === 'en-US' ? 'imperial' : 'metric', playReview: true, motion: 'system' };
 }
 
-function isPreferences(value: unknown): value is Preferences {
-  const entry = value as Preferences | undefined;
-  return (
-    typeof entry === 'object' &&
-    entry !== null &&
-    (entry.units === 'metric' || entry.units === 'imperial') &&
-    typeof entry.playReview === 'boolean'
-  );
+/** Stored preferences, completed with defaults for fields added later (motion). */
+function readPreferences(value: unknown): Preferences | null {
+  const entry = value as Partial<Preferences> | undefined;
+  if (
+    typeof entry !== 'object' ||
+    entry === null ||
+    (entry.units !== 'metric' && entry.units !== 'imperial') ||
+    typeof entry.playReview !== 'boolean'
+  )
+    return null;
+  const motion = entry.motion === 'on' || entry.motion === 'off' ? entry.motion : 'system';
+  return { units: entry.units, playReview: entry.playReview, motion };
 }
 
 export async function loadPreferences(
@@ -32,8 +41,8 @@ export async function loadPreferences(
   locale: string,
 ): Promise<Preferences> {
   try {
-    const stored = await storage.get<unknown>('settings', PREFERENCES_ID);
-    if (isPreferences(stored)) return stored;
+    const stored = readPreferences(await storage.get<unknown>('settings', PREFERENCES_ID));
+    if (stored !== null) return stored;
   } catch {
     // Fall through to the first-launch defaults.
   }
@@ -52,6 +61,7 @@ export async function savePreferences(
 export const PreferencesContext = createContext<Preferences>({
   units: 'metric',
   playReview: true,
+  motion: 'system',
 });
 
 export function usePreferences(): Preferences {

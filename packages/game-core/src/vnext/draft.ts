@@ -27,12 +27,16 @@ export const VNEXT_DRAFT_TUNING = Object.freeze({
   },
   injuryPenalty: 2,
   maximumInjuryPenalty: 8,
-  /** Bands over the stock score (projection shown to the player). */
-  bands: { round1: 78, rounds2to3: 70, rounds4to7: 61 },
+  /**
+   * Bands over the stock score (projection shown to the player). Playtest round 2: grades now weigh
+   * the read, which lifts Production for a decent reader by about 12 (+2.4 stock), so bands and
+   * floors moved up 2 to keep the draft a real outcome for some careers, not all.
+   */
+  bands: { round1: 80, rounds2to3: 72, rounds4to7: 63 },
   /** Draft-day draw applied to the stock, inclusive. */
   variance: 4,
   /** Minimum drafted score per round 1..7; below the last is undrafted. */
-  roundFloors: [80, 76, 72, 68, 65, 63, 61],
+  roundFloors: [82, 78, 74, 70, 67, 65, 63],
   picksPerRound: 32,
   /** A declaration is open after the junior season (from the fourth year's offseason on). */
   declareFromSeasonIndex: 2,

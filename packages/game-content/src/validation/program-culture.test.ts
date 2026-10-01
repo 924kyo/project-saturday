@@ -32,7 +32,7 @@ describe('program culture', () => {
         expect(en[key], key).toBeTruthy();
         expect(ko[key], key).toBeTruthy();
       }
-      expect(culture!.atmosphereKeys.length).toBeGreaterThanOrEqual(1);
+      expect(culture!.atmosphereKeys.length).toBeGreaterThanOrEqual(2);
       expect(culture!.atmosphereKeys.length).toBeLessThanOrEqual(3);
       mascots.add(en[culture!.mascotKey]!);
     }

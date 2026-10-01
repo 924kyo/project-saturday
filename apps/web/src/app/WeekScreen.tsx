@@ -6,6 +6,7 @@ import {
   planWeekVNext,
   scheduledFixtureVNext,
   VNEXT_BREAKTHROUGH_THRESHOLD,
+  breakthroughStateVNext,
   type CareerVNext,
   type CareerVNextMechanics,
   type PracticeReportVNext,
@@ -33,6 +34,7 @@ import {
   athleteName,
 } from './content';
 import { BuildPanel } from './BuildView';
+import { readLastPlan, rememberPlan } from './plan-memory';
 import { GrowthList } from './Growth';
 import { mergeGrowth, type AttributeGrowth } from './growth-model';
 import { benefitNameKey, nilOfferText } from './nil';
@@ -296,7 +298,12 @@ function GrowthPanel({
       {rows.length === 0 ? (
         <p className="s2-note">{t('v2.report.noGrowth')}</p>
       ) : (
-        <GrowthList rows={rows} />
+        <>
+          <GrowthList rows={rows} />
+          {after === before && (
+            <p className="s2-note s2-growth__help">{t('v2.report.overallHelp')}</p>
+          )}
+        </>
       )}
     </Panel>
   );
@@ -320,6 +327,7 @@ function Report({
   const { depth } = report;
   const moved = depth.movement;
   const band = practiceBand(report.practiceScore);
+  const cards = breakthroughStateVNext(career, mechanics);
   const first = report.focuses[0];
   const last = report.focuses[2];
   return (
@@ -390,13 +398,20 @@ function Report({
             )}
             <li>
               <span>
-                {t('v2.report.gauge', {
-                  value: report.gaugeAfter,
-                  threshold: VNEXT_BREAKTHROUGH_THRESHOLD,
-                  gain: report.gaugeAfter - report.gaugeBefore,
-                })}
+                {cards.complete
+                  ? t('v2.report.gaugeComplete')
+                  : t('v2.report.gauge', {
+                      value: report.gaugeAfter,
+                      threshold: VNEXT_BREAKTHROUGH_THRESHOLD,
+                      gain: report.gaugeAfter - report.gaugeBefore,
+                    })}
               </span>
             </li>
+            {!cards.complete && cards.remaining < 3 && (
+              <li>
+                <span>{t('v2.report.gaugeLastCards', { count: cards.remaining })}</span>
+              </li>
+            )}
           </ul>
         </Panel>
         <GrowthPanel career={career} report={report} />
@@ -535,6 +550,13 @@ export function WeekScreen({
     setPicks(plan.filter((id) => open.some((focus) => focus.id === id)));
   }
   const last = projected?.focuses[2];
+  // Last week's plan, offered only when every focus in it is open this week.
+  const remembered = readLastPlan(career.careerId);
+  const lastPlan =
+    remembered !== null &&
+    remembered.every((id) => focuses.some((focus) => focus.id === id && focus.open))
+      ? remembered
+      : null;
   const tabLabels = {
     week: t('v2.build.tabWeek'),
     build: t('v2.build.tabBuild', { count: career.build.ownedSkillIds.length }),
@@ -587,9 +609,16 @@ export function WeekScreen({
       <div className="s2-grid-2">
         <Panel
           aside={
-            <button className="s2-chipbtn" onClick={coachPlan} type="button">
-              {t('v2.week.coachPlan')}
-            </button>
+            <span className="s2-row" style={{ gap: 6 }}>
+              <button className="s2-chipbtn" onClick={coachPlan} type="button">
+                {t('v2.week.coachPlan')}
+              </button>
+              {lastPlan !== null && (
+                <button className="s2-chipbtn" onClick={() => setPicks(lastPlan)} type="button">
+                  {t('v2.week.reusePlan')}
+                </button>
+              )}
+            </span>
           }
           id="s2-plan"
           title={t('v2.week.focusTitle')}
@@ -722,7 +751,10 @@ export function WeekScreen({
           <button
             className="s2-btn s2-btn--block"
             disabled={picks.length !== 3 || blocked}
-            onClick={() => onPlan(picks)}
+            onClick={() => {
+              rememberPlan(career.careerId, picks);
+              onPlan(picks);
+            }}
             type="button"
           >
             {picks.length === 3

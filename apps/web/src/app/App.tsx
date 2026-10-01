@@ -119,10 +119,13 @@ export function App({
   // First-launch unit defaults read the language once; later language changes never move them.
   const firstLocale = useRef<string>(locale);
   const persistenceRequested = useRef(false);
-  const reducedMotion = useMemo(
+  const systemReducedMotion = useMemo(
     () => globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false,
     [],
   );
+  // Board motion follows the device unless the player overrides it in Settings.
+  const reducedMotion =
+    preferences.motion === 'off' || (preferences.motion === 'system' && systemReducedMotion);
   const mechanics = useMemo(
     () => (career === null ? null : buildCareerVNextMechanics(career.athlete.profile)),
     [career],

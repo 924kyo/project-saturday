@@ -2,6 +2,7 @@ import {
   prepareTacticalAlphaSnapV1,
   resolveTacticalAlphaBackgroundV1,
   resolveTacticalFieldV1,
+  SCENE_RULES_VERSION,
   TACTICAL_GAME_RULES_VERSION,
   type TacticalSnapResultV1,
 } from './tactical-alpha-v1.js';
@@ -125,6 +126,11 @@ export interface QbPlayerGameState {
 export interface QbGameStartInput {
   /** Explicit new-game opt-in. Absent inputs retain their literal pre-tactical rules. */
   readonly rulesVersion?: typeof TACTICAL_GAME_RULES_VERSION;
+  /**
+   * Scene-consistent outcomes (VNext sets it for the snap it resolves): a scramble that gives
+   * itself up (a negative yard modifier, such as sliding early) cannot break away for a score.
+   */
+  readonly sceneRules?: typeof SCENE_RULES_VERSION;
   readonly gameId: `game_qb_${string}`;
   readonly weekIndex: number;
   readonly playerProgramId: ProgramId;
@@ -990,7 +996,9 @@ export function resolveQbSnap(active: ActiveQbGame, decisionId: unknown): QbGame
       pattern.baseYards + decision.yardModifier + yardDraw.value + scrambleYards.value,
     );
     fumbleDelta = turnoverDraw.value < turnoverRiskPermille ? 1 : 0;
-    rushingTouchdownDelta = touchdownDraw.value < touchdownChancePermille ? 1 : 0;
+    // A slide ends the run where it is: no breakaway score under scene rules.
+    const givesUp = active.input.sceneRules === SCENE_RULES_VERSION && decision.yardModifier < 0;
+    rushingTouchdownDelta = !givesUp && touchdownDraw.value < touchdownChancePermille ? 1 : 0;
   } else if (turnoverDraw.value < turnoverRiskPermille) {
     playResult = 'INTERCEPTION';
     interceptionDelta = 1;

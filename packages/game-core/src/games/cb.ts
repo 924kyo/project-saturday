@@ -2,6 +2,7 @@ import {
   prepareTacticalAlphaSnapV1,
   resolveTacticalAlphaBackgroundV1,
   resolveTacticalFieldV1,
+  SCENE_RULES_VERSION,
   TACTICAL_GAME_RULES_VERSION,
   type TacticalSnapResultV1,
 } from './tactical-alpha-v1.js';
@@ -125,6 +126,12 @@ export interface CbPlayerGameState {
 export interface CbGameStartInput {
   /** Explicit opt-in for a newly started game; absence preserves literal historical rules. */
   readonly rulesVersion?: typeof TACTICAL_GAME_RULES_VERSION;
+  /**
+   * Scene-consistent outcomes (VNext sets it for the snap it resolves): a ball already in the
+   * air is thrown at the player, a catch already made is a catch, and a strip after the catch
+   * is a forced fumble rather than an interception. Absent, the literal historical rules apply.
+   */
+  readonly sceneRules?: typeof SCENE_RULES_VERSION;
   readonly gameId: `game_cb_${string}`;
   readonly weekIndex: number;
   readonly playerProgramId: ProgramId;
@@ -185,7 +192,8 @@ export interface CbSnapPlayEvidence {
     | 'PASS_DEFENDED'
     | 'INTERCEPTION'
     | 'TACKLE'
-    | 'MISSED_TACKLE';
+    | 'MISSED_TACKLE'
+    | 'FORCED_FUMBLE';
   readonly targeted: boolean;
   readonly completionAllowed: 0 | 1;
   readonly yardsAllowed: number;
@@ -767,7 +775,11 @@ export function resolveCbSnap(a: ActiveCbGame, decisionId: unknown): CbGameResul
     0,
     950,
   );
-  const targeted = target.value < targetChancePermille;
+  // Scene rules: the scene already says where the ball is.
+  const scene = a.input.sceneRules === SCENE_RULES_VERSION;
+  const airborne = scene && p.familyId === 'key_snap_family_cb_ball';
+  const afterCatch = scene && p.familyId === 'key_snap_family_cb_tackle';
+  const targeted = airborne || afterCatch || target.value < targetChancePermille;
   const disruptionChancePermille = clamp(
     p.baseDisruptionPermille + d.disruptionModifierPermille + (finalScore - 50) * 4,
     0,
@@ -798,13 +810,21 @@ export function resolveCbSnap(a: ActiveCbGame, decisionId: unknown): CbGameResul
     0,
     700,
   );
-  const completed = targeted && completion.value < completionRiskPermille;
+  const completed = afterCatch || (targeted && completion.value < completionRiskPermille);
+  // After the catch, a ball-hunting call is a strip: it forces a fumble or misses the tackle.
+  const stripped = afterCatch && d.mode === 'BALL' && takeaway.value < takeawayChancePermille;
   const intercepted =
-    targeted && !completed && d.mode === 'BALL' && takeaway.value < takeawayChancePermille;
+    !afterCatch &&
+    targeted &&
+    !completed &&
+    d.mode === 'BALL' &&
+    takeaway.value < takeawayChancePermille;
   const defended =
     targeted && !completed && !intercepted && execution.value < disruptionChancePermille;
-  const tackleAttempt = completed && d.mode === 'TACKLE';
-  const tackleMade = tackleAttempt && execution.value < disruptionChancePermille;
+  const tackleAttempt = completed && (d.mode === 'TACKLE' || afterCatch);
+  const tackleMade =
+    stripped ||
+    (tackleAttempt && d.mode === 'TACKLE' && execution.value < disruptionChancePermille);
   let yardsAllowed = completed
     ? Math.max(0, p.baseYardsAllowed + yards.value - (tackleMade ? 3 : 0))
     : 0;
@@ -823,26 +843,28 @@ export function resolveCbSnap(a: ActiveCbGame, decisionId: unknown): CbGameResul
             : 'INCOMPLETE',
       yards: intercepted ? p.baseYardsAllowed : yardsAllowed,
       touchdown: touchdownAllowed === 1 && !tackleMade,
-      fumbleLost: false,
+      fumbleLost: stripped,
     });
     if (tacticalResult === undefined)
       return deepFreeze({ ok: false as const, reason: 'cb_game.invalid_input' as const });
     yardsAllowed = completed ? tacticalResult.ball.offenseYards! : 0;
     touchdownAllowed = tacticalResult.ball.outcome === 'TOUCHDOWN' ? 1 : 0;
   }
-  const playResult: CbSnapPlayEvidence['playResult'] = !targeted
-    ? 'NO_TARGET'
-    : intercepted
-      ? 'INTERCEPTION'
-      : defended
-        ? 'PASS_DEFENDED'
-        : tackleMade
-          ? 'TACKLE'
-          : tackleAttempt
-            ? 'MISSED_TACKLE'
-            : completed
-              ? 'COMPLETION_ALLOWED'
-              : 'COVERED';
+  const playResult: CbSnapPlayEvidence['playResult'] = stripped
+    ? 'FORCED_FUMBLE'
+    : !targeted
+      ? 'NO_TARGET'
+      : intercepted
+        ? 'INTERCEPTION'
+        : defended
+          ? 'PASS_DEFENDED'
+          : tackleMade
+            ? 'TACKLE'
+            : tackleAttempt
+              ? 'MISSED_TACKLE'
+              : completed
+                ? 'COMPLETION_ALLOWED'
+                : 'COVERED';
   const play: CbSnapPlayEvidence = {
     ...(tacticalResult === undefined ? {} : { tacticalResult }),
     snapIndex: a.pendingSnap.snapIndex,

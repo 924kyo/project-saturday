@@ -76,7 +76,7 @@ export const PROGRAM_CULTURE_ROWS: readonly ProgramCultureRow[] = [
     mascotKey: 'v2.program.lakefrontUnion.mascot',
     emblem: 'mariner',
     tradition: 'march',
-    atmospheres: ['lakes'],
+    atmospheres: ['lakes', 'historic'],
   },
   {
     programId: 'program_northstar_college',
@@ -90,7 +90,7 @@ export const PROGRAM_CULTURE_ROWS: readonly ProgramCultureRow[] = [
     mascotKey: 'v2.program.prairieForge.mascot',
     emblem: 'smith',
     tradition: 'bell',
-    atmospheres: ['plains'],
+    atmospheres: ['plains', 'historic'],
   },
   {
     programId: 'program_redwood_bay',
@@ -111,21 +111,21 @@ export const PROGRAM_CULTURE_ROWS: readonly ProgramCultureRow[] = [
     mascotKey: 'v2.program.crownSound.mascot',
     emblem: 'knight',
     tradition: 'homecoming',
-    atmospheres: ['coastal'],
+    atmospheres: ['coastal', 'historic'],
   },
   {
     programId: 'program_amber_coast',
     mascotKey: 'v2.program.amberCoast.mascot',
     emblem: 'bird_sea',
     tradition: 'tide',
-    atmospheres: ['coastal'],
+    atmospheres: ['coastal', 'historic'],
   },
   {
     programId: 'program_ashgrove_state',
     mascotKey: 'v2.program.ashgroveState.mascot',
     emblem: 'fox',
     tradition: 'sunrise',
-    atmospheres: ['bluecollar'],
+    atmospheres: ['bluecollar', 'historic'],
   },
   {
     programId: 'program_blue_ridge_institute',
@@ -139,21 +139,21 @@ export const PROGRAM_CULTURE_ROWS: readonly ProgramCultureRow[] = [
     mascotKey: 'v2.program.copperfield.mascot',
     emblem: 'serpent',
     tradition: 'goalpost',
-    atmospheres: ['smalltown'],
+    atmospheres: ['smalltown', 'historic'],
   },
   {
     programId: 'program_delta_vale',
     mascotKey: 'v2.program.deltaVale.mascot',
     emblem: 'bird_sea',
     tradition: 'march',
-    atmospheres: ['river'],
+    atmospheres: ['river', 'historic'],
   },
   {
     programId: 'program_eastern_pines',
     mascotKey: 'v2.program.easternPines.mascot',
     emblem: 'fox',
     tradition: 'hymn',
-    atmospheres: ['smalltown'],
+    atmospheres: ['smalltown', 'historic'],
   },
   {
     programId: 'program_fairwind',
@@ -167,7 +167,7 @@ export const PROGRAM_CULTURE_ROWS: readonly ProgramCultureRow[] = [
     mascotKey: 'v2.program.frostlineState.mascot',
     emblem: 'bird_owl',
     tradition: 'snow',
-    atmospheres: ['cold'],
+    atmospheres: ['cold', 'historic'],
   },
   {
     programId: 'program_granite_harbor',
@@ -181,7 +181,7 @@ export const PROGRAM_CULTURE_ROWS: readonly ProgramCultureRow[] = [
     mascotKey: 'v2.program.juniperPlains.mascot',
     emblem: 'stag',
     tradition: 'sand',
-    atmospheres: ['plains'],
+    atmospheres: ['plains', 'desert'],
   },
   {
     programId: 'program_kingsport_technical',
@@ -195,7 +195,7 @@ export const PROGRAM_CULTURE_ROWS: readonly ProgramCultureRow[] = [
     mascotKey: 'v2.program.lanternCity.mascot',
     emblem: 'lantern',
     tradition: 'lanterns',
-    atmospheres: ['bigcity'],
+    atmospheres: ['bigcity', 'night'],
   },
   {
     programId: 'program_marshland_a_and_m',
@@ -209,21 +209,21 @@ export const PROGRAM_CULTURE_ROWS: readonly ProgramCultureRow[] = [
     mascotKey: 'v2.program.oakRiver.mascot',
     emblem: 'stag',
     tradition: 'homecoming',
-    atmospheres: ['river'],
+    atmospheres: ['river', 'historic'],
   },
   {
     programId: 'program_palisade',
     mascotKey: 'v2.program.palisade.mascot',
     emblem: 'knight',
     tradition: 'silent',
-    atmospheres: ['defense'],
+    atmospheres: ['defense', 'loud'],
   },
   {
     programId: 'program_quartz_hill',
     mascotKey: 'v2.program.quartzHill.mascot',
     emblem: 'miner',
     tradition: 'stone',
-    atmospheres: ['mountain'],
+    atmospheres: ['mountain', 'historic'],
   },
   {
     programId: 'program_rivergate',
@@ -237,7 +237,7 @@ export const PROGRAM_CULTURE_ROWS: readonly ProgramCultureRow[] = [
     mascotKey: 'v2.program.sagebrushUniversity.mascot',
     emblem: 'serpent',
     tradition: 'sunrise',
-    atmospheres: ['desert'],
+    atmospheres: ['desert', 'bluecollar'],
   },
   {
     programId: 'program_tidewater_polytechnic',
@@ -251,7 +251,7 @@ export const PROGRAM_CULTURE_ROWS: readonly ProgramCultureRow[] = [
     mascotKey: 'v2.program.westernOrchard.mascot',
     emblem: 'grove',
     tradition: 'goalpost',
-    atmospheres: ['historic'],
+    atmospheres: ['historic', 'loud'],
   },
   {
     programId: 'program_cypress_bend',
@@ -265,7 +265,7 @@ export const PROGRAM_CULTURE_ROWS: readonly ProgramCultureRow[] = [
     mascotKey: 'v2.program.saltmarshState.mascot',
     emblem: 'bird_raptor',
     tradition: 'drum',
-    atmospheres: ['coastal'],
+    atmospheres: ['coastal', 'loud'],
   },
   {
     programId: 'program_bellwater',
@@ -279,7 +279,7 @@ export const PROGRAM_CULTURE_ROWS: readonly ProgramCultureRow[] = [
     mascotKey: 'v2.program.redClayCollege.mascot',
     emblem: 'stallion',
     tradition: 'helmet',
-    atmospheres: ['smalltown'],
+    atmospheres: ['smalltown', 'bluecollar'],
   },
   {
     programId: 'program_lowcountry_tech',
@@ -293,14 +293,14 @@ export const PROGRAM_CULTURE_ROWS: readonly ProgramCultureRow[] = [
     mascotKey: 'v2.program.pinehaven.mascot',
     emblem: 'big_cat',
     tradition: 'rally',
-    atmospheres: ['smalltown'],
+    atmospheres: ['smalltown', 'loud'],
   },
   {
     programId: 'program_sugarmill_state',
     mascotKey: 'v2.program.sugarmillState.mascot',
     emblem: 'smith',
     tradition: 'march',
-    atmospheres: ['bluecollar'],
+    atmospheres: ['bluecollar', 'historic'],
   },
   {
     programId: 'program_bayou_crest',
@@ -328,7 +328,7 @@ export const PROGRAM_CULTURE_ROWS: readonly ProgramCultureRow[] = [
     mascotKey: 'v2.program.silverpine.mascot',
     emblem: 'big_cat',
     tradition: 'snow',
-    atmospheres: ['mountain'],
+    atmospheres: ['mountain', 'cold'],
   },
   {
     programId: 'program_thunder_basin_state',
@@ -342,7 +342,7 @@ export const PROGRAM_CULTURE_ROWS: readonly ProgramCultureRow[] = [
     mascotKey: 'v2.program.cedarMesa.mascot',
     emblem: 'bird_raptor',
     tradition: 'torch',
-    atmospheres: ['desert'],
+    atmospheres: ['desert', 'loud'],
   },
   {
     programId: 'program_ironhorse_tech',
@@ -356,7 +356,7 @@ export const PROGRAM_CULTURE_ROWS: readonly ProgramCultureRow[] = [
     mascotKey: 'v2.program.stonefield.mascot',
     emblem: 'smith',
     tradition: 'stone',
-    atmospheres: ['smalltown'],
+    atmospheres: ['historic', 'loud'],
   },
   {
     programId: 'program_bison_ridge',
@@ -377,7 +377,7 @@ export const PROGRAM_CULTURE_ROWS: readonly ProgramCultureRow[] = [
     mascotKey: 'v2.program.oldColony.mascot',
     emblem: 'knight',
     tradition: 'hymn',
-    atmospheres: ['historic'],
+    atmospheres: ['historic', 'loud'],
   },
   {
     programId: 'program_bayshore_state',
@@ -391,7 +391,7 @@ export const PROGRAM_CULTURE_ROWS: readonly ProgramCultureRow[] = [
     mascotKey: 'v2.program.lighthousePoint.mascot',
     emblem: 'lantern',
     tradition: 'lanterns',
-    atmospheres: ['coastal'],
+    atmospheres: ['coastal', 'night'],
   },
   {
     programId: 'program_brickyard_institute',
@@ -412,7 +412,7 @@ export const PROGRAM_CULTURE_ROWS: readonly ProgramCultureRow[] = [
     mascotKey: 'v2.program.kingsFerry.mascot',
     emblem: 'mariner',
     tradition: 'rivalry',
-    atmospheres: ['river'],
+    atmospheres: ['river', 'loud'],
   },
   {
     programId: 'program_elm_hollow',
@@ -454,7 +454,7 @@ export const PROGRAM_CULTURE_ROWS: readonly ProgramCultureRow[] = [
     mascotKey: 'v2.program.goldvein.mascot',
     emblem: 'miner',
     tradition: 'rivalry',
-    atmospheres: ['bluecollar'],
+    atmospheres: ['bluecollar', 'loud'],
   },
   {
     programId: 'program_redrock_state',
@@ -489,7 +489,7 @@ export const PROGRAM_CULTURE_ROWS: readonly ProgramCultureRow[] = [
     mascotKey: 'v2.program.millbrookState.mascot',
     emblem: 'smith',
     tradition: 'walkon',
-    atmospheres: ['bluecollar'],
+    atmospheres: ['bluecollar', 'historic'],
   },
   {
     programId: 'program_anvil_point',
@@ -503,7 +503,7 @@ export const PROGRAM_CULTURE_ROWS: readonly ProgramCultureRow[] = [
     mascotKey: 'v2.program.rivetonCollege.mascot',
     emblem: 'smith',
     tradition: 'horn',
-    atmospheres: ['bluecollar'],
+    atmospheres: ['bluecollar', 'coastal'],
   },
   {
     programId: 'program_pinecrest_tech',
@@ -524,7 +524,7 @@ export const PROGRAM_CULTURE_ROWS: readonly ProgramCultureRow[] = [
     mascotKey: 'v2.program.mesaAlta.mascot',
     emblem: 'stag',
     tradition: 'sunrise',
-    atmospheres: ['desert'],
+    atmospheres: ['desert', 'bluecollar'],
   },
   {
     programId: 'program_driftwood',
@@ -552,7 +552,7 @@ export const PROGRAM_CULTURE_ROWS: readonly ProgramCultureRow[] = [
     mascotKey: 'v2.program.birchwood.mascot',
     emblem: 'bird_sea',
     tradition: 'library',
-    atmospheres: ['academic'],
+    atmospheres: ['academic', 'historic'],
   },
   {
     programId: 'program_lakehaven',
@@ -566,7 +566,7 @@ export const PROGRAM_CULTURE_ROWS: readonly ProgramCultureRow[] = [
     mascotKey: 'v2.program.riverbendState.mascot',
     emblem: 'fox',
     tradition: 'march',
-    atmospheres: ['river'],
+    atmospheres: ['river', 'historic'],
   },
   {
     programId: 'program_harbor_heights',
@@ -580,14 +580,14 @@ export const PROGRAM_CULTURE_ROWS: readonly ProgramCultureRow[] = [
     mascotKey: 'v2.program.stillwaterCollege.mascot',
     emblem: 'reptile',
     tradition: 'walkon',
-    atmospheres: ['smalltown'],
+    atmospheres: ['smalltown', 'bluecollar'],
   },
   {
     programId: 'program_willow_creek',
     mascotKey: 'v2.program.willowCreek.mascot',
     emblem: 'fox',
     tradition: 'goalpost',
-    atmospheres: ['smalltown'],
+    atmospheres: ['smalltown', 'historic'],
   },
   {
     programId: 'program_marshgate',
@@ -601,7 +601,7 @@ export const PROGRAM_CULTURE_ROWS: readonly ProgramCultureRow[] = [
     mascotKey: 'v2.program.liveOakState.mascot',
     emblem: 'grove',
     tradition: 'homecoming',
-    atmospheres: ['historic'],
+    atmospheres: ['historic', 'loud'],
   },
   {
     programId: 'program_crescent_bay',
@@ -629,7 +629,7 @@ export const PROGRAM_CULTURE_ROWS: readonly ProgramCultureRow[] = [
     mascotKey: 'v2.program.wolfCreekState.mascot',
     emblem: 'wolf',
     tradition: 'march',
-    atmospheres: ['plains'],
+    atmospheres: ['plains', 'historic'],
   },
   {
     programId: 'program_high_line_tech',
@@ -650,7 +650,7 @@ export const PROGRAM_CULTURE_ROWS: readonly ProgramCultureRow[] = [
     mascotKey: 'v2.program.lamplightCollege.mascot',
     emblem: 'lantern',
     tradition: 'library',
-    atmospheres: ['academic'],
+    atmospheres: ['academic', 'historic'],
   },
   {
     programId: 'program_tidewell_state',
@@ -671,7 +671,7 @@ export const PROGRAM_CULTURE_ROWS: readonly ProgramCultureRow[] = [
     mascotKey: 'v2.program.brambleton.mascot',
     emblem: 'bird_raptor',
     tradition: 'rivalry',
-    atmospheres: ['historic'],
+    atmospheres: ['historic', 'loud'],
   },
   {
     programId: 'program_sunstone_state',
@@ -685,7 +685,7 @@ export const PROGRAM_CULTURE_ROWS: readonly ProgramCultureRow[] = [
     mascotKey: 'v2.program.paloSeco.mascot',
     emblem: 'boar',
     tradition: 'hymn',
-    atmospheres: ['defense'],
+    atmospheres: ['defense', 'historic'],
   },
   {
     programId: 'program_desert_wind',

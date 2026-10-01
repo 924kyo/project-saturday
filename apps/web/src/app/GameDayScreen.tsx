@@ -346,6 +346,50 @@ export function GameDayScreen({
   const decisionName = (decisionId: string) =>
     t(gameText.decision(positionId, decisionId).nameKey as MessageKey);
   const chosenId = result?.decisionId ?? sideline?.result?.decisionId ?? null;
+  // Feedback is calibrated to what the athlete could actually see (playtest round 2).
+  const reveal = look?.reveal ?? null;
+  const hiddenTell =
+    reveal !== null && seen < reveal.allTellKeys.length ? reveal.allTellKeys[seen]! : null;
+  const readHelp = (quality: 'SHARP' | 'SOLID' | 'MISSED', decisionId: string): string => {
+    if (quality === 'MISSED' && hiddenTell !== null)
+      return playReview
+        ? t('v2.read.missedLimitedTell', { tell: t(key(hiddenTell)) })
+        : t('v2.read.missedLimited');
+    if (
+      quality === 'SHARP' &&
+      playReview &&
+      reveal !== null &&
+      reveal.bestDecisionId !== decisionId
+    )
+      return t('v2.read.sharpAlternative', { best: decisionName(reveal.bestDecisionId) });
+    return t(READ_KEYS[quality].help);
+  };
+  const defense = ['position_cb', 'position_lb', 'position_edge'].includes(positionId);
+  const resultWhy = (): string | null => {
+    if (result === null || live === null) return null;
+    const verdict = playVerdict(positionId, result.outcome);
+    // A defender who gives up yards short of the line to gain still won the down.
+    if (
+      defense &&
+      result.outcome !== 'TOUCHDOWN' &&
+      result.outcome !== 'TURNOVER' &&
+      result.yards > 0 &&
+      result.yards < live.situation.distanceYards
+    )
+      return t('v2.read.shortOfFirstDown', {
+        yards: result.yards,
+        distance: live.situation.distanceYards,
+      });
+    if (result.readQuality === 'SHARP' && verdict === 'bad')
+      return result.playResultId === 'THROW_AWAY'
+        ? t('v2.read.throwawayWhy')
+        : t('v2.read.rightReadBadPlay');
+    if (result.readQuality === 'MISSED' && verdict === 'good')
+      return t('v2.read.wrongReadGoodPlay');
+    return null;
+  };
+  const why = resultWhy();
+  const preparationMaxed = career.athlete.profile.state.preparation >= 100;
 
   return (
     <section aria-labelledby="s2-snap-title" className="s2-gd s2-gd--snap">
@@ -429,10 +473,13 @@ export function GameDayScreen({
               <div className="s2-lowerthird__body">
                 <p className="s2-eyebrow">{decisionName(result.decisionId)}</p>
                 <p className="s2-display s2-lowerthird__headline">
-                  {t(playHeadlineKey(positionId, result.playResultId, result.yards), {
-                    name: lastName,
-                    yards: Math.abs(result.yards),
-                  })}
+                  {t(
+                    playHeadlineKey(positionId, result.playResultId, result.yards, result.outcome),
+                    {
+                      name: lastName,
+                      yards: Math.abs(result.yards),
+                    },
+                  )}
                 </p>
                 <p>
                   <span
@@ -440,16 +487,9 @@ export function GameDayScreen({
                   >
                     {t(READ_KEYS[result.readQuality].name)}
                   </span>{' '}
-                  <span className="s2-note">{t(READ_KEYS[result.readQuality].help)}</span>
+                  <span className="s2-note">{readHelp(result.readQuality, result.decisionId)}</span>
                 </p>
-                {result.readQuality === 'SHARP' &&
-                  playVerdict(positionId, result.outcome) === 'bad' && (
-                    <p className="s2-note s2-lowerthird__why">{t('v2.read.rightReadBadPlay')}</p>
-                  )}
-                {result.readQuality === 'MISSED' &&
-                  playVerdict(positionId, result.outcome) === 'good' && (
-                    <p className="s2-note s2-lowerthird__why">{t('v2.read.wrongReadGoodPlay')}</p>
-                  )}
+                {why !== null && <p className="s2-note s2-lowerthird__why">{why}</p>}
               </div>
             </div>
           )}
@@ -500,7 +540,11 @@ export function GameDayScreen({
                   <span aria-hidden="true" className="s2-clue__n">
                     ?
                   </span>
-                  <span>{t('v2.look.moreTells', { count: hidden })}</span>
+                  <span>
+                    {t(preparationMaxed ? 'v2.look.moreTellsCapped' : 'v2.look.moreTells', {
+                      count: hidden,
+                    })}
+                  </span>
                 </p>
               )}
             </div>

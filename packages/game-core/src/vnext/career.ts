@@ -22,6 +22,7 @@ import {
 import { resolvePositionFocusWithSkills } from '../weekly/position-focus-skills.js';
 import {
   attemptBreakthroughVNext,
+  breakthroughStateVNext,
   loadoutVNext,
   skillDefinitionsVNext,
   VNEXT_BREAKTHROUGH_THRESHOLD,
@@ -342,7 +343,11 @@ export function planWeekVNext(
   );
   if (!updated.ok) return fail('career_vnext.engine_failed');
   const gaugeBefore = career.athlete.breakthroughGauge;
-  const gaugeAfter = Math.min(160, gaugeBefore + grade.breakthroughGaugePoints);
+  // A complete collection holds the gauge at full rather than filling toward nothing.
+  const gaugeCap = breakthroughStateVNext(career, mechanics).complete
+    ? VNEXT_BREAKTHROUGH_THRESHOLD
+    : 160;
+  const gaugeAfter = Math.min(gaugeCap, gaugeBefore + grade.breakthroughGaugePoints);
   return publish(career, {
     ...career,
     athlete: {
@@ -824,11 +829,10 @@ function settleGame(
   const rank = worldAfter.rankings.find(({ programId }) => programId === career.program!.programId);
   const profile = career.athlete.profile;
   const stakes = projectGameStakesVNext(career, game.opponentProgramId, game.isHome, mechanics);
+  const boxScore = calibratedGradeVNext(profile.positionId as VNextPositionId, summary.gradeScore);
+  const readScore = liveReadScoreVNext(completed);
   const coachGrade = coachGradeVNext(
-    staffGameScoreVNext(
-      calibratedGradeVNext(profile.positionId as VNextPositionId, summary.gradeScore),
-      liveReadScoreVNext(completed),
-    ),
+    staffGameScoreVNext(boxScore, readScore),
     summary.opportunityCount,
   );
   const coachTrustAfter = Math.min(
@@ -850,6 +854,14 @@ function settleGame(
     engine: completed,
     coachTrust: { before: growth.coachTrustBefore, after: coachTrustAfter },
     coachGrade,
+    ...(summary.opportunityCount > 0
+      ? {
+          gradeParts: {
+            box: boxScore,
+            reads: readScore === null ? null : Math.round(readScore),
+          },
+        }
+      : {}),
     body: { before: growth.bodyBefore, after: growth.bodyAfter },
     confidence: { before: growth.confidenceBefore, after: growth.confidenceAfter },
     recordAfter: { wins: record?.wins ?? 0, losses: record?.losses ?? 0, ties: record?.ties ?? 0 },

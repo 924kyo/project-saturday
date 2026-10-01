@@ -7,6 +7,12 @@ import {
 } from './tactical-context-v1.js';
 
 export const TACTICAL_GAME_RULES_VERSION = 'tactical_game_v1' as const;
+/**
+ * Scene-consistent outcomes (playtest round 2): a result never contradicts the scene or the call
+ * (a slide does not break away for a score; a ball already in the air is thrown at the player).
+ * Kernels apply it only when the input names it, so historical sessions stay literal.
+ */
+export const SCENE_RULES_VERSION = 'scene_rules_v1' as const;
 export const TACTICAL_ALPHA_TUNING = Object.freeze({
   touchdownPermille: 250,
   fieldGoalPermille: 150,
