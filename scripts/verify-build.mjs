@@ -100,4 +100,32 @@ if (manifestOccurrences !== 1) {
   );
 }
 
+// Offline portraits: the placement file and every painted layer are precached exactly once, so a
+// release is complete offline and an update never mixes two portrait sets.
+async function listFiles(directory) {
+  const entries = await readdir(directory, { withFileTypes: true });
+  const nested = await Promise.all(
+    entries.map((entry) =>
+      entry.isDirectory()
+        ? listFiles(path.join(directory, entry.name))
+        : [path.join(directory, entry.name)],
+    ),
+  );
+  return nested.flat();
+}
+const artFiles = (
+  await Promise.all(
+    ['portrait', 'fullbody'].map((part) => listFiles(path.join(webDist, 'art', part))),
+  )
+)
+  .flat()
+  .map((file) => path.relative(webDist, file).split(path.sep).join('/'));
+if (!artFiles.includes('art/portrait/portrait-overlays.json'))
+  throw new Error('Built app is missing art/portrait/portrait-overlays.json.');
+for (const file of artFiles) {
+  const occurrences = serviceWorker.split(`"${file}"`).length - 1;
+  if (occurrences !== 1)
+    throw new Error(`Service worker should precache ${file} exactly once; found ${occurrences}.`);
+}
+
 console.log('Built package exports and PWA artifacts verified.');

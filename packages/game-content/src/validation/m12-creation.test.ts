@@ -8,7 +8,9 @@ import {
   creationBreakdownVNext,
   overallContributionsVNext,
   overallVNext,
+  parseCareerVNext,
   scoutingReportVNext,
+  serializeCareerVNext,
   VNEXT_ALLOCATION_TUNING,
   type PlayerAppearance,
   type PositionPlayerCreationIdentity,
@@ -218,6 +220,30 @@ describe('M12 identity never touches ability (playtest report firm boundary)', (
         );
         expect(result.career.recruiting.offers).toEqual(reference.career.recruiting.offers);
       }
+  });
+
+  it('round-trips every v3 face and hairstyle through creation and the save codec', () => {
+    const base = identity('position_wr', 'archetype_wr_deep_threat');
+    const mechanics = buildCareerVNextMechanics(base)!;
+    const faces = appearanceCatalogVNext.faceId.options.map(({ id }) => id);
+    const styles = appearanceCatalogVNext.hairStyleId.options.map(({ id }) => id);
+    expect([faces.length, styles.length]).toEqual([16, 14]);
+    for (const [index, faceId] of faces.entries()) {
+      const appearance: PlayerAppearance = {
+        ...defaultWrAppearance,
+        faceId,
+        hairStyleId: styles[index % styles.length]!,
+        hairColorId: 'hair_color_gray',
+        facialHairId: index % 2 === 0 ? 'facial_hair_goatee' : null,
+      };
+      const created = createCareerVNext(
+        { seed: `face-${faceId}`, identity: { ...base, appearance } },
+        mechanics,
+      );
+      if (!created.ok) throw new Error(`${faceId}: ${created.reason}`);
+      const restored = parseCareerVNext(serializeCareerVNext(created.career)!);
+      expect(restored?.athlete.profile.appearance, faceId).toEqual(appearance);
+    }
   });
 
   it('accepts optional facial hair and rejects a malformed one', () => {

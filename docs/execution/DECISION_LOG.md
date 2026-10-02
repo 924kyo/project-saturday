@@ -698,6 +698,19 @@ Append concise implementation/product decisions that do not warrant their own AD
   - **The clock** is re-timed per key snap inside its even slot from `:vnext:clock:<season>:<week>:<snap>` (no kernel RNG draw; the context matcher ignores the clock). The WR composure card reads Q4, so the clock is real context, not decoration.
   - **The pregame line** has five bands from the measured matchup-score spread (p10 46, p50 52, p90 59). The old 42/58 cut put 85% of games at toss-up. An upset is a win as an underdog; pre-M12 recaps keep the ranked rule.
   - **Copy:** "Drop eight" is "Drop seven" (its board rushes four); the closing-pursuit distance is mid-run; the WR release prompt no longer says the corner waits at the line.
+- 2026-10-02 (M12 Phase 3, Round 3 v3 portraits): the owner's art pack is integrated, following their integration notes. Code and config only; no asset file was made, moved or rewritten.
+  - **Options:** 16 faces (four shapes plus `identity_01…12`, as alternatives) and 14 hairstyles are in the VNext catalog, with EN/KO labels.
+    - Save fields and IDs are unchanged; the core validates appearance IDs by prefix, so older saves keep their choices. A test round-trips every new face and style through creation and the save codec.
+    - No option restricts another, and none touches gameplay.
+  - **Placement:** `art/portrait/portrait-overlays.json` is the authority. It is loaded once per art release and validated (v3 frame, 16 faces, three six-number finite matrices each). An invalid or missing file means no painted bust; the game never infers or falls back to identity matrices.
+    - Hair takes the face's `hair` matrix, mustache its `mustache` matrix, and stubble, goatee and beard `facialHair`. Every other layer keeps identity placement.
+    - The CSS form is `translate(e/512, f/640 as %) matrix(a, b, c, d, 0, 0)` with origin 0 0 on a layer that fills the 4:5 bust box. That equals the common display scale applied after the local placement (G × M) at every size, applied once; a test checks points at three scales.
+  - **Atomic swaps:** the bust changes only when the placement and every layer of the new selection have loaded, so head and placement change together. A layer that fails keeps the last complete bust, or the drawn figure if there is none.
+  - **Release:** portrait URLs carry `?v=PORTRAIT_ART_RELEASE` (`r3v3`), so the HTTP cache cannot mix two releases. The service worker precaches the placement file and every layer, and ignores the `v` parameter when matching precache entries.
+    - Workbox installs a release all or nothing and keeps serving the previous one until the update is accepted, so images and placement stay together.
+    - `verify-build` now fails unless the placement file and every portrait and full-body file are precached exactly once.
+  - The full-body figure is unchanged. Its face stays generic, and no portrait matrix applies to it.
+  - The owner's JSON is excluded from Prettier, so it stays byte for byte as delivered.
 - 2026-10-02 (M12 Phase 3, creation and identity): the rules live in the core (`vnext/creation.ts`); the creation screen only lets the player try them.
   - **Point budget:** 10 points, +5 / −3 per attribute, at most 6 points refunded by lowering, no starting rating above 85 or below 20 (`VNEXT_ALLOCATION_TUNING`).
     - Presets: Recommended (the attributes that move overall most), Specialist, Athletic and No changes. Every preset is valid for every position, style and background.

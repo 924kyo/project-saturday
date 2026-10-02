@@ -162,10 +162,19 @@ Draw order, bottom to top: skin, sleeves, jersey, jersey trim, head, facial hair
 
 # Round 3 (M12): hair colors, facial hair, and the full-body figure with gear
 
-**Status (2026-10-01): the options are in the game; the art is not delivered yet.**
-- A layer that is not delivered simply does not show.
-- The full-body figure appears only once the base body layer for the chosen build and tone exists.
-- Drop each file at its exact path; no code change is needed.
+**Status (2026-10-02): delivered by the owner as the Round 3 v3 pack and integrated.** The pack has 335 WebPs: 266 portrait replacements and the 69 full-body layers below. It also includes `portrait/portrait-overlays.json`.
+
+The v3 pack goes beyond the D–E lists below:
+- **Faces:** 16 alternatives (`oval`, `round`, `square`, `angular`, `identity_01` … `identity_12`), not a shape × identity grid. 96 heads.
+- **Hairstyles:** 14, each in 8 colors (112 files). The six earlier styles were replaced, and eight were added: `straight_crop`, `side_part`, `middle_part`, `curtain_fringe`, `two_block`, `comma_fringe`, `textured_quiff`, `swept_back`. `shaved` is a real layer.
+- **Refits:** skin/neck (18), eye black (2) and jersey/trim (6) were refitted to the new faces. Portrait sleeves and towels are kept from round 2.
+- **Placement:** hair and facial hair are placed per face by the matrices in `portrait-overlays.json`.
+  - Canvas order is [a, b, c, d, e, f] on 512 × 640, with origin 0 0.
+  - Hair takes `hair`, mustache takes `mustache`, and stubble, goatee and beard take `facialHair`. Every other layer keeps identity placement.
+  - The file is authoritative; the game validates it and never infers values.
+- **Release:** the bust appears only when the placement file and every layer of the selection have loaded, so no partial or mixed set is drawn.
+  - Same-path replacements need a new `PORTRAIT_ART_RELEASE` (`apps/web/src/career/portrait-overlays.ts`). The service worker precaches the placement file and every layer.
+- The full-body figure is unchanged by v3, and its helmeted face stays generic.
 
 Shared rules, as in round 2:
 - WebP with alpha, and the same originality rules.

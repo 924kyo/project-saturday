@@ -426,6 +426,10 @@
   height: 100%;
   object-fit: contain;
 }
+/* Hair and facial hair take their face's matrix on the full canvas, from the top-left corner. */
+.athlete-portrait__layer--placed {
+  transform-origin: 0 0;
+}
 .athlete-portrait__layer--tint {
   mask-size: contain;
   mask-repeat: no-repeat;

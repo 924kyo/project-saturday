@@ -94,7 +94,10 @@ export default defineConfig({
       workbox: {
         cleanupOutdatedCaches: true,
         // Self-hosted display fonts must be precached, or the broadcast face is lost offline.
-        globPatterns: ['**/*.{css,html,ico,js,png,svg,webp,woff2}'],
+        // Portrait art and its placement file are one release: both are precached, and the `v`
+        // release parameter (PORTRAIT_ART_RELEASE) still resolves to the precached file.
+        globPatterns: ['**/*.{css,html,ico,js,json,png,svg,webp,woff2}'],
+        ignoreURLParametersMatching: [/^utm_/, /^fbclid$/, /^v$/],
         navigateFallback: `${base}index.html`,
       },
     }),

@@ -29,7 +29,9 @@ M10 is complete (plan: `docs/exec-plans/completed/m10-release-candidate.md`), an
   - Restart point: Phase 3, creation and identity (CRE-01…10).
 - 2026-10-02: Phase 3 (creation and identity) is done.
   - CRE-01, 02, 03, 07, 08, 09 and 10 are verified complete.
-  - CRE-05 and CRE-06 are blocked on user-made art (`ASSET_LIST.md` round 3: 125 files); the options are wired.
+  - CRE-05 and CRE-06 were blocked on the owner's art. The Round 3 v3 pack (335 WebPs plus `portrait-overlays.json`) is now integrated, so both are verified complete.
+    - The pack adds 16 faces, 14 hairstyles and per-face placement; the bust swaps atomically, and every layer is precached in one release.
+    - Gate after the pack: vitest 942, content 472, sim 398, e2e 20, build with the precache check; 250 busts inspected on contact sheets.
   - CRE-04 is in progress: story beats come in Phase 6.
   - Gate: typecheck, lint and format clean; vitest 934, content 471, sim 398, e2e 20, build; EN/KO screens of the build step, Look and Profile.
   - Restart point: Phase 4, schools and transfers.

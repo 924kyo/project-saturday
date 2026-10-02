@@ -1,8 +1,14 @@
 import './athlete-portrait.css';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { PlayerAppearance } from '@project-saturday/game-core';
 
-import { assetUrl } from '../app/asset-url';
+import {
+  overlayTransform,
+  portraitArtUrl,
+  usePortraitOverlays,
+  type OverlayMatrix,
+  type PortraitOverlays,
+} from './portrait-overlays';
 
 export interface AthletePortraitProps {
   readonly appearance: PlayerAppearance;
@@ -14,62 +20,112 @@ function optionalId(value: string | null): string {
   return value ?? 'none';
 }
 
-const ART = assetUrl('art/portrait');
 const tail = (id: string, prefix: string) => id.slice(prefix.length);
 
+interface PortraitLayer {
+  readonly src: string;
+  readonly tint?: string;
+  /** Per-face placement (hair and facial hair only); other layers keep identity placement. */
+  readonly matrix?: OverlayMatrix;
+}
+
 /**
- * The painted bust (`docs/design/ASSET_LIST.md`, portrait layers): every layer shares one 512 x 640
- * canvas, so they stack exactly. The jersey is white art tinted with the program colors.
+ * The painted bust (Round 3 v3, `docs/design/ASSET_LIST.md`): every layer shares one 512 × 640
+ * canvas. Bottom to top: skin, sleeves, jersey, jersey trim, head, facial hair, hair, eye black,
+ * towel. Head, skin, hair and facial hair keep their painted colors; only the jersey is tinted.
+ * Null when the face has no validated placement.
  */
 function layersOf(
   appearance: PlayerAppearance,
-): readonly { readonly src: string; readonly tint?: string }[] {
+  faces: PortraitOverlays,
+): readonly PortraitLayer[] | null {
+  const face = tail(appearance.faceId, 'face_');
+  const placement = faces[face];
+  if (placement === undefined) return null;
   const body = tail(appearance.bodyTypeId, 'body_type_');
   const skin = tail(appearance.skinToneId, 'skin_tone_');
   const hairColor = tail(appearance.hairColorId, 'hair_color_');
-  const layers: { src: string; tint?: string }[] = [
-    { src: `${ART}/skin/${body}-${skin}.webp` },
-    { src: `${ART}/jersey/${body}.webp`, tint: 'var(--team, #28344a)' },
-    { src: `${ART}/jersey/${body}-trim.webp`, tint: 'var(--team-2, #c8ff2e)' },
-    { src: `${ART}/head/${tail(appearance.faceId, 'face_')}-${skin}.webp` },
-    // M12: facial hair sits between the head and the hair (ASSET_LIST round 3).
-    ...(appearance.facialHairId == null
-      ? []
-      : [
-          {
-            src: `${ART}/facial-hair/${tail(appearance.facialHairId, 'facial_hair_')}-${hairColor}.webp`,
-          },
-        ]),
-    {
-      src: `${ART}/hair/${tail(appearance.hairStyleId, 'hair_style_')}-${hairColor}.webp`,
-    },
-  ];
+  const layers: PortraitLayer[] = [{ src: portraitArtUrl(`skin/${body}-${skin}.webp`) }];
   if (appearance.armSleevesId !== null)
-    layers.splice(1, 0, {
-      src: `${ART}/sleeves/${tail(appearance.armSleevesId, 'arm_sleeves_')}.webp`,
+    layers.push({
+      src: portraitArtUrl(`sleeves/${tail(appearance.armSleevesId, 'arm_sleeves_')}.webp`),
     });
+  layers.push(
+    { src: portraitArtUrl(`jersey/${body}.webp`), tint: 'var(--team, #28344a)' },
+    { src: portraitArtUrl(`jersey/${body}-trim.webp`), tint: 'var(--team-2, #c8ff2e)' },
+    { src: portraitArtUrl(`head/${face}-${skin}.webp`) },
+  );
+  if (appearance.facialHairId != null) {
+    const style = tail(appearance.facialHairId, 'facial_hair_');
+    layers.push({
+      src: portraitArtUrl(`facial-hair/${style}-${hairColor}.webp`),
+      matrix: style === 'mustache' ? placement.mustache : placement.facialHair,
+    });
+  }
+  layers.push({
+    src: portraitArtUrl(`hair/${tail(appearance.hairStyleId, 'hair_style_')}-${hairColor}.webp`),
+    matrix: placement.hair,
+  });
   if (appearance.eyeBlackId !== null)
-    layers.push({ src: `${ART}/eye-black/${tail(appearance.eyeBlackId, 'eye_black_')}.webp` });
+    layers.push({
+      src: portraitArtUrl(`eye-black/${tail(appearance.eyeBlackId, 'eye_black_')}.webp`),
+    });
   if (appearance.towelId !== null)
-    layers.push({ src: `${ART}/towel/${tail(appearance.towelId, 'towel_')}.webp` });
+    layers.push({ src: portraitArtUrl(`towel/${tail(appearance.towelId, 'towel_')}.webp`) });
   return layers;
 }
 
-/** A layer whose art is not delivered yet is left out instead of showing a broken image. */
-const hideMissing = (event: React.SyntheticEvent<HTMLImageElement>) => {
-  event.currentTarget.style.visibility = 'hidden';
-};
+/**
+ * The last complete portrait: a new selection replaces it only once every one of its layers has
+ * loaded, so the head and its placement change together and no partial or mixed bust is drawn.
+ * Until a first selection is complete (or if its art cannot load) the drawn figure stands in.
+ */
+function useCompletePortrait(
+  layers: readonly PortraitLayer[] | null,
+): readonly PortraitLayer[] | null {
+  const key =
+    layers === null ? null : layers.map(({ src, matrix }) => `${src}@${matrix ?? ''}`).join('|');
+  const [shown, setShown] = useState<{
+    readonly key: string;
+    readonly layers: readonly PortraitLayer[];
+  } | null>(null);
+  useEffect(() => {
+    if (layers === null || key === null || key === shown?.key) return;
+    let live = true;
+    let remaining = layers.length;
+    const images = layers.map(({ src }) => {
+      const image = new Image();
+      image.onload = () => {
+        remaining -= 1;
+        if (remaining === 0 && live) setShown({ key, layers });
+      };
+      image.onerror = () => {
+        live = false;
+      };
+      image.src = src;
+      return image;
+    });
+    return () => {
+      live = false;
+      for (const image of images) {
+        image.onload = null;
+        image.onerror = null;
+      }
+    };
+    // The key is the selection; `layers` is rebuilt every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+  return shown?.layers ?? null;
+}
 
 export function AthletePortrait({
   appearance,
   label,
   size = 'card',
 }: AthletePortraitProps): React.JSX.Element {
-  const layers = layersOf(appearance);
-  const head = layers.find(({ src }) => src.includes('/head/'))!.src;
-  // The painted bust replaces the drawn figure only once its head layer is known to exist.
-  const [painted, setPainted] = useState<string | null>(null);
-  if (painted === head)
+  const faces = usePortraitOverlays();
+  const painted = useCompletePortrait(faces === null ? null : layersOf(appearance, faces));
+  if (painted !== null)
     return (
       <figure
         aria-label={label}
@@ -78,14 +134,19 @@ export function AthletePortrait({
         role="img"
       >
         <span aria-hidden="true" className="athlete-portrait__bust">
-          {layers.map(({ src, tint }) =>
+          {painted.map(({ src, tint, matrix }) =>
             tint === undefined ? (
               <img
                 alt=""
-                className="athlete-portrait__layer"
+                className={
+                  matrix === undefined
+                    ? 'athlete-portrait__layer'
+                    : 'athlete-portrait__layer athlete-portrait__layer--placed'
+                }
+                data-layer-src={src}
                 key={src}
-                onError={hideMissing}
                 src={src}
+                style={matrix === undefined ? undefined : { transform: overlayTransform(matrix) }}
               />
             ) : (
               <span
@@ -122,7 +183,6 @@ export function AthletePortrait({
       data-wrist-tape={optionalId(appearance.wristTapeId)}
       role="img"
     >
-      <img alt="" hidden onLoad={() => setPainted(head)} src={head} />
       <span aria-hidden="true" className="athlete-portrait__stage">
         <span className="athlete-portrait__shadow" />
         <span className="athlete-portrait__leg athlete-portrait__leg--left">
