@@ -191,3 +191,20 @@ export {
   type NextPointVNext,
   type OffseasonProgramDefinitionVNext,
 } from './development.js';
+export {
+  allocationPresetsVNext,
+  applyAllocationVNext,
+  checkAllocationVNext,
+  creationBreakdownVNext,
+  overallContributionsVNext,
+  recruitOfferTargetVNext,
+  scoutingReportVNext,
+  VNEXT_ALLOCATION_TUNING,
+  VNEXT_LEGACY_HEAD_START_CAP,
+  type AllocationCheckVNext,
+  type AllocationPresetIdVNext,
+  type AllocationVNext,
+  type CreationSourceRowVNext,
+  type OverallContributionVNext,
+  type ScoutingReportVNext,
+} from './creation.js';

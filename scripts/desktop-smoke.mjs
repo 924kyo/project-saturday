@@ -105,12 +105,21 @@ async function create(locale, positionIndex, name) {
   await page.locator('[role=checkbox]:not([disabled])').first().click();
   await page.locator('[role=checkbox][aria-checked=false]:not([disabled])').first().click();
   await primary().click();
+  // M12 build step.
+  await primary().click();
   await page.locator('#s2-name').fill(name);
   await primary().click();
   await expect(page.locator('.s2-offer')).toHaveCount(4);
   await page.locator('.s2-offer').last().click();
   await primary().click();
   await expect(page.locator('.s2-nameplate')).toBeVisible({ timeout: 10_000 });
+  // M12 preseason camp: the coach's camp plan, then week one.
+  await expect(page.locator('#s2-camp')).toBeVisible({ timeout: 10_000 });
+  await page.locator('section:has(#s2-camp) .s2-panel__head .s2-chipbtn').click();
+  await primary().click();
+  await expect(page.locator('#s2-camp-report')).toBeVisible();
+  await primary().click();
+  await expect(page.locator('.s2-focusgroups')).toBeVisible({ timeout: 10_000 });
   await expect.poll(readCurrent).toBeTruthy();
   report.checks.push(`Create position #${positionIndex} in ${locale} through the production UI`);
 }

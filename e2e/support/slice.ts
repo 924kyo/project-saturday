@@ -14,6 +14,8 @@ export async function createCareer(page: Page, name: string): Promise<void> {
   await page.locator('[role=checkbox]:not([disabled])').first().click();
   await page.locator('[role=checkbox][aria-checked=false]:not([disabled])').first().click();
   await primaryAction(page).click();
+  // M12 build step: the default (no allocation) is a valid athlete.
+  await primaryAction(page).click();
   await page.locator('#s2-name').fill(name);
   await primaryAction(page).click();
   await expect(page.locator('.s2-offer')).toHaveCount(4);

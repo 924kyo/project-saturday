@@ -12,6 +12,7 @@ import { skillMechanicsDefinitions } from './skills.js';
 import { defenderCatalog, edgeContent, lbContent } from './defenders.js';
 import { lifeEventMechanics } from './life-events.js';
 import { reservedRosterNamePairs } from './programs.js';
+import { suggestionNamePoolVNext } from './name-pool-vnext.js';
 import { snapLookCatalogVNext } from './snap-looks.js';
 import { legacyMentorEvent } from './legacy-events.js';
 import {
@@ -172,6 +173,10 @@ export function buildCareerVNextMechanics(
     defenders: DEFENDER_CATALOGS,
     life: { events: lifeEventMechanics },
     reservedNamePairs: reservedRosterNamePairs,
+    suggestedNames: {
+      givenNameIds: suggestionNamePoolVNext.given.map(({ id }) => id),
+      familyNameIds: suggestionNamePoolVNext.family.map(({ id }) => id),
+    },
     looks: snapLookCatalogVNext,
     legacyEvents: { mentor: legacyMentorEvent },
     // These two deals are written for receivers (route clinic, glove workshop).

@@ -1,6 +1,12 @@
 import { rivalWeekVNext, VNEXT_RIVAL_TUNING } from './rivals.js';
 import { withVariedClockVNext } from './clock.js';
 import {
+  applyAllocationVNext,
+  checkAllocationVNext,
+  recruitOfferTargetVNext,
+  VNEXT_LEGACY_HEAD_START_CAP,
+} from './creation.js';
+import {
   backgroundProfileVNext,
   campFocusIdsVNext,
   coachSuggestionVNext,
@@ -98,6 +104,7 @@ import {
   type GameDayVNext,
   type GameRecapVNext,
   type GameSlotVNext,
+  type HomeRegionIdVNext,
   type RecruitOfferVNext,
   type VNextGameState,
   type VNextPositionId,
@@ -113,7 +120,20 @@ export interface CreateCareerVNextInput {
   readonly legacy?: readonly AlumniVNext[];
   /** A generated name from the roster pool, shown in the app language (optional). */
   readonly nameTokens?: AthleteNameTokensVNext;
+  /** M12: the player's own point allocation (absent = none) and the preset it started from. */
+  readonly allocation?: Readonly<Record<string, number>>;
+  readonly presetId?: string | null;
+  /** M12: extra allocation points (the capped legacy head start; 0 by default). */
+  readonly bonusBudget?: number;
+  /** M12: optional home region, story only. */
+  readonly homeRegionId?: HomeRegionIdVNext;
 }
+
+const HOME_REGIONS: readonly HomeRegionIdVNext[] = [
+  'home_region_in_state',
+  'home_region_out_of_state',
+  'home_region_international',
+];
 
 export function createCareerVNext(
   input: CreateCareerVNextInput,
@@ -126,7 +146,18 @@ export function createCareerVNext(
     mechanics: mechanics.creation,
   });
   if (!created.ok) return fail('career_vnext.invalid_input');
-  const profile = created.player;
+  // M12: the player's allocation, checked against the budget and caps, then applied.
+  const allocation = input.allocation ?? {};
+  const bonusBudget = input.bonusBudget ?? 0;
+  if (
+    !Number.isInteger(bonusBudget) ||
+    bonusBudget < 0 ||
+    bonusBudget > VNEXT_LEGACY_HEAD_START_CAP ||
+    !checkAllocationVNext(created.player, allocation, bonusBudget).ok ||
+    (input.homeRegionId !== undefined && !HOME_REGIONS.includes(input.homeRegionId))
+  )
+    return fail('career_vnext.invalid_input');
+  const profile = applyAllocationVNext(created.player, allocation);
   // M12: the recruiting background sets the recruit's standing (better or later first offers).
   const recruiting = derivePositionRecruitingProfile(
     profile,
@@ -136,14 +167,36 @@ export function createCareerVNext(
   if (recruiting === undefined) return fail('career_vnext.invalid_input');
   const positionId = profile.positionId as VNextPositionId;
   const tokens = input.nameTokens;
+  const givenIds = [
+    ...(mechanics.roomNames.givenNameIds as readonly string[]),
+    ...(mechanics.suggestedNames?.givenNameIds ?? []),
+  ];
+  const familyIds = [
+    ...(mechanics.roomNames.familyNameIds as readonly string[]),
+    ...(mechanics.suggestedNames?.familyNameIds ?? []),
+  ];
   if (
     tokens !== undefined &&
-    (!(mechanics.roomNames.givenNameIds as readonly string[]).includes(tokens.givenNameId) ||
-      !(mechanics.roomNames.familyNameIds as readonly string[]).includes(tokens.familyNameId))
+    (!givenIds.includes(tokens.givenNameId) || !familyIds.includes(tokens.familyNameId))
   )
     return fail('career_vnext.invalid_input');
   const athlete = {
     profile,
+    ...(input.allocation === undefined &&
+    input.presetId === undefined &&
+    input.homeRegionId === undefined &&
+    bonusBudget === 0
+      ? {}
+      : {
+          creation: {
+            allocation: Object.fromEntries(
+              Object.entries(allocation).filter(([, delta]) => delta !== 0),
+            ),
+            presetId: input.presetId ?? null,
+            bonusBudget,
+            ...(input.homeRegionId === undefined ? {} : { homeRegionId: input.homeRegionId }),
+          },
+        }),
     proficiencyUses: createPositionTrainingProficiencyUses(positionId),
     sharedProficiencyUses: createCommonPositionProficiencyUses(),
     breakthroughGauge: 0,
@@ -152,7 +205,7 @@ export function createCareerVNext(
       : { nameTokens: { givenNameId: tokens.givenNameId, familyNameId: tokens.familyNameId } }),
   };
   // Four realistic suitors around the recruit's level: a reach, two fits and an early-role path.
-  const target = 50 + Math.round((recruiting.recruitScore - 50) * 0.6);
+  const target = recruitOfferTargetVNext(recruiting.recruitScore);
   const ranked = mechanics.world.programProfiles
     .map(({ programId }) => ({
       programId,

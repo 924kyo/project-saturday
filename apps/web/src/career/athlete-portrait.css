@@ -445,3 +445,36 @@
   -webkit-mask-image: linear-gradient(180deg, #000 80%, transparent);
   mask-image: linear-gradient(180deg, #000 80%, transparent);
 }
+
+/* M12 full-body figure: painted layers on one 600 × 1080 canvas (ASSET_LIST round 3). */
+.fullbody {
+  margin: 0;
+  width: 100%;
+  max-width: 220px;
+  aspect-ratio: 600 / 1080;
+}
+.fullbody[data-size='large'] {
+  max-width: 300px;
+}
+.fullbody__stack {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 100%;
+}
+.fullbody__layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.fullbody__layer--tint {
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+}

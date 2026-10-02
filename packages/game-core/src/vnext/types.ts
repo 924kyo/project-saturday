@@ -77,6 +77,11 @@ export type CareerVNextMechanics = PositionAlphaSessionCommandMechanics & {
   readonly looks: SnapLookCatalogVNext;
   /** Generated `given|family` name pairs VNext never shows (they read as real people; M10). */
   readonly reservedNamePairs: readonly string[];
+  /** M12: names a suggestion may use beyond the roster pool (absent = roster pool only). */
+  readonly suggestedNames?: {
+    readonly givenNameIds: readonly string[];
+    readonly familyNameIds: readonly string[];
+  };
   /** The legacy mentor scene (M9): an alumnus of the current program checks in. */
   readonly legacyEvents: { readonly mentor: WeeklyEventDefinitionV2 };
   /** Shared campus-life events every position can draw (M8). */
@@ -121,7 +126,22 @@ export interface AthleteVNext {
    * typed name has none, and `profile.displayName` stays the name as created.
    */
   readonly nameTokens?: AthleteNameTokensVNext;
+  /** M12: the creation choices beyond the identity (absent on earlier saves = none). */
+  readonly creation?: AthleteCreationVNext;
 }
+
+/** M12 creation record: the player's own allocation and story-only choices. */
+export interface AthleteCreationVNext {
+  readonly allocation: Readonly<Record<string, number>>;
+  readonly presetId: string | null;
+  /** Allocation points beyond the base budget (legacy head start, Phase 8). */
+  readonly bonusBudget: number;
+  /** Optional home region: story only, never a rating (absent = not chosen). */
+  readonly homeRegionId?: HomeRegionIdVNext;
+}
+
+export type HomeRegionIdVNext =
+  'home_region_in_state' | 'home_region_out_of_state' | 'home_region_international';
 
 export interface AthleteNameTokensVNext {
   readonly givenNameId: string;

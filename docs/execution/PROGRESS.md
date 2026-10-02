@@ -27,6 +27,12 @@ M10 is complete (plan: `docs/exec-plans/completed/m10-release-candidate.md`), an
   - DEV-07, 08 and CRE-02 are in progress: harness validation in Phase 10, academic support in Phase 4, OVR weights in Phase 3.
   - A Phase 1 locale-key regression was found and fixed (see DECISION_LOG).
   - Restart point: Phase 3, creation and identity (CRE-01…10).
+- 2026-10-02: Phase 3 (creation and identity) is done.
+  - CRE-01, 02, 03, 07, 08, 09 and 10 are verified complete.
+  - CRE-05 and CRE-06 are blocked on user-made art (`ASSET_LIST.md` round 3: 125 files); the options are wired.
+  - CRE-04 is in progress: story beats come in Phase 6.
+  - Gate: typecheck, lint and format clean; vitest 934, content 471, sim 398, e2e 20, build; EN/KO screens of the build step, Look and Profile.
+  - Restart point: Phase 4, schools and transfers.
 
 ## Status
 

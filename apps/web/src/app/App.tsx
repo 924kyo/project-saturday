@@ -12,6 +12,7 @@ import {
   continueGameVNext,
   continueSeasonReviewVNext,
   createCareerVNext,
+  type DepthRoleId,
   equipSkillVNext,
   kickoffVNext,
   nextWeekVNext,
@@ -37,11 +38,12 @@ import {
 
 import { useAppTranslation } from '../i18n/i18n';
 import { persistLocale } from '../i18n/locale';
+import { applyNameDisplay } from '../i18n/i18n';
 import { PwaUpdatePrompt } from '../pwa/PwaUpdatePrompt';
 import { requestPersistentStorage, type StorageAdapter } from '../storage';
 import './app.css';
 import { program } from './content';
-import { CreateScreen } from './CreateScreen';
+import { CreateScreen, type CreationExtras } from './CreateScreen';
 import { CampScreen, MidseasonScreen } from './Development';
 import { GameDayScreen } from './GameDayScreen';
 import {
@@ -118,6 +120,8 @@ export function App({
   const [preferences, setPreferences] = useState<Preferences>(() => defaultPreferences(locale));
   const [prototype, setPrototype] = useState(false);
   const [alumni, setAlumni] = useState<readonly AlumniVNext[]>([]);
+  // One seed per creation: the scouting report previews the very offers the career will get.
+  const [creationSeed, setCreationSeed] = useState(seedFactory);
   const [prototypeAlumni, setPrototypeAlumni] = useState<readonly PrototypeAlumniView[]>([]);
   const inFlight = useRef(false);
   // First-launch unit defaults read the language once; later language changes never move them.
@@ -179,6 +183,11 @@ export function App({
       .catch(() => undefined);
   }, [completed, storage]);
 
+  // M12: generated names follow the language, or stay as originally spelled.
+  useEffect(() => {
+    applyNameDisplay(i18n, preferences.nameDisplay);
+  }, [i18n, preferences.nameDisplay]);
+
   useEffect(() => {
     document.documentElement.lang = locale;
     document.title = t('app.title');
@@ -214,24 +223,49 @@ export function App({
     if (result.ok) void publish(result.career);
   }
 
-  function create(
+  function startCareer(
     identity: PositionPlayerCreationIdentity,
     nameTokens: AthleteNameTokensVNext | null,
-  ): void {
-    if (inFlight.current) return;
+    extras: CreationExtras,
+  ): CareerVNextResult | null {
     const built = buildCareerVNextMechanics(identity);
-    if (built === null) return;
+    if (built === null) return null;
     // The Alumni Wall as it stands now becomes this career's legacy snapshot.
-    const result = createCareerVNext(
+    return createCareerVNext(
       {
-        seed: seedFactory(),
+        seed: creationSeed,
         identity,
         legacy: alumni,
         ...(nameTokens === null ? {} : { nameTokens }),
+        allocation: extras.allocation,
+        presetId: extras.presetId,
+        ...(extras.homeRegionId === null ? {} : { homeRegionId: extras.homeRegionId }),
       },
       built,
     );
-    if (result.ok) void publish(result.career);
+  }
+
+  function create(
+    identity: PositionPlayerCreationIdentity,
+    nameTokens: AthleteNameTokensVNext | null,
+    extras: CreationExtras,
+  ): void {
+    if (inFlight.current) return;
+    const result = startCareer(identity, nameTokens, extras);
+    if (result?.ok !== true) return;
+    setCreationSeed(seedFactory());
+    void publish(result.career);
+  }
+
+  /** The first roles the real offers project, before the career exists (nothing is saved). */
+  function previewFirstRoles(
+    identity: PositionPlayerCreationIdentity,
+    extras: CreationExtras,
+  ): readonly DepthRoleId[] | null {
+    const result = startCareer(identity, null, extras);
+    return result?.ok === true
+      ? result.career.recruiting.offers.map(({ preview }) => preview.roleId)
+      : null;
   }
 
   /** Opens a slot: its career if it has one, creation if it is empty. */
@@ -408,7 +442,11 @@ export function App({
               />
             ) : career === null || mechanics === null ? (
               <>
-                <CreateScreen blocked={blocked} onCreate={create} />
+                <CreateScreen
+                  blocked={blocked}
+                  onCreate={create}
+                  previewFirstRoles={previewFirstRoles}
+                />
                 {alumni.length > 0 && <LegacyPanel alumni={alumni} prototypes={prototypeAlumni} />}
               </>
             ) : flow === 'RECRUITING' ? (

@@ -210,10 +210,13 @@ function validateAppearance(value: unknown, issues: PositionPlayerCreationIssue[
     wristTapeId: 'wrist_tape_',
   } as const;
   const expectedKeys = new Set([...Object.keys(required), ...Object.keys(optional)]);
+  // M12: facial hair is an optional key, so identities saved before it stay valid.
+  const additiveKeys = new Set(['facialHairId']);
+  const keys = appearance === undefined ? [] : Object.keys(appearance);
   if (
     appearance === undefined ||
-    Object.keys(appearance).length !== expectedKeys.size ||
-    Object.keys(appearance).some((key) => !expectedKeys.has(key))
+    keys.filter((key) => !additiveKeys.has(key)).length !== expectedKeys.size ||
+    keys.some((key) => !expectedKeys.has(key) && !additiveKeys.has(key))
   ) {
     addIssue(issues, 'position_creation.invalid_appearance', 'identity.appearance');
     return;
@@ -228,6 +231,14 @@ function validateAppearance(value: unknown, issues: PositionPlayerCreationIssue[
     if (id !== null && (!isStableDomainId(id) || !id.startsWith(prefix))) {
       addIssue(issues, 'position_creation.invalid_appearance', `identity.appearance.${key}`);
     }
+  }
+  const facialHair = appearance['facialHairId'];
+  if (
+    facialHair !== undefined &&
+    facialHair !== null &&
+    (!isStableDomainId(facialHair) || !facialHair.startsWith('facial_hair_'))
+  ) {
+    addIssue(issues, 'position_creation.invalid_appearance', 'identity.appearance.facialHairId');
   }
 }
 

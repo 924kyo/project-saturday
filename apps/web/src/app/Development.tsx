@@ -5,6 +5,7 @@ import {
   chooseCampVNext,
   deriveBodyXpEfficiencyPermille,
   INFORMATION_RULES,
+  overallContributionsVNext,
   overallWeightsVNext,
   type InformationPositionId,
   depthOutlookVNext,
@@ -772,6 +773,38 @@ export function DevelopmentGuide({
           </li>
         </ul>
       </details>
+    </Panel>
+  );
+}
+
+/** Overall, attribute by attribute (M12): rating × weight, summing to the overall shown. */
+export function OverallBreakdown({
+  career,
+  mechanics,
+}: {
+  readonly career: CareerVNext;
+  readonly mechanics: CareerVNextMechanics;
+}): React.JSX.Element {
+  const { t } = useAppTranslation();
+  const { total, entries } = overallContributionsVNext(career.athlete.profile, mechanics);
+  return (
+    <Panel
+      aside={<span className="s2-effect">{t('v2.ovr.total', { total })}</span>}
+      id="s2-ovr"
+      title={t('v2.ovr.title')}
+    >
+      <ul className="s2-kv">
+        {entries.map((entry) => (
+          <li key={entry.attributeId}>
+            <span>{t(attributeNameKey(entry.attributeId))}</span>
+            <span className="s2-num">
+              {t('v2.ovr.row', { rating: entry.rating, weight: pct(entry.weightPermille) })}{' '}
+              <strong>= {(entry.contributionMilli / 1000).toFixed(1)}</strong>
+            </span>
+          </li>
+        ))}
+      </ul>
+      <p className="s2-note">{t('v2.alloc.overallNote')}</p>
     </Panel>
   );
 }

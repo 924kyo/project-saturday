@@ -1,7 +1,11 @@
 import { useMemo, useState } from 'react';
 import {
+  applyAllocationVNext,
   createPositionPlayerProfile,
+  type AllocationVNext,
   type AthleteNameTokensVNext,
+  type DepthRoleId,
+  type HomeRegionIdVNext,
   type PersonalityTraitId,
   type PlayerAppearance,
   type PositionPlayerCreationIdentity,
@@ -9,8 +13,15 @@ import {
   type VNextPositionId,
 } from '@project-saturday/game-core';
 import { defaultWrAppearance } from '@project-saturday/game-content';
-import { buildCareerVNextMechanics } from '@project-saturday/game-content/content';
+import {
+  appearanceCatalogVNext,
+  buildCareerVNextMechanics,
+} from '@project-saturday/game-content/content';
 
+import { FullBodyFigure } from '../career/FullBodyFigure';
+import { CreateBuild } from './CreateBuild';
+import { PotentialCurve } from './Development';
+import { nextNameCursor } from './name-cursor';
 import { TradingCard } from './TradingCard';
 import { PositionGlyph } from './ui';
 import { useAppTranslation, type AppTranslate } from '../i18n/i18n';
@@ -20,7 +31,6 @@ import {
   POSITION_NAME_KEYS,
   POSITION_PITCH_KEYS,
   VNEXT_POSITIONS,
-  appearanceCatalog,
   archetypeModifiers,
   archetypesFor,
   generatedName,
@@ -34,7 +44,33 @@ import {
   positionOverall,
 } from './content';
 
-const LOOK_FIELDS = ['skinToneId', 'faceId', 'hairStyleId', 'hairColorId', 'bodyTypeId'] as const;
+const LOOK_FIELDS = [
+  'skinToneId',
+  'faceId',
+  'hairStyleId',
+  'hairColorId',
+  'facialHairId',
+  'bodyTypeId',
+] as const;
+const REGIONS: readonly (HomeRegionIdVNext | null)[] = [
+  null,
+  'home_region_in_state',
+  'home_region_out_of_state',
+  'home_region_international',
+];
+const REGION_KEYS = {
+  none: 'v2.region.none',
+  home_region_in_state: 'v2.region.inState',
+  home_region_out_of_state: 'v2.region.outOfState',
+  home_region_international: 'v2.region.international',
+} as const;
+
+/** The extra creation choices beyond the identity (M12). */
+export interface CreationExtras {
+  readonly allocation: AllocationVNext;
+  readonly presetId: string | null;
+  readonly homeRegionId: HomeRegionIdVNext | null;
+}
 const EXTRA_FIELDS = [
   'eyeBlackId',
   'armSleevesId',
@@ -58,6 +94,9 @@ interface Draft {
   readonly nameTokens: AthleteNameTokensVNext | null;
   readonly heightCm: number;
   readonly weightKg: number;
+  readonly allocation: AllocationVNext;
+  readonly presetId: string | null;
+  readonly homeRegionId: HomeRegionIdVNext | null;
 }
 
 type CompleteDraft = Draft & {
@@ -114,18 +153,23 @@ function identityOf(draft: CompleteDraft, name: string): PositionPlayerCreationI
 export function CreateScreen({
   blocked,
   onCreate,
+  previewFirstRoles,
 }: {
   readonly blocked: boolean;
   readonly onCreate: (
     identity: PositionPlayerCreationIdentity,
     nameTokens: AthleteNameTokensVNext | null,
+    extras: CreationExtras,
   ) => void;
+  readonly previewFirstRoles?: (
+    identity: PositionPlayerCreationIdentity,
+    extras: CreationExtras,
+  ) => readonly DepthRoleId[] | null;
 }): React.JSX.Element {
   const { t } = useAppTranslation();
   const imperial = usePreferences().units === 'imperial';
   const [step, setStep] = useState(0);
   const [showExtras, setShowExtras] = useState(false);
-  const [suggestion, setSuggestion] = useState(0);
   const [draft, setDraft] = useState<Draft>({
     positionId: null,
     archetypeId: null,
@@ -136,12 +180,15 @@ export function CreateScreen({
     nameTokens: null,
     heightCm: 188,
     weightKg: 95,
+    allocation: {},
+    presetId: null,
+    homeRegionId: null,
   });
   const update = (patch: Partial<Draft>) => setDraft((current) => ({ ...current, ...patch }));
   // A suggested name is shown (and saved) in the current language.
   const name =
     draft.nameTokens === null ? draft.displayName.trim() : namePreview(t, draft.nameTokens);
-  const preview = useMemo(() => {
+  const built = useMemo(() => {
     if (!complete(draft)) return null;
     const identity = identityOf(draft, 'Preview');
     const mechanics = buildCareerVNextMechanics(identity);
@@ -151,8 +198,25 @@ export function CreateScreen({
       identity,
       mechanics: mechanics.creation,
     });
-    return created.ok ? created.player : null;
-  }, [draft]);
+    return created.ok ? { profile: created.player, mechanics } : null;
+    // Appearance and name never change ratings: only the identity choices rebuild the preview.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft.positionId, draft.archetypeId, draft.backgroundId, draft.traitIds]);
+  const firstRoles = useMemo(
+    () =>
+      built === null || previewFirstRoles === undefined || !complete(draft)
+        ? null
+        : previewFirstRoles(identityOf(draft, 'Preview'), {
+            allocation: draft.allocation,
+            presetId: draft.presetId,
+            homeRegionId: draft.homeRegionId,
+          }),
+    // Only the choices that reach ratings or offers rebuild the preview.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [built, draft.allocation, draft.presetId, previewFirstRoles],
+  );
+  // The card shows the athlete with the player's own points applied.
+  const preview = built === null ? null : applyAllocationVNext(built.profile, draft.allocation);
   const archetypes = draft.positionId === null ? [] : archetypesFor(draft.positionId);
   const archetype = archetypes.find(({ id }) => id === draft.archetypeId) ?? null;
   const headline = archetype === null ? [] : [...archetype.priorityAttributeIds];
@@ -160,10 +224,15 @@ export function CreateScreen({
   const storyDone = draft.backgroundId !== null && draft.traitIds.length === 2;
   const canFinish = complete(draft) && preview !== null && name !== '';
   function suggestName(): void {
-    update({ nameTokens: generatedName(suggestion), displayName: '' });
-    setSuggestion(suggestion + 1);
+    update({ nameTokens: generatedName(nextNameCursor()), displayName: '' });
   }
-  const steps = [t('v2.create.stepRole'), t('v2.create.stepStory'), t('v2.create.stepLook')];
+  const steps = [
+    t('v2.create.stepRole'),
+    t('v2.create.stepStory'),
+    t('v2.create.stepBuild'),
+    t('v2.create.stepLook'),
+  ];
+  const lastStep = steps.length - 1;
   // One conversion for creation and Profile (a stored 152 cm reads 5′0″, never 4′12″).
   const { feet, inches, pounds } = imperialMeasure(draft.heightCm, draft.weightKg);
 
@@ -236,7 +305,8 @@ export function CreateScreen({
                     data-position={positionId.slice('position_'.length)}
                     key={positionId}
                     onClick={() =>
-                      draft.positionId !== positionId && update({ positionId, archetypeId: null })
+                      draft.positionId !== positionId &&
+                      update({ positionId, archetypeId: null, allocation: {}, presetId: null })
                     }
                     type="button"
                   >
@@ -259,7 +329,9 @@ export function CreateScreen({
                       aria-pressed={draft.archetypeId === entry.id}
                       className="s2-tile"
                       key={entry.id}
-                      onClick={() => update({ archetypeId: entry.id })}
+                      onClick={() =>
+                        update({ archetypeId: entry.id, allocation: {}, presetId: null })
+                      }
                       type="button"
                     >
                       <span className="s2-tile__name">{t(key(entry.nameKey))}</span>
@@ -283,12 +355,15 @@ export function CreateScreen({
                     aria-pressed={draft.backgroundId === entry.id}
                     className="s2-tile"
                     key={entry.id}
-                    onClick={() => update({ backgroundId: entry.id })}
+                    onClick={() =>
+                      update({ backgroundId: entry.id, allocation: {}, presetId: null })
+                    }
                     type="button"
                   >
                     <span className="s2-tile__name">{t(key(entry.nameKey))}</span>
                     {draft.positionId !== null &&
                       trade(t, backgroundModifiers(draft.positionId, entry.id))}
+                    <PotentialCurve backgroundId={entry.id} />
                   </button>
                 ))}
               </div>
@@ -317,10 +392,39 @@ export function CreateScreen({
                 })}
               </div>
             </fieldset>
+            <fieldset className="s2-stack" style={{ border: 0, padding: 0, margin: 0 }}>
+              <legend className="s2-eyebrow">{t('v2.create.region')}</legend>
+              <div className="s2-swatches" role="group" aria-label={t('v2.create.region')}>
+                {REGIONS.map((region) => (
+                  <button
+                    aria-pressed={draft.homeRegionId === region}
+                    className="s2-swatch"
+                    key={region ?? 'none'}
+                    onClick={() => update({ homeRegionId: region })}
+                    type="button"
+                  >
+                    {t(REGION_KEYS[region ?? 'none'])}
+                  </button>
+                ))}
+              </div>
+              <p className="s2-note">{t('v2.create.regionHelp')}</p>
+            </fieldset>
           </>
         )}
 
-        {step === 2 && (
+        {step === 2 && built !== null && (
+          <CreateBuild
+            allocation={draft.allocation}
+            bonusBudget={0}
+            firstRoles={firstRoles}
+            mechanics={built.mechanics}
+            onChange={(allocation, presetId) => update({ allocation, presetId })}
+            presetId={draft.presetId}
+            profile={built.profile}
+          />
+        )}
+
+        {step === 3 && (
           <>
             <div className="s2-field">
               <label htmlFor="s2-name">{t('v2.create.name')}</label>
@@ -345,8 +449,14 @@ export function CreateScreen({
                 {t('v2.create.suggestHelp')}
               </p>
             </div>
+            <FullBodyFigure
+              appearance={draft.appearance}
+              heightCm={draft.heightCm}
+              label={t('v2.create.fullBody')}
+              weightKg={draft.weightKg}
+            />
             {[...LOOK_FIELDS, ...(showExtras ? EXTRA_FIELDS : [])].map((field) => {
-              const spec = appearanceCatalog[field];
+              const spec = appearanceCatalogVNext[field];
               return (
                 <div className="s2-field" key={field}>
                   <span className="s2-eyebrow">{t(key(spec.labelKey))}</span>
@@ -355,7 +465,7 @@ export function CreateScreen({
                       const value = option.id;
                       return (
                         <button
-                          aria-pressed={draft.appearance[field] === value}
+                          aria-pressed={(draft.appearance[field] ?? null) === value}
                           className="s2-swatch"
                           key={option.id ?? 'none'}
                           onClick={() =>
@@ -471,7 +581,7 @@ export function CreateScreen({
           <div className="s2-actionbar__inner">
             {((step === 0 && !roleDone) ||
               (step === 1 && !storyDone) ||
-              (step === 2 && name === '')) && (
+              (step === lastStep && name === '')) && (
               <p className="s2-actionbar__hint">
                 {t(
                   step === 0
@@ -492,10 +602,10 @@ export function CreateScreen({
                   {t('v2.common.back')}
                 </button>
               )}
-              {step < 2 ? (
+              {step < lastStep ? (
                 <button
                   className="s2-btn s2-btn--block"
-                  disabled={step === 0 ? !roleDone : !storyDone}
+                  disabled={step === 0 ? !roleDone : step === 1 ? !storyDone : built === null}
                   onClick={() => setStep(step + 1)}
                   type="button"
                 >
@@ -506,7 +616,12 @@ export function CreateScreen({
                   className="s2-btn s2-btn--block"
                   disabled={!canFinish || blocked}
                   onClick={() =>
-                    complete(draft) && onCreate(identityOf(draft, name), draft.nameTokens)
+                    complete(draft) &&
+                    onCreate(identityOf(draft, name), draft.nameTokens, {
+                      allocation: draft.allocation,
+                      presetId: draft.presetId,
+                      homeRegionId: draft.homeRegionId,
+                    })
                   }
                   type="button"
                 >

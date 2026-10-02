@@ -4,7 +4,6 @@ import {
   gameContent,
   positionAlphaContent,
   positionSkillBuilds,
-  programContent,
   qbAlphaContent,
   rbAlphaContent,
   skills as wrSkills,
@@ -20,6 +19,7 @@ import {
   injuryContent,
   programIdentityVNext,
   reservedRosterNamePairs,
+  suggestionNamePoolVNext,
   worldVNext96MechanicsDefinition,
   type ProgramIdentityVNext,
   legacyMentorContent,
@@ -217,8 +217,8 @@ export function focusText(id: string): {
 }
 
 function tokenName(t: AppTranslate, tokens: AthleteNameTokensVNext) {
-  const given = programContent.rosterGivenNames.find(({ id }) => id === tokens.givenNameId);
-  const family = programContent.rosterFamilyNames.find(({ id }) => id === tokens.familyNameId);
+  const given = suggestionNamePoolVNext.given.find(({ id }) => id === tokens.givenNameId);
+  const family = suggestionNamePoolVNext.family.find(({ id }) => id === tokens.familyNameId);
   if (given === undefined || family === undefined) return null;
   return {
     full: t('career.program.room.competitorName', {
@@ -250,22 +250,24 @@ export function namePreview(t: AppTranslate, tokens: AthleteNameTokensVNext): st
 }
 
 const RESERVED = new Set(reservedRosterNamePairs);
-const NAME_PAIRS: readonly AthleteNameTokensVNext[] = (() => {
-  const given = programContent.rosterGivenNames.map(({ id }) => id);
-  const family = programContent.rosterFamilyNames.map(({ id }) => id);
-  const pairs: AthleteNameTokensVNext[] = [];
-  // A fixed interleaving walk (no randomness): consecutive rolls change both names.
-  for (let step = 0; step < given.length * family.length; step += 1) {
-    const givenNameId = given[step % given.length]!;
-    const familyNameId = family[(step * 11 + Math.floor(step / given.length)) % family.length]!;
-    if (!RESERVED.has(`${givenNameId}|${familyNameId}`)) pairs.push({ givenNameId, familyNameId });
-  }
-  return pairs;
-})();
+const SUGGEST_GIVEN = suggestionNamePoolVNext.given.map(({ id }) => id);
+const SUGGEST_FAMILY = suggestionNamePoolVNext.family.map(({ id }) => id);
 
-/** The n-th generated name; the creation screen rolls through them in a fixed order. */
+/**
+ * The n-th suggested name (M12): two co-prime strides walk the larger pool, so consecutive
+ * suggestions change both names and no pair repeats within a long run. The caller keeps a cursor
+ * that persists between visits, so a new career does not start from the same names.
+ */
 export function generatedName(index: number): AthleteNameTokensVNext {
-  return NAME_PAIRS[((index % NAME_PAIRS.length) + NAME_PAIRS.length) % NAME_PAIRS.length]!;
+  const given = SUGGEST_GIVEN.length;
+  const family = SUGGEST_FAMILY.length;
+  for (let step = 0; step < 50; step += 1) {
+    const at = (((index + step) % (given * family)) + given * family) % (given * family);
+    const givenNameId = SUGGEST_GIVEN[(at * 7) % given]!;
+    const familyNameId = SUGGEST_FAMILY[(at * 13 + Math.floor(at / given)) % family]!;
+    if (!RESERVED.has(`${givenNameId}|${familyNameId}`)) return { givenNameId, familyNameId };
+  }
+  return { givenNameId: SUGGEST_GIVEN[0]!, familyNameId: SUGGEST_FAMILY[0]! };
 }
 
 export function participantName(

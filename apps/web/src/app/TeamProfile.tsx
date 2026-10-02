@@ -1,3 +1,5 @@
+import { FullBodyFigure } from '../career/FullBodyFigure';
+import { OverallBreakdown, PotentialCurve } from './Development';
 import {
   academicStatusVNext,
   MENTAL_ATTRIBUTE_IDS,
@@ -462,6 +464,13 @@ export function ProfilePanel({
           ratings={headline}
           styleKey={archetype?.nameKey ?? null}
         />
+        <FullBodyFigure
+          appearance={profile.appearance}
+          heightCm={profile.heightCm}
+          label={t('v2.create.fullBody')}
+          large
+          weightKg={profile.weightKg}
+        />
         <div className="s2-stack s2-profilehead__facts">
           <p className="s2-eyebrow">{t('v2.profile.title')}</p>
           <h1 className="s2-display s2-size-h1" id="s2-profile-title">
@@ -489,7 +498,10 @@ export function ProfilePanel({
             {background !== undefined && (
               <div>
                 <dt>{t('v2.profile.background')}</dt>
-                <dd>{t(key(background.nameKey))}</dd>
+                <dd>
+                  {t(key(background.nameKey))}
+                  <PotentialCurve backgroundId={background.id} />
+                </dd>
               </div>
             )}
             {personality.length > 0 && (
@@ -532,6 +544,7 @@ export function ProfilePanel({
           </div>
         </Panel>
         <div className="s2-stack">
+          <OverallBreakdown career={career} mechanics={mechanics} />
           <Panel id="s2-profile-season" title={t('v2.profile.season')}>
             <p className="s2-note s2-num">
               {t('v2.profile.games', { count: live, total: career.log.length })}

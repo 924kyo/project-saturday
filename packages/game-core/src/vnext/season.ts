@@ -284,8 +284,7 @@ export function withPortalArrivalVNext(
   const positionId = career.athlete.profile.positionId as VNextPositionId;
   const premium =
     Math.round(
-      ((programRating(mechanics, programId, positionId) -
-        VNEXT_ROOM_TUNING.neutralProgramRating) *
+      ((programRating(mechanics, programId, positionId) - VNEXT_ROOM_TUNING.neutralProgramRating) *
         VNEXT_ROOM_TUNING.premiumPerRatingPointPermille) /
         1000,
     ) + VNEXT_ROOM_TUNING.premiumOffset;

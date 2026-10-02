@@ -37,6 +37,9 @@ test('a Saturday is playable with the keyboard alone', async ({ page, isMobile }
     'Space',
   );
   await tabTo(page, primaryAction(page));
+  // M12 build step: take the recommended preset, by keyboard.
+  await tabTo(page, page.locator('.s2-swatches .s2-swatch').first());
+  await tabTo(page, primaryAction(page));
   await tabTo(page, page.locator('#s2-name'));
   await page.keyboard.type('Keys Only');
   await tabTo(page, primaryAction(page));
@@ -80,6 +83,7 @@ test.describe('reduced motion', () => {
     await page.locator('fieldset').first().locator('.s2-tile').first().click();
     await page.locator('[role=checkbox]:not([disabled])').first().click();
     await page.locator('[role=checkbox][aria-checked=false]:not([disabled])').first().click();
+    await primaryAction(page).click();
     await primaryAction(page).click();
     await page.locator('#s2-name').fill('Still Tester');
     await primaryAction(page).click();

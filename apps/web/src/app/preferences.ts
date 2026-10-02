@@ -13,13 +13,23 @@ export interface Preferences {
    * effects: off" reports reduced motion, which used to stop the board with no way to turn it on.
    */
   readonly motion: 'system' | 'on' | 'off';
+  /**
+   * M12: generated names in the app language ("localized") or as originally spelled ("original").
+   * A typed name is always shown as typed.
+   */
+  readonly nameDisplay: 'localized' | 'original';
 }
 
 export const PREFERENCES_ID = 'preferences' as const;
 
 export function defaultPreferences(locale: string): Preferences {
   // First launch only: afterwards the stored choice stands whatever the language.
-  return { units: locale === 'en-US' ? 'imperial' : 'metric', playReview: true, motion: 'system' };
+  return {
+    units: locale === 'en-US' ? 'imperial' : 'metric',
+    playReview: true,
+    motion: 'system',
+    nameDisplay: 'localized',
+  };
 }
 
 /** Stored preferences, completed with defaults for fields added later (motion). */
@@ -33,7 +43,8 @@ function readPreferences(value: unknown): Preferences | null {
   )
     return null;
   const motion = entry.motion === 'on' || entry.motion === 'off' ? entry.motion : 'system';
-  return { units: entry.units, playReview: entry.playReview, motion };
+  const nameDisplay = entry.nameDisplay === 'original' ? 'original' : 'localized';
+  return { units: entry.units, playReview: entry.playReview, motion, nameDisplay };
 }
 
 export async function loadPreferences(
@@ -62,6 +73,7 @@ export const PreferencesContext = createContext<Preferences>({
   units: 'metric',
   playReview: true,
   motion: 'system',
+  nameDisplay: 'localized',
 });
 
 export function usePreferences(): Preferences {

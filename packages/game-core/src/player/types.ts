@@ -81,6 +81,8 @@ export interface PlayerAppearance {
   readonly towelId: TowelId | null;
   readonly jerseyFitId: JerseyFitId;
   readonly footwearId: FootwearId;
+  /** M12, optional: absent on identities created before it (= none). */
+  readonly facialHairId?: `facial_hair_${string}` | null;
 }
 
 export interface PlayerStateV1 {

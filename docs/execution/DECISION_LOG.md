@@ -698,6 +698,22 @@ Append concise implementation/product decisions that do not warrant their own AD
   - **The clock** is re-timed per key snap inside its even slot from `:vnext:clock:<season>:<week>:<snap>` (no kernel RNG draw; the context matcher ignores the clock). The WR composure card reads Q4, so the clock is real context, not decoration.
   - **The pregame line** has five bands from the measured matchup-score spread (p10 46, p50 52, p90 59). The old 42/58 cut put 85% of games at toss-up. An upset is a win as an underdog; pre-M12 recaps keep the ranked rule.
   - **Copy:** "Drop eight" is "Drop seven" (its board rushes four); the closing-pursuit distance is mid-run; the WR release prompt no longer says the corner waits at the line.
+- 2026-10-02 (M12 Phase 3, creation and identity): the rules live in the core (`vnext/creation.ts`); the creation screen only lets the player try them.
+  - **Point budget:** 10 points, +5 / −3 per attribute, at most 6 points refunded by lowering, no starting rating above 85 or below 20 (`VNEXT_ALLOCATION_TUNING`).
+    - Presets: Recommended (the attributes that move overall most), Specialist, Athletic and No changes. Every preset is valid for every position, style and background.
+    - A legacy head start may widen the budget by up to 3 (`VNEXT_LEGACY_HEAD_START_CAP`), never the caps; it is wired in Phase 8.
+    - The allocation is saved in an optional `AthleteVNext.creation` (absent on older saves; `CareerVNext` stays version 3).
+  - **K7, one job per source:** the preview itemizes position, style, background, traits and the player's own points, and the rows sum to each rating. The background's starting tweaks are unchanged and shown as such; its job after creation is recruit standing and the potential curve.
+  - **Overall explained:** the Profile lists rating × weight for each attribute. The weights are the room's own, and the contributions sum to the overall that is shown.
+  - **Scouting report:** strengths, weaknesses, the recruit score and offer target, the potential curve, and the expected first role.
+    - The first role comes from the real offers. The app now draws the career seed when creation opens and uses that seed for both the preview and the career, so the preview is exactly what the player will be offered.
+  - **Identity never touches ability:** an optional home region is narrative only. A test proves ratings and offers are identical across appearance and region.
+  - **Names:** the suggestion pool was widened to at least 70 given and 70 family names, with no repeated pair in 60 suggestions. A Settings toggle shows generated names localized or as originally spelled; typed names are never altered.
+    - The toggle overrides the name strings and clears the ICU message cache, because i18next-icu memoizes formatted messages.
+  - **Appearance and art:** the user makes all painted art (their direction: no self-made assets, tints or drawn stand-ins).
+    - The new options are four hair colors and facial hair (an additive optional `facialHairId`). The full-body figure in creation and on Profile shows every equipment option.
+    - All three load painted layers listed in `docs/design/ASSET_LIST.md` round 3. An undelivered layer is hidden (its load error hides the image), and the full-body figure appears once its base body layer exists.
+    - CRE-05 and CRE-06 are blocked only on that art.
 - 2026-10-01 (M12 Phase 2, development): the calendar around the weekly plan, all core rules (`vnext/development.ts`). Optional `CareerVNext.development`; absent means nothing yet.
   - **Potential:** a recruiting background's job after creation.
     - It sets the recruit standing that draws the first offers (−8 … +8 on the recruit score; VNext passed 0 before).

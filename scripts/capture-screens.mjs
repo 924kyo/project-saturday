@@ -42,7 +42,23 @@ for (const [label, viewport] of Object.entries(viewports)) {
   await page.locator('[role=checkbox]:not([disabled])').first().click();
   await page.locator('[role=checkbox][aria-checked=false]:not([disabled])').first().click();
   await primary().click();
+  // M12 build step: the recommended preset.
+  await page.locator('.s2-swatches .s2-swatch').first().click();
+  await shot('create-build');
+  await primary().click();
   await page.locator('.s2-namefield .s2-btn').click();
+  // M12 appearance: blond hair and a full beard (painted layers; hidden until the art exists).
+  const lookGroups = page.locator('.s2-field .s2-swatches[role=group]');
+  await lookGroups
+    .nth(3)
+    .locator('.s2-swatch')
+    .nth(Number(process.env['CAPTURE_HAIR'] ?? 4))
+    .click();
+  await lookGroups
+    .nth(4)
+    .locator('.s2-swatch')
+    .nth(Number(process.env['CAPTURE_FACIAL'] ?? 4))
+    .click();
   await shot('create-look');
   await primary().click();
   await page.locator('.s2-offer').first().waitFor();

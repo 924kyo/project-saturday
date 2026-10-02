@@ -153,9 +153,82 @@ Style for every layer: *semi-realistic painted sports-card portrait, soft studio
 | Arm sleeves | `sleeves/left.webp`, `sleeves/right.webp` and `sleeves/both.webp`: 3 | Dark compression sleeves on the visible upper arms |
 | Towel | `towel/left.webp`, `towel/center.webp` and `towel/right.webp`: 3 | A white towel tucked at the waistline, where visible at the bottom edge |
 
-Draw order, bottom to top: skin, sleeves, jersey, jersey trim, head, hair, eye black, towel. Gloves, visor, wrist tape, footwear and jersey fit don't show in a bust, so they stay on the drawn figure only.
+Draw order, bottom to top: skin, sleeves, jersey, jersey trim, head, facial hair (round 3), hair, eye black, towel. Gloves, visor, wrist tape, footwear and jersey fit do not show in a bust; they appear on the full-body figure (round 3, section F).
 
 ## Optional polish (not wired yet; say if you want them)
 
 - **Program crest art:** the 96 crests are generated SVG shapes with monograms. Painted crests would need a 96-image set at 512 × 512.
 - **Title logo lockup:** the in-app mark is an SVG, `LogoMark` in `ui.tsx`. A bespoke wordmark would be an SVG at 1200 × 300.
+
+# Round 3 (M12): hair colors, facial hair, and the full-body figure with gear
+
+**Status (2026-10-01): the options are in the game; the art is not delivered yet.**
+- A layer that is not delivered simply does not show.
+- The full-body figure appears only once the base body layer for the chosen build and tone exists.
+- Drop each file at its exact path; no code change is needed.
+
+Shared rules, as in round 2:
+- WebP with alpha, and the same originality rules.
+- No logos, numbers or text anywhere.
+- **Tinted** layers are pure white shapes with their shading only in alpha; the game paints them in the program colors (primary or trim).
+- File-size limits: portrait layers under 70 KB, full-body layers under 90 KB.
+
+## D. Portrait hair, new colors (24 files, the round-2 512 × 640 canvas)
+
+`apps/web/public/art/portrait/hair/<style>-<color>.webp`
+
+- The six round-2 styles (`shaved`, `close_crop`, `short_curls`, `medium_curls`, `braids`, `locs`), each in four new colors: `blond`, `auburn`, `gray`, `platinum` (a bleached near-white).
+- Paint these as real colors, the same as the round-2 hair files. They are not tinted.
+
+## E. Portrait facial hair (32 files, the round-2 512 × 640 canvas)
+
+`apps/web/public/art/portrait/facial-hair/<style>-<color>.webp`
+
+- Only the hair on the face, aligned to the round-2 head template, so it fits all four face shapes (oval, round, square, angular).
+- It is drawn after the head and before the hair, so sideburns can tuck under the hairline.
+
+| Style | Look |
+| --- | --- |
+| `stubble` | A light shadow on the jaw, chin and upper lip |
+| `mustache` | Upper lip only |
+| `goatee` | Chin and mustache, cheeks clean |
+| `beard` | A full, short beard trimmed along the jaw |
+
+The eight colors match the hair colors: `black`, `dark_brown`, `brown`, `light_brown`, `blond`, `auburn`, `gray`, `platinum`. That makes 4 × 8 = **32** files.
+
+## F. Full-body figure with gear (69 files, new; one 600 × 1080 canvas for every layer)
+
+Where it shows:
+- creation's Look & Name step (the athlete head to toe in uniform and gear);
+- an enlarged view on Profile.
+
+Composition:
+- **One master pose for every file:** standing, front view with a slight three-quarter turn, arms relaxed a little away from the body, helmet on, feet planted at the bottom edge with about 4% margin.
+- Hands, wrists, feet and the head must sit at the **same coordinates for every build**; only torso, arm and leg thickness change. That way the gear files that are not per-build line up for every build.
+- Height and weight scale the finished figure in the game, so draw one height only.
+
+Style prompt for every layer: *semi-realistic painted sports-card figure, matching the round-2 portraits; soft studio rim light in cool white, subtle cyan edge light, clean edges, fictional person, transparent background, no text, no logos, no numbers.*
+
+Builds: `lean`, `balanced`, `broad`. Tones: the six round-2 tones (`light`, `light_medium`, `medium`, `medium_deep`, `deep`, `dark`).
+
+| # | Layer | Path under `apps/web/public/art/fullbody/` | Files | Tint | What is in it |
+| --- | --- | --- | --- | --- | --- |
+| 1 | Body | `body/<build>-<tone>.webp` | 18 | none | The bare athlete in the pose: arms, hands, legs and neck, with plain dark compression shorts and a dark under-shirt. The face behind the facemask is shadowed and generic, so hair and facial hair need no full-body versions |
+| 2 | Socks | `socks/<build>.webp` | 3 | primary | Football socks, knee down |
+| 3 | Pants | `pants/<build>.webp` | 3 | trim | Football pants, hip to knee, knee pads under the fabric |
+| 4 | Cleats (gear) | `cleats/<low\|mid\|high>.webp` | 3 | none | Black cleats in three cuts: low, mid and high-top |
+| 5 | Arm sleeves (gear) | `sleeves/<build>-<left\|right\|both>.webp` | 9 | none | Dark compression sleeves, shoulder to wrist |
+| 6 | Wrist tape (gear) | `wrist-tape/<left\|right\|both>.webp` | 3 | none | White athletic tape at the wrists |
+| 7 | Gloves (gear) | `gloves/<light\|dark\|accent>.webp` | 3 | `accent` only: trim | `light` is white and `dark` is black. `accent` is a **white** glove the game tints with the trim color |
+| 8 | Jersey | `jersey/<build>-<fit>.webp` | 9 | primary | The jersey over shoulder pads. Fits: `tight`, `standard`, `loose` |
+| 9 | Jersey trim | `jersey/<build>-<fit>-trim.webp` | 9 | trim | Only the collar, sleeve stripes and side panels of the matching jersey |
+| 10 | Towel (gear) | `towel/<left\|center\|right>.webp` | 3 | none | A white towel tucked at the waistband |
+| 11 | Eye black (gear) | `eye-black/<stripes\|wide>.webp` | 2 | none | Visible through the facemask. The game hides it when a visor is chosen |
+| 12 | Helmet | `helmet.webp` | 1 | primary | The helmet shell, with no stripe and no logo |
+| 13 | Facemask | `helmet-mask.webp` | 1 | none | A gray facemask |
+| 14 | Visor (gear) | `visor/<clear\|smoke>.webp` | 2 | none | `clear` is barely tinted; `smoke` is dark |
+| | | | **69** | | |
+
+The # column is the draw order, from the bottom (1) to the top (14).
+
+Round 3 total: **125 files**: 24 portrait hair, 32 portrait facial hair and 69 full-body.

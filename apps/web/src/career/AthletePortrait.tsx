@@ -26,13 +26,22 @@ function layersOf(
 ): readonly { readonly src: string; readonly tint?: string }[] {
   const body = tail(appearance.bodyTypeId, 'body_type_');
   const skin = tail(appearance.skinToneId, 'skin_tone_');
+  const hairColor = tail(appearance.hairColorId, 'hair_color_');
   const layers: { src: string; tint?: string }[] = [
     { src: `${ART}/skin/${body}-${skin}.webp` },
     { src: `${ART}/jersey/${body}.webp`, tint: 'var(--team, #28344a)' },
     { src: `${ART}/jersey/${body}-trim.webp`, tint: 'var(--team-2, #c8ff2e)' },
     { src: `${ART}/head/${tail(appearance.faceId, 'face_')}-${skin}.webp` },
+    // M12: facial hair sits between the head and the hair (ASSET_LIST round 3).
+    ...(appearance.facialHairId == null
+      ? []
+      : [
+          {
+            src: `${ART}/facial-hair/${tail(appearance.facialHairId, 'facial_hair_')}-${hairColor}.webp`,
+          },
+        ]),
     {
-      src: `${ART}/hair/${tail(appearance.hairStyleId, 'hair_style_')}-${tail(appearance.hairColorId, 'hair_color_')}.webp`,
+      src: `${ART}/hair/${tail(appearance.hairStyleId, 'hair_style_')}-${hairColor}.webp`,
     },
   ];
   if (appearance.armSleevesId !== null)
@@ -45,6 +54,11 @@ function layersOf(
     layers.push({ src: `${ART}/towel/${tail(appearance.towelId, 'towel_')}.webp` });
   return layers;
 }
+
+/** A layer whose art is not delivered yet is left out instead of showing a broken image. */
+const hideMissing = (event: React.SyntheticEvent<HTMLImageElement>) => {
+  event.currentTarget.style.visibility = 'hidden';
+};
 
 export function AthletePortrait({
   appearance,
@@ -66,7 +80,13 @@ export function AthletePortrait({
         <span aria-hidden="true" className="athlete-portrait__bust">
           {layers.map(({ src, tint }) =>
             tint === undefined ? (
-              <img alt="" className="athlete-portrait__layer" key={src} src={src} />
+              <img
+                alt=""
+                className="athlete-portrait__layer"
+                key={src}
+                onError={hideMissing}
+                src={src}
+              />
             ) : (
               <span
                 className="athlete-portrait__layer athlete-portrait__layer--tint"

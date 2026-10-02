@@ -35,6 +35,9 @@ await page.locator('fieldset').first().locator('.s2-tile').first().click();
 await page.locator('[role=checkbox]:not([disabled])').first().click();
 await page.locator('[role=checkbox][aria-checked=false]:not([disabled])').first().click();
 await primary().click();
+// M12 build step: the recommended preset.
+await page.locator('.s2-swatches .s2-swatch').first().click();
+await primary().click();
 await page.locator('.s2-namefield .s2-btn').click();
 await primary().click();
 await page.locator('.s2-offer').first().click();

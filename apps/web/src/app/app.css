@@ -3343,3 +3343,73 @@ fieldset.s2-stack > legend {
   box-shadow: inset 4px 0 0 var(--volt);
   background: var(--surface-3);
 }
+
+/* M12 creation build: the point budget and the source table. */
+.s2-alloc {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.s2-alloc__row {
+  display: grid;
+  grid-template-columns: 1fr 36px minmax(64px, auto) 36px;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.s2-alloc__name {
+  display: grid;
+  gap: 2px;
+  font-weight: 700;
+}
+.s2-alloc__value {
+  text-align: center;
+  font-weight: 800;
+}
+.s2-alloc__step {
+  width: 36px;
+  height: 36px;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--ink);
+  background: var(--surface-3);
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.s2-alloc__step:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.s2-alloc__step:focus-visible {
+  outline: 2px solid var(--volt);
+  outline-offset: 2px;
+}
+.s2-tablewrap {
+  overflow-x: auto;
+  max-width: 100%;
+}
+.s2-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.s2-table th,
+.s2-table td {
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--line);
+  text-align: right;
+}
+.s2-table th[scope='row'],
+.s2-table thead th:first-child {
+  text-align: left;
+}
+.s2-table thead th {
+  color: var(--ink-3);
+  font-weight: 700;
+}

@@ -70,6 +70,10 @@ async function createAthlete(user: ReturnType<typeof userEvent.setup>, name: str
       )!,
   );
   await user.click(screen.getByRole('button', { name: 'Next' }));
+  // M12 build step: the default (no allocation) is a valid athlete.
+  // The scouting report previews the first role from the real offers (same seed as the career).
+  expect(screen.getByText(/Expected first role across your \d+ offers?:/)).toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: 'Next' }));
   await user.type(screen.getByLabelText('Player name'), name);
   await user.click(screen.getByRole('button', { name: 'Start recruiting' }));
 }

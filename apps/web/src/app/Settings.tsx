@@ -3,6 +3,7 @@ import type { Preferences } from './preferences';
 
 const UNIT_OPTIONS: readonly Preferences['units'][] = ['metric', 'imperial'];
 const MOTION_OPTIONS: readonly Preferences['motion'][] = ['system', 'on', 'off'];
+const NAME_OPTIONS: readonly Preferences['nameDisplay'][] = ['localized', 'original'];
 const MOTION_KEYS = {
   system: 'v2.settings.motionSystem',
   on: 'v2.settings.motionOn',
@@ -57,6 +58,27 @@ export function SettingsPanel({
           ))}
         </div>
         <p className="s2-note">{t('v2.settings.motionHelp')}</p>
+      </fieldset>
+      <fieldset className="s2-settings__row">
+        <legend className="s2-eyebrow">{t('v2.settings.nameDisplay')}</legend>
+        <div className="s2-swatches" role="group">
+          {NAME_OPTIONS.map((nameDisplay) => (
+            <button
+              aria-pressed={preferences.nameDisplay === nameDisplay}
+              className="s2-swatch"
+              key={nameDisplay}
+              onClick={() => onChange({ ...preferences, nameDisplay })}
+              type="button"
+            >
+              {t(
+                nameDisplay === 'localized'
+                  ? 'v2.settings.nameLocalized'
+                  : 'v2.settings.nameOriginal',
+              )}
+            </button>
+          ))}
+        </div>
+        <p className="s2-note">{t('v2.settings.nameHelp')}</p>
       </fieldset>
       <div className="s2-settings__row">
         <label className="s2-toggle">

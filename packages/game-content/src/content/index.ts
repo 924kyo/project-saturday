@@ -1,4 +1,10 @@
 export { appearanceCatalog, defaultWrAppearance, wrBodyMeasurementOptions } from './appearance.js';
+export { appearanceCatalogVNext } from './appearance-vnext.js';
+export {
+  suggestedFamilyNamesVNext,
+  suggestedGivenNamesVNext,
+  suggestionNamePoolVNext,
+} from './name-pool-vnext.js';
 export {
   buildWrCreationMechanics,
   defaultWrCreationIdentity,
