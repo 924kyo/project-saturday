@@ -32,6 +32,7 @@ import {
 } from './content';
 import { OffseasonProgramPicker } from './Development';
 import { ReviewGoal } from './Story';
+import { HallOfFameList, LegacySummary } from './Legacy';
 import { NotYetOffer, OfferPips, OfferProfile, TransferMarket } from './OfferDetails';
 import { Nameplate } from './Nameplate';
 import type { PrototypeAlumniView } from './prototype';
@@ -563,6 +564,7 @@ export function RecordBook({
           ))}
         </ol>
       )}
+      <HallOfFameList alumni={alumni} />
     </Panel>
   );
 }
@@ -673,6 +675,7 @@ export function CareerCompleteScreen({
         </p>
         <StatLine totals={mine.statTotals} />
       </section>
+      <LegacySummary plaque={mine} />
       <AlumniWall
         alumni={
           alumni.some(({ careerId }) => careerId === mine.careerId) ? alumni : [...alumni, mine]

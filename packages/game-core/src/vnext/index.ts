@@ -145,7 +145,9 @@ export {
   canDeclareVNext,
   draftBandVNext,
   draftStockVNext,
+  combineVNext,
   runDraftVNext,
+  VNEXT_COMBINE_TUNING,
   VNEXT_DRAFT_TUNING,
 } from './draft.js';
 export {
@@ -308,3 +310,23 @@ export {
   VNEXT_SHOP_TUNING,
   type ShopFailureVNext,
 } from './shop.js';
+export {
+  claimLegacyVNext,
+  emptyLegacyStoreVNext,
+  hallOfFameScoreVNext,
+  inductsHallOfFameVNext,
+  isLegacyStoreVNext,
+  LEGACY_PERK_IDS_VNEXT,
+  legacyBalanceVNext,
+  legacyPointsVNext,
+  legacyTotalVNext,
+  unlockPerkVNext,
+  VNEXT_COMMEMORATIVE_GEAR,
+  VNEXT_LEGACY_PERKS,
+  VNEXT_LEGACY_POINT_TUNING,
+  type LegacyCategoryIdVNext,
+  type LegacyPerkIdVNext,
+  type LegacyPointRowVNext,
+  type LegacyStoreVNext,
+  type LegacyUnlockFailureVNext,
+} from './legacy-points.js';

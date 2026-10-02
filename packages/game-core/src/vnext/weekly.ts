@@ -247,7 +247,10 @@ function attemptMentorVNext(
 ): WeeklyEventVNext | null {
   const programId = career.program?.programId;
   if (programId === undefined) return null;
-  const mentors = programAlumniVNext(career, programId);
+  // M12 legacy perk: a chosen mentor checks in wherever the athlete plays.
+  const chosen = career.athlete.creation?.mentorCareerId;
+  const chosenMentor = (career.legacy?.alumni ?? []).filter(({ careerId }) => careerId === chosen);
+  const mentors = chosenMentor.length > 0 ? chosenMentor : programAlumniVNext(career, programId);
   const definition = mechanics.legacyEvents.mentor;
   const recent = career.condition.recentEvents.some(
     ({ eventId, weekIndex: week }) =>

@@ -4,6 +4,12 @@ import {
   serializeCareerVNext,
   type AlumniVNext,
   type CareerVNext,
+  claimLegacyVNext,
+  emptyLegacyStoreVNext,
+  isLegacyStoreVNext,
+  unlockPerkVNext,
+  type LegacyPerkIdVNext,
+  type LegacyStoreVNext,
 } from '@project-saturday/game-core';
 
 import type { StorageAdapter } from '../storage';
@@ -234,6 +240,41 @@ export async function recordAlumniVNext(
     const next = [...entries, alumni];
     const envelope: AlumniEnvelope = { model: 'career_vnext_alumni', version: 1, entries: next };
     await storage.put('profile', VNEXT_ALUMNI_ID, envelope);
+    return next;
+  });
+}
+
+/** M12 legacy store: earned and spent points, unlocked perks, claimed careers (device level). */
+export const VNEXT_LEGACY_ID = 'career-vnext-legacy' as const;
+
+export async function loadLegacyStoreVNext(storage: StorageAdapter): Promise<LegacyStoreVNext> {
+  const stored = await storage.get<unknown>('profile', VNEXT_LEGACY_ID);
+  return isLegacyStoreVNext(stored) ? stored : emptyLegacyStoreVNext();
+}
+
+/** Claims a completed career's legacy points once (idempotent by career ID). */
+export async function claimLegacyPointsVNext(
+  storage: StorageAdapter,
+  plaque: AlumniVNext,
+): Promise<LegacyStoreVNext> {
+  return storage.runExclusive(LOCK, async () => {
+    const store = await loadLegacyStoreVNext(storage);
+    const next = claimLegacyVNext(store, plaque);
+    if (next !== store) await storage.put('profile', VNEXT_LEGACY_ID, next);
+    return next;
+  });
+}
+
+/** Spends points on a perk; returns the store unchanged when it cannot be afforded. */
+export async function unlockLegacyPerkVNext(
+  storage: StorageAdapter,
+  perkId: LegacyPerkIdVNext,
+): Promise<LegacyStoreVNext> {
+  return storage.runExclusive(LOCK, async () => {
+    const store = await loadLegacyStoreVNext(storage);
+    const next = unlockPerkVNext(store, perkId);
+    if (typeof next === 'string') return store;
+    await storage.put('profile', VNEXT_LEGACY_ID, next);
     return next;
   });
 }

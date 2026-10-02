@@ -177,6 +177,10 @@ export interface AthleteCreationVNext {
   readonly bonusBudget: number;
   /** Optional home region: story only, never a rating (absent = not chosen). */
   readonly homeRegionId?: HomeRegionIdVNext;
+  /** M12 legacy perk: the former player chosen as mentor (absent = none). */
+  readonly mentorCareerId?: string;
+  /** M12 legacy perk: the program whose guaranteed offer was added (absent = none). */
+  readonly legacyOfferProgramId?: ProgramId;
 }
 
 export type HomeRegionIdVNext =
@@ -724,6 +728,23 @@ export interface DraftResultVNext {
   readonly round: number | null;
   readonly pick: number | null;
   readonly stockScore: number;
+  /** M12: the Pro Combine before the draft (absent before M12). */
+  readonly combine?: CombineResultVNext;
+}
+
+/** M12 (CAR-02): Pro Combine measurements, all from the athlete's ratings. */
+export interface CombineResultVNext {
+  /** 40-yard dash, hundredths of a second. */
+  readonly fortyHundredths: number;
+  /** Vertical jump, tenths of an inch. */
+  readonly verticalTenths: number;
+  readonly benchReps: number;
+  /** Short shuttle, hundredths of a second. */
+  readonly shuttleHundredths: number;
+  /** Football knowledge test, 0–100 (the Football IQ rating). */
+  readonly footballTest: number;
+  /** Draft-stock points the workout adds or takes (bounded). */
+  readonly stockDelta: number;
 }
 
 export type CareerEndingVNext = 'GRADUATED' | 'DECLARED' | 'RETIRED';
@@ -775,6 +796,14 @@ export interface AlumniVNext {
   /** How the college career ended and the Pro Draft outcome (absent before M8). */
   readonly ending?: CareerEndingVNext;
   readonly draft?: DraftResultVNext;
+  /** M12: contributor honors across the career (absent before M12). */
+  readonly honors?: readonly ContributorHonorIdVNext[];
+  /** M12: class-year goals met (absent before M12). */
+  readonly goalsMet?: number;
+  /** M12: GPA at the end of the career (absent before M12). */
+  readonly finalGpa?: number;
+  /** M12: inducted into the Hall of Fame (absent before M12). */
+  readonly hallOfFame?: boolean;
 }
 
 export type FlowVNext =

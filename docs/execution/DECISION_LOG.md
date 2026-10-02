@@ -698,6 +698,20 @@ Append concise implementation/product decisions that do not warrant their own AD
   - **The clock** is re-timed per key snap inside its even slot from `:vnext:clock:<season>:<week>:<snap>` (no kernel RNG draw; the context matcher ignores the clock). The WR composure card reads Q4, so the clock is real context, not decoration.
   - **The pregame line** has five bands from the measured matchup-score spread (p10 46, p50 52, p90 59). The old 42/58 cut put 85% of games at toss-up. An upset is a win as an underdog; pre-M12 recaps keep the ranked rule.
   - **Copy:** "Drop eight" is "Drop seven" (its board rushes four); the closing-pursuit distance is mid-run; the WR release prompt no longer says the corner waits at the line.
+- 2026-10-02 (M12 Phase 8, legacy), following K2 (`vnext/legacy-points.ts`, the Combine in `vnext/draft.ts`):
+  - **Legacy points** are computed from the plaque alone, by capped category: role (starter 2, rotation 1), honors (1 each, cap 3), team titles (2 per championship, 1 per conference title, cap 3), academics (final GPA 3.0+: 1), leadership and goals (captain 1, plus 1 per two goals met, cap 2), draft (rounds 1–3: 2, later: 1) and the Hall of Fame (2).
+    - Points are claimed once per career ID into the device-level `career-vnext-legacy` store, beside the Alumni Wall and never inside a save.
+  - **Hall of Fame:** a fixed score from the plaque (awards 2, championships 3, conference titles 1, a first-round pick 3, rounds 2–3 1, captain 1) against a bar of 6. It is shown in the Record Book.
+  - **Perks:**
+    - head start: 3 points per level, three levels, which is the +3 allocation cap;
+    - mentor choice (2): a former player who checks in at any program;
+    - legacy offer (3): a guaranteed offer from an alumnus's program, added beside the generator's four;
+    - commemorative gear (2): starts owning and wearing the gold trim.
+    - Card-pool previews need no perk, since the Workshop already lists every card. The core validates mentor and offer choices against the career's own Alumni Wall snapshot.
+  - **Pro Combine:** 40, vertical, bench, shuttle and a football test from ratings, with no draw. The stock effect is (mean − 60) / 6, bounded to ±2, applied on draft day and kept on the draft result.
+    - A `-0` stock delta broke the in-memory and saved equality, and is now normalized.
+  - **Plaque fields:** honors, goals met, final GPA and the Hall of Fame call, all optional (older plaques read as zero).
+  - **Balance (m10 harness):** drafted 306 → 333‰ with the Combine, still in band; the artifact was regenerated.
 - 2026-10-02 (M12 Phase 7, cards, Insight and the NIL economy), following K1 (`vnext/cards.ts`, `vnext/economy.ts`, `vnext/shop.ts`):
   - **Insight** is an earned development currency, separate from NIL money. Sources: skipping a breakthrough offer (+15), each season award (+25), every gauge point once the collection is complete, and a refund for a duplicate of a fully mastered card (+20). No real-money purchases exist.
   - **Workshop:** any unowned card at a fixed price by grade (C 30, B 50, A 80, S 120), deterministic, so no essential card is luck-gated.

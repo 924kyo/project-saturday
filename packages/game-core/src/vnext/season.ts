@@ -1,4 +1,5 @@
 import { awardInsightVNext, cardsOfVNext } from './cards.js';
+import { inductsHallOfFameVNext } from './legacy-points.js';
 import { transferMarketVNext } from './offers.js';
 import { contributorHonorsVNext, gradeSeasonGoalVNext, storyAtNewSeasonVNext } from './story.js';
 import { developmentPermilleVNext, roomMechanicsVNext, VNEXT_PROGRAM_TUNING } from './programs.js';
@@ -473,7 +474,7 @@ function alumniFor(career: CareerVNext, ending: CareerEndingVNext): AlumniVNext 
   for (const { programId } of history)
     if (!programIds.includes(programId)) programIds.push(programId);
   const profile = career.athlete.profile;
-  return {
+  const plaque: AlumniVNext = {
     careerId: career.careerId,
     displayName: profile.displayName,
     positionId: profile.positionId as VNextPositionId,
@@ -503,7 +504,12 @@ function alumniFor(career: CareerVNext, ending: CareerEndingVNext): AlumniVNext 
     ending,
     // Retiring leaves football; graduating or declaring goes through the Pro Draft.
     ...(ending === 'RETIRED' ? {} : { draft: runDraftVNext(career) }),
+    // M12 Phase 8: what the legacy points and the Hall of Fame read.
+    honors: [...new Set(history.flatMap(({ honors = [] }) => honors))],
+    goalsMet: history.filter(({ goal }) => goal?.met === true).length,
+    finalGpa: profile.state.gpa,
   };
+  return { ...plaque, hallOfFame: inductsHallOfFameVNext(plaque) };
 }
 
 /** Review → offseason decision, or the Alumni Wall after the senior season. */

@@ -2,6 +2,7 @@ import { brandPermilleVNext, developmentPermilleVNext } from './programs.js';
 import { nextManUpVNext, rivalWeekVNext, VNEXT_RIVAL_TUNING } from './rivals.js';
 import { depthMovementReasonVNext } from './roles.js';
 import { cardsOfVNext } from './cards.js';
+import { GEAR_IDS_VNEXT } from './shop.js';
 import { cardAttributionVNext, overflowInsightVNext } from './economy.js';
 import type {
   PositionDepthUpdateEvidence,
@@ -122,6 +123,7 @@ import {
   type RecruitOfferVNext,
   type VNextGameState,
   type VNextPositionId,
+  type GearIdVNext,
 } from './types.js';
 
 const CONTENT_VERSION = 1;
@@ -141,6 +143,10 @@ export interface CreateCareerVNextInput {
   readonly bonusBudget?: number;
   /** M12: optional home region, story only. */
   readonly homeRegionId?: HomeRegionIdVNext;
+  /** M12 legacy perks (the app checks the unlocks; the core checks against the snapshot). */
+  readonly mentorCareerId?: string;
+  readonly legacyOfferProgramId?: ProgramId;
+  readonly startGearIds?: readonly GearIdVNext[];
 }
 
 const HOME_REGIONS: readonly HomeRegionIdVNext[] = [
@@ -168,7 +174,17 @@ export function createCareerVNext(
     bonusBudget < 0 ||
     bonusBudget > VNEXT_LEGACY_HEAD_START_CAP ||
     !checkAllocationVNext(created.player, allocation, bonusBudget).ok ||
-    (input.homeRegionId !== undefined && !HOME_REGIONS.includes(input.homeRegionId))
+    (input.homeRegionId !== undefined && !HOME_REGIONS.includes(input.homeRegionId)) ||
+    // M12 legacy perks read only the career's own Alumni Wall.
+    (input.mentorCareerId !== undefined &&
+      !(input.legacy ?? []).some(({ careerId }) => careerId === input.mentorCareerId)) ||
+    (input.legacyOfferProgramId !== undefined &&
+      !(input.legacy ?? []).some(({ programIds }) =>
+        programIds.includes(input.legacyOfferProgramId!),
+      )) ||
+    (input.startGearIds !== undefined &&
+      (!input.startGearIds.every((id) => GEAR_IDS_VNEXT.includes(id)) ||
+        new Set(input.startGearIds).size !== input.startGearIds.length))
   )
     return fail('career_vnext.invalid_input');
   const profile = applyAllocationVNext(created.player, allocation);
@@ -199,6 +215,8 @@ export function createCareerVNext(
     ...(input.allocation === undefined &&
     input.presetId === undefined &&
     input.homeRegionId === undefined &&
+    input.mentorCareerId === undefined &&
+    input.legacyOfferProgramId === undefined &&
     bonusBudget === 0
       ? {}
       : {
@@ -209,6 +227,10 @@ export function createCareerVNext(
             presetId: input.presetId ?? null,
             bonusBudget,
             ...(input.homeRegionId === undefined ? {} : { homeRegionId: input.homeRegionId }),
+            ...(input.mentorCareerId === undefined ? {} : { mentorCareerId: input.mentorCareerId }),
+            ...(input.legacyOfferProgramId === undefined
+              ? {}
+              : { legacyOfferProgramId: input.legacyOfferProgramId }),
           },
         }),
     proficiencyUses: createPositionTrainingProficiencyUses(positionId),
@@ -253,6 +275,15 @@ export function createCareerVNext(
     rng = sample.nextRng;
     chosen.push(pool[sample.value % pool.length]!);
   }
+  // M12 legacy perk: a former player's program guarantees an offer (added if not already there).
+  if (
+    input.legacyOfferProgramId !== undefined &&
+    !chosen.some(({ programId }) => programId === input.legacyOfferProgramId)
+  ) {
+    const legacyProgram = ranked.find(({ programId }) => programId === input.legacyOfferProgramId);
+    if (legacyProgram === undefined) return fail('career_vnext.invalid_input');
+    chosen.push(legacyProgram);
+  }
   const offers: RecruitOfferVNext[] = [];
   for (const { programId, rating } of chosen.sort((a, b) => b.rating - a.rating)) {
     const room = roomFor({ seed: input.seed, athlete }, programId, mechanics);
@@ -271,6 +302,16 @@ export function createCareerVNext(
     ...(input.legacy === undefined || input.legacy.length === 0
       ? {}
       : { legacy: snapshotLegacyVNext(input.legacy) }),
+    ...(input.startGearIds === undefined || input.startGearIds.length === 0
+      ? {}
+      : {
+          shop: {
+            ownedGearIds: [...input.startGearIds],
+            equippedGearIds: [...input.startGearIds],
+            purchases: [],
+            visibilityWeeks: 0,
+          },
+        }),
     recruiting: { offers, committedProgramId: null },
     program: null,
     season: {

@@ -13,6 +13,8 @@ import {
   continueGameVNext,
   continueSeasonReviewVNext,
   createCareerVNext,
+  emptyLegacyStoreVNext,
+  type LegacyStoreVNext,
   type DepthRoleId,
   equipSkillVNext,
   kickoffVNext,
@@ -50,7 +52,10 @@ import { GameDayScreen } from './GameDayScreen';
 import {
   clearCareerVNext,
   loadActiveSlot,
+  claimLegacyPointsVNext,
   loadAlumniVNext,
+  loadLegacyStoreVNext,
+  unlockLegacyPerkVNext,
   loadCareerVNext,
   recordAlumniVNext,
   saveActiveSlot,
@@ -124,6 +129,7 @@ export function App({
   const [preferences, setPreferences] = useState<Preferences>(() => defaultPreferences(locale));
   const [prototype, setPrototype] = useState(false);
   const [alumni, setAlumni] = useState<readonly AlumniVNext[]>([]);
+  const [legacyStore, setLegacyStore] = useState<LegacyStoreVNext>(emptyLegacyStoreVNext);
   // One seed per creation: the scouting report previews the very offers the career will get.
   const [creationSeed, setCreationSeed] = useState(seedFactory);
   const [prototypeAlumni, setPrototypeAlumni] = useState<readonly PrototypeAlumniView[]>([]);
@@ -170,6 +176,11 @@ export function App({
         if (active) setAlumni(entries);
       })
       .catch(() => undefined);
+    void loadLegacyStoreVNext(storage)
+      .then((stored) => {
+        if (active) setLegacyStore(stored);
+      })
+      .catch(() => undefined);
     void findPrototypeAlumni(storage).then((entries) => {
       if (active) setPrototypeAlumni(entries);
     });
@@ -184,6 +195,10 @@ export function App({
     if (completed === null) return;
     void recordAlumniVNext(storage, completed)
       .then(setAlumni)
+      .catch(() => undefined);
+    // M12 Phase 8: the career's legacy points, claimed once per career.
+    void claimLegacyPointsVNext(storage, completed)
+      .then(setLegacyStore)
       .catch(() => undefined);
   }, [completed, storage]);
 
@@ -244,6 +259,21 @@ export function App({
         allocation: extras.allocation,
         presetId: extras.presetId,
         ...(extras.homeRegionId === null ? {} : { homeRegionId: extras.homeRegionId }),
+        // M12 Phase 8: legacy perks this career uses.
+        ...(extras.legacy === undefined
+          ? {}
+          : {
+              bonusBudget: extras.legacy.bonusBudget,
+              ...(extras.legacy.mentorCareerId === null
+                ? {}
+                : { mentorCareerId: extras.legacy.mentorCareerId }),
+              ...(extras.legacy.legacyOfferProgramId === null
+                ? {}
+                : { legacyOfferProgramId: extras.legacy.legacyOfferProgramId }),
+              ...(extras.legacy.startGearIds.length === 0
+                ? {}
+                : { startGearIds: extras.legacy.startGearIds }),
+            }),
       },
       built,
     );
@@ -453,6 +483,13 @@ export function App({
                     blocked={blocked}
                     onCreate={create}
                     previewFirstRoles={previewFirstRoles}
+                    alumni={alumni}
+                    legacyStore={legacyStore}
+                    onUnlockPerk={(perkId) =>
+                      void unlockLegacyPerkVNext(storage, perkId)
+                        .then(setLegacyStore)
+                        .catch(() => undefined)
+                    }
                   />
                   {alumni.length > 0 && (
                     <LegacyPanel alumni={alumni} prototypes={prototypeAlumni} />

@@ -2,6 +2,7 @@ import { createRng, nextUint32 } from '../random/rng.js';
 import type {
   CareerVNext,
   CareerVNextMechanics,
+  CombineResultVNext,
   DraftResultVNext,
   DraftStockBandVNext,
   DraftStockVNext,
@@ -154,21 +155,66 @@ export function canDeclareVNext(career: Pick<CareerVNext, 'season' | 'flow'>): b
 }
 
 /** The Pro Draft: the latest stock plus one bounded draw from the career's draft stream. */
-export function runDraftVNext(career: Pick<CareerVNext, 'seed' | 'history'>): DraftResultVNext {
+/**
+ * The Pro Combine (M12 CAR-02): measurements from the athlete's ratings (no draw), and a small
+ * stock effect from how far the workout ratings sit from a draftable baseline of 60.
+ */
+export const VNEXT_COMBINE_TUNING = Object.freeze({
+  baseline: 60,
+  /** Average points above or below the baseline per stock point, and the bound. */
+  pointsPerStock: 6,
+  maxStockDelta: 2,
+});
+
+export function combineVNext(career: Pick<CareerVNext, 'athlete'>): CombineResultVNext {
+  const ratings = career.athlete.profile.attributes as unknown as Readonly<
+    Record<string, { readonly rating: number } | undefined>
+  >;
+  const rating = (id: string) => ratings[id]?.rating ?? 50;
+  const speed = rating('attribute_speed');
+  const burst = rating('attribute_burst');
+  const strength = rating('attribute_strength');
+  const agility = rating('attribute_agility');
+  const iq = rating('attribute_football_iq');
+  const tuning = VNEXT_COMBINE_TUNING;
+  const average = (speed + burst + strength + agility + iq) / 5;
+  return {
+    fortyHundredths: clamp(Math.round(530 - (speed - 40) * 1.8), 425, 560),
+    verticalTenths: clamp(Math.round(240 + (burst - 40) * 3.5), 200, 440),
+    benchReps: clamp(Math.round(8 + (strength - 40) * 0.4), 0, 40),
+    shuttleHundredths: clamp(Math.round(470 - (agility - 40) * 1.2), 390, 500),
+    footballTest: iq,
+    // `|| 0`: JSON saves never hold -0, so neither may the in-memory result.
+    stockDelta:
+      clamp(
+        Math.round((average - tuning.baseline) / tuning.pointsPerStock),
+        -tuning.maxStockDelta,
+        tuning.maxStockDelta,
+      ) || 0,
+  };
+}
+
+export function runDraftVNext(
+  career: Pick<CareerVNext, 'seed' | 'history'> & Partial<Pick<CareerVNext, 'athlete'>>,
+): DraftResultVNext {
   const stock = career.history.at(-1)?.draftStock;
   const score = stock?.score ?? 0;
   const tuning = VNEXT_DRAFT_TUNING;
+  // M12: the Combine's bounded stock effect counts on draft day.
+  const combine = career.athlete === undefined ? null : combineVNext({ athlete: career.athlete });
   const rng = createRng(`${String(career.seed)}:vnext:draft`);
   const swing = nextUint32(rng);
   const pickDraw = nextUint32(swing.nextRng);
   const span = tuning.variance * 2 + 1;
-  const adjusted = score + (swing.value % span) - tuning.variance;
+  const adjusted = score + (combine?.stockDelta ?? 0) + (swing.value % span) - tuning.variance;
   const roundIndex = tuning.roundFloors.findIndex((floor) => adjusted >= floor);
-  if (roundIndex === -1) return { round: null, pick: null, stockScore: score };
+  const withCombine = combine === null ? {} : { combine };
+  if (roundIndex === -1) return { round: null, pick: null, stockScore: score, ...withCombine };
   const pickInRound = (pickDraw.value % tuning.picksPerRound) + 1;
   return {
     round: roundIndex + 1,
     pick: roundIndex * tuning.picksPerRound + pickInRound,
     stockScore: score,
+    ...withCombine,
   };
 }

@@ -333,14 +333,14 @@ const screen = {
   'v2.off.retire': ['Hang up the cleats', '은퇴하기'],
   'v2.off.retireConfirm': [
     'End this career now? The record goes to the Alumni Wall.',
-    '지금 커리어를 마칠까요? 기록은 명예의 전당에 남습니다.',
+    '지금 커리어를 마칠까요? 기록은 동문의 벽에 남습니다.',
   ],
   'v2.off.retireYes': ['Retire', '은퇴'],
   'v2.alumni.eyebrow': ['Career complete', '커리어 완료'],
-  'v2.alumni.title': ['Alumni Wall', '명예의 전당'],
+  'v2.alumni.title': ['Alumni Wall', '동문의 벽'],
   'v2.alumni.line': [
-    '{seasons} seasons · {wins}-{losses}-{ties} · OVR {ovr}',
-    '{seasons}시즌 · {wins}승 {losses}패 {ties}무 · 종합 {ovr}',
+    '{seasons, plural, one {# season} other {# seasons}} · {wins}-{losses}-{ties} · OVR {ovr}',
+    '{seasons, plural, other {#시즌}} · {wins}승 {losses}패 {ties}무 · 종합 {ovr}',
   ],
   'v2.alumni.titles': ['Championships: {count}', '우승: {count}회'],
   'v2.alumni.best': ['Best finish: {finish}', '최고 성적: {finish}'],
@@ -349,7 +349,7 @@ const screen = {
   'v2.alumni.prototypeLine': ['{games} games', '{games}경기'],
   'v2.alumni.empty': ['No alumni yet.', '아직 졸업생이 없습니다.'],
   'v2.alumni.new': ['Start a new career', '새 커리어 시작'],
-  'v2.alumni.wall': ['Alumni Wall ({count})', '명예의 전당 ({count})'],
+  'v2.alumni.wall': ['Alumni Wall ({count})', '동문의 벽 ({count})'],
   'v2.gd.planSnaps': [
     'Live snaps: {live} · Sideline reads: {reps}',
     '라이브 스냅: {live}회 · 사이드라인 판단: {reps}회',

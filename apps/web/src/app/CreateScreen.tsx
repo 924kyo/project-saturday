@@ -3,6 +3,9 @@ import {
   applyAllocationVNext,
   createPositionPlayerProfile,
   type AllocationVNext,
+  type AlumniVNext,
+  type LegacyPerkIdVNext,
+  type LegacyStoreVNext,
   type AthleteNameTokensVNext,
   type DepthRoleId,
   type HomeRegionIdVNext,
@@ -20,6 +23,10 @@ import {
 
 import { FullBodyFigure } from '../career/FullBodyFigure';
 import { CreateBuild } from './CreateBuild';
+import { LegacyPerks } from './Legacy';
+import { NO_LEGACY_CHOICES, type LegacyChoices } from './legacy-choices';
+
+const NO_ALUMNI: readonly AlumniVNext[] = [];
 import { PotentialCurve } from './Development';
 import { nextNameCursor } from './name-cursor';
 import { TradingCard } from './TradingCard';
@@ -70,6 +77,8 @@ export interface CreationExtras {
   readonly allocation: AllocationVNext;
   readonly presetId: string | null;
   readonly homeRegionId: HomeRegionIdVNext | null;
+  /** M12 Phase 8: how this career uses unlocked legacy perks. */
+  readonly legacy?: LegacyChoices;
 }
 const EXTRA_FIELDS = [
   'eyeBlackId',
@@ -154,6 +163,9 @@ export function CreateScreen({
   blocked,
   onCreate,
   previewFirstRoles,
+  legacyStore,
+  alumni = NO_ALUMNI,
+  onUnlockPerk,
 }: {
   readonly blocked: boolean;
   readonly onCreate: (
@@ -161,6 +173,10 @@ export function CreateScreen({
     nameTokens: AthleteNameTokensVNext | null,
     extras: CreationExtras,
   ) => void;
+  /** M12 Phase 8: the legacy store and the Alumni Wall (perks), and unlocking a perk. */
+  readonly legacyStore?: LegacyStoreVNext;
+  readonly alumni?: readonly AlumniVNext[];
+  readonly onUnlockPerk?: (perkId: LegacyPerkIdVNext) => void;
   readonly previewFirstRoles?: (
     identity: PositionPlayerCreationIdentity,
     extras: CreationExtras,
@@ -185,6 +201,7 @@ export function CreateScreen({
     homeRegionId: null,
   });
   const update = (patch: Partial<Draft>) => setDraft((current) => ({ ...current, ...patch }));
+  const [legacy, setLegacy] = useState<LegacyChoices>(NO_LEGACY_CHOICES);
   // A suggested name is shown (and saved) in the current language.
   const name =
     draft.nameTokens === null ? draft.displayName.trim() : namePreview(t, draft.nameTokens);
@@ -210,10 +227,11 @@ export function CreateScreen({
             allocation: draft.allocation,
             presetId: draft.presetId,
             homeRegionId: draft.homeRegionId,
+            legacy,
           }),
     // Only the choices that reach ratings or offers rebuild the preview.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [built, draft.allocation, draft.presetId, previewFirstRoles],
+    [built, draft.allocation, draft.presetId, legacy, previewFirstRoles],
   );
   // The card shows the athlete with the player's own points applied.
   const preview = built === null ? null : applyAllocationVNext(built.profile, draft.allocation);
@@ -412,10 +430,20 @@ export function CreateScreen({
           </>
         )}
 
+        {step === 2 && legacyStore !== undefined && onUnlockPerk !== undefined && (
+          <LegacyPerks
+            alumni={alumni}
+            blocked={blocked}
+            onChange={setLegacy}
+            onUnlock={onUnlockPerk}
+            store={legacyStore}
+            value={legacy}
+          />
+        )}
         {step === 2 && built !== null && (
           <CreateBuild
             allocation={draft.allocation}
-            bonusBudget={0}
+            bonusBudget={legacy.bonusBudget}
             firstRoles={firstRoles}
             mechanics={built.mechanics}
             onChange={(allocation, presetId) => update({ allocation, presetId })}
@@ -621,6 +649,7 @@ export function CreateScreen({
                       allocation: draft.allocation,
                       presetId: draft.presetId,
                       homeRegionId: draft.homeRegionId,
+                      legacy,
                     })
                   }
                   type="button"
