@@ -96,6 +96,10 @@ const rows = {
   ],
   'v2.recruit.strengthAria': ['Team strength {value} of 5', '팀 전력 5 중 {value}'],
   'v2.recruit.playingAria': ['Playing time {value} of 5', '출전 기회 5 중 {value}'],
+  'v2.potential.lineProgram': [
+    'Training XP this season: {value}% ({background} {potential}% × {tier} development {program}%)',
+    '이번 시즌 훈련 XP: {value}% ({background} {potential}% × 육성 {tier} {program}%)',
+  ],
   'v2.guide.programDevelopment': [
     'Program development ({tier}): training XP runs at {pct}% here.',
     '팀 육성 수준 ({tier}): 이곳의 훈련 경험치는 {pct}%입니다.',

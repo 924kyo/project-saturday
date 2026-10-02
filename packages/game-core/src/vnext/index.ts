@@ -88,8 +88,12 @@ export {
 export {
   clockFromElapsedVNext,
   snapElapsedSecondsVNext,
+  snapMomentVNext,
   VNEXT_CLOCK_TUNING,
+  VNEXT_CLOSING_DRIVE_SECONDS,
+  VNEXT_ROLE_SNAP_WINDOWS,
   withVariedClockVNext,
+  type SnapMomentVNext,
 } from './clock.js';
 export {
   EXECUTION_REASONS_VNEXT,
@@ -166,7 +170,12 @@ export {
   VNEXT_LEGACY_TUNING,
   type RecordBookEntryVNext,
 } from './legacy.js';
-export { rivalWeekVNext, VNEXT_RIVAL_TUNING } from './rivals.js';
+export {
+  nextManUpVNext,
+  rivalWeekVNext,
+  VNEXT_NEXT_MAN_TUNING,
+  VNEXT_RIVAL_TUNING,
+} from './rivals.js';
 export {
   backgroundProfileVNext,
   campFocusIdsVNext,
@@ -236,3 +245,11 @@ export {
   type OfferReasonVNext,
   type TransferMarketVNext,
 } from './offers.js';
+export {
+  careerRoleStatusVNext,
+  depthMovementReasonVNext,
+  roleStatusVNext,
+  type DepthMovementReasonVNext,
+  type RoleStatusIdVNext,
+  type RoleStatusVNext,
+} from './roles.js';

@@ -35,6 +35,7 @@ import {
 import type { MessageKey } from '@project-saturday/game-content/locales';
 
 import { profileValueKeyVNext } from '@project-saturday/game-content/content';
+import { MovementReason, RoleStatusLine } from './Roles';
 import { useAppTranslation } from '../i18n/i18n';
 import {
   DEPTH_COMPONENT_KEYS,
@@ -200,6 +201,11 @@ export function Milestones({
             </span>
           </li>
         ))}
+        {career.program !== null && (
+          <li>
+            <RoleStatusLine career={career} mechanics={mechanics} />
+          </li>
+        )}
         {depth !== null && (
           <li>
             <span>
@@ -239,18 +245,35 @@ export function Milestones({
 }
 
 /** The background's growth curve, shown where the athlete plans (M12 potential). */
-export function PotentialLine({ career }: { readonly career: CareerVNext }): React.JSX.Element {
+export function PotentialLine({
+  career,
+  mechanics,
+}: {
+  readonly career: CareerVNext;
+  readonly mechanics?: CareerVNextMechanics;
+}): React.JSX.Element {
   const { t } = useAppTranslation();
+  const background = t(
+    key(
+      `creation.backgrounds.${backgroundKey(career.athlete.profile.recruitingBackgroundId)}.name`,
+    ),
+  );
+  // M12 Phase 4: the season's XP is the background's potential × the program's development tier.
+  const profile =
+    mechanics === undefined || career.program === null
+      ? null
+      : programProfileVNext(mechanics, career.program.programId);
   return (
     <p className="s2-note" title={t('v2.potential.title')}>
-      {t('v2.potential.line', {
-        value: pct(potentialPermilleVNext(career)),
-        background: t(
-          key(
-            `creation.backgrounds.${backgroundKey(career.athlete.profile.recruitingBackgroundId)}.name`,
-          ),
-        ),
-      })}
+      {profile === null || mechanics === undefined
+        ? t('v2.potential.line', { value: pct(potentialPermilleVNext(career)), background })
+        : t('v2.potential.lineProgram', {
+            value: pct(developmentPermilleVNext(career, mechanics)),
+            background,
+            potential: pct(potentialPermilleVNext(career)),
+            tier: t(key(profileValueKeyVNext('development', profile.developmentTierId))),
+            program: pct(VNEXT_PROGRAM_TUNING.developmentXpPermille[profile.developmentTierId]),
+          })}
     </p>
   );
 }
@@ -310,6 +333,11 @@ function CampReport({
             <p className="s2-note">
               {t('v2.camp.role', { position: abbr, rank: report.depth.rankAfter })}
             </p>
+            <MovementReason
+              career={career}
+              neighborId={report.depth.neighborParticipantId}
+              reason={report.movementReason}
+            />
             <p className="s2-note">
               {t('v2.report.gauge', {
                 value: report.gaugeAfter,

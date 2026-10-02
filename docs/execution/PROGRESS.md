@@ -40,7 +40,12 @@ M10 is complete (plan: `docs/exec-plans/completed/m10-release-candidate.md`), an
   - REC-04 is in progress: its story beats come in Phase 6.
   - Gate: typecheck, lint and format clean; unit 952, sim 398, e2e 20, build; EN/KO recruiting and offseason screens.
   - One open item: the 12-career climbing harness drafts 12 of 12 against its "fewer than 12" band. Its assertion is unchanged and awaiting the user's call (DECISION_LOG).
-  - Restart point: Phase 5, roles and depth.
+  - Next: Phase 5, roles and depth.
+- 2026-10-02: Phase 5 (roles and depth) is done.
+  - ROLE-01…06 are verified complete.
+  - Starter seasons 646‰ (juniors and seniors are no longer automatic starters).
+  - Gate: typecheck, lint and format clean; unit 959 with the one known climbing-harness band failure (the user's decision: revisit in Phase 10); sim and e2e (see the commit).
+  - Restart point: Phase 6, relationships and narrative.
 
 ## Status
 

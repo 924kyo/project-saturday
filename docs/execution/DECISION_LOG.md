@@ -698,6 +698,24 @@ Append concise implementation/product decisions that do not warrant their own AD
   - **The clock** is re-timed per key snap inside its even slot from `:vnext:clock:<season>:<week>:<snap>` (no kernel RNG draw; the context matcher ignores the clock). The WR composure card reads Q4, so the clock is real context, not decoration.
   - **The pregame line** has five bands from the measured matchup-score spread (p10 46, p50 52, p90 59). The old 42/58 cut put 85% of games at toss-up. An upset is a win as an underdog; pre-M12 recaps keep the ranked rule.
   - **Copy:** "Drop eight" is "Drop seven" (its board rushes four); the closing-pursuit distance is mid-run; the WR release prompt no longer says the corner waits at the line.
+- 2026-10-02 (M12 Phase 5, roles and depth): a role is now earned and kept on the depth chart's own numbers (`vnext/roles.ts`, `vnext/rivals.ts`, `vnext/clock.ts`).
+  - **Role security:** Secure (leads the teammate below by at least the 2.0-point hysteresis margin), Contested (leads by less) or At risk (that teammate already grades higher).
+    - It also gives the points that teammate needs to pass and the points needed to be secure, plus the teammate's biggest edge as the recovery path.
+    - It reads the same evaluations and margin the practice update uses.
+  - **Next man up:** when the athlete misses a game they would have played in (out injured or held out academically), the teammate right below earns trust +6 and experience +5.
+    - The athlete keeps the slot until practice decides it.
+    - Before, an injured starter came back to an unchanged chart; the harness had juniors and seniors as starters 36 of 36.
+  - **Balance (m10 harness):**
+    - Starter seasons 826 → 646‰, by year 14/26/25/28 of 36.
+    - By strategy: balanced (recovery) 44 of 48; grind 24 and study 25 of 48 (more injuries).
+    - Drafted 472 → 389‰; growth 5.0; all bands hold; the artifact was regenerated.
+    - The 12-career climbing harness still drafts 12 of 12; per the user's decision, Phase 10 revisits it.
+  - **Why the chart moved:** practice and camp reports store the deciding component: the athlete's biggest edge over the teammate passed, or the passing teammate's biggest edge (their practice form reads as "rival form").
+  - **Role-aware moments:** live snaps are timed inside the role's part of the game (presentation context only; no kernel reads the clock).
+    - A starter's last snap is the closing drive (final six minutes).
+    - Rotation plays series in the middle quarters; reserve and developmental snaps are late packages.
+    - The pregame states that involvement.
+  - **ROLE-01 fix:** finished alpha games keep no input, so explanations read the athlete's current ratings. They now read each changed rating's kickoff value from the growth evidence.
 - 2026-10-02 (M12 Phase 4, schools and transfers): program profiles make offers real tradeoffs. Rules are in `vnext/programs.ts` and `vnext/offers.ts`; the table is generated (`scripts/generate-program-profiles.py`).
   - **Profile:** every program has an offensive and a defensive scheme, plus a development tier, an exposure tier, academic support and an NIL market.
     - Exposure and NIL lean with program strength; development and academics do not, so a small school can be the better place to grow or study.
@@ -715,7 +733,7 @@ Append concise implementation/product decisions that do not warrant their own AD
   - **Transfer consequences:** coach trust resets (as before), and camp opens with Preparation −12. Staying keeps trust and the playbook. Story beats are Phase 6.
   - **Offers explained:** each offer shows its facts, reasons and a labeled starter forecast, and the screen shows a not-yet school with the exact score that would bring it.
   - **Balance (m10 harness, 36 careers):** growth 5.0 → 5.1, drafted 444 → 472‰, first round 28‰ (unchanged), brand 75.4 → 74.7, awards 167 → 174‰, starters 840 → 826‰. The artifact was regenerated.
-  - **Open:** the 12-career climbing harness (`career-vnext-careers.test.ts`) now drafts 12 of 12 against its "fewer than 12" band. Two careers sit within two stock points of the draft floor, and the comparison without profiles drafted 10 of 12. The band is unchanged pending the user's decision.
+  - **Open:** the 12-career climbing harness (`career-vnext-careers.test.ts`) now drafts 12 of 12 against its "fewer than 12" band. Two careers sit within two stock points of the draft floor, and the comparison without profiles drafted 10 of 12. User decision (2026-10-02): keep the band as is and revisit after Phase 5, when demotion becomes real, and Phase 10's draft re-base; escalate again if it still fails then.
 - 2026-10-02 (M12 Phase 3, Round 3 v3 portraits): the owner's art pack is integrated, following their integration notes. Code and config only; no asset file was made, moved or rewritten.
   - **Options:** 16 faces (four shapes plus `identity_01…12`, as alternatives) and 14 hairstyles are in the VNext catalog, with EN/KO labels.
     - Save fields and IDs are unchanged; the core validates appearance IDs by prefix, so older saves keep their choices. A test round-trips every new face and style through creation and the save codec.

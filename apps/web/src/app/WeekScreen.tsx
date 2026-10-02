@@ -14,6 +14,7 @@ import {
   nilOfVNext,
 } from '@project-saturday/game-core';
 
+import { MovementReason } from './Roles';
 import { useAppTranslation, type AppTranslate } from '../i18n/i18n';
 import {
   CLASS_YEAR_KEYS,
@@ -360,6 +361,11 @@ function Report({
                   </span>
                 </div>
               )}
+              <MovementReason
+                career={career}
+                neighborId={depth.neighborParticipantId}
+                reason={report.movementReason}
+              />
             </div>
           </div>
           <ul className="s2-bullets" style={{ marginTop: 14 }}>
@@ -619,7 +625,7 @@ export function WeekScreen({
         <p className="s2-eyebrow">{t('v2.week.nextUp')}</p>
         <h2 className="s2-display s2-next__title">{t('v2.week.planTitle')}</h2>
         <Opponent career={career} mechanics={mechanics} />
-        <PotentialLine career={career} />
+        <PotentialLine career={career} mechanics={mechanics} />
         {career.development?.focus != null && career.development.focus.outcome === 'ACTIVE' && (
           <p className="s2-note">
             {t('v2.focus.progress', {

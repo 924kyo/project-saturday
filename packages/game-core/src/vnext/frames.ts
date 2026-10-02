@@ -422,11 +422,24 @@ function gameAttributes(
   engine: VNextGameState,
   fallback: Readonly<Record<string, { readonly rating: number } | undefined>>,
 ): Readonly<Record<string, { readonly rating: number } | undefined>> {
-  const input = (engine.game as unknown as { input?: { player?: { attributes?: unknown } } }).input;
-  const attributes = input?.player?.attributes;
-  return typeof attributes === 'object' && attributes !== null
-    ? (attributes as Readonly<Record<string, { readonly rating: number } | undefined>>)
-    : fallback;
+  const game = engine.game as unknown as {
+    input?: { player?: { attributes?: unknown } };
+    growth?: {
+      attributeXp?: readonly { readonly attributeId: string; readonly ratingBefore: number }[];
+    };
+  };
+  const attributes = game.input?.player?.attributes;
+  if (typeof attributes === 'object' && attributes !== null)
+    return attributes as Readonly<Record<string, { readonly rating: number } | undefined>>;
+  // A finished game keeps no input; its growth evidence holds each changed rating at kickoff
+  // (ROLE-01: the explanation shows the rating the kernel played with, not the one after).
+  const before = Object.fromEntries(
+    (game.growth?.attributeXp ?? []).map(({ attributeId, ratingBefore }) => [
+      attributeId,
+      { rating: ratingBefore },
+    ]),
+  );
+  return { ...fallback, ...before };
 }
 
 /**

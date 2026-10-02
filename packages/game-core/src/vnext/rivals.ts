@@ -46,7 +46,6 @@ export function rivalWeekVNext(
   growthDraws = 1,
 ): PositionRoomContext {
   const tuning = VNEXT_RIVAL_TUNING;
-  const weights = mechanics.depthEvaluationWeightsPermille;
   let rng = createRng(`${String(seed)}:vnext:rivals:${seasonIndex}:${weekIndex}`);
   const competitors = room.competitors.map((competitor) => {
     const week = draw(rng, tuning.weeklySpread);
@@ -74,6 +73,19 @@ export function rivalWeekVNext(
       coachTrust: trust?.after ?? competitor.coachTrust,
     };
   });
+  return rescoredRoomVNext(room, competitors, mechanics);
+}
+
+/**
+ * Re-scores teammates from their updated components. Teammates re-sort among themselves; the
+ * athlete keeps their slot until a practice update moves them (the hysteresis rule).
+ */
+function rescoredRoomVNext(
+  room: PositionRoomContext,
+  competitors: PositionRoomContext['competitors'],
+  mechanics: PositionRoomMechanics,
+): PositionRoomContext {
+  const weights = mechanics.depthEvaluationWeightsPermille;
   const byId = new Map(competitors.map((competitor) => [competitor.id as string, competitor]));
   const rescored = room.evaluations.map((entry): PositionDepthEvaluation => {
     const competitor = byId.get(entry.participantId);
@@ -83,6 +95,7 @@ export function rivalWeekVNext(
       practiceForm: competitor.practiceForm,
       talentFit: competitor.talentFit,
       coachTrust: competitor.coachTrust,
+      experienceReadiness: competitor.experienceReadiness,
     };
     const contributions = {
       talentFitMilli: components.talentFit * weights.talentFit,
@@ -98,7 +111,6 @@ export function rivalWeekVNext(
       totalScoreMilli: Object.values(contributions).reduce((total, value) => total + value, 0),
     };
   });
-  // Teammates re-sort among themselves; the athlete keeps their slot until practice moves him.
   const playerIndex = rescored.findIndex(({ participantId }) => participantId === room.playerId);
   const others = rescored
     .filter((_, index) => index !== playerIndex)
@@ -123,4 +135,33 @@ export function rivalWeekVNext(
     depthOrderIds: evaluations.map(({ participantId }) => participantId),
     evaluations,
   };
+}
+
+/**
+ * M12 Phase 5 (ROLE-04, "next man up"): when the athlete misses a game they would have played in
+ * (injury or academic hold), the teammate right below takes those snaps and earns the staff's
+ * trust and game experience. The athlete's spot is then re-earned through the normal practice rule.
+ */
+export const VNEXT_NEXT_MAN_TUNING = Object.freeze({ trust: 6, experience: 5 });
+
+export function nextManUpVNext(
+  room: PositionRoomContext,
+  mechanics: PositionRoomMechanics,
+): PositionRoomContext {
+  const playerIndex = room.evaluations.findIndex(
+    ({ participantId }) => participantId === room.playerId,
+  );
+  const below = room.evaluations[playerIndex + 1];
+  if (playerIndex < 0 || below === undefined) return room;
+  const tuning = VNEXT_NEXT_MAN_TUNING;
+  const competitors = room.competitors.map((competitor) =>
+    competitor.id === below.participantId
+      ? {
+          ...competitor,
+          coachTrust: Math.min(100, competitor.coachTrust + tuning.trust),
+          experienceReadiness: Math.min(100, competitor.experienceReadiness + tuning.experience),
+        }
+      : competitor,
+  );
+  return rescoredRoomVNext(room, competitors, mechanics);
 }

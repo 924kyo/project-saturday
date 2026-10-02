@@ -285,6 +285,14 @@ export function participantName(
   );
 }
 
+/** The pregame involvement line by role (M12 ROLE-05). */
+export const INVOLVEMENT_KEYS = {
+  depth_role_starter: 'v2.pregame.involvement.starter',
+  depth_role_rotation: 'v2.pregame.involvement.rotation',
+  depth_role_reserve: 'v2.pregame.involvement.reserve',
+  depth_role_developmental: 'v2.pregame.involvement.developmental',
+} as const satisfies Record<DepthRoleId, MessageKey>;
+
 export const DEPTH_COMPONENT_KEYS = {
   talentFit: 'v2.depth.talent',
   coachTrust: 'v2.depth.trust',

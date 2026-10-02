@@ -1,4 +1,5 @@
 import { createRng, nextUint32, type RngSeed } from '../random/rng.js';
+import type { DepthRoleId } from '../programs/ids.js';
 import type { VNextGameState } from './types.js';
 
 /**
@@ -23,13 +24,53 @@ interface PendingWithContext {
   } & Record<string, unknown>;
 }
 
-/** Elapsed game seconds for key snap `index` of `count`, re-timed from `seed`. */
-export function snapElapsedSecondsVNext(seed: string, index: number, count: number): number {
-  const spacing = 3600 / (count + 1);
-  const base = Math.floor(spacing * (index + 1));
-  const span = Math.floor((spacing * VNEXT_CLOCK_TUNING.jitterSharePermille) / 1000);
-  const draw = nextUint32(createRng(seed)).value % (2 * span + 1);
+/**
+ * M12 Phase 5 (ROLE-05, playtest report "five snaps repetitive"): when in the game a role's snaps
+ * come. A starter plays throughout and is on the field for the closing drive; a rotation player
+ * comes in for series in the middle quarters; reserve and developmental snaps are late packages.
+ * Elapsed-second spans; still presentation context only (the kernels never read the clock).
+ */
+export const VNEXT_ROLE_SNAP_WINDOWS = Object.freeze({
+  depth_role_starter: [0, 3600],
+  depth_role_rotation: [900, 2700],
+  depth_role_reserve: [2250, 3600],
+  depth_role_developmental: [2700, 3600],
+} as const satisfies Record<DepthRoleId, readonly [number, number]>);
+
+/** A starter's last live snap comes in this final stretch of the fourth quarter. */
+export const VNEXT_CLOSING_DRIVE_SECONDS = 360;
+
+export type SnapMomentVNext = 'CLOSING_DRIVE' | 'ROTATION_SERIES' | 'LATE_PACKAGE';
+
+/** The kind of moment a live snap is, by role (null for a starter's ordinary snap). */
+export function snapMomentVNext(
+  roleId: DepthRoleId,
+  index: number,
+  count: number,
+): SnapMomentVNext | null {
+  if (roleId === 'depth_role_starter')
+    return count > 1 && index === count - 1 ? 'CLOSING_DRIVE' : null;
+  return roleId === 'depth_role_rotation' ? 'ROTATION_SERIES' : 'LATE_PACKAGE';
+}
+
+/** Elapsed game seconds for key snap `index` of `count`, re-timed from `seed` inside the role's span. */
+export function snapElapsedSecondsVNext(
+  seed: string,
+  index: number,
+  count: number,
+  roleId: DepthRoleId = 'depth_role_starter',
+): number {
   const edge = VNEXT_CLOCK_TUNING.edgeSeconds;
+  const sample = nextUint32(createRng(seed)).value;
+  if (snapMomentVNext(roleId, index, count) === 'CLOSING_DRIVE') {
+    const start = 3600 - VNEXT_CLOSING_DRIVE_SECONDS;
+    return start + (sample % (VNEXT_CLOSING_DRIVE_SECONDS - edge));
+  }
+  const [from, to] = VNEXT_ROLE_SNAP_WINDOWS[roleId];
+  const spacing = (to - from) / (count + 1);
+  const base = Math.floor(from + spacing * (index + 1));
+  const span = Math.floor((spacing * VNEXT_CLOCK_TUNING.jitterSharePermille) / 1000);
+  const draw = sample % (2 * span + 1);
   return Math.max(edge, Math.min(3600 - edge, base + draw - span));
 }
 
@@ -48,6 +89,7 @@ export function withVariedClockVNext(
   seed: RngSeed,
   seasonIndex: number,
   weekIndex: number,
+  roleId: DepthRoleId = 'depth_role_starter',
 ): VNextGameState {
   const game = engine.game as unknown as {
     readonly type: string;
@@ -63,6 +105,7 @@ export function withVariedClockVNext(
     `${String(seed)}:vnext:clock:${seasonIndex}:${weekIndex}:${pending.snapIndex}`,
     pending.snapIndex,
     count,
+    roleId,
   );
   return {
     ...engine,

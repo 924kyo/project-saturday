@@ -1,4 +1,5 @@
 import type { SnapLookCatalogVNext } from './looks.js';
+import type { DepthMovementReasonVNext } from './roles.js';
 import type { InjuryAvailabilityEvidence, NewInjuryEvidence } from '../injuries/types.js';
 import type { EventMechanicsDefinition } from '../events/types.js';
 import type { ProgramId } from '../player/ids.js';
@@ -216,6 +217,8 @@ export interface PracticeReportVNext {
   readonly obligationApplied?: readonly NilEffectApplicationEvidenceV1[];
   /** M12: the coach's midseason focus as this week settled it (absent = none active). */
   readonly coachFocus?: CoachFocusWeekVNext;
+  /** M12 (ROLE-06): the component that decided a depth move (absent = held, or older saves). */
+  readonly movementReason?: DepthMovementReasonVNext;
 }
 
 /** M12 development calendar: offseason programs (one per offseason). */
@@ -287,6 +290,8 @@ export interface CampReportVNext {
   readonly gaugeAfter: number;
   /** The XP multiplier camp applied (potential × camp), permille. */
   readonly xpPermille: number;
+  /** M12 (ROLE-06): the component that decided a depth move (absent = held). */
+  readonly movementReason?: DepthMovementReasonVNext;
 }
 
 /** The midseason checkpoint (M12): where the season stands and the coach's suggested focus. */

@@ -1,5 +1,10 @@
 import { brandPermilleVNext, developmentPermilleVNext } from './programs.js';
-import { rivalWeekVNext, VNEXT_RIVAL_TUNING } from './rivals.js';
+import { nextManUpVNext, rivalWeekVNext, VNEXT_RIVAL_TUNING } from './rivals.js';
+import { depthMovementReasonVNext } from './roles.js';
+import type {
+  PositionDepthUpdateEvidence,
+  PositionRoomContext,
+} from '../programs/position-room.js';
 import { withVariedClockVNext } from './clock.js';
 import {
   applyAllocationVNext,
@@ -307,6 +312,15 @@ export function commitProgramVNext(
 
 export { focusDefinitionsVNext };
 
+/** The deciding component of a depth move, when there was one (stored on the report). */
+function movementReasonOf(updated: {
+  readonly context: PositionRoomContext;
+  readonly evidence: PositionDepthUpdateEvidence;
+}) {
+  const reason = depthMovementReasonVNext(updated.context, updated.evidence);
+  return reason === null ? {} : { movementReason: reason };
+}
+
 export function planWeekVNext(
   career: CareerVNext,
   focusIds: readonly string[],
@@ -426,6 +440,7 @@ export function planWeekVNext(
         sidelineCredit: career.season.sidelineCredit,
         practiceScore,
         depth: updated.evidence,
+        ...movementReasonOf(updated),
         gaugeBefore,
         gaugeAfter,
         offFieldDelta: offField.practiceDelta,
@@ -523,6 +538,7 @@ export function chooseCampVNext(
         grade,
         practiceScore,
         depth: updated.evidence,
+        ...movementReasonOf(updated),
         gaugeBefore,
         gaugeAfter,
         xpPermille,
@@ -880,7 +896,13 @@ export function kickoffVNext(
     game.academicHold === true,
   );
   if (started === null) return fail('career_vnext.engine_failed');
-  const engine = withVariedClockVNext(started, career.seed, career.season.index, game.weekIndex);
+  const engine = withVariedClockVNext(
+    started,
+    career.seed,
+    career.season.index,
+    game.weekIndex,
+    career.program?.room.projection.roleId,
+  );
   const liveCount = engine.game.type === 'ACTIVE' ? engine.game.input.opportunityCount : 0;
   const repCount = Math.max(0, CAREER_VNEXT_MIN_GAME_DECISIONS - liveCount);
   const sideline = createSidelineReps(career, game.weekIndex, repCount, mechanics);
@@ -948,7 +970,13 @@ export function chooseSnapVNext(
     decisionId,
   );
   if (resolved === null) return fail('career_vnext.engine_failed');
-  const engine = withVariedClockVNext(resolved, career.seed, career.season.index, game.weekIndex);
+  const engine = withVariedClockVNext(
+    resolved,
+    career.seed,
+    career.season.index,
+    game.weekIndex,
+    career.program?.room.projection.roleId,
+  );
   return publish(career, {
     ...career,
     rng: { career: engine.game.rng },
@@ -1107,7 +1135,15 @@ function settleGame(
     },
     program: {
       ...career.program,
-      room: { ...career.program.room, playerCoachTrust: coachTrustAfter },
+      room: {
+        // M12 (ROLE-04): a game missed while in the plan hands the snaps to the next man up.
+        ...(summary.opportunityCount === 0 &&
+        career.program.room.projection.interactiveSnapMaximum > 0 &&
+        (game.academicHold === true || (career.condition.availability?.opportunityCap ?? 12) === 0)
+          ? nextManUpVNext(career.program.room, mechanics.room)
+          : career.program.room),
+        playerCoachTrust: coachTrustAfter,
+      },
     },
     season: {
       ...career.season,

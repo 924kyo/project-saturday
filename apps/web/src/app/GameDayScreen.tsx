@@ -12,9 +12,11 @@ import {
 } from '@project-saturday/game-core';
 import type { MessageKey } from '@project-saturday/game-content/locales';
 
+import { SnapMoment } from './Roles';
 import { useAppTranslation, type AppTranslate } from '../i18n/i18n';
 import {
   DOWN_KEYS,
+  INVOLVEMENT_KEYS,
   POSITION_ABBR_KEYS,
   READ_KEYS,
   ROLE_KEYS,
@@ -230,15 +232,19 @@ export function GameDayScreen({
               {abbr}
               {projection.rank} · {t(ROLE_KEYS[projection.roleId])}
             </p>
-            {plan === null ? (
-              <p className="s2-note">
-                {projection.interactiveSnapMaximum >= 2
-                  ? t('v2.gd.expectSnaps', {
-                      min: projection.interactiveSnapMinimum,
-                      max: projection.interactiveSnapMaximum,
-                    })
-                  : t('v2.gd.expectSideline')}
+            {/* M12 (ROLE-05): what the role means on Saturday, before and with the game plan. */}
+            {projection.interactiveSnapMaximum >= 2 && (plan === null || plan.live > 0) && (
+              <p className="s2-note" id="s2-involvement">
+                {t(INVOLVEMENT_KEYS[projection.roleId], {
+                  min: projection.interactiveSnapMinimum,
+                  max: projection.interactiveSnapMaximum,
+                })}
               </p>
+            )}
+            {plan === null ? (
+              projection.interactiveSnapMaximum < 2 && (
+                <p className="s2-note">{t('v2.gd.expectSideline')}</p>
+              )
             ) : (
               <ul className="s2-bullets" id="s2-gameplan">
                 <li>
@@ -512,7 +518,19 @@ export function GameDayScreen({
 
         <aside className="s2-gd__call">
           <header className="s2-gd__head">
-            <p className="s2-eyebrow">{snapCounter}</p>
+            <p className="s2-eyebrow">
+              {snapCounter}
+              {live !== null && career.program !== null && (
+                <>
+                  {' '}
+                  <SnapMoment
+                    count={live.snapTotal}
+                    index={live.snapNumber - 1}
+                    roleId={career.program.room.projection.roleId}
+                  />
+                </>
+              )}
+            </p>
             <h1 className="s2-display s2-size-h2" id="s2-snap-title">
               {title}
             </h1>
