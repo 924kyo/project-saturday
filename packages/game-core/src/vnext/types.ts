@@ -119,6 +119,8 @@ export type CareerVNextMechanics = PositionAlphaSessionCommandMechanics & {
    */
   readonly programProfiles?: readonly ProgramProfileVNext[];
   readonly schemes?: readonly SchemeDefinitionVNext[];
+  /** M12 story beats (absent = no beats; authored events only). */
+  readonly storyBeats?: readonly StoryBeatDefinitionVNext[];
   /** The legacy mentor scene (M9): an alumnus of the current program checks in. */
   readonly legacyEvents: { readonly mentor: WeeklyEventDefinitionV2 };
   /** Shared campus-life events every position can draw (M8). */
@@ -409,6 +411,115 @@ export interface WeeklyEventVNext {
   readonly effects: EventEffectsVNext | null;
   /** The alumnus behind a legacy mentor scene (absent on every other event). */
   readonly mentorCareerId?: string;
+  /** M12: a story beat played in the event slot (absent on every authored event). */
+  readonly beat?: StoryBeatSceneVNext;
+}
+
+// ---------------------------------------------------------------------------------------------
+// M12 Phase 6: relationships and narrative.
+
+export type StoryRoleVNext = 'rival' | 'coach' | 'captain' | 'reporter';
+
+/** A persistent person: the depth rival (roster ID) or program staff (stable generated ID). */
+export interface PersonVNext {
+  readonly id: string;
+  readonly role: StoryRoleVNext;
+  readonly givenNameId: string;
+  readonly familyNameId: string;
+  readonly programId: ProgramId;
+  /** Relationship 0–100 (the coach's is coach trust; this keeps his name and history). */
+  readonly value: number;
+  readonly history: readonly {
+    readonly seasonIndex: number;
+    readonly weekIndex: number;
+    readonly delta: number;
+    readonly beatId: string;
+  }[];
+}
+
+export type StoryTriggerIdVNext =
+  | 'season_opener'
+  | 'rival_passed_you'
+  | 'you_passed_rival'
+  | 'defend_spot'
+  | 'interview'
+  | 'captain_vote'
+  | 'mentor_freshman'
+  | 'fresh_start'
+  | 'loyalty';
+
+export interface StoryTriggerVNext {
+  readonly id: StoryTriggerIdVNext;
+  readonly seasonIndex: number;
+  readonly weekIndex: number;
+  /** The teammate the beat is about (depth beats). */
+  readonly subjectId?: string;
+  /** Why the reporter called (interview beats). */
+  readonly gameKind?: 'big_game' | 'tough_loss' | 'upset_win';
+  /** The program left behind (fresh start). */
+  readonly previousProgramId?: ProgramId;
+}
+
+export type ReputationToneVNext = 'confident' | 'humble' | 'fiery';
+
+/** What a story choice changed beyond the athlete's state (saved with the scene). */
+export interface StoryOutcomeVNext {
+  readonly relationships: readonly { readonly personId: string; readonly delta: number }[];
+  readonly lockerRoom: number;
+  readonly tone: ReputationToneVNext | null;
+  readonly flag: string | null;
+}
+
+export interface StoryBeatSceneVNext {
+  readonly trigger: StoryTriggerVNext;
+  /** A text variant chosen from memory (a vow, the interview tone, a background), or null. */
+  readonly variant: string | null;
+  /** Captain vote only: whether the room elected the athlete. */
+  readonly elected?: boolean;
+  readonly outcome: StoryOutcomeVNext | null;
+}
+
+export interface StoryVNext {
+  readonly people: readonly PersonVNext[];
+  readonly pending: readonly StoryTriggerVNext[];
+  readonly flags: readonly string[];
+  readonly tone: ReputationToneVNext | null;
+  readonly log: readonly {
+    readonly seasonIndex: number;
+    readonly weekIndex: number;
+    readonly beatId: string;
+    readonly choiceId: string;
+  }[];
+}
+
+export type StoryFlagKindVNext = 'vow' | 'captain' | 'mentor';
+
+/** Content: a beat and its choices (the rules that read them live in `vnext/story.ts`). */
+export interface StoryBeatDefinitionVNext {
+  readonly id: `beat_${string}`;
+  readonly trigger: StoryTriggerIdVNext;
+  readonly choices: readonly StoryChoiceDefinitionVNext[];
+}
+
+export interface StoryChoiceDefinitionVNext {
+  readonly id: `choice_${string}`;
+  /** The choice is offered only when every stated condition holds. */
+  readonly requires?: {
+    readonly traitIds?: readonly string[];
+    readonly backgroundIds?: readonly string[];
+    readonly elected?: boolean;
+  };
+  readonly effects: {
+    readonly body?: number;
+    readonly preparation?: number;
+    readonly confidence?: number;
+    readonly coachTrust?: number;
+    readonly brand?: number;
+    readonly lockerRoom?: number;
+    readonly relationships?: readonly { readonly role: StoryRoleVNext; readonly delta: number }[];
+    readonly tone?: ReputationToneVNext;
+    readonly flag?: StoryFlagKindVNext;
+  };
 }
 
 export interface BreakthroughOfferVNext {
@@ -511,7 +622,15 @@ export interface SeasonReviewVNext {
   readonly draftStock?: DraftStockVNext;
   /** Fictional season awards from saved facts (absent before M9). */
   readonly awards?: readonly AwardIdVNext[];
+  /** M12: the class year's goal, graded from the season's facts (absent before M12). */
+  readonly goal?: { readonly goalId: SeasonGoalIdVNext; readonly met: boolean };
+  /** M12: contributor honors (team captain, most improved; absent = none). */
+  readonly honors?: readonly ContributorHonorIdVNext[];
 }
+
+export type SeasonGoalIdVNext =
+  'goal_earn_role' | 'goal_key_player' | 'goal_contender' | 'goal_senior_legacy';
+export type ContributorHonorIdVNext = 'honor_captain' | 'honor_most_improved';
 
 export type AwardIdVNext =
   | 'award_position_qb'
@@ -669,6 +788,8 @@ export interface CareerVNext {
   readonly legacy?: LegacyVNext;
   /** M12: camp, midseason focus and offseason programs (absent on earlier saves). */
   readonly development?: DevelopmentVNext;
+  /** M12 Phase 6: the cast, pending story beats, memory flags and reputation (absent = none). */
+  readonly story?: StoryVNext;
   readonly flow: FlowVNext;
   readonly log: readonly GameRecapVNext[];
   /** One review per completed season. */

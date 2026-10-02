@@ -698,6 +698,21 @@ Append concise implementation/product decisions that do not warrant their own AD
   - **The clock** is re-timed per key snap inside its even slot from `:vnext:clock:<season>:<week>:<snap>` (no kernel RNG draw; the context matcher ignores the clock). The WR composure card reads Q4, so the clock is real context, not decoration.
   - **The pregame line** has five bands from the measured matchup-score spread (p10 46, p50 52, p90 59). The old 42/58 cut put 85% of games at toss-up. An upset is a win as an underdog; pre-M12 recaps keep the ranked rule.
   - **Copy:** "Drop eight" is "Drop seven" (its board rushes four); the closing-pursuit distance is mid-run; the WR release prompt no longer says the corner waits at the line.
+- 2026-10-02 (M12 Phase 6, relationships and narrative): a small persistent cast and story beats that remember (`vnext/story.ts`, content `story-beats.ts`).
+  - **Cast:** the depth rival (a real teammate by roster ID), plus the position coach, team captain and campus reporter.
+    - Staff IDs are generated per program, so the same names appear at that school in every career.
+    - Relationship values (0–100) keep a short history. The coach's relationship is coach trust itself, not a second number.
+    - The state is optional `CareerVNext.story` (absent = no cast, as on older saves); the codec validates it when present.
+  - **Beats as events:** a beat is a weekly event scene with a `beat_` ID and a `beat` context. It takes the week's event slot, so the week gains no step and every existing driver works unchanged.
+    - Triggers are queued when they happen: a depth move (two-week gap), a big game, tough loss or upset (an interview, four-week gap), the season opener, a stay or a transfer, and the captain vote from the junior year.
+    - Computed beats are defend the spot (a contested or at-risk starter) and mentoring a freshman (junior year on, week 3).
+    - Beats are spaced at least two weeks apart, except at week 0, so the authored library keeps its place. A legacy mentor's visit takes precedence; before this rule, beats crowded mentor scenes out entirely.
+  - **Memory:** a vow after losing the spot pays +3 confidence when it is kept, and the text says so. A fiery interview comes back in the next rivalry beat (the text, and −5 with the rival). A fresh start names the school left behind.
+  - **Tone:** interviews set confident, humble or fiery, which adds +40 / 0 / +60‰ to the weekly NIL offer chance.
+  - **Personality and background:** choices may require a trait or a background, and the season opener's text follows the background. Each source keeps one job (K7): background is the opportunity and the story opener; personality is the choices.
+  - **Goals:** earn a role (top two), key player (starter or 20+ live snaps), contend (bracket or an honor), senior legacy (semifinal or better, an honor, or a draftable stock). They are graded into the review.
+  - **Honors:** team captain (from the vote) and most improved (+7 overall in a season) go into the review.
+  - **Balance (m10 harness):** drafted 389 → 306‰, first round 0, starter seasons 639‰, growth 5.0; all bands hold; the artifact was regenerated. The 12-career climbing harness still drafts 12 of 12 (the user's decision: Phase 10).
 - 2026-10-02 (M12 Phase 5, roles and depth): a role is now earned and kept on the depth chart's own numbers (`vnext/roles.ts`, `vnext/rivals.ts`, `vnext/clock.ts`).
   - **Role security:** Secure (leads the teammate below by at least the 2.0-point hysteresis margin), Contested (leads by less) or At risk (that teammate already grades higher).
     - It also gives the points that teammate needs to pass and the points needed to be secure, plus the teammate's biggest edge as the recovery path.

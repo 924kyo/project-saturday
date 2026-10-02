@@ -31,6 +31,7 @@ import {
   familiarNames,
 } from './content';
 import { OffseasonProgramPicker } from './Development';
+import { ReviewGoal } from './Story';
 import { NotYetOffer, OfferPips, OfferProfile, TransferMarket } from './OfferDetails';
 import { Nameplate } from './Nameplate';
 import type { PrototypeAlumniView } from './prototype';
@@ -172,6 +173,7 @@ export function SeasonReviewScreen({
       </section>
       <div className="s2-grid-2">
         <Panel id="s2-review-year" title={t('v2.review.yourYear')}>
+          <ReviewGoal review={review} />
           <div className="s2-compare">
             <div className="s2-compare__row">
               <span>{t('v2.review.overall')}</span>

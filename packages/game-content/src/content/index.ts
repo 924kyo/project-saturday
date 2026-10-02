@@ -188,3 +188,4 @@ export {
   schemesVNext,
   type ProgramProfileRowVNext,
 } from './program-profiles.js';
+export { STORY_VARIANTS_VNEXT, storyBeatsVNext, storyKeysVNext } from './story-beats.js';

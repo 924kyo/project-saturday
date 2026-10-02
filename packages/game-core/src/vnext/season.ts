@@ -1,4 +1,5 @@
 import { transferMarketVNext } from './offers.js';
+import { contributorHonorsVNext, gradeSeasonGoalVNext, storyAtNewSeasonVNext } from './story.js';
 import { developmentPermilleVNext, roomMechanicsVNext, VNEXT_PROGRAM_TUNING } from './programs.js';
 import type { ProgramId } from '../player/ids.js';
 import {
@@ -186,9 +187,17 @@ function seasonReview(
     ...review,
     awards: seasonAwardsVNext(review, career.athlete.profile.positionId as VNextPositionId, games),
   };
-  return {
+  const stocked: SeasonReviewVNext = {
     ...awarded,
     draftStock: draftStockVNext(career, [...career.history, awarded], mechanics),
+  };
+  // M12 Phase 6: the class year's goal and contributor honors, graded from the season's facts.
+  const liveSnaps = games.reduce((sum, { liveSnapCount }) => sum + liveSnapCount, 0);
+  const honors = contributorHonorsVNext(career, stocked);
+  return {
+    ...stocked,
+    goal: gradeSeasonGoalVNext(stocked, liveSnaps),
+    ...(honors.length === 0 ? {} : { honors }),
   };
 }
 
@@ -620,6 +629,14 @@ export function commitOffseasonVNext(
           ? development.offseason
           : [...development.offseason, { seasonIndex, programId: offseasonProgramId }],
     },
+    // M12 Phase 6: fresh start or loyalty, a captain vote from the junior year, the new cast.
+    ...(career.story === undefined
+      ? {}
+      : {
+          story:
+            storyAtNewSeasonVNext(career, programId, next.room, seasonIndex, mechanics) ??
+            career.story,
+        }),
     // M12: every season opens with preseason camp.
     flow: { type: 'CAMP', report: null },
     // The log is this season's games; finished seasons live on as reviews in `history`.

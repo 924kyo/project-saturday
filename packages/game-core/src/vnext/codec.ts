@@ -95,6 +95,28 @@ export function isCareerVNext(value: unknown): value is CareerVNext {
       !Array.isArray(development['offseason']))
   )
     return false;
+  // M12 Phase 6: the cast and story memory, when present.
+  const story = value['story'];
+  if (
+    story !== undefined &&
+    (!record(story) ||
+      !Array.isArray(story['people']) ||
+      !Array.isArray(story['pending']) ||
+      !Array.isArray(story['flags']) ||
+      !Array.isArray(story['log']) ||
+      !(
+        story['tone'] === null || ['confident', 'humble', 'fiery'].includes(String(story['tone']))
+      ) ||
+      !(story['people'] as unknown[]).every(
+        (person) =>
+          record(person) &&
+          typeof person['id'] === 'string' &&
+          ['rival', 'coach', 'captain', 'reporter'].includes(String(person['role'])) &&
+          integer(person['value'], 0, 100) &&
+          Array.isArray(person['history']),
+      ))
+  )
+    return false;
   const tokens = athlete['nameTokens'];
   if (
     tokens !== undefined &&

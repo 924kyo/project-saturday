@@ -1,6 +1,8 @@
 import {
   chooseEventVNext,
+  castMemberVNext,
   chooseInjuryVNext,
+  storyOfVNext,
   type CareerVNext,
   type CareerVNextMechanics,
   type EventEffectsVNext,
@@ -9,7 +11,18 @@ import {
 } from '@project-saturday/game-core';
 
 import { useAppTranslation, type AppTranslate } from '../i18n/i18n';
-import { EXPOSURE_KEYS, eventChoiceKey, eventText, injuryText } from './content';
+import { storyKeysVNext } from '@project-saturday/game-content/content';
+
+import {
+  EXPOSURE_KEYS,
+  TONE_KEYS,
+  eventChoiceKey,
+  eventText,
+  injuryText,
+  key,
+  personNameVNext,
+  program,
+} from './content';
 import { Nameplate } from './Nameplate';
 import { METER_COLORS } from './theme';
 import { Meter, Panel } from './ui';
@@ -139,6 +152,148 @@ function Readiness({ career }: { readonly career: CareerVNext }): React.JSX.Elem
   );
 }
 
+/** M12 Phase 6: a story beat with the cast's names, memory variants and relationship changes. */
+function StoryScene({
+  career,
+  mechanics,
+  blocked,
+  onChoose,
+  onContinue,
+}: {
+  readonly career: CareerVNext;
+  readonly mechanics: CareerVNextMechanics;
+  readonly blocked: boolean;
+  readonly onChoose: (choiceId: string) => void;
+  readonly onContinue: () => void;
+}): React.JSX.Element | null {
+  const { t } = useAppTranslation();
+  if (career.flow.type !== 'EVENT' || career.flow.event.beat === undefined) return null;
+  const event = career.flow.event;
+  const scene = career.flow.event.beat;
+  const positionId = career.athlete.profile.positionId as VNextPositionId;
+  const story = storyOfVNext(career);
+  const programId = career.program?.programId ?? null;
+  const keys = storyKeysVNext(event.eventId);
+  const rival =
+    story.people.find(({ id }) => id === scene.trigger.subjectId) ??
+    castMemberVNext(story, 'rival', programId);
+  const params = {
+    rival: personNameVNext(t, rival),
+    coach: personNameVNext(t, castMemberVNext(story, 'coach', programId)),
+    captain: personNameVNext(t, castMemberVNext(story, 'captain', programId)),
+    reporter: personNameVNext(t, castMemberVNext(story, 'reporter', programId)),
+    previous:
+      scene.trigger.previousProgramId === undefined
+        ? ''
+        : t(key(program(scene.trigger.previousProgramId).shortNameKey)),
+  };
+  const variant =
+    scene.elected !== undefined ? (scene.elected ? 'elected' : 'not_elected') : scene.variant;
+  const body = t(key(variant === null ? keys.body : keys.variant(variant)), params);
+  const nameOf = (personId: string) =>
+    personNameVNext(
+      t,
+      story.people.find(({ id }) => id === personId),
+    );
+  // The command is pure: resolving each choice against the current save is an exact preview.
+  const preview = (choiceId: string) => {
+    const result = chooseEventVNext(career, choiceId, mechanics);
+    return result.ok && result.career.flow.type === 'EVENT' ? result.career.flow.event : null;
+  };
+  const chipsOf = (resolved: typeof event): readonly Chip[] => {
+    const outcome = resolved.beat?.outcome ?? null;
+    if (resolved.effects === null || outcome === null) return [];
+    return [
+      ...eventChips(t, resolved.effects, positionId),
+      // The coach's relationship is coach trust, already shown above.
+      ...outcome.relationships
+        .filter(({ personId }) => story.people.find(({ id }) => id === personId)?.role !== 'coach')
+        .map(({ personId, delta }) => ({
+          label: '',
+          value: delta,
+          text: t('v2.story.relationship', { name: nameOf(personId), delta: signed(delta) }),
+        })),
+      ...(outcome.lockerRoom === 0
+        ? []
+        : [
+            {
+              label: '',
+              value: outcome.lockerRoom,
+              text: t('v2.story.lockerRoom', { delta: signed(outcome.lockerRoom) }),
+            },
+          ]),
+      ...(outcome.tone === null
+        ? []
+        : [
+            {
+              label: '',
+              value: 0,
+              text: t('v2.story.tone', { tone: t(TONE_KEYS[outcome.tone]) }),
+            },
+          ]),
+    ];
+  };
+  return (
+    <div className="s2-stack">
+      <Nameplate career={career} />
+      <section aria-labelledby="s2-scene-title" className="s2-scene" id="s2-event">
+        <p className="s2-eyebrow">{t('v2.story.eyebrow')}</p>
+        <h1 className="s2-display s2-size-h1" id="s2-scene-title">
+          {t(key(keys.title), params)}
+        </h1>
+        <p className="s2-scene__body">{body}</p>
+      </section>
+      <div className="s2-grid-2">
+        {event.chosenChoiceId === null ? (
+          <Panel id="s2-event-choose" title={t('v2.evt.choose')}>
+            <div className="s2-choices s2-choices--scene" role="group">
+              {event.choiceIds.map((choiceId) => {
+                const resolved = preview(choiceId);
+                return (
+                  <button
+                    className="s2-choice s2-choice--scene"
+                    disabled={blocked}
+                    key={choiceId}
+                    onClick={() => onChoose(choiceId)}
+                    type="button"
+                  >
+                    <span className="s2-choice__name">{t(key(keys.choice(choiceId)), params)}</span>
+                    {resolved !== null && <Chips chips={chipsOf(resolved)} />}
+                  </button>
+                );
+              })}
+            </div>
+          </Panel>
+        ) : (
+          <Panel id="s2-event-outcome" title={t('v2.evt.outcome')}>
+            <p className="s2-scene__choice">{t(key(keys.choice(event.chosenChoiceId)), params)}</p>
+            {chipsOf(event).length === 0 ? (
+              <p className="s2-note">{t('v2.evt.noChange')}</p>
+            ) : (
+              <Chips chips={chipsOf(event)} />
+            )}
+          </Panel>
+        )}
+        <Readiness career={career} />
+      </div>
+      {event.chosenChoiceId !== null && (
+        <div className="s2-actionbar">
+          <div className="s2-actionbar__inner">
+            <button
+              className="s2-btn s2-btn--block"
+              disabled={blocked}
+              onClick={onContinue}
+              type="button"
+            >
+              {t('v2.evt.continue')} <span className="s2-btn__arrow">→</span>
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /** Midweek scene card: an authored situation, a real tradeoff, then its exact consequences. */
 export function EventScreen({
   career,
@@ -156,6 +311,17 @@ export function EventScreen({
   const { t } = useAppTranslation();
   if (career.flow.type !== 'EVENT') return null;
   const event = career.flow.event;
+  // M12 Phase 6: a story beat plays in the event slot with the cast's names and memory.
+  if (event.beat !== undefined)
+    return (
+      <StoryScene
+        blocked={blocked}
+        career={career}
+        mechanics={mechanics}
+        onChoose={onChoose}
+        onContinue={onContinue}
+      />
+    );
   const positionId = career.athlete.profile.positionId as VNextPositionId;
   const text = eventText(event.eventId);
   // A legacy mentor scene names the alumnus from the career's own snapshot.

@@ -28,6 +28,7 @@ import type { MessageKey } from '@project-saturday/game-content/locales';
 import {
   overallVNext,
   type AthleteNameTokensVNext,
+  type ReputationToneVNext,
   type CreatedPositionPlayerProfile,
   type DepthRoleId,
   type SidelineRepGradeVNext,
@@ -229,6 +230,20 @@ function tokenName(t: AppTranslate, tokens: AthleteNameTokensVNext) {
   };
 }
 
+/** A cast member's name (M12): roster and staff names follow the language like suggested names. */
+export function personNameVNext(
+  t: AppTranslate,
+  person: { readonly givenNameId: string; readonly familyNameId: string } | null | undefined,
+): string {
+  if (person === null || person === undefined) return '—';
+  return (
+    tokenName(t, {
+      givenNameId: person.givenNameId,
+      familyNameId: person.familyNameId,
+    } as AthleteNameTokensVNext)?.full ?? '—'
+  );
+}
+
 /** The athlete's name in the app language: a generated name follows the language; a typed one stays. */
 export function athleteName(t: AppTranslate, career: CareerVNext): string {
   const tokens = career.athlete.nameTokens;
@@ -284,6 +299,13 @@ export function participantName(
     playerName
   );
 }
+
+/** Reputation tones (M12 REL-04). */
+export const TONE_KEYS = {
+  confident: 'v2.tone.confident',
+  humble: 'v2.tone.humble',
+  fiery: 'v2.tone.fiery',
+} as const satisfies Record<ReputationToneVNext, MessageKey>;
 
 /** The pregame involvement line by role (M12 ROLE-05). */
 export const INVOLVEMENT_KEYS = {

@@ -45,7 +45,11 @@ M10 is complete (plan: `docs/exec-plans/completed/m10-release-candidate.md`), an
   - ROLE-01…06 are verified complete.
   - Starter seasons 646‰ (juniors and seniors are no longer automatic starters).
   - Gate: typecheck, lint and format clean; unit 959 with the one known climbing-harness band failure (the user's decision: revisit in Phase 10); sim and e2e (see the commit).
-  - Restart point: Phase 6, relationships and narrative.
+  - Next: Phase 6, relationships and narrative.
+- 2026-10-02: Phase 6 (relationships and narrative) is done.
+  - REL-01…07, REC-04, CRE-04 and CAR-08 are verified complete.
+  - CAR-05's honors are graded; their legacy display comes in Phase 8.
+  - Restart point: Phase 7, cards, Insight and the NIL economy.
 
 ## Status
 

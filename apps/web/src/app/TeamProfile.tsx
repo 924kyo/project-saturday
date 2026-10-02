@@ -1,5 +1,6 @@
 import { FullBodyFigure } from '../career/FullBodyFigure';
 import { OverallBreakdown, PotentialCurve } from './Development';
+import { CastPanel, SchemePanel } from './Story';
 import {
   academicStatusVNext,
   MENTAL_ATTRIBUTE_IDS,
@@ -160,6 +161,10 @@ export function TeamPanel({
           </p>
         )}
       </section>
+      <div className="s2-grid-2">
+        <SchemePanel career={career} mechanics={mechanics} />
+        <CastPanel career={career} />
+      </div>
       <div className="s2-grid-2">
         <Panel id="s2-team-depth" title={t('v2.depth.title', { position: abbr })}>
           <ol className="s2-depthlist">

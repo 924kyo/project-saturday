@@ -15,6 +15,7 @@ import {
 } from '@project-saturday/game-core';
 
 import { MovementReason } from './Roles';
+import { GoalLine } from './Story';
 import { useAppTranslation, type AppTranslate } from '../i18n/i18n';
 import {
   CLASS_YEAR_KEYS,
@@ -626,6 +627,7 @@ export function WeekScreen({
         <h2 className="s2-display s2-next__title">{t('v2.week.planTitle')}</h2>
         <Opponent career={career} mechanics={mechanics} />
         <PotentialLine career={career} mechanics={mechanics} />
+        <GoalLine career={career} />
         {career.development?.focus != null && career.development.focus.outcome === 'ACTIVE' && (
           <p className="s2-note">
             {t('v2.focus.progress', {

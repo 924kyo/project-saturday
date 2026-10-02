@@ -1,4 +1,5 @@
 import { nilOfferChancePermilleVNext } from './programs.js';
+import { toneNilChancePermilleVNext } from './story.js';
 import type { ProgramId } from '../player/ids.js';
 import type { PlayerState } from '../player/types.js';
 import { createRng, nextUint32 } from '../random/rng.js';
@@ -182,6 +183,8 @@ export function attemptNilOfferVNext(
     1_000,
     // M12: the program's NIL market sets the base chance (a solid market keeps the old 300).
     nilOfferChancePermilleVNext(mechanics, career.program.programId) +
+      // M12 Phase 6: an interview's tone carries into the NIL market.
+      toneNilChancePermilleVNext(career) +
       visibility * VNEXT_NIL_TUNING.visibilityChancePermille,
   );
   const rng = createRng(

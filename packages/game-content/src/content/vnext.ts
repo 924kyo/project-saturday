@@ -1,4 +1,5 @@
 import { programProfilesVNext, schemesVNext } from './program-profiles.js';
+import { storyBeatsVNext } from './story-beats.js';
 import type {
   CareerVNextMechanics,
   PositionPlayerCreationIdentity,
@@ -175,6 +176,7 @@ export function buildCareerVNextMechanics(
     life: { events: lifeEventMechanics },
     reservedNamePairs: reservedRosterNamePairs,
     programProfiles: programProfilesVNext,
+    storyBeats: storyBeatsVNext,
     schemes: schemesVNext,
     suggestedNames: {
       givenNameIds: suggestionNamePoolVNext.given.map(({ id }) => id),

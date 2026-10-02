@@ -78,9 +78,17 @@ import {
   attemptNilOfferVNext,
   brandFromGameVNext,
   decideNilOfferVNext,
+  nilOfVNext,
   settleNilWeekVNext,
 } from './nil.js';
-import { projectGameStakesVNext } from './stakes.js';
+import { isUpsetWinVNext, projectGameStakesVNext } from './stakes.js';
+import {
+  nextStoryBeatVNext,
+  resolveStoryChoiceVNext,
+  storyAfterGameVNext,
+  storyAfterPracticeVNext,
+  storyAtCommitVNext,
+} from './story.js';
 import { createSidelineReps, resolveSidelineRep, sidelineCreditFor } from './sideline.js';
 import {
   academicCheckpointWeekVNext,
@@ -305,12 +313,19 @@ export function commitProgramVNext(
     program: { programId, room: context },
     season: { ...career.season, world, startRank: context.projection.rank },
     development: developmentOfVNext(career),
+    // M12 Phase 6: the cast at this program and the season opener.
+    ...withStory(storyAtCommitVNext(career, programId, context, mechanics)),
     // M12: every season opens with preseason camp.
     flow: { type: 'CAMP', report: null },
   });
 }
 
 export { focusDefinitionsVNext };
+
+/** Story state as an optional field (absent stays absent). */
+function withStory(story: CareerVNext['story']) {
+  return story === undefined ? {} : { story };
+}
 
 /** The deciding component of a depth move, when there was one (stored on the report). */
 function movementReasonOf(updated: {
@@ -428,6 +443,16 @@ export function planWeekVNext(
     },
     season: { ...career.season, sidelineCredit: 0 },
     nil: offField.nil,
+    // M12 Phase 6: a depth move queues a beat about that teammate.
+    ...withStory(
+      storyAfterPracticeVNext(
+        career,
+        updated.evidence.movement,
+        updated.evidence.neighborParticipantId,
+        updated.context,
+        mechanics,
+      ),
+    ),
     ...(career.development === undefined && coachFocus === null
       ? {}
       : { development: focus.development }),
@@ -634,6 +659,14 @@ function eventStep(
   mechanics: CareerVNextMechanics,
 ): CareerVNextResult {
   const event = attemptWeeklyEventVNext(career, mechanics);
+  // M12 Phase 6: a story beat takes the week's event slot, except from a legacy mentor's visit.
+  const beat = event?.mentorCareerId === undefined ? nextStoryBeatVNext(career, mechanics) : null;
+  if (beat !== null)
+    return publish(career, {
+      ...career,
+      story: beat.story,
+      flow: { type: 'EVENT', event: beat.event, trainingLoad },
+    });
   if (event !== null)
     return publish(career, { ...career, flow: { type: 'EVENT', event, trainingLoad } });
   return nilStep(career, trainingLoad, mechanics);
@@ -737,6 +770,34 @@ export function chooseEventVNext(
 ): CareerVNextResult {
   if (career.flow.type !== 'EVENT' || career.flow.event.chosenChoiceId !== null)
     return fail('career_vnext.invalid_phase');
+  if (career.flow.event.beat !== undefined) {
+    const story = resolveStoryChoiceVNext(career, career.flow.event, choiceId, mechanics);
+    if (story === null) return fail('career_vnext.invalid_choice');
+    return publish(career, {
+      ...career,
+      athlete: {
+        ...career.athlete,
+        profile: { ...career.athlete.profile, state: story.state },
+      },
+      program:
+        career.program === null
+          ? null
+          : {
+              ...career.program,
+              room: { ...career.program.room, playerCoachTrust: story.state.coachTrust },
+            },
+      ...(career.nil === undefined && story.lockerRoom === 50
+        ? {}
+        : { nil: { ...nilOfVNext(career), lockerRoom: story.lockerRoom } }),
+      story: story.story,
+      condition: rememberEventVNext(
+        career.condition,
+        story.event,
+        career.condition.nextGameModifiers,
+      ),
+      flow: { ...career.flow, event: story.event },
+    });
+  }
   const resolved = resolveWeeklyEventChoiceVNext(career, career.flow.event, choiceId, mechanics);
   if (resolved === null) return fail('career_vnext.invalid_choice');
   const profile = career.athlete.profile;
@@ -1133,6 +1194,17 @@ function settleGame(
         },
       },
     },
+    // M12 Phase 6: a big game, a tough loss or an upset brings the reporter.
+    ...withStory(
+      storyAfterGameVNext(career, {
+        weekIndex: game.weekIndex,
+        won: resultId === 'game_result_win',
+        margin: Math.abs(playerScore - opponentScore),
+        coachGrade,
+        upset: isUpsetWinVNext(resultId === 'game_result_win', stakes),
+        played: summary.opportunityCount > 0,
+      }),
+    ),
     program: {
       ...career.program,
       room: {
