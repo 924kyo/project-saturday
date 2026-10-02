@@ -13,6 +13,7 @@ import {
 import type { MessageKey } from '@project-saturday/game-content/locales';
 
 import { SnapMoment } from './Roles';
+import { CardTells } from './Economy';
 import { useAppTranslation, type AppTranslate } from '../i18n/i18n';
 import {
   DOWN_KEYS,
@@ -265,6 +266,7 @@ export function GameDayScreen({
               </ul>
             )}
             {(plan?.live ?? 0) > 0 && <p className="s2-note">{t('v2.gd.keyMoments')}</p>}
+            {(plan?.live ?? 0) > 0 && <CardTells career={career} mechanics={mechanics} />}
           </div>
           <div className="s2-panel">
             <div className="s2-meters">

@@ -49,7 +49,11 @@ M10 is complete (plan: `docs/exec-plans/completed/m10-release-candidate.md`), an
 - 2026-10-02: Phase 6 (relationships and narrative) is done.
   - REL-01…07, REC-04, CRE-04 and CAR-08 are verified complete.
   - CAR-05's honors are graded; their legacy display comes in Phase 8.
-  - Restart point: Phase 7, cards, Insight and the NIL economy.
+  - Next: Phase 7, cards, Insight and the NIL economy.
+- 2026-10-02: Phase 7 (cards, Insight and the NIL economy) is done.
+  - CARD-01…07 and NIL-01…03 are verified complete.
+  - CARD-08 (a senior slot) is proposed for exclusion, pending approval.
+  - Restart point: Phase 8, legacy.
 
 ## Status
 

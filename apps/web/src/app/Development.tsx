@@ -36,6 +36,7 @@ import type { MessageKey } from '@project-saturday/game-content/locales';
 
 import { profileValueKeyVNext } from '@project-saturday/game-content/content';
 import { MovementReason, RoleStatusLine } from './Roles';
+import { CardAttributionList } from './Economy';
 import { useAppTranslation } from '../i18n/i18n';
 import {
   DEPTH_COMPONENT_KEYS,
@@ -131,6 +132,7 @@ export function PlanPreview({
               {t('v2.preview.gauge', { gain: preview.gauge.after - preview.gauge.before })}
             </span>
           </p>
+          <CardAttributionList rows={preview.cardAttribution} />
           <GrowthList rows={mergeGrowth(preview.focuses.flatMap((focus) => focus.attributeXp))} />
           {preview.coachFocus !== null && (
             <p className="s2-note">

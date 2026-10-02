@@ -8,6 +8,7 @@ import type { SkillId } from '../skills/ids.js';
 import { sampleOfferIds } from '../skills/offers.js';
 import type { CollectedGameHook, SkillMechanicsDefinition } from '../skills/types.js';
 import { createRng } from '../random/rng.js';
+import { withMasteryVNext } from './cards.js';
 import type { BreakthroughOfferVNext, CareerVNext, CareerVNextMechanics } from './types.js';
 
 /**
@@ -26,9 +27,10 @@ export function skillDefinitionsVNext(
 }
 
 export function loadoutVNext(career: CareerVNext, mechanics: CareerVNextMechanics) {
+  // M12 Phase 7: a mastered card plays at its mastery strength.
   return positionSkillEffectLoadout(
     career.build.equippedSkillIds,
-    skillDefinitionsVNext(mechanics),
+    skillDefinitionsVNext(withMasteryVNext(career, mechanics)),
   );
 }
 
@@ -109,7 +111,7 @@ export function gameHooksVNext(
 ): readonly CollectedGameHook[] {
   const collected = collectEquippedGameHooks(
     loadoutVNext(career, mechanics),
-    skillDefinitionsVNext(mechanics),
+    skillDefinitionsVNext(withMasteryVNext(career, mechanics)),
   );
   return collected.ok ? collected.hooks : [];
 }
@@ -121,7 +123,7 @@ export function hasLifeHookVNext(
 ): boolean {
   const collected = collectEquippedLifeHooks(
     loadoutVNext(career, mechanics),
-    skillDefinitionsVNext(mechanics),
+    skillDefinitionsVNext(withMasteryVNext(career, mechanics)),
   );
   return collected.ok && collected.hooks.some((hook) => hook.hookId === hookId);
 }
@@ -132,7 +134,7 @@ export function injuryRiskMultiplierVNext(
 ): number {
   const derived = deriveInjuryRiskSkillEffects(
     loadoutVNext(career, mechanics),
-    skillDefinitionsVNext(mechanics),
+    skillDefinitionsVNext(withMasteryVNext(career, mechanics)),
   );
   return derived.ok ? derived.multiplierPermille : 1_000;
 }

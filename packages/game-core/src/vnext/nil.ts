@@ -1,5 +1,7 @@
 import { nilOfferChancePermilleVNext } from './programs.js';
 import { toneNilChancePermilleVNext } from './story.js';
+import { withMasteryVNext } from './cards.js';
+import { shopVisibilityChanceVNext } from './shop.js';
 import type { ProgramId } from '../player/ids.js';
 import type { PlayerState } from '../player/types.js';
 import { createRng, nextUint32 } from '../random/rng.js';
@@ -117,7 +119,7 @@ function lifeHookMilli(
 ): number {
   const collected = collectEquippedLifeHooks(
     loadoutVNext(career, mechanics),
-    skillDefinitionsVNext(mechanics),
+    skillDefinitionsVNext(withMasteryVNext(career, mechanics)),
   );
   if (!collected.ok) return 1_000;
   const hooks = collected.hooks.filter((hook) => hook.hookId === hookId);
@@ -185,6 +187,8 @@ export function attemptNilOfferVNext(
     nilOfferChancePermilleVNext(mechanics, career.program.programId) +
       // M12 Phase 6: an interview's tone carries into the NIL market.
       toneNilChancePermilleVNext(career) +
+      // M12 Phase 7: an agent's visibility while it lasts.
+      shopVisibilityChanceVNext(career) +
       visibility * VNEXT_NIL_TUNING.visibilityChancePermille,
   );
   const rng = createRng(

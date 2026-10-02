@@ -117,6 +117,34 @@ export function isCareerVNext(value: unknown): value is CareerVNext {
       ))
   )
     return false;
+  // M12 Phase 7: cards and the NIL shop, when present.
+  const cards = value['cards'];
+  if (
+    cards !== undefined &&
+    (!record(cards) ||
+      !integer(cards['insight'], 0, 1_000_000) ||
+      !integer(cards['pity'], 0, 100) ||
+      !record(cards['mastery']) ||
+      !record(cards['duplicates']) ||
+      !Array.isArray(cards['draws']) ||
+      !Object.values(cards['mastery'] as Record<string, unknown>).every((level) =>
+        integer(level, 1, 3),
+      ) ||
+      !Object.values(cards['duplicates'] as Record<string, unknown>).every((count) =>
+        integer(count, 0, 1000),
+      ))
+  )
+    return false;
+  const shop = value['shop'];
+  if (
+    shop !== undefined &&
+    (!record(shop) ||
+      !Array.isArray(shop['ownedGearIds']) ||
+      !Array.isArray(shop['equippedGearIds']) ||
+      !Array.isArray(shop['purchases']) ||
+      !integer(shop['visibilityWeeks'], 0, 52))
+  )
+    return false;
   const tokens = athlete['nameTokens'];
   if (
     tokens !== undefined &&

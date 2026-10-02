@@ -1,3 +1,4 @@
+import { withMasteryVNext } from './cards.js';
 import { studyGpaPermilleVNext } from './programs.js';
 import { ATTRIBUTE_XP_PER_RATING } from '../weekly/tuning.js';
 import {
@@ -144,7 +145,7 @@ export function resolveFocusPlanVNext(
   const evidence: PositionFocusEvidenceV2[] = [];
   // Equipped cards shape each focus through the shared skill-aware resolver.
   const loadout = loadoutVNext(career, mechanics);
-  const cards = skillDefinitionsVNext(mechanics);
+  const cards = skillDefinitionsVNext(withMasteryVNext(career, mechanics));
   for (const [index, focusId] of focusIds.entries()) {
     const found = definitions.find(({ id }) => id === focusId);
     const tagIds = mechanics.skillBuilds.actionTags[focusId as PositionFocusId];

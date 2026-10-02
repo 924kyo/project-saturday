@@ -1,6 +1,8 @@
 import { brandPermilleVNext, developmentPermilleVNext } from './programs.js';
 import { nextManUpVNext, rivalWeekVNext, VNEXT_RIVAL_TUNING } from './rivals.js';
 import { depthMovementReasonVNext } from './roles.js';
+import { cardsOfVNext } from './cards.js';
+import { cardAttributionVNext, overflowInsightVNext } from './economy.js';
 import type {
   PositionDepthUpdateEvidence,
   PositionRoomContext,
@@ -42,7 +44,6 @@ import { derivePositionAlphaRolloverV2 } from '../season/position-alpha-focus-v2
 import { createCommonPositionProficiencyUses } from '../weekly/position-focus.js';
 import {
   attemptBreakthroughVNext,
-  breakthroughStateVNext,
   VNEXT_BREAKTHROUGH_THRESHOLD,
   VNEXT_BUILD_SLOTS,
 } from './build.js';
@@ -413,14 +414,23 @@ export function planWeekVNext(
     Math.min(100, updated.evidence.coachTrust.after + (coachFocus?.trustDelta ?? 0)),
   );
   const gaugeBefore = career.athlete.breakthroughGauge;
-  // A complete collection holds the gauge at full rather than filling toward nothing.
-  const gaugeCap = breakthroughStateVNext(career, mechanics).complete
-    ? VNEXT_BREAKTHROUGH_THRESHOLD
-    : 160;
-  const gaugeAfter = Math.min(
-    gaugeCap,
-    gaugeBefore + grade.breakthroughGaugePoints + (coachFocus?.gauge ?? 0),
+  // A complete collection holds the gauge at full and banks the week's points as Insight (M12).
+  const overflow = overflowInsightVNext(
+    career,
+    mechanics,
+    gaugeBefore,
+    grade.breakthroughGaugePoints + (coachFocus?.gauge ?? 0),
   );
+  const gaugeAfter = overflow.gauge;
+  // M12 (CARD-01): each equipped card's with/without difference on this plan.
+  const cardAttribution = cardAttributionVNext(
+    career,
+    focusIds,
+    mechanics,
+    developmentPermilleVNext(career, mechanics),
+  );
+  const cardsBefore = cardsOfVNext(career);
+  const shopBefore = career.shop;
   return publish(career, {
     ...career,
     athlete: {
@@ -443,6 +453,15 @@ export function planWeekVNext(
     },
     season: { ...career.season, sidelineCredit: 0 },
     nil: offField.nil,
+    ...(overflow.insight === 0 && career.cards === undefined
+      ? {}
+      : { cards: { ...cardsBefore, insight: cardsBefore.insight + overflow.insight } }),
+    // An agent's visibility runs down a week at a time.
+    ...(shopBefore === undefined
+      ? {}
+      : {
+          shop: { ...shopBefore, visibilityWeeks: Math.max(0, shopBefore.visibilityWeeks - 1) },
+        }),
     // M12 Phase 6: a depth move queues a beat about that teammate.
     ...withStory(
       storyAfterPracticeVNext(
@@ -472,6 +491,8 @@ export function planWeekVNext(
         benefitsUsed: offField.benefitsUsed,
         obligationApplied: offField.obligationApplied,
         ...(coachFocus === null ? {} : { coachFocus }),
+        ...(cardAttribution.length === 0 ? {} : { cardAttribution }),
+        ...(overflow.insight === 0 ? {} : { insightGained: overflow.insight }),
       },
     },
   });
@@ -524,13 +545,21 @@ export function chooseCampVNext(
   if (!updated.ok) return fail('career_vnext.engine_failed');
   const profile = career.athlete.profile;
   const gaugeBefore = career.athlete.breakthroughGauge;
-  const gaugeCap = breakthroughStateVNext(career, mechanics).complete
-    ? VNEXT_BREAKTHROUGH_THRESHOLD
-    : 160;
-  const gaugeAfter = Math.min(gaugeCap, gaugeBefore + grade.breakthroughGaugePoints);
+  // A complete collection banks camp's gauge points as Insight (M12 CARD-03).
+  const overflow = overflowInsightVNext(
+    career,
+    mechanics,
+    gaugeBefore,
+    grade.breakthroughGaugePoints,
+  );
+  const gaugeAfter = overflow.gauge;
   const development = developmentOfVNext(career);
+  const cards = cardsOfVNext(career);
   return publish(career, {
     ...career,
+    ...(overflow.insight === 0
+      ? {}
+      : { cards: { ...cards, insight: cards.insight + overflow.insight } }),
     athlete: {
       ...career.athlete,
       profile: {
@@ -635,7 +664,8 @@ export function toGameDayVNext(
     return eventStep(career, trainingLoad, mechanics);
   }
   if (flow.type === 'BREAKTHROUGH') {
-    if (flow.offer.chosenSkillId === null) return fail('career_vnext.invalid_phase');
+    if (flow.offer.chosenSkillId === null && flow.offer.skipped !== true)
+      return fail('career_vnext.invalid_phase');
     return eventStep(career, flow.trainingLoad, mechanics);
   }
   if (flow.type === 'EVENT') {
@@ -1412,6 +1442,8 @@ export function previewWeekPlanVNext(
     },
     coachFocus: report.coachFocus ?? null,
     risk: injuryRiskBreakdownVNext(planned.career, trainingLoad, mechanics),
+    /** M12 (CARD-01): each equipped card's with/without difference on this plan. */
+    cardAttribution: report.cardAttribution ?? [],
   };
 }
 

@@ -1,5 +1,5 @@
 import './athlete-portrait.css';
-import { useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import type { PlayerAppearance } from '@project-saturday/game-core';
 
 import {
@@ -9,6 +9,7 @@ import {
   type OverlayMatrix,
   type PortraitOverlays,
 } from './portrait-overlays';
+import { GearContext, gearTints, type GearTints } from './gear';
 
 export interface AthletePortraitProps {
   readonly appearance: PlayerAppearance;
@@ -38,6 +39,7 @@ interface PortraitLayer {
 function layersOf(
   appearance: PlayerAppearance,
   faces: PortraitOverlays,
+  tints: GearTints = gearTints([]),
 ): readonly PortraitLayer[] | null {
   const face = tail(appearance.faceId, 'face_');
   const placement = faces[face];
@@ -51,8 +53,8 @@ function layersOf(
       src: portraitArtUrl(`sleeves/${tail(appearance.armSleevesId, 'arm_sleeves_')}.webp`),
     });
   layers.push(
-    { src: portraitArtUrl(`jersey/${body}.webp`), tint: 'var(--team, #28344a)' },
-    { src: portraitArtUrl(`jersey/${body}-trim.webp`), tint: 'var(--team-2, #c8ff2e)' },
+    { src: portraitArtUrl(`jersey/${body}.webp`), tint: tints.jersey },
+    { src: portraitArtUrl(`jersey/${body}-trim.webp`), tint: tints.trim },
     { src: portraitArtUrl(`head/${face}-${skin}.webp`) },
   );
   if (appearance.facialHairId != null) {
@@ -124,7 +126,9 @@ export function AthletePortrait({
   size = 'card',
 }: AthletePortraitProps): React.JSX.Element {
   const faces = usePortraitOverlays();
-  const painted = useCompletePortrait(faces === null ? null : layersOf(appearance, faces));
+  // Worn gear recolors the tinted layers (M12 NIL-01/02).
+  const tints = gearTints(useContext(GearContext));
+  const painted = useCompletePortrait(faces === null ? null : layersOf(appearance, faces, tints));
   if (painted !== null)
     return (
       <figure

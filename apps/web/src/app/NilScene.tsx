@@ -1,6 +1,6 @@
 import {
   chooseNilVNext,
-  VNEXT_NIL_TUNING,
+  nilDealCostVNext,
   type CareerVNext,
   type CareerVNextMechanics,
   type NilEffect,
@@ -59,7 +59,8 @@ export function NilScreen({
           withDelta(effect, actualDelta),
         )
       : offer.rewardEffects;
-  const penalty = VNEXT_NIL_TUNING.practicePenaltyPerFocus * offer.obligation.focusCost;
+  // M12 (NIL-03): the deal's practice cost over its whole term, from the core rule.
+  const cost = nilDealCostVNext(offer);
   return (
     <div className="s2-stack">
       <Nameplate career={career} />
@@ -82,7 +83,14 @@ export function NilScreen({
           </p>
           <p className="s2-note">{t(key(text.obligation.descriptionKey))}</p>
           <p className="s2-note s2-num" style={{ marginTop: 8 }}>
-            {t('v2.nil.cost', { weeks: offer.obligation.durationWeeks, penalty })}
+            {t('v2.nil.cost', { weeks: cost.weeks, penalty: cost.practicePerWeek })}
+          </p>
+          <p className="s2-note s2-num">
+            {t('v2.nil.dealCost', {
+              weeks: cost.weeks,
+              perWeek: cost.practicePerWeek,
+              total: cost.practiceTotal,
+            })}
           </p>
           <EffectChips
             chips={nilEffectChips(t, offer.obligation.weeklyEffects, i18n.resolvedLanguage)}

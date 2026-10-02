@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   chooseBreakthroughVNext,
+  skipBreakthroughVNext,
   chooseCampVNext,
   chooseEventVNext,
   continueCampVNext,
@@ -82,11 +83,14 @@ import {
 import { PostGameScreen, SeasonEndScreen } from './PostGameScreen';
 import { RecruitScreen } from './RecruitScreen';
 import { teamStyle } from './theme';
+import { GearContext } from '../career/gear';
 import { LogoMark } from './ui';
 import { BreakthroughScreen } from './BuildView';
 import { EventScreen, InjuryScreen } from './WeeklyScene';
 import { NilScreen } from './NilScene';
 import { WeekScreen } from './WeekScreen';
+
+const NO_GEAR: readonly string[] = [];
 
 export interface AppProps {
   readonly storage: StorageAdapter;
@@ -309,263 +313,271 @@ export function App({
 
   return (
     <PreferencesContext.Provider value={preferences}>
-      <div
-        className="s2"
-        data-scene={
-          career === null
-            ? 'create'
-            : flow === 'RECRUITING'
-              ? 'recruit'
-              : flow === 'GAME'
-                ? 'gameday'
-                : flow === 'POST_GAME' || flow === 'SEASON_REVIEW' || flow === 'CAREER_COMPLETE'
-                  ? 'story'
-                  : 'locker'
-        }
-        style={style}
-      >
-        <div aria-hidden="true" className="s2-backdrop" />
-        <div className="s2-shell">
-          <header className="s2-topbar">
-            <div className="s2-brand">
-              <LogoMark />
-              <span className="s2-brand__word">{t('app.title')}</span>
-            </div>
-            <div className="s2-topbar__actions">
-              <button
-                aria-label={t('v2.locale.switch')}
-                className="s2-chipbtn"
-                lang={locale === 'ko-KR' ? 'en-US' : 'ko-KR'}
-                onClick={() => switchLocale(SUPPORTED_LOCALES.find((option) => option !== locale)!)}
-                type="button"
-              >
-                {t(locale === 'ko-KR' ? 'v2.locale.en' : 'v2.locale.ko')}
-              </button>
-              <button
-                aria-expanded={settingsOpen}
-                className="s2-chipbtn"
-                onClick={() => setSettingsOpen(!settingsOpen)}
-                type="button"
-              >
-                {t('v2.settings.open')}
-              </button>
-              {!booting && (
+      <GearContext.Provider value={career?.shop?.equippedGearIds ?? NO_GEAR}>
+        <div
+          className="s2"
+          data-scene={
+            career === null
+              ? 'create'
+              : flow === 'RECRUITING'
+                ? 'recruit'
+                : flow === 'GAME'
+                  ? 'gameday'
+                  : flow === 'POST_GAME' || flow === 'SEASON_REVIEW' || flow === 'CAREER_COMPLETE'
+                    ? 'story'
+                    : 'locker'
+          }
+          style={style}
+        >
+          <div aria-hidden="true" className="s2-backdrop" />
+          <div className="s2-shell">
+            <header className="s2-topbar">
+              <div className="s2-brand">
+                <LogoMark />
+                <span className="s2-brand__word">{t('app.title')}</span>
+              </div>
+              <div className="s2-topbar__actions">
                 <button
-                  aria-pressed={slotsOpen}
+                  aria-label={t('v2.locale.switch')}
                   className="s2-chipbtn"
-                  disabled={blocked}
-                  onClick={() => {
-                    setSlotsVersion((version) => version + 1);
-                    setSlotsOpen(!slotsOpen);
-                  }}
-                  type="button"
-                >
-                  {t('v2.slots.open')}
-                </button>
-              )}
-            </div>
-          </header>
-
-          {settingsOpen && (
-            <SettingsPanel
-              onChange={changePreferences}
-              onClose={() => setSettingsOpen(false)}
-              preferences={preferences}
-            />
-          )}
-          {prototype && (
-            <div className="s2-banner s2-banner--info" role="status">
-              <p>{t('v2.prototype.notice')}</p>
-              <div className="s2-row">
-                <button
-                  className="s2-btn s2-btn--ghost"
+                  lang={locale === 'ko-KR' ? 'en-US' : 'ko-KR'}
                   onClick={() =>
-                    void exportPrototypeData(storage).then((json) =>
-                      downloadJson('project-saturday-prototype.json', json),
-                    )
+                    switchLocale(SUPPORTED_LOCALES.find((option) => option !== locale)!)
                   }
                   type="button"
                 >
-                  {t('v2.prototype.export')}
+                  {t(locale === 'ko-KR' ? 'v2.locale.en' : 'v2.locale.ko')}
                 </button>
                 <button
-                  className="s2-btn s2-btn--ghost"
-                  onClick={() => {
-                    setPrototype(false);
-                    void dismissPrototypeNotice(storage);
-                  }}
+                  aria-expanded={settingsOpen}
+                  className="s2-chipbtn"
+                  onClick={() => setSettingsOpen(!settingsOpen)}
                   type="button"
                 >
-                  {t('v2.prototype.dismiss')}
+                  {t('v2.settings.open')}
                 </button>
+                {!booting && (
+                  <button
+                    aria-pressed={slotsOpen}
+                    className="s2-chipbtn"
+                    disabled={blocked}
+                    onClick={() => {
+                      setSlotsVersion((version) => version + 1);
+                      setSlotsOpen(!slotsOpen);
+                    }}
+                    type="button"
+                  >
+                    {t('v2.slots.open')}
+                  </button>
+                )}
               </div>
-            </div>
-          )}
-          {notice === 'recovered' && (
-            <div className="s2-banner" role="status">
-              <p>{t('v2.save.recovered')}</p>
-            </div>
-          )}
-          {notice === 'corrupt' && (
-            <div className="s2-banner" role="alert">
-              <p>{t('v2.save.corrupt')}</p>
-            </div>
-          )}
-          {pending !== null && !saving && (
-            <div className="s2-banner" role="alert">
-              <p>{t('v2.save.failed')}</p>
-              <button
-                className="s2-btn s2-btn--ghost"
-                onClick={() => void publish(pending)}
-                type="button"
-              >
-                {t('v2.save.retry')}
-              </button>
-            </div>
-          )}
+            </header>
 
-          <main aria-busy={booting || saving}>
-            {booting ? (
-              <p className="s2-note" role="status">
-                {t('v2.common.loading')}
-              </p>
-            ) : slotsOpen ? (
-              <SaveSlotsScreen
-                activeSlot={slot}
-                hasActiveCareer={career !== null}
-                onClose={() => setSlotsOpen(false)}
-                onDelete={deleteSlot}
-                onNew={(target) => void openSlot(target)}
-                onResume={(target) => void openSlot(target)}
-                refresh={slotsVersion}
-                storage={storage}
-              />
-            ) : career === null || mechanics === null ? (
-              <>
-                <CreateScreen
-                  blocked={blocked}
-                  onCreate={create}
-                  previewFirstRoles={previewFirstRoles}
-                />
-                {alumni.length > 0 && <LegacyPanel alumni={alumni} prototypes={prototypeAlumni} />}
-              </>
-            ) : flow === 'RECRUITING' ? (
-              <RecruitScreen
-                blocked={blocked}
-                career={career}
-                mechanics={mechanics}
-                onCommit={(id: ProgramId) => run((c, m) => commitProgramVNext(c, id, m))}
-                reducedMotion={reducedMotion}
-              />
-            ) : flow === 'CAMP' ? (
-              <CampScreen
-                blocked={blocked}
-                career={career}
-                mechanics={mechanics}
-                onCamp={(ids) => run((c, m) => chooseCampVNext(c, ids, m))}
-                onContinue={() => run((c) => continueCampVNext(c))}
-              />
-            ) : flow === 'MIDSEASON' ? (
-              <MidseasonScreen
-                blocked={blocked}
-                career={career}
-                onDecide={(accept) => run((c) => decideMidseasonVNext(c, accept))}
-              />
-            ) : flow === 'WEEK_PLAN' || flow === 'PRACTICE_REPORT' ? (
-              <WeekScreen
-                blocked={blocked}
-                career={career}
-                mechanics={mechanics}
-                onEquip={(slot, id) => run((c) => equipSkillVNext(c, slot, id))}
-                onGameDay={() => run(toGameDayVNext)}
-                onPlan={(ids) => run((c, m) => planWeekVNext(c, ids, m))}
-              />
-            ) : flow === 'BREAKTHROUGH' ? (
-              <BreakthroughScreen
-                blocked={blocked}
-                career={career}
-                onChoose={(id) => run((c) => chooseBreakthroughVNext(c, id))}
-                onContinue={() => run(toGameDayVNext)}
-              />
-            ) : flow === 'EVENT' ? (
-              <EventScreen
-                blocked={blocked}
-                career={career}
-                mechanics={mechanics}
-                onChoose={(id) => run((c, m) => chooseEventVNext(c, id, m))}
-                onContinue={() => run(toGameDayVNext)}
-              />
-            ) : flow === 'NIL' ? (
-              <NilScreen
-                blocked={blocked}
-                career={career}
-                mechanics={mechanics}
-                onDecide={(accept) => run((c, m) => chooseNilVNext(c, accept, m))}
-                onContinue={() => run(toGameDayVNext)}
-              />
-            ) : flow === 'INJURY' ? (
-              <InjuryScreen
-                blocked={blocked}
-                career={career}
-                mechanics={mechanics}
-                onChoose={(id) => run((c, m) => chooseInjuryVNext(c, id, m))}
-                onContinue={() => run(toGameDayVNext)}
-              />
-            ) : flow === 'GAME' ? (
-              <GameDayScreen
-                blocked={blocked}
-                career={career}
-                mechanics={mechanics}
-                onChoose={(id) => run((c, m) => chooseSnapVNext(c, id, m))}
-                onContinue={() => run(continueGameVNext)}
-                onKickoff={() => run(kickoffVNext)}
-                reducedMotion={reducedMotion}
-              />
-            ) : flow === 'POST_GAME' ? (
-              <PostGameScreen
-                blocked={blocked}
-                career={career}
-                mechanics={mechanics}
-                onNext={() => run(nextWeekVNext)}
-              />
-            ) : flow === 'SEASON_REVIEW' ? (
-              <SeasonReviewScreen
-                blocked={blocked}
-                career={career}
-                onContinue={() => run(continueSeasonReviewVNext)}
-              />
-            ) : flow === 'OFFSEASON' ? (
-              <OffseasonScreen
-                blocked={blocked}
-                career={career}
-                mechanics={mechanics}
-                onCommit={(id, programId) =>
-                  run((c, m) => commitOffseasonVNext(c, id, m, programId))
-                }
-                onRetire={() => run((c) => retireVNext(c))}
-                onDeclare={() => run((c) => declareForDraftVNext(c))}
-              />
-            ) : flow === 'CAREER_COMPLETE' ? (
-              <CareerCompleteScreen
-                alumni={alumni}
-                career={career}
-                onNewCareer={() => {
-                  setSlotsVersion((version) => version + 1);
-                  setSlotsOpen(true);
-                }}
-                prototypes={prototypeAlumni}
-              />
-            ) : (
-              <SeasonEndScreen
-                blocked={blocked}
-                career={career}
-                onContinue={() => run(nextWeekVNext)}
+            {settingsOpen && (
+              <SettingsPanel
+                onChange={changePreferences}
+                onClose={() => setSettingsOpen(false)}
+                preferences={preferences}
               />
             )}
-          </main>
+            {prototype && (
+              <div className="s2-banner s2-banner--info" role="status">
+                <p>{t('v2.prototype.notice')}</p>
+                <div className="s2-row">
+                  <button
+                    className="s2-btn s2-btn--ghost"
+                    onClick={() =>
+                      void exportPrototypeData(storage).then((json) =>
+                        downloadJson('project-saturday-prototype.json', json),
+                      )
+                    }
+                    type="button"
+                  >
+                    {t('v2.prototype.export')}
+                  </button>
+                  <button
+                    className="s2-btn s2-btn--ghost"
+                    onClick={() => {
+                      setPrototype(false);
+                      void dismissPrototypeNotice(storage);
+                    }}
+                    type="button"
+                  >
+                    {t('v2.prototype.dismiss')}
+                  </button>
+                </div>
+              </div>
+            )}
+            {notice === 'recovered' && (
+              <div className="s2-banner" role="status">
+                <p>{t('v2.save.recovered')}</p>
+              </div>
+            )}
+            {notice === 'corrupt' && (
+              <div className="s2-banner" role="alert">
+                <p>{t('v2.save.corrupt')}</p>
+              </div>
+            )}
+            {pending !== null && !saving && (
+              <div className="s2-banner" role="alert">
+                <p>{t('v2.save.failed')}</p>
+                <button
+                  className="s2-btn s2-btn--ghost"
+                  onClick={() => void publish(pending)}
+                  type="button"
+                >
+                  {t('v2.save.retry')}
+                </button>
+              </div>
+            )}
+
+            <main aria-busy={booting || saving}>
+              {booting ? (
+                <p className="s2-note" role="status">
+                  {t('v2.common.loading')}
+                </p>
+              ) : slotsOpen ? (
+                <SaveSlotsScreen
+                  activeSlot={slot}
+                  hasActiveCareer={career !== null}
+                  onClose={() => setSlotsOpen(false)}
+                  onDelete={deleteSlot}
+                  onNew={(target) => void openSlot(target)}
+                  onResume={(target) => void openSlot(target)}
+                  refresh={slotsVersion}
+                  storage={storage}
+                />
+              ) : career === null || mechanics === null ? (
+                <>
+                  <CreateScreen
+                    blocked={blocked}
+                    onCreate={create}
+                    previewFirstRoles={previewFirstRoles}
+                  />
+                  {alumni.length > 0 && (
+                    <LegacyPanel alumni={alumni} prototypes={prototypeAlumni} />
+                  )}
+                </>
+              ) : flow === 'RECRUITING' ? (
+                <RecruitScreen
+                  blocked={blocked}
+                  career={career}
+                  mechanics={mechanics}
+                  onCommit={(id: ProgramId) => run((c, m) => commitProgramVNext(c, id, m))}
+                  reducedMotion={reducedMotion}
+                />
+              ) : flow === 'CAMP' ? (
+                <CampScreen
+                  blocked={blocked}
+                  career={career}
+                  mechanics={mechanics}
+                  onCamp={(ids) => run((c, m) => chooseCampVNext(c, ids, m))}
+                  onContinue={() => run((c) => continueCampVNext(c))}
+                />
+              ) : flow === 'MIDSEASON' ? (
+                <MidseasonScreen
+                  blocked={blocked}
+                  career={career}
+                  onDecide={(accept) => run((c) => decideMidseasonVNext(c, accept))}
+                />
+              ) : flow === 'WEEK_PLAN' || flow === 'PRACTICE_REPORT' ? (
+                <WeekScreen
+                  blocked={blocked}
+                  career={career}
+                  mechanics={mechanics}
+                  onEquip={(slot, id) => run((c) => equipSkillVNext(c, slot, id))}
+                  onRun={run}
+                  onGameDay={() => run(toGameDayVNext)}
+                  onPlan={(ids) => run((c, m) => planWeekVNext(c, ids, m))}
+                />
+              ) : flow === 'BREAKTHROUGH' ? (
+                <BreakthroughScreen
+                  blocked={blocked}
+                  career={career}
+                  onChoose={(id) => run((c) => chooseBreakthroughVNext(c, id))}
+                  onContinue={() => run(toGameDayVNext)}
+                  onSkip={() => run((c) => skipBreakthroughVNext(c))}
+                />
+              ) : flow === 'EVENT' ? (
+                <EventScreen
+                  blocked={blocked}
+                  career={career}
+                  mechanics={mechanics}
+                  onChoose={(id) => run((c, m) => chooseEventVNext(c, id, m))}
+                  onContinue={() => run(toGameDayVNext)}
+                />
+              ) : flow === 'NIL' ? (
+                <NilScreen
+                  blocked={blocked}
+                  career={career}
+                  mechanics={mechanics}
+                  onDecide={(accept) => run((c, m) => chooseNilVNext(c, accept, m))}
+                  onContinue={() => run(toGameDayVNext)}
+                />
+              ) : flow === 'INJURY' ? (
+                <InjuryScreen
+                  blocked={blocked}
+                  career={career}
+                  mechanics={mechanics}
+                  onChoose={(id) => run((c, m) => chooseInjuryVNext(c, id, m))}
+                  onContinue={() => run(toGameDayVNext)}
+                />
+              ) : flow === 'GAME' ? (
+                <GameDayScreen
+                  blocked={blocked}
+                  career={career}
+                  mechanics={mechanics}
+                  onChoose={(id) => run((c, m) => chooseSnapVNext(c, id, m))}
+                  onContinue={() => run(continueGameVNext)}
+                  onKickoff={() => run(kickoffVNext)}
+                  reducedMotion={reducedMotion}
+                />
+              ) : flow === 'POST_GAME' ? (
+                <PostGameScreen
+                  blocked={blocked}
+                  career={career}
+                  mechanics={mechanics}
+                  onNext={() => run(nextWeekVNext)}
+                />
+              ) : flow === 'SEASON_REVIEW' ? (
+                <SeasonReviewScreen
+                  blocked={blocked}
+                  career={career}
+                  onContinue={() => run(continueSeasonReviewVNext)}
+                />
+              ) : flow === 'OFFSEASON' ? (
+                <OffseasonScreen
+                  blocked={blocked}
+                  career={career}
+                  mechanics={mechanics}
+                  onCommit={(id, programId) =>
+                    run((c, m) => commitOffseasonVNext(c, id, m, programId))
+                  }
+                  onRetire={() => run((c) => retireVNext(c))}
+                  onDeclare={() => run((c) => declareForDraftVNext(c))}
+                />
+              ) : flow === 'CAREER_COMPLETE' ? (
+                <CareerCompleteScreen
+                  alumni={alumni}
+                  career={career}
+                  onNewCareer={() => {
+                    setSlotsVersion((version) => version + 1);
+                    setSlotsOpen(true);
+                  }}
+                  prototypes={prototypeAlumni}
+                />
+              ) : (
+                <SeasonEndScreen
+                  blocked={blocked}
+                  career={career}
+                  onContinue={() => run(nextWeekVNext)}
+                />
+              )}
+            </main>
+          </div>
+          <PwaUpdatePrompt locale={locale} />
         </div>
-        <PwaUpdatePrompt locale={locale} />
-      </div>
+      </GearContext.Provider>
     </PreferencesContext.Provider>
   );
 }

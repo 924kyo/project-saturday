@@ -1,3 +1,4 @@
+import { awardInsightVNext, cardsOfVNext } from './cards.js';
 import { transferMarketVNext } from './offers.js';
 import { contributorHonorsVNext, gradeSeasonGoalVNext, storyAtNewSeasonVNext } from './story.js';
 import { developmentPermilleVNext, roomMechanicsVNext, VNEXT_PROGRAM_TUNING } from './programs.js';
@@ -239,8 +240,12 @@ export function afterScheduleStep(
   const withWorld = { ...next, season: { ...next.season, world } } as CareerVNext;
   const review = seasonReview(withWorld, world, mechanics);
   if (review === null) return fail('career_vnext.engine_failed');
+  // M12 Phase 7: each season award earns Insight.
+  const awardInsight = awardInsightVNext(review.awards?.length ?? 0);
+  const cards = cardsOfVNext(withWorld);
   return publish(previous, {
     ...withWorld,
+    ...(awardInsight === 0 ? {} : { cards: { ...cards, insight: cards.insight + awardInsight } }),
     flow: { type: 'SEASON_REVIEW', review },
     history: [...next.history, review],
   });

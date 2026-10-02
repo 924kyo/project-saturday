@@ -1859,6 +1859,16 @@ body {
   justify-self: start;
   white-space: normal;
 }
+/* M12 Phase 7: shop, workshop and mastery rows (label left, action right; wraps on phones). */
+.s2-shoplist li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--line);
+}
 .s2-list {
   display: grid;
   gap: 4px;
@@ -3179,7 +3189,8 @@ fieldset.s2-stack > legend {
 /* ---------- Profile: the card and the scouting sheet ---------- */
 .s2-profilehead {
   display: grid;
-  grid-template-columns: minmax(240px, 320px) 1fr;
+  /* The card, the full-body figure (M12) and the facts. */
+  grid-template-columns: minmax(240px, 320px) minmax(160px, 300px) minmax(0, 1fr);
   gap: 22px;
   align-items: start;
 }
@@ -3217,9 +3228,21 @@ fieldset.s2-stack > legend {
   font-size: 20px;
   color: var(--ink);
 }
+@media (max-width: 1060px) {
+  .s2-profilehead {
+    grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
+  }
+  .s2-profilehead__facts {
+    grid-column: 1 / -1;
+  }
+}
 @media (max-width: 720px) {
   .s2-profilehead {
     grid-template-columns: 1fr;
+  }
+  .s2-profilehead .fullbody[data-size] {
+    justify-self: center;
+    max-width: 200px;
   }
   .s2-profilehead .s2-tcard {
     max-width: 340px;

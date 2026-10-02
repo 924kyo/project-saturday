@@ -1,3 +1,4 @@
+import { withMasteryVNext } from './cards.js';
 import { TACTICAL_GAME_RULES_VERSION } from '../games/tactical-alpha-v1.js';
 import { matchupVNext } from './world.js';
 import {
@@ -108,7 +109,8 @@ export function startVNextGame(
   academicHold = false,
 ): VNextGameState | null {
   if (career.program === null) return null;
-  const mechanics = withStarImpactVNext(career, baseMechanics);
+  // M12 Phase 7: the kernels read the mastered card catalogs.
+  const mechanics = withMasteryVNext(career, withStarImpactVNext(career, baseMechanics));
   const profile = career.athlete.profile;
   if (profile.positionId === 'position_lb' || profile.positionId === 'position_edge')
     return startDefenderVNextGame(career, fixture, weekIndex, mechanics, academicHold);

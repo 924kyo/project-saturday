@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useContext, useState } from 'react';
 import type { PlayerAppearance } from '@project-saturday/game-core';
 
 import { assetUrl } from '../app/asset-url';
+import { GearContext, gearTints, type GearTints } from './gear';
 
 const ART = assetUrl('art/fullbody');
 const tail = (id: string, prefix: string) => id.slice(prefix.length);
@@ -13,12 +14,13 @@ const tail = (id: string, prefix: string) => id.slice(prefix.length);
  */
 function layersOf(
   appearance: PlayerAppearance,
+  tints: GearTints = gearTints([]),
 ): readonly { readonly src: string; readonly tint?: string }[] {
   const build = tail(appearance.bodyTypeId, 'body_type_');
   const tone = tail(appearance.skinToneId, 'skin_tone_');
   const fit = tail(appearance.jerseyFitId, 'jersey_fit_');
-  const team = 'var(--team, #28344a)';
-  const trim = 'var(--team-2, #c8ff2e)';
+  const team = tints.jersey;
+  const trim = tints.trim;
   const layers: { src: string; tint?: string }[] = [
     { src: `${ART}/body/${build}-${tone}.webp` },
     { src: `${ART}/socks/${build}.webp`, tint: team },
@@ -31,7 +33,10 @@ function layersOf(
     });
   if (appearance.wristTapeId !== null)
     layers.push({ src: `${ART}/wrist-tape/${tail(appearance.wristTapeId, 'wrist_tape_')}.webp` });
-  if (appearance.glovesId !== null) {
+  if (tints.forceAccentGloves)
+    // Volt gloves (gear) are the accent glove in volt, whatever was picked at creation.
+    layers.push({ src: `${ART}/gloves/accent.webp`, tint: tints.gloves });
+  else if (appearance.glovesId !== null) {
     const gloves = tail(appearance.glovesId, 'gloves_');
     layers.push(
       gloves === 'accent'
@@ -47,7 +52,10 @@ function layersOf(
     layers.push({ src: `${ART}/towel/${tail(appearance.towelId, 'towel_')}.webp` });
   if (appearance.eyeBlackId !== null && appearance.visorId === null)
     layers.push({ src: `${ART}/eye-black/${tail(appearance.eyeBlackId, 'eye_black_')}.webp` });
-  layers.push({ src: `${ART}/helmet.webp`, tint: team }, { src: `${ART}/helmet-mask.webp` });
+  layers.push(
+    { src: `${ART}/helmet.webp`, tint: tints.helmet },
+    { src: `${ART}/helmet-mask.webp` },
+  );
   if (appearance.visorId !== null)
     layers.push({ src: `${ART}/visor/${tail(appearance.visorId, 'visor_')}.webp` });
   return layers;
@@ -71,7 +79,7 @@ export function FullBodyFigure({
   readonly label: string;
   readonly large?: boolean;
 }): React.JSX.Element | null {
-  const layers = layersOf(appearance);
+  const layers = layersOf(appearance, gearTints(useContext(GearContext)));
   const base = layers[0]!.src;
   // Shown only once the painted body for these options exists.
   const [ready, setReady] = useState<string | null>(null);

@@ -93,6 +93,22 @@ export interface QbPatternDefinition {
   readonly baseYards: number;
 }
 
+/** Allowed value per card effect type (validation; M12 mastery clamps to it). */
+export const QB_SKILL_EFFECT_BOUNDS: Readonly<
+  Record<QbSkillEffectType, readonly [number, number]>
+> = {
+  qb_information_clue_bonus: [1, 2],
+  qb_decision_score_flat: [1, 12],
+  qb_turnover_risk_delta_permille: [-250, 250],
+  qb_scramble_yards_flat: [1, 8],
+  qb_body_cost_reduction: [1, 8],
+  qb_confidence_loss_reduction: [1, 6],
+  qb_xp_multiplier_permille: [50, 300],
+  qb_grade_bonus: [1, 8],
+  qb_event_choice_unlock: [1, 1],
+  qb_event_positive_multiplier_permille: [50, 300],
+};
+
 export interface QbSkillEffect {
   readonly type: QbSkillEffectType;
   readonly value: number;
@@ -379,18 +395,7 @@ function validSkillEffect(effect: QbSkillEffect): boolean {
     !stablePrefixed(effect.decisionId, 'key_snap_decision_qb_')
   )
     return false;
-  const bounds: Readonly<Record<QbSkillEffectType, readonly [number, number]>> = {
-    qb_information_clue_bonus: [1, 2],
-    qb_decision_score_flat: [1, 12],
-    qb_turnover_risk_delta_permille: [-250, 250],
-    qb_scramble_yards_flat: [1, 8],
-    qb_body_cost_reduction: [1, 8],
-    qb_confidence_loss_reduction: [1, 6],
-    qb_xp_multiplier_permille: [50, 300],
-    qb_grade_bonus: [1, 8],
-    qb_event_choice_unlock: [1, 1],
-    qb_event_positive_multiplier_permille: [50, 300],
-  };
+  const bounds = QB_SKILL_EFFECT_BOUNDS;
   const [minimum, maximum] = bounds[effect.type];
   return integerIn(effect.value, minimum, maximum);
 }

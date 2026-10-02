@@ -698,6 +698,20 @@ Append concise implementation/product decisions that do not warrant their own AD
   - **The clock** is re-timed per key snap inside its even slot from `:vnext:clock:<season>:<week>:<snap>` (no kernel RNG draw; the context matcher ignores the clock). The WR composure card reads Q4, so the clock is real context, not decoration.
   - **The pregame line** has five bands from the measured matchup-score spread (p10 46, p50 52, p90 59). The old 42/58 cut put 85% of games at toss-up. An upset is a win as an underdog; pre-M12 recaps keep the ranked rule.
   - **Copy:** "Drop eight" is "Drop seven" (its board rushes four); the closing-pursuit distance is mid-run; the WR release prompt no longer says the corner waits at the line.
+- 2026-10-02 (M12 Phase 7, cards, Insight and the NIL economy), following K1 (`vnext/cards.ts`, `vnext/economy.ts`, `vnext/shop.ts`):
+  - **Insight** is an earned development currency, separate from NIL money. Sources: skipping a breakthrough offer (+15), each season award (+25), every gauge point once the collection is complete, and a refund for a duplicate of a fully mastered card (+20). No real-money purchases exist.
+  - **Workshop:** any unowned card at a fixed price by grade (C 30, B 50, A 80, S 120), deterministic, so no essential card is luck-gated.
+  - **Scouting Draw:** optional, 40 Insight, with disclosed odds (C 50, B 30, A 15, S 5%). An A or better is guaranteed within 6 draws. The draw comes from `:vnext:draw:<n>`, and a duplicate is kept for fusion.
+  - **Mastery:** levels 2 and 3 make a card's effects 125% / 150% as strong, paid with Insight (40 / 80) or by fusing one duplicate; the card itself is never consumed.
+    - Scaling rule: multipliers scale their deviation from 1000, flat amounts scale directly, and discrete unlocks (an extra clue, an option, a package snap) never change.
+    - Kernel `*_multiplier_permille` values are bonuses (250 = +25%) and scale directly.
+    - Every value is clamped to the bounds its validator enforces. The QB per-type table is now the exported constant `QB_SKILL_EFFECT_BOUNDS`, a behavior-preserving refactor. Without the clamp, a mastered card would make the kernel reject the game.
+    - The mastered catalogs reach every consumer: weekly builds, life and game hooks, injury risk, and the QB/RB/CB and defender kernels at kickoff.
+  - **Attribution:** each equipped card's difference is the resolver run with and without it, stored on the practice report and shown in the plan preview. A card is "active" when the resolver's own evidence applied one of its effects. A card's Saturday tells come from the kernel's clue-bonus input.
+  - **NIL shop:** recovery, film package, tutor and agent visibility, each once a week at a fixed price with an immediate effect. Gear cosmetics (gold trim, blackout helmet, volt gloves, alternate jersey) recolor the owner's tinted layers, not new art. An Appearance Style token unlocks one of them.
+    - The ledger shows earned (spendable + spent), spendable, spent and the obligation. Before accepting a deal, the screen shows its practice cost over the whole term.
+  - **CARD-08** (a fifth senior slot) is proposed for exclusion: the QB/RB/CB kernels validate at most four cards. Awaiting the user's approval.
+  - **Balance:** the harness spends no Insight, so the m10 artifact is unchanged.
 - 2026-10-02 (M12 Phase 6, relationships and narrative): a small persistent cast and story beats that remember (`vnext/story.ts`, content `story-beats.ts`).
   - **Cast:** the depth rival (a real teammate by roster ID), plus the position coach, team captain and campus reporter.
     - Staff IDs are generated per program, so the same names appear at that school in every career.

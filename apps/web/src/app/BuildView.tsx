@@ -2,6 +2,7 @@ import { useState } from 'react';
 import {
   VNEXT_BREAKTHROUGH_THRESHOLD,
   VNEXT_BUILD_SLOTS,
+  VNEXT_CARD_TUNING,
   type CareerVNext,
 } from '@project-saturday/game-core';
 
@@ -133,11 +134,14 @@ export function BreakthroughScreen({
   blocked,
   onChoose,
   onContinue,
+  onSkip,
 }: {
   readonly career: CareerVNext;
   readonly blocked: boolean;
   readonly onChoose: (skillId: string) => void;
   readonly onContinue: () => void;
+  /** M12: pass on the offer and bank Insight instead. */
+  readonly onSkip?: () => void;
 }): React.JSX.Element | null {
   const { t } = useAppTranslation();
   if (career.flow.type !== 'BREAKTHROUGH') return null;
@@ -156,7 +160,13 @@ export function BreakthroughScreen({
         </h1>
         <p className="s2-scene__body">{t('v2.bt.help')}</p>
       </section>
-      {offer.chosenSkillId === null ? (
+      {offer.skipped === true ? (
+        <Panel id="s2-breakthrough-result" title={t('v2.evt.outcome')}>
+          <p className="s2-scene__choice">
+            {t('v2.bt.skipped', { value: VNEXT_CARD_TUNING.insight.skippedOffer })}
+          </p>
+        </Panel>
+      ) : offer.chosenSkillId === null ? (
         <div className="s2-cardgrid s2-cardgrid--offer" role="group">
           {offer.skillIds.map((id) => (
             <button
@@ -184,7 +194,12 @@ export function BreakthroughScreen({
           </p>
         </Panel>
       )}
-      {offer.chosenSkillId !== null && (
+      {offer.chosenSkillId === null && offer.skipped !== true && onSkip !== undefined && (
+        <button className="s2-chipbtn" disabled={blocked} onClick={onSkip} type="button">
+          {t('v2.bt.skip', { value: VNEXT_CARD_TUNING.insight.skippedOffer })}
+        </button>
+      )}
+      {(offer.chosenSkillId !== null || offer.skipped === true) && (
         <div className="s2-actionbar">
           <div className="s2-actionbar__inner">
             <button

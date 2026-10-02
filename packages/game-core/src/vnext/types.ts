@@ -221,6 +221,18 @@ export interface PracticeReportVNext {
   readonly coachFocus?: CoachFocusWeekVNext;
   /** M12 (ROLE-06): the component that decided a depth move (absent = held, or older saves). */
   readonly movementReason?: DepthMovementReasonVNext;
+  /** M12 (CARD-01): each equipped card's with/without difference on this plan. */
+  readonly cardAttribution?: readonly {
+    readonly skillId: string;
+    readonly active: boolean;
+    readonly xp: number;
+    readonly body: number;
+    readonly preparation: number;
+    readonly confidence: number;
+    readonly gpaMilli: number;
+  }[];
+  /** M12 (CARD-03): gauge points banked as Insight once the collection is complete. */
+  readonly insightGained?: number;
 }
 
 /** M12 development calendar: offseason programs (one per offseason). */
@@ -494,6 +506,47 @@ export interface StoryVNext {
 
 export type StoryFlagKindVNext = 'vow' | 'captain' | 'mentor';
 
+// ---------------------------------------------------------------------------------------------
+// M12 Phase 7: cards, Insight and the NIL shop.
+
+export interface CardsVNext {
+  /** Earned development currency (never NIL money). */
+  readonly insight: number;
+  /** Mastery level per card (absent = 1). */
+  readonly mastery: Readonly<Record<string, number>>;
+  /** Duplicate copies held for fusion. */
+  readonly duplicates: Readonly<Record<string, number>>;
+  /** Draws since the last A-or-better (the pity count). */
+  readonly pity: number;
+  readonly draws: readonly {
+    readonly seasonIndex: number;
+    readonly weekIndex: number;
+    readonly skillId: string;
+    readonly gradeId: string;
+    readonly duplicate: boolean;
+  }[];
+}
+
+export type ShopServiceIdVNext =
+  'shop_recovery_session' | 'shop_film_package' | 'shop_tutor' | 'shop_agent_visibility';
+export type GearIdVNext =
+  'gear_gold_trim' | 'gear_blackout_helmet' | 'gear_volt_gloves' | 'gear_alternate_jersey';
+
+export interface ShopVNext {
+  readonly ownedGearIds: readonly GearIdVNext[];
+  readonly equippedGearIds: readonly GearIdVNext[];
+  readonly purchases: readonly {
+    readonly seasonIndex: number;
+    readonly weekIndex: number;
+    readonly itemId: ShopServiceIdVNext | GearIdVNext;
+    readonly priceUsd: number;
+    /** Paid with an Appearance Style token instead of money. */
+    readonly token?: boolean;
+  }[];
+  /** Weeks of agent visibility left (adds to the NIL offer chance). */
+  readonly visibilityWeeks: number;
+}
+
 /** Content: a beat and its choices (the rules that read them live in `vnext/story.ts`). */
 export interface StoryBeatDefinitionVNext {
   readonly id: `beat_${string}`;
@@ -528,6 +581,8 @@ export interface BreakthroughOfferVNext {
   readonly chosenSkillId: string | null;
   /** Slot the new card went into, or null when every slot was full (it waits in the collection). */
   readonly slotIndex: number | null;
+  /** M12: passed on for Insight (absent = taken or still open). */
+  readonly skipped?: boolean;
 }
 
 export interface InjuryReportVNext {
@@ -790,6 +845,10 @@ export interface CareerVNext {
   readonly development?: DevelopmentVNext;
   /** M12 Phase 6: the cast, pending story beats, memory flags and reputation (absent = none). */
   readonly story?: StoryVNext;
+  /** M12 Phase 7: Insight, mastery, duplicates and draws (absent = none yet). */
+  readonly cards?: CardsVNext;
+  /** M12 Phase 7: NIL shop purchases and gear cosmetics (absent = none yet). */
+  readonly shop?: ShopVNext;
   readonly flow: FlowVNext;
   readonly log: readonly GameRecapVNext[];
   /** One review per completed season. */

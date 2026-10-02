@@ -36,6 +36,8 @@ import {
   athleteName,
 } from './content';
 import { BuildPanel } from './BuildView';
+import type { CareerCommand } from './command';
+import { CardAttributionList, InsightPanel, ShopPanel } from './Economy';
 import { DevelopmentGuide, Milestones, PlanPreview, PotentialLine } from './Development';
 import { readLastPlan, rememberPlan } from './plan-memory';
 import { GrowthList } from './Growth';
@@ -369,6 +371,12 @@ function Report({
               />
             </div>
           </div>
+          <CardAttributionList rows={report.cardAttribution} />
+          {(report.insightGained ?? 0) > 0 && (
+            <p className="s2-note">
+              {t('v2.cards.insight.gained', { value: report.insightGained! })}
+            </p>
+          )}
           <ul className="s2-bullets" style={{ marginTop: 14 }}>
             <li>
               <span>
@@ -499,6 +507,7 @@ export function WeekScreen({
   onPlan,
   onGameDay,
   onEquip,
+  onRun,
 }: {
   readonly career: CareerVNext;
   readonly mechanics: CareerVNextMechanics;
@@ -506,6 +515,8 @@ export function WeekScreen({
   readonly onPlan: (ids: readonly string[]) => void;
   readonly onGameDay: () => void;
   readonly onEquip: (slotIndex: number, skillId: string | null) => void;
+  /** M12 Phase 7: card economy and NIL shop commands. */
+  readonly onRun?: (command: CareerCommand) => void;
 }): React.JSX.Element {
   const { t } = useAppTranslation();
   const [picks, setPicks] = useState<readonly string[]>([]);
@@ -607,11 +618,19 @@ export function WeekScreen({
         <Nameplate career={career} />
         {tabs}
         {tab === 'build' ? (
-          <BuildPanel blocked={blocked} career={career} onEquip={onEquip} />
+          <>
+            <BuildPanel blocked={blocked} career={career} onEquip={onEquip} />
+            {onRun !== undefined && (
+              <InsightPanel blocked={blocked} career={career} mechanics={mechanics} onRun={onRun} />
+            )}
+          </>
         ) : tab === 'team' ? (
           <TeamPanel career={career} mechanics={mechanics} />
         ) : (
-          <ProfilePanel career={career} mechanics={mechanics} />
+          <>
+            <ProfilePanel career={career} mechanics={mechanics} />
+            {onRun !== undefined && <ShopPanel blocked={blocked} career={career} onRun={onRun} />}
+          </>
         )}
       </div>
     );
