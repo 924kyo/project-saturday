@@ -1,3 +1,4 @@
+import { studyGpaPermilleVNext } from './programs.js';
 import { ATTRIBUTE_XP_PER_RATING } from '../weekly/tuning.js';
 import {
   INFORMATION_RULES,
@@ -99,6 +100,8 @@ export interface ResolvedFocusPlanVNext {
   ];
 }
 
+export const STUDY_HALL_FOCUS_ID = 'action_study_hall';
+
 /** Scales a focus's XP by `permille` (potential, camp); never below 1 XP per attribute. */
 function scaledDefinition<
   T extends { readonly attributeXp: readonly { readonly baseXp: number }[] },
@@ -173,12 +176,26 @@ export function resolveFocusPlanVNext(
     state = resolved.next;
     evidence.push(resolved.evidence);
   }
+  // M12: the program's academic support scales what a study-hall week earns.
+  const gained = state.gpa - profile.state.gpa;
+  const gpa =
+    gained > 0 && focusIds.includes(STUDY_HALL_FOCUS_ID)
+      ? Math.min(
+          4,
+          Math.round(
+            (profile.state.gpa +
+              (gained * studyGpaPermilleVNext(mechanics, career.program?.programId ?? null)) /
+                1000) *
+              1000,
+          ) / 1000,
+        )
+      : state.gpa;
   return {
     attributes: state.training.attributes,
     proficiencyUses: state.training.proficiencyUses,
     sharedProficiencyUses: state.sharedProficiencyUses,
     state: state.training.state,
-    gpa: state.gpa,
+    gpa,
     evidence: [evidence[0]!, evidence[1]!, evidence[2]!],
   };
 }

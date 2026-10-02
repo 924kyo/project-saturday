@@ -1,6 +1,7 @@
 import { useState, type CSSProperties } from 'react';
 import type {
   CareerVNext,
+  CareerVNextMechanics,
   ProgramId,
   RecruitOfferVNext,
   VNextPositionId,
@@ -20,6 +21,7 @@ import {
 } from './content';
 import { Crest } from './ui';
 import { ProgramEmblem } from './ProgramEmblem';
+import { NotYetOffer, OfferPips, OfferProfile, ProfileHelp } from './OfferDetails';
 
 function pitchKey(offer: RecruitOfferVNext) {
   if (offer.preview.rank <= 2) return 'v2.recruit.pitch.early' as const;
@@ -28,23 +30,15 @@ function pitchKey(offer: RecruitOfferVNext) {
   return 'v2.recruit.pitch.build' as const;
 }
 
-function pips(value: number): React.JSX.Element {
-  return (
-    <span aria-hidden="true" className="s2-pip-row">
-      {[1, 2, 3, 4, 5].map((index) => (
-        <span className={`s2-pip ${index <= value ? 's2-pip--on' : ''}`} key={index} />
-      ))}
-    </span>
-  );
-}
-
 export function RecruitScreen({
   career,
+  mechanics,
   blocked,
   reducedMotion,
   onCommit,
 }: {
   readonly career: CareerVNext;
+  readonly mechanics: CareerVNextMechanics;
   readonly blocked: boolean;
   readonly reducedMotion: boolean;
   readonly onCommit: (programId: ProgramId) => void;
@@ -84,8 +78,6 @@ export function RecruitScreen({
         {career.recruiting.offers.map((offer) => {
           const identity = program(offer.programId);
           const culture = programCultureVNext(offer.programId);
-          const strength = Math.max(1, Math.min(5, Math.round((offer.programRating - 50) / 7)));
-          const playing = Math.max(1, 6 - Math.ceil(offer.preview.rank / 1.6));
           return (
             <div key={offer.programId} role="listitem">
               <button
@@ -151,15 +143,9 @@ export function RecruitScreen({
                     {t('v2.legacy.familiar', { names: familiarNames(career, offer.programId)! })}
                   </span>
                 )}
+                <OfferProfile career={career} mechanics={mechanics} offer={offer} />
                 <span className="s2-pips">
-                  <span>
-                    {t('v2.recruit.strength')}
-                    {pips(strength)}
-                  </span>
-                  <span>
-                    {t('v2.recruit.playingTime')}
-                    {pips(playing)}
-                  </span>
+                  <OfferPips offer={offer} />
                   <span>
                     {t('v2.recruit.snaps')}
                     <br />
@@ -176,6 +162,8 @@ export function RecruitScreen({
           );
         })}
       </div>
+      <NotYetOffer career={career} mechanics={mechanics} offers={career.recruiting.offers} />
+      <ProfileHelp />
       <div className="s2-actionbar">
         <div className="s2-actionbar__inner">
           <button

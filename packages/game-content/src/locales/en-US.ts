@@ -27,6 +27,7 @@ import { enUSM12Messages } from './m12-ui.js';
 import { enUSM12MatchMessages } from './m12-match.js';
 import { enUSM12DevelopmentMessages } from './m12-development.js';
 import { enUSM12IdentityMessages } from './m12-identity.js';
+import { enUSM12SchoolsMessages } from './m12-schools.js';
 import { enUSM12ProgramMessages } from './m12-programs.js';
 import { enUSM8PositionMessages } from './m8-positions.js';
 import { m7BuildEn } from './m7-builds.js';
@@ -59,6 +60,7 @@ export const enUSMessages = {
   ...enUSM12MatchMessages,
   ...enUSM12DevelopmentMessages,
   ...enUSM12IdentityMessages,
+  ...enUSM12SchoolsMessages,
   ...enUSM12ProgramMessages,
   ...enUSEventBatchMessages,
   ...enUSInjuryBatchMessages,

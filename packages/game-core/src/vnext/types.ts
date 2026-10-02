@@ -69,6 +69,36 @@ export interface DefenderCatalogVNext {
   readonly events: readonly DefenderEventDefinition[];
 }
 
+export type OffenseSchemeIdVNext =
+  'scheme_spread' | 'scheme_pro_style' | 'scheme_power_run' | 'scheme_air_raid';
+export type DefenseSchemeIdVNext = 'scheme_press_man' | 'scheme_zone_match' | 'scheme_pressure';
+export type SchemeIdVNext = OffenseSchemeIdVNext | DefenseSchemeIdVNext;
+export type DevelopmentTierIdVNext =
+  'development_elite' | 'development_strong' | 'development_standard';
+export type ExposureTierIdVNext = 'exposure_national' | 'exposure_regional' | 'exposure_local';
+export type AcademicSupportIdVNext =
+  'academics_strong' | 'academics_standard' | 'academics_limited';
+export type NilMarketIdVNext = 'nil_market_major' | 'nil_market_solid' | 'nil_market_small';
+
+/** M12: what a program offers a player beyond its strength (generated content). */
+export interface ProgramProfileVNext {
+  readonly programId: ProgramId;
+  readonly offenseSchemeId: OffenseSchemeIdVNext;
+  readonly defenseSchemeId: DefenseSchemeIdVNext;
+  readonly developmentTierId: DevelopmentTierIdVNext;
+  readonly exposureTierId: ExposureTierIdVNext;
+  readonly academicSupportId: AcademicSupportIdVNext;
+  readonly nilMarketId: NilMarketIdVNext;
+}
+
+/** A scheme and the styles it suits or wastes (every other style is neutral). */
+export interface SchemeDefinitionVNext {
+  readonly id: SchemeIdVNext;
+  readonly side: 'offense' | 'defense';
+  readonly idealArchetypeIds: readonly string[];
+  readonly poorArchetypeIds: readonly string[];
+}
+
 export type CareerVNextMechanics = PositionAlphaSessionCommandMechanics & {
   readonly defenders: Readonly<Record<DefenderPositionId, DefenderCatalogVNext>>;
   /** NIL offers whose authored copy belongs to specific positions (absent = every position). */
@@ -82,6 +112,12 @@ export type CareerVNextMechanics = PositionAlphaSessionCommandMechanics & {
     readonly givenNameIds: readonly string[];
     readonly familyNameIds: readonly string[];
   };
+  /**
+   * M12 program profiles: scheme, development, exposure, academics and NIL market per program
+   * (absent = every program neutral), and which archetypes each scheme suits.
+   */
+  readonly programProfiles?: readonly ProgramProfileVNext[];
+  readonly schemes?: readonly SchemeDefinitionVNext[];
   /** The legacy mentor scene (M9): an alumnus of the current program checks in. */
   readonly legacyEvents: { readonly mentor: WeeklyEventDefinitionV2 };
   /** Shared campus-life events every position can draw (M8). */

@@ -26,9 +26,15 @@ import {
   type InjuryRiskBreakdownVNext,
   type OffseasonProgramIdVNext,
   type VNextPositionId,
+  developmentPermilleVNext,
+  programProfileVNext,
+  studyGpaPermilleVNext,
+  VNEXT_PROGRAM_TUNING,
+  type ProgramId,
 } from '@project-saturday/game-core';
 import type { MessageKey } from '@project-saturday/game-content/locales';
 
+import { profileValueKeyVNext } from '@project-saturday/game-content/content';
 import { useAppTranslation } from '../i18n/i18n';
 import {
   DEPTH_COMPONENT_KEYS,
@@ -368,7 +374,8 @@ export function CampScreen({
   if (career.flow.type !== 'CAMP') return null;
   const report = career.flow.report;
   const xp = pct(
-    (potentialPermilleVNext(career) * VNEXT_DEVELOPMENT_CALENDAR.campXpPermille) / 1000,
+    (developmentPermilleVNext(career, mechanics) * VNEXT_DEVELOPMENT_CALENDAR.campXpPermille) /
+      1000,
   );
   return (
     <div className="s2-stack">
@@ -590,19 +597,28 @@ export function MidseasonScreen({
 export function OffseasonProgramPicker({
   career,
   mechanics,
+  destinationId = null,
   value,
   onChange,
 }: {
   readonly career: CareerVNext;
   readonly mechanics: CareerVNextMechanics;
+  /** The school the summer trains for (the current one until a choice is made). */
+  readonly destinationId?: ProgramId | null;
   readonly value: OffseasonProgramIdVNext | null;
   readonly onChange: (next: OffseasonProgramIdVNext | null) => void;
 }): React.JSX.Element {
   const { t } = useAppTranslation();
-  const nextPotential = potentialPermilleVNext({
-    athlete: career.athlete,
-    season: { ...career.season, index: career.season.index + 1 },
-  });
+  // Trained for the destination: next season's potential × that program's development tier.
+  const nextPotential = developmentPermilleVNext(
+    {
+      athlete: career.athlete,
+      season: { ...career.season, index: career.season.index + 1 },
+      program: career.program,
+    },
+    mechanics,
+    destinationId ?? career.program?.programId ?? null,
+  );
   const options: readonly (OffseasonProgramIdVNext | null)[] = [
     null,
     ...VNEXT_OFFSEASON_PROGRAMS.map(({ id }) => id),
@@ -704,6 +720,9 @@ export function DevelopmentGuide({
         `${t(attributeNameKey(attributeId))} ${share(weightPermille)}`,
     )
     .join(' · ');
+  const profile =
+    career.program === null ? null : programProfileVNext(mechanics, career.program.programId);
+  const programDevelopment = profile?.developmentTierId ?? null;
   const depth = mechanics.room.depthEvaluationWeightsPermille;
   const depthList = (Object.keys(DEPTH_COMPONENT_KEYS) as (keyof typeof DEPTH_COMPONENT_KEYS)[])
     .map((id) => `${t(DEPTH_COMPONENT_KEYS[id])} ${share(depth[id])}`)
@@ -751,6 +770,16 @@ export function DevelopmentGuide({
               })}
             </span>
           </li>
+          {programDevelopment !== null && (
+            <li>
+              <span>
+                {t('v2.guide.programDevelopment', {
+                  tier: t(key(profileValueKeyVNext('development', programDevelopment))),
+                  pct: pct(VNEXT_PROGRAM_TUNING.developmentXpPermille[programDevelopment]),
+                })}
+              </span>
+            </li>
+          )}
           <li>
             <span>{t('v2.guide.condition')}</span>
           </li>
@@ -768,6 +797,15 @@ export function DevelopmentGuide({
               })}
             </span>
           </li>
+          {career.program !== null && (
+            <li>
+              <span>
+                {t('v2.guide.academicSupport', {
+                  pct: pct(studyGpaPermilleVNext(mechanics, career.program.programId)),
+                })}
+              </span>
+            </li>
+          )}
           <li>
             <span>{t('v2.guide.gauge', { threshold: VNEXT_BREAKTHROUGH_THRESHOLD })}</span>
           </li>

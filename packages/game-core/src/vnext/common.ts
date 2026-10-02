@@ -1,3 +1,4 @@
+import { roomMechanicsVNext } from './programs.js';
 import { deepFreeze } from '../player/immutable.js';
 import type { ProgramId } from '../player/ids.js';
 import type { CreatedPositionPlayerProfile } from '../player/position-creation.js';
@@ -100,11 +101,19 @@ export function roomFor(
       : `${String(career.seed)}:vnext:room:${options.seasonIndex}:${programId}`,
   );
   // Zero-cost probe (discarded) reads the recruit's talent fit exactly as the depth model does.
+  // M12: scheme fit follows the program's scheme that season.
+  const roomMechanics = roomMechanicsVNext(
+    mechanics,
+    career.seed,
+    programId,
+    positionId,
+    options.seasonIndex,
+  );
   const probe = generatePositionRoom(
     career.athlete.profile,
     rng,
     mechanics.roomNames,
-    mechanics.room,
+    roomMechanics,
     config(60),
   );
   if (!probe.ok) return probe;
@@ -122,7 +131,7 @@ export function roomFor(
     career.athlete.profile,
     rng,
     mechanics.roomNames,
-    mechanics.room,
+    roomMechanics,
     config(
       Math.max(tuning.talentSpread, Math.min(100 - tuning.talentSpread, playerTalent + premium)),
     ),

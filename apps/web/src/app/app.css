@@ -1839,6 +1839,32 @@ body {
   font-size: 12px;
   font-weight: 700;
 }
+/* M12 offer facts: the school's profile and why it called (Phase 4). */
+.s2-offer__facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 6px 12px;
+  text-align: left;
+}
+.s2-offer__fact {
+  display: grid;
+  gap: 1px;
+  font-size: 13.5px;
+  min-width: 0;
+}
+.s2-offer__fact--wide {
+  grid-column: 1 / -1;
+}
+.s2-offer__fact.s2-effect {
+  justify-self: start;
+  white-space: normal;
+}
+.s2-list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 18px;
+}
 .s2-offer__tradition {
   padding-left: 12px;
   border-left: 2px solid var(--c2, var(--volt));

@@ -181,3 +181,10 @@ export {
   type ProgramCultureVNext,
 } from './program-culture.js';
 export { snapLookCatalogVNext } from './snap-looks.js';
+export {
+  profileValueKeyVNext,
+  programProfilesVNext,
+  schemeNameKeyVNext,
+  schemesVNext,
+  type ProgramProfileRowVNext,
+} from './program-profiles.js';

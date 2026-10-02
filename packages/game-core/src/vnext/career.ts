@@ -1,3 +1,4 @@
+import { brandPermilleVNext, developmentPermilleVNext } from './programs.js';
 import { rivalWeekVNext, VNEXT_RIVAL_TUNING } from './rivals.js';
 import { withVariedClockVNext } from './clock.js';
 import {
@@ -13,7 +14,6 @@ import {
   developmentOfVNext,
   focusDefinitionsVNext,
   grantAttributeXpVNext,
-  potentialPermilleVNext,
   recommendedCampVNext,
   resolveFocusPlanVNext,
   settleCoachFocusVNext,
@@ -317,12 +317,12 @@ export function planWeekVNext(
   if (!Array.isArray(focusIds) || focusIds.length !== 3) return fail('career_vnext.invalid_choice');
   const definitions = focusDefinitionsVNext(career, mechanics);
   const profile = career.athlete.profile;
-  // M12: the background's potential scales this season's focus XP.
+  // M12: the background's potential and the program's development tier scale this season's XP.
   const resolved = resolveFocusPlanVNext(
     career,
     focusIds,
     mechanics,
-    potentialPermilleVNext(career),
+    developmentPermilleVNext(career, mechanics),
   );
   if (resolved === null) return fail('career_vnext.invalid_choice');
   const evidence = resolved.evidence;
@@ -457,7 +457,8 @@ export function chooseCampVNext(
   )
     return fail('career_vnext.invalid_choice');
   const xpPermille = Math.round(
-    (potentialPermilleVNext(career) * VNEXT_DEVELOPMENT_CALENDAR.campXpPermille) / 1000,
+    (developmentPermilleVNext(career, mechanics) * VNEXT_DEVELOPMENT_CALENDAR.campXpPermille) /
+      1000,
   );
   const resolved = resolveFocusPlanVNext(career, focusIds, mechanics, xpPermille);
   if (resolved === null) return fail('career_vnext.invalid_choice');
@@ -1086,14 +1087,19 @@ function settleGame(
           brand: Math.min(
             100,
             profile.state.brand +
+              // M12: a program's exposure carries a Saturday further (or not as far).
               Math.floor(
-                brandFromGameVNext({
-                  played: summary.opportunityCount > 0,
-                  won: resultId === 'game_result_win',
-                  coachGrade,
-                  postseason: game.round !== undefined,
-                  opponentRank: stakes?.opponentRank ?? null,
-                }) / (profile.state.brand >= 50 ? 2 : 1),
+                Math.round(
+                  (brandFromGameVNext({
+                    played: summary.opportunityCount > 0,
+                    won: resultId === 'game_result_win',
+                    coachGrade,
+                    postseason: game.round !== undefined,
+                    opponentRank: stakes?.opponentRank ?? null,
+                  }) *
+                    brandPermilleVNext(mechanics, career.program.programId)) /
+                    1000,
+                ) / (profile.state.brand >= 50 ? 2 : 1),
               ),
           ),
         },

@@ -698,6 +698,24 @@ Append concise implementation/product decisions that do not warrant their own AD
   - **The clock** is re-timed per key snap inside its even slot from `:vnext:clock:<season>:<week>:<snap>` (no kernel RNG draw; the context matcher ignores the clock). The WR composure card reads Q4, so the clock is real context, not decoration.
   - **The pregame line** has five bands from the measured matchup-score spread (p10 46, p50 52, p90 59). The old 42/58 cut put 85% of games at toss-up. An upset is a win as an underdog; pre-M12 recaps keep the ranked rule.
   - **Copy:** "Drop eight" is "Drop seven" (its board rushes four); the closing-pursuit distance is mid-run; the WR release prompt no longer says the corner waits at the line.
+- 2026-10-02 (M12 Phase 4, schools and transfers): program profiles make offers real tradeoffs. Rules are in `vnext/programs.ts` and `vnext/offers.ts`; the table is generated (`scripts/generate-program-profiles.py`).
+  - **Profile:** every program has an offensive and a defensive scheme, plus a development tier, an exposure tier, academic support and an NIL market.
+    - Exposure and NIL lean with program strength; development and academics do not, so a small school can be the better place to grow or study.
+    - Each style is ideal in exactly one scheme on its side, and poor in at most one.
+  - **Effects, all bounded:**
+    - Scheme fit ±8 on the room's depth component, applied at room generation for the athlete and every teammate.
+    - Development tier ×1.05 / ×1.00 / ×0.95 on focus, camp and offseason XP. These are centered so the 96-program mean is about 1.0; an un-centered first version (+8/+4/0) inflated every career.
+    - Exposure ×1.5 / ×1.0 / ×0.75 on game brand (rounded before the existing halving) and +6 / 0 / −5 on the draft-stock exposure term.
+    - NIL market sets the weekly offer chance at 380 / 300 / 220‰.
+    - Academic support ×1.3 / ×1.0 / ×0.75 on study-hall GPA.
+  - **Coordinator changes:** each side of the ball may change with a 20% chance per offseason, replayed from `:vnext:coordinator:<season>:<program>:<side>`. Nothing is saved; next season's fits follow.
+  - **Transfer market (REC-05):** the ability term (as before), plus honors (+1 each, cap +2), role (starter 0 … developmental −2), staff grade ((grade − 70) / 5, −2…+2) and exposure (±1).
+    - It is centered on an ordinary starter's season, so it moves offers by at most one band.
+    - A first version (starter +2, honors +2 each) moved a good season two bands.
+  - **Transfer consequences:** coach trust resets (as before), and camp opens with Preparation −12. Staying keeps trust and the playbook. Story beats are Phase 6.
+  - **Offers explained:** each offer shows its facts, reasons and a labeled starter forecast, and the screen shows a not-yet school with the exact score that would bring it.
+  - **Balance (m10 harness, 36 careers):** growth 5.0 → 5.1, drafted 444 → 472‰, first round 28‰ (unchanged), brand 75.4 → 74.7, awards 167 → 174‰, starters 840 → 826‰. The artifact was regenerated.
+  - **Open:** the 12-career climbing harness (`career-vnext-careers.test.ts`) now drafts 12 of 12 against its "fewer than 12" band. Two careers sit within two stock points of the draft floor, and the comparison without profiles drafted 10 of 12. The band is unchanged pending the user's decision.
 - 2026-10-02 (M12 Phase 3, Round 3 v3 portraits): the owner's art pack is integrated, following their integration notes. Code and config only; no asset file was made, moved or rewritten.
   - **Options:** 16 faces (four shapes plus `identity_01…12`, as alternatives) and 14 hairstyles are in the VNext catalog, with EN/KO labels.
     - Save fields and IDs are unchanged; the core validates appearance IDs by prefix, so older saves keep their choices. A test round-trips every new face and style through creation and the save codec.

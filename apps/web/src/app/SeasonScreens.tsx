@@ -13,6 +13,7 @@ import {
   type DraftStockBandVNext,
   nilOfVNext,
   recordBookVNext,
+  VNEXT_PROGRAM_TUNING,
 } from '@project-saturday/game-core';
 import type { MessageKey } from '@project-saturday/game-content/locales';
 
@@ -30,6 +31,7 @@ import {
   familiarNames,
 } from './content';
 import { OffseasonProgramPicker } from './Development';
+import { NotYetOffer, OfferPips, OfferProfile, TransferMarket } from './OfferDetails';
 import { Nameplate } from './Nameplate';
 import type { PrototypeAlumniView } from './prototype';
 import { inkOn } from './theme';
@@ -281,15 +283,7 @@ export function OffseasonScreen({
   const abbr = t(POSITION_ABBR_KEYS[positionId]);
   const choice = options.find(({ programId }) => programId === selected);
   // Facts that tell the options apart (playtest round 2): strength, last season, and why they call.
-  const currentRating = options.find(({ kind }) => kind === 'STAY')?.programRating ?? null;
   const records = career.season.world?.programRecords ?? [];
-  const strength = (rating: number) => Math.max(1, Math.min(5, Math.round((rating - 50) / 7)));
-  const reasonKey = (rating: number) =>
-    currentRating === null || Math.abs(rating - currentRating) <= 3
-      ? 'v2.off.reasonFit'
-      : rating > currentRating
-        ? 'v2.off.reasonReach'
-        : 'v2.off.reasonRole';
   return (
     <div className="s2-stack">
       <Nameplate career={career} />
@@ -355,24 +349,9 @@ export function OffseasonScreen({
                         </span>
                       );
                     })()}
-                    {option.kind === 'TRANSFER' && (
-                      <span className="s2-tag">
-                        {t('v2.off.whyOffer', { reason: t(reasonKey(option.programRating)) })}
-                      </span>
-                    )}
                   </span>
-                  <span className="s2-pips" style={{ gridTemplateColumns: '1fr' }}>
-                    <span>
-                      {t('v2.recruit.strength')}
-                      <span aria-hidden="true" className="s2-pip-row">
-                        {[1, 2, 3, 4, 5].map((index) => (
-                          <span
-                            className={`s2-pip ${index <= strength(option.programRating) ? 's2-pip--on' : ''}`}
-                            key={index}
-                          />
-                        ))}
-                      </span>
-                    </span>
+                  <span className="s2-pips">
+                    <OfferPips offer={option} />
                   </span>
                 </span>
                 <span className="s2-offer__path">
@@ -396,14 +375,32 @@ export function OffseasonScreen({
                     </span>
                   </span>
                 </span>
+                <OfferProfile
+                  career={career}
+                  mechanics={mechanics}
+                  offer={option}
+                  stay={option.kind === 'STAY'}
+                />
               </button>
             </div>
           );
         })}
       </div>
+      {choice !== undefined && (
+        <p className="s2-note" id="s2-move-note">
+          {choice.kind === 'STAY'
+            ? t('v2.off.stayNote')
+            : t('v2.off.transferNote', {
+                delta: `−${-VNEXT_PROGRAM_TUNING.transferPreparation}`,
+              })}
+        </p>
+      )}
+      <NotYetOffer career={career} mechanics={mechanics} offers={options} />
+      <TransferMarket career={career} mechanics={mechanics} />
       <OffseasonProgramPicker
         career={career}
         mechanics={mechanics}
+        destinationId={selected}
         onChange={setSummer}
         value={summer}
       />

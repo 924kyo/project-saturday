@@ -14,6 +14,7 @@ import {
   continueSeasonReviewVNext,
   createCareerVNext,
   decideMidseasonVNext,
+  developmentPermilleVNext,
   focusDefinitionsVNext,
   informationBaseScore,
   informationOutlookVNext,
@@ -25,12 +26,14 @@ import {
   planWeekVNext,
   potentialPermilleVNext,
   previewWeekPlanVNext,
+  programProfileVNext,
   projectSnapBoardFrame,
   recommendedCampVNext,
   serializeCareerVNext,
   toGameDayVNext,
   VNEXT_BACKGROUND_PROFILES,
   VNEXT_DEVELOPMENT_CALENDAR,
+  VNEXT_PROGRAM_TUNING,
   type CareerVNext,
   type CareerVNextMechanics,
   type CareerVNextResult,
@@ -160,9 +163,22 @@ describe('M12 preseason camp', () => {
     expect(camped.flow.type).toBe('CAMP');
     if (camped.flow.type !== 'CAMP' || camped.flow.report === null) throw new Error('no report');
     const report = camped.flow.report;
-    // Late bloomer freshman potential 95% × camp 150%.
+    // Late bloomer freshman potential 95% × the program's development tier × camp 150%.
+    expect(developmentPermilleVNext(committed, mechanics)).toBe(
+      Math.round(
+        (950 *
+          VNEXT_PROGRAM_TUNING.developmentXpPermille[
+            programProfileVNext(mechanics, committed.program!.programId)!.developmentTierId
+          ]) /
+          1000,
+      ),
+    );
     expect(report.xpPermille).toBe(
-      Math.round((950 * VNEXT_DEVELOPMENT_CALENDAR.campXpPermille) / 1000),
+      Math.round(
+        (developmentPermilleVNext(committed, mechanics) *
+          VNEXT_DEVELOPMENT_CALENDAR.campXpPermille) /
+          1000,
+      ),
     );
     expect(
       report.focuses.flatMap((focus) => focus.attributeXp).some(({ appliedXp }) => appliedXp > 0),

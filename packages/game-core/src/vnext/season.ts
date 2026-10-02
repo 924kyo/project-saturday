@@ -1,7 +1,8 @@
+import { transferMarketVNext } from './offers.js';
+import { developmentPermilleVNext, roomMechanicsVNext, VNEXT_PROGRAM_TUNING } from './programs.js';
 import type { ProgramId } from '../player/ids.js';
 import {
   buildPositionRoomSeason,
-  derivePositionRecruitingProfile,
   type PositionRoomCompetitor,
   type PositionRoomContext,
 } from '../programs/position-room.js';
@@ -42,7 +43,6 @@ import {
   isOffseasonProgramIdVNext,
   offseasonProgramXpVNext,
   offseasonStartStateVNext,
-  potentialPermilleVNext,
 } from './development.js';
 import type { OffseasonProgramIdVNext } from './types.js';
 import { canDeclareVNext, draftStockVNext, runDraftVNext } from './draft.js';
@@ -361,6 +361,14 @@ export function nextSeasonRoomVNext(
     if (competitors.length < fresh.length) return null;
     competitors = withPortalArrivalVNext(career, programId, competitors, seasonIndex, mechanics);
   }
+  // M12: a new coordinator can change the scheme, so every style's fit is re-read for the season.
+  const roomMechanics = roomMechanicsVNext(
+    mechanics,
+    career.seed,
+    programId,
+    profile.positionId,
+    seasonIndex,
+  );
   const room = buildPositionRoomSeason(
     {
       programId,
@@ -370,9 +378,13 @@ export function nextSeasonRoomVNext(
       playerCoachTrust: coachTrust,
       playerPracticeForm: 50,
       playerExperienceReadiness: experienceReadiness,
-      competitors,
+      competitors: competitors.map((competitor) => ({
+        ...competitor,
+        schemeFit:
+          roomMechanics.schemeFitByArchetype[competitor.archetypeId] ?? competitor.schemeFit,
+      })),
     },
-    mechanics.room,
+    roomMechanics,
   );
   return room === undefined ? null : { room, coachTrust };
 }
@@ -385,10 +397,10 @@ export function offseasonOptionsVNext(
   if (career.program === null) return null;
   const positionId = career.athlete.profile.positionId as VNextPositionId;
   const current = career.program.programId;
-  const recruiting = derivePositionRecruitingProfile(career.athlete.profile, mechanics.room, 0);
-  if (recruiting === undefined) return null;
-  // A proven college player's market tracks ability more closely than a recruit's (M8 tuning).
-  const target = 50 + Math.round((recruiting.abilityScore - 50) * 0.8);
+  // M12: the market reads ability plus what the season showed (awards, role, grades, exposure).
+  const market = transferMarketVNext(career, mechanics);
+  if (market === null) return null;
+  const target = market.target;
   const ranked = mechanics.world.programProfiles
     .filter(({ programId }) => programId !== current)
     .map(({ programId }) => ({
@@ -538,7 +550,11 @@ export function commitOffseasonVNext(
   if (world === null) return fail('career_vnext.engine_failed');
   const profile = career.athlete.profile;
   // M12 offseason program: XP at next season's potential, and where that season starts.
-  const nextSeason = { athlete: career.athlete, season: { ...career.season, index: seasonIndex } };
+  const nextSeason = {
+    athlete: career.athlete,
+    season: { ...career.season, index: seasonIndex },
+    program: career.program,
+  };
   const programXp =
     offseasonProgramId === null
       ? []
@@ -546,7 +562,8 @@ export function commitOffseasonVNext(
           career,
           offseasonProgramId,
           mechanics,
-          potentialPermilleVNext(nextSeason),
+          // Trained for the destination: next season's potential × its development tier.
+          developmentPermilleVNext(nextSeason, mechanics, programId),
         );
   const attributes = programXp.reduce(
     (current, { attributeId, xp }) => grantAttributeXpVNext(current, attributeId, xp),
@@ -572,6 +589,11 @@ export function commitOffseasonVNext(
         state: {
           ...profile.state,
           ...start,
+          // M12: a transfer opens camp behind on a new playbook (staying keeps the old one).
+          preparation:
+            programId === career.program.programId
+              ? start.preparation
+              : Math.max(0, start.preparation + VNEXT_PROGRAM_TUNING.transferPreparation),
           coachTrust: next.coachTrust,
         },
       },

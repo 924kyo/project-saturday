@@ -1,3 +1,4 @@
+import { nilOfferChancePermilleVNext } from './programs.js';
 import type { ProgramId } from '../player/ids.js';
 import type { PlayerState } from '../player/types.js';
 import { createRng, nextUint32 } from '../random/rng.js';
@@ -179,7 +180,9 @@ export function attemptNilOfferVNext(
   const visibility = benefitCount(nil, 'off_field_benefit_offer_visibility');
   const chance = Math.min(
     1_000,
-    VNEXT_NIL_TUNING.offerChancePermille + visibility * VNEXT_NIL_TUNING.visibilityChancePermille,
+    // M12: the program's NIL market sets the base chance (a solid market keeps the old 300).
+    nilOfferChancePermilleVNext(mechanics, career.program.programId) +
+      visibility * VNEXT_NIL_TUNING.visibilityChancePermille,
   );
   const rng = createRng(
     `${String(career.seed)}:vnext:nil:${career.season.index}:${career.season.weekIndex}`,

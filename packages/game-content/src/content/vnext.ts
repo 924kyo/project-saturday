@@ -1,3 +1,4 @@
+import { programProfilesVNext, schemesVNext } from './program-profiles.js';
 import type {
   CareerVNextMechanics,
   PositionPlayerCreationIdentity,
@@ -173,6 +174,8 @@ export function buildCareerVNextMechanics(
     defenders: DEFENDER_CATALOGS,
     life: { events: lifeEventMechanics },
     reservedNamePairs: reservedRosterNamePairs,
+    programProfiles: programProfilesVNext,
+    schemes: schemesVNext,
     suggestedNames: {
       givenNameIds: suggestionNamePoolVNext.given.map(({ id }) => id),
       familyNameIds: suggestionNamePoolVNext.family.map(({ id }) => id),

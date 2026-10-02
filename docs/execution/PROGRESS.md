@@ -34,7 +34,13 @@ M10 is complete (plan: `docs/exec-plans/completed/m10-release-candidate.md`), an
     - Gate after the pack: vitest 942, content 472, sim 398, e2e 20, build with the precache check; 250 busts inspected on contact sheets.
   - CRE-04 is in progress: story beats come in Phase 6.
   - Gate: typecheck, lint and format clean; vitest 934, content 471, sim 398, e2e 20, build; EN/KO screens of the build step, Look and Profile.
-  - Restart point: Phase 4, schools and transfers.
+  - Next: Phase 4, schools and transfers.
+- 2026-10-02: Phase 4 (schools and transfers) is done.
+  - REC-01, 02, 03, 05, 06, 07 and DEV-08 are verified complete.
+  - REC-04 is in progress: its story beats come in Phase 6.
+  - Gate: typecheck, lint and format clean; unit 952, sim 398, e2e 20, build; EN/KO recruiting and offseason screens.
+  - One open item: the 12-career climbing harness drafts 12 of 12 against its "fewer than 12" band. Its assertion is unchanged and awaiting the user's call (DECISION_LOG).
+  - Restart point: Phase 5, roles and depth.
 
 ## Status
 

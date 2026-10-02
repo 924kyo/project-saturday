@@ -208,3 +208,31 @@ export {
   type OverallContributionVNext,
   type ScoutingReportVNext,
 } from './creation.js';
+export {
+  brandPermilleVNext,
+  developmentPermilleVNext,
+  draftExposureBonusVNext,
+  nilOfferChancePermilleVNext,
+  programProfileVNext,
+  programSchemeVNext,
+  roomMechanicsVNext,
+  schemeFitBandVNext,
+  sideOfVNext,
+  studyGpaPermilleVNext,
+  VNEXT_PROGRAM_TUNING,
+  type ProgramSchemeVNext,
+  type SchemeFitBandVNext,
+} from './programs.js';
+export {
+  notYetOfferVNext,
+  offerFactsVNext,
+  offerPipsVNext,
+  offerReasonsVNext,
+  offerTargetVNext,
+  transferMarketVNext,
+  VNEXT_OFFER_TUNING,
+  type NotYetOfferVNext,
+  type OfferFactsVNext,
+  type OfferReasonVNext,
+  type TransferMarketVNext,
+} from './offers.js';

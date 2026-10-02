@@ -10,6 +10,7 @@ import type {
 } from './types.js';
 import { programRating } from './common.js';
 import { awardStockPointsVNext } from './awards.js';
+import { draftExposureBonusVNext } from './programs.js';
 
 /**
  * Pro Draft stock (fictional pro framing). Stock is a transparent weighted blend of saved facts,
@@ -76,8 +77,18 @@ export function draftStockVNext(
               graded.reduce((sum, { liveGames }) => sum + liveGames, 0),
             ),
         );
+  // M12: a program's exposure tier moves how widely scouts have seen him.
   const exposure =
-    latest === undefined ? 60 : programRating(mechanics, latest.programId, positionId);
+    latest === undefined
+      ? 60
+      : Math.max(
+          0,
+          Math.min(
+            100,
+            programRating(mechanics, latest.programId, positionId) +
+              draftExposureBonusVNext(mechanics, latest.programId),
+          ),
+        );
   const games = reviews.reduce((sum, { games: count }) => sum + count, 0);
   const live = reviews.reduce((sum, { liveGames }) => sum + liveGames, 0);
   const starts = reviews.filter(({ depthRank }) => depthRank.end === 1).length;

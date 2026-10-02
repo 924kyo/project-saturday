@@ -453,6 +453,7 @@ export function App({
               <RecruitScreen
                 blocked={blocked}
                 career={career}
+                mechanics={mechanics}
                 onCommit={(id: ProgramId) => run((c, m) => commitProgramVNext(c, id, m))}
                 reducedMotion={reducedMotion}
               />
