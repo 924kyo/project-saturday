@@ -90,6 +90,50 @@ const rows = {
   'v2.perks.useOffer': ['Guaranteed offer from', '보장 제안 학교'],
   'v2.perks.useGear': ['Start with the gold trim', '골드 트림으로 시작'],
   'v2.perks.none': ['None', '선택 안 함'],
+  // Phase 9: sub-tabs and the true Top 25.
+  'v2.tabs.team.label': ['Team views', '팀 보기'],
+  'v2.tabs.team.depth': ['Depth', '뎁스'],
+  'v2.tabs.team.schedule': ['Schedule', '일정'],
+  'v2.tabs.team.conference': ['Conference', '콘퍼런스'],
+  'v2.tabs.team.national': ['National', '전국 순위'],
+  'v2.tabs.team.records': ['Records', '기록'],
+  'v2.tabs.profile.label': ['Profile views', '프로필 보기'],
+  'v2.tabs.profile.overview': ['Overview', '개요'],
+  'v2.tabs.profile.attributes': ['Attributes', '능력치'],
+  'v2.tabs.profile.stats': ['Stats', '기록'],
+  'v2.tabs.profile.cards': ['Cards & NIL', '카드·NIL'],
+  'v2.tabs.profile.people': ['People', '사람들'],
+  'v2.team.moreRanked': ['Show #{from}–#{to}', '{from}–{to}위 보기'],
+  'v2.since.title': ['Since last week', '지난주 이후'],
+  'v2.since.game': [
+    'Saturday vs {opponent}: {result}, staff grade {grade}',
+    '토요일 {opponent}전: {result}, 코치 평가 {grade}',
+  ],
+  'v2.since.raised': ['Ratings up: {list}', '오른 능력치: {list}'],
+  'v2.since.role': [
+    'Your spot: {position} · {role} · {status}',
+    '내 위치: {position} · {role} · {status}',
+  ],
+  'v2.since.healthy': ['Healthy', '부상 없음'],
+  'v2.since.injured': [
+    'Injured: {name}, {weeks, plural, one {# week} other {# weeks}} to go',
+    '부상: {name}, {weeks, plural, other {#주}} 남음',
+  ],
+  'v2.since.nil': [
+    'NIL deal: {weeks, plural, one {# week} other {# weeks}} left, −{cost} practice a week',
+    'NIL 계약: {weeks, plural, other {#주}} 남음, 주당 연습 −{cost}',
+  ],
+  'v2.since.cards': [
+    '{owned, plural, one {# card} other {# cards}} · {insight} Insight',
+    '카드 {owned, plural, other {#장}} · 인사이트 {insight}',
+  ],
+  // M12 UI-04: the compact post-game.
+  'v2.post.glance': ['At a glance', '한눈에 보기'],
+  'v2.post.growthLine': ['Growth: {list}', '성장: {list}'],
+  'v2.post.growthNone': ['No ratings moved this game.', '이번 경기로 오른 능력치는 없습니다.'],
+  'v2.post.growthUp': ['{name} +{levels}', '{name} +{levels}'],
+  'v2.post.growthXp': ['{name} (+{xp} XP)', '{name} (+{xp} XP)'],
+  'v2.post.fullReport': ['Full game report', '경기 상세 리포트'],
 } as const satisfies Record<string, Pair>;
 
 function messages(index: 0 | 1) {

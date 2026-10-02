@@ -3462,3 +3462,106 @@ fieldset.s2-stack > legend {
   color: var(--ink-3);
   font-weight: 700;
 }
+
+/* M12 Phase 9: sub-tabs inside Team and Profile (a keyboard tablist). */
+.s2-subtabs__list {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: thin;
+}
+.s2-subtabs__tab {
+  flex: none;
+  padding: 7px 14px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink-2);
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.s2-subtabs__tab--on {
+  border-color: var(--volt);
+  color: var(--ink);
+  box-shadow: inset 0 -3px 0 var(--volt);
+}
+.s2-subtabs__tab:focus-visible {
+  outline: 2px solid var(--volt);
+  outline-offset: 2px;
+}
+
+/* M12 UI-06: glossary terms that open their definition in place. */
+.s2-termrow {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0;
+  align-items: baseline;
+  gap: 4px 10px;
+}
+.s2-term__name {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+  cursor: help;
+}
+.s2-term__name:focus-visible {
+  outline: 2px solid var(--volt);
+  outline-offset: 2px;
+}
+.s2-term__def {
+  display: block;
+  margin: 4px 0 0;
+  padding: 6px 10px;
+  border-left: 2px solid var(--volt);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--ink-2);
+}
+.s2-glossary {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+.s2-glossary dt {
+  font-weight: 800;
+}
+.s2-glossary dd {
+  margin: 2px 0 0;
+  color: var(--ink-2);
+}
+
+/* M12 UI-04: the post-game leads with result, grade, key moment and growth; details fold away. */
+.s2-final--compact {
+  gap: 6px;
+  padding: 16px 16px 18px;
+}
+.s2-final--compact h1 {
+  font-size: clamp(40px, 9vw, 68px);
+}
+.s2-final--compact .s2-final__score {
+  font-size: clamp(36px, 9vw, 60px);
+}
+.s2-final--compact .s2-final__score .s2-crest {
+  width: clamp(32px, 8vw, 48px);
+}
+.s2-final--compact p {
+  margin: 0;
+}
+.s2-postkey {
+  align-items: start;
+}
+.s2-postkey .s2-news {
+  padding: 14px 18px 14px 22px;
+}
+.s2-postkey .s2-grade {
+  width: 72px;
+  height: 72px;
+  font-size: 50px;
+}

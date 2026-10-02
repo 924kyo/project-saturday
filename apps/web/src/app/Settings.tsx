@@ -1,3 +1,4 @@
+import { GlossaryList } from './Glossary';
 import { useAppTranslation } from '../i18n/i18n';
 import type { Preferences } from './preferences';
 
@@ -95,6 +96,10 @@ export function SettingsPanel({
           </span>
         </label>
       </div>
+      <details className="s2-disclosure s2-settings__row">
+        <summary>{t('v2.glossary.title')}</summary>
+        <GlossaryList />
+      </details>
       <button className="s2-btn s2-btn--ghost" onClick={onClose} type="button">
         {t('v2.settings.close')}
       </button>

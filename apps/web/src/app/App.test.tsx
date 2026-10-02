@@ -168,7 +168,9 @@ describe('App vertical slice', () => {
     }
     expect(decisions).toBeGreaterThanOrEqual(2);
     await user.click(await screen.findByRole('button', { name: /See the game story/ }));
-    expect(await screen.findByText('Coach’s verdict')).toBeInTheDocument();
+    // M12 UI-04: the grade leads in "At a glance"; the full report starts collapsed.
+    expect(await screen.findByText('At a glance')).toBeInTheDocument();
+    expect(screen.getByText('Full game report').closest('details')).not.toHaveAttribute('open');
     await user.click(screen.getByRole('button', { name: /Next week/ }));
 
     expect(await screen.findByRole('heading', { name: 'Pick three focuses' })).toBeInTheDocument();

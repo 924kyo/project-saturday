@@ -524,6 +524,7 @@ export function App({
                   mechanics={mechanics}
                   onEquip={(slot, id) => run((c) => equipSkillVNext(c, slot, id))}
                   onRun={run}
+                  alumni={alumni}
                   onGameDay={() => run(toGameDayVNext)}
                   onPlan={(ids) => run((c, m) => planWeekVNext(c, ids, m))}
                 />

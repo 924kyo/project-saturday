@@ -33,6 +33,9 @@ import {
 import { OffseasonProgramPicker } from './Development';
 import { ReviewGoal } from './Story';
 import { HallOfFameList, LegacySummary } from './Legacy';
+import { TermRow } from './Glossary';
+import { OFFSEASON_TERMS } from './glossary-terms';
+
 import { NotYetOffer, OfferPips, OfferProfile, TransferMarket } from './OfferDetails';
 import { Nameplate } from './Nameplate';
 import type { PrototypeAlumniView } from './prototype';
@@ -299,6 +302,7 @@ export function OffseasonScreen({
           {t('v2.off.title')}
         </h1>
         <p className="s2-scene__body">{t('v2.off.help')}</p>
+        <TermRow terms={OFFSEASON_TERMS} />
       </section>
       <div className="s2-offers" role="list">
         {options.map((option) => {

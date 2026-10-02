@@ -25,6 +25,7 @@ import {
   practiceBand,
   program,
   athleteShortName,
+  attributeNameKey,
 } from './content';
 import { explanationLines } from './explanation';
 import { GrowthList } from './Growth';
@@ -34,6 +35,8 @@ import { usePreferences } from './preferences';
 import { SPEAKER_KEYS, selectReactions } from './reactions';
 import { Crest, Meter, Panel } from './ui';
 import { METER_COLORS } from './theme';
+
+const signed = (delta: number) => (delta > 0 ? `+${delta}` : delta < 0 ? `−${-delta}` : '±0');
 
 export function PostGameScreen({
   career,
@@ -152,10 +155,17 @@ export function PostGameScreen({
       }),
     );
   if (recap.liveSnapCount > 0) lede.push(t('v2.news.grade', { band: verdict }));
+  const changes = (
+    [
+      ['v2.stat.trust', recap.coachTrust],
+      ['v2.stat.body', recap.body],
+      ['v2.stat.conf', recap.confidence],
+    ] as const
+  ).map(([label, meter]) => `${t(label)} ${signed(meter.after - meter.before)}`);
 
   return (
     <div className="s2-stack">
-      <div className="s2-final" style={style}>
+      <div className="s2-final s2-final--compact" style={style}>
         <p className="s2-eyebrow" style={{ color: '#fff' }}>
           {recap.round === undefined
             ? t('v2.post.eyebrow', { week: recap.weekIndex + 1 })
@@ -184,231 +194,259 @@ export function PostGameScreen({
         </p>
       </div>
 
-      <article aria-labelledby="s2-news-head" className="s2-news">
-        <p className="s2-eyebrow">{t('v2.news.eyebrow')}</p>
-        <h2 className="s2-display s2-news__head" id="s2-news-head">
-          {newsHead}
-        </h2>
-        {lede.map((line) => (
-          <p className="s2-news__line" key={line}>
-            {line}
-          </p>
-        ))}
-      </article>
-
-      <div className="s2-grid-2">
-        <div className="s2-stack">
-          <Panel id="s2-line" title={t('v2.post.yourGame', { name: lastName })}>
-            {stats.length > 0 ? (
-              <div className="s2-statline">
-                {stats.map(([field, value]) => (
-                  <div className="s2-stat" key={field}>
-                    <span className="s2-stat__value s2-num">{value}</span>
-                    <span className="s2-stat__label">{t(STAT_KEYS[field]!)}</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="s2-note">{t('v2.post.noLiveStats')}</p>
-            )}
-            {recap.sideline.length > 0 && (
-              <p className="s2-note" style={{ marginTop: 10 }}>
-                {t('v2.post.sideline', { sharp, total: recap.sideline.length })}
-              </p>
-            )}
-            {recap.academicHold === true && (
-              <p className="s2-note" style={{ marginTop: 10 }}>
-                {t('v2.post.academicHold')}
-              </p>
-            )}
-            {recap.availabilityId !== 'injury_availability_full' && (
-              <p className="s2-note" style={{ marginTop: 10 }}>
-                {t(
-                  recap.availabilityId === 'injury_availability_out'
-                    ? 'v2.post.satOut'
-                    : 'v2.post.playedLimited',
-                )}
-              </p>
-            )}
-          </Panel>
-          {plays.length > 0 && (
-            <Panel id="s2-plays" title={t('v2.post.definingPlays')}>
-              <ol className="s2-plays">
-                {plays.map((play) => (
-                  <li
-                    className="s2-play"
-                    key={play.index}
-                    style={
-                      {
-                        '--accent':
-                          play.result.outcome === 'TOUCHDOWN'
-                            ? '#3ecf8e'
-                            : play.result.outcome === 'TURNOVER'
-                              ? '#ff5a5f'
-                              : '#f5c542',
-                      } as CSSProperties
-                    }
-                  >
-                    <span className="s2-play__tag">
-                      {t('v2.post.quarter', { period: play.situation.period })}
-                    </span>
-                    <span>
-                      <strong>
-                        {t(
-                          playHeadlineKey(
-                            positionId,
-                            play.result.playResultId,
-                            play.result.yards,
-                            play.result.outcome,
-                          ),
-                          {
-                            name: lastName,
-                            yards: Math.abs(play.result.yards),
-                          },
-                        )}
-                      </strong>
-                      <br />
-                      <span className="s2-note">
-                        {play.lookNameKey !== null
-                          ? t(key(play.lookNameKey))
-                          : t(
-                              gameText.pattern(positionId, play.patternId).nameKey as MessageKey,
-                            )}{' '}
-                        ·{' '}
-                        {t(
-                          gameText.decision(positionId, play.result.decisionId)
-                            .nameKey as MessageKey,
-                        )}
-                      </span>
-                    </span>
-                  </li>
-                ))}
-              </ol>
-            </Panel>
-          )}
-        </div>
-        <div className="s2-stack">
-          <Panel id="s2-coach" title={t('v2.post.coach')}>
-            <div className="s2-row" style={{ alignItems: 'center', gap: 16 }}>
-              <span
-                className="s2-grade"
-                role="img"
-                aria-label={t('v2.post.gradeLabel', { band: verdict })}
-              >
-                {recap.liveSnapCount > 0 ? verdict : '—'}
-              </span>
-              <p>
-                {t(recap.liveSnapCount > 0 ? VERDICT_KEYS[verdict] : 'v2.post.verdict.sideline')}
-                {recap.gradeParts !== undefined && recap.gradeParts.reads !== null && (
-                  <span className="s2-note s2-gradewhy">
-                    {t('v2.post.gradeWhy', {
-                      reads: recap.gradeParts.reads,
-                      box: recap.gradeParts.box,
-                    })}{' '}
-                    {t('v2.post.gradeScale')}
-                  </span>
-                )}
-              </p>
-            </div>
-          </Panel>
-          {reactions.length > 0 && (
-            <Panel id="s2-reactions" title={t('v2.post.reactions')}>
-              <ul className="s2-reactions">
-                {reactions.map((reaction) => (
-                  <li className="s2-reaction" key={reaction.id}>
-                    <span className="s2-reaction__who">{t(SPEAKER_KEYS[reaction.speaker])}</span>
-                    <span>{t(reaction.key, reaction.params)}</span>
-                  </li>
-                ))}
-              </ul>
-            </Panel>
-          )}
-          <Panel id="s2-changes" title={t('v2.post.changes')}>
-            <div className="s2-meters">
-              <Meter
-                after={recap.coachTrust.after}
-                color={METER_COLORS.trust}
-                label={t('v2.stat.trust')}
-                value={recap.coachTrust.before}
-              />
-              <Meter
-                after={recap.body.after}
-                color={METER_COLORS.body}
-                label={t('v2.stat.body')}
-                value={recap.body.before}
-              />
-              <Meter
-                after={recap.confidence.after}
-                color={METER_COLORS.confidence}
-                label={t('v2.stat.conf')}
-                value={recap.confidence.before}
-              />
-            </div>
-            <p className="s2-note" style={{ marginTop: 6 }}>
-              {t('v2.player.ovr', { ovr: currentOverall(career) })}
+      <div className="s2-grid-2 s2-postkey" id="s2-postkey">
+        <article aria-labelledby="s2-news-head" className="s2-news">
+          <p className="s2-eyebrow">{t('v2.news.eyebrow')}</p>
+          <h2 className="s2-display s2-news__head" id="s2-news-head">
+            {newsHead}
+          </h2>
+          {lede.map((line) => (
+            <p className="s2-news__line" key={line}>
+              {line}
             </p>
-          </Panel>
-        </div>
-        {grown.length > 0 && (
-          <Panel className="s2-panel--wide" id="s2-post-growth" title={t('v2.post.growthTitle')}>
-            <GrowthList rows={grown} />
-          </Panel>
-        )}
-        {playReview && allPlays.length > 0 && (
-          <Panel className="s2-panel--wide" id="s2-playreview" title={t('v2.review.title')}>
-            <details className="s2-reviewfold">
-              <summary>{t('v2.review.expand')}</summary>
-              <ol className="s2-review">
-                {allPlays.map((play) => (
-                  <li className="s2-review__row" key={play.index}>
-                    <span className="s2-play__tag">
-                      {t('v2.post.quarter', { period: play.situation.period })}
-                    </span>
-                    <span className="s2-stack" style={{ gap: 2 }}>
-                      <strong>
-                        {play.lookNameKey !== null
-                          ? t(key(play.lookNameKey))
-                          : t(gameText.pattern(positionId, play.patternId).nameKey as MessageKey)}
-                      </strong>
-                      <span>
-                        {t('v2.review.yourCall', {
-                          decision: decisionName(play.result.decisionId),
-                        })}
+          ))}
+        </article>
+        <Panel id="s2-coach" title={t('v2.post.glance')}>
+          <div className="s2-row" style={{ alignItems: 'center', gap: 16 }}>
+            <span
+              className="s2-grade"
+              role="img"
+              aria-label={t('v2.post.gradeLabel', { band: verdict })}
+            >
+              {recap.liveSnapCount > 0 ? verdict : '—'}
+            </span>
+            <p>
+              {t(recap.liveSnapCount > 0 ? VERDICT_KEYS[verdict] : 'v2.post.verdict.sideline')}
+              {recap.gradeParts !== undefined && recap.gradeParts.reads !== null && (
+                <span className="s2-note s2-gradewhy">
+                  {t('v2.post.gradeWhy', {
+                    reads: recap.gradeParts.reads,
+                    box: recap.gradeParts.box,
+                  })}{' '}
+                  {t('v2.post.gradeScale')}
+                </span>
+              )}
+            </p>
+          </div>
+          <p className="s2-note" style={{ marginTop: 8 }}>
+            {grown.length > 0
+              ? t('v2.post.growthLine', {
+                  list: grown
+                    .slice(0, 3)
+                    .map((row) =>
+                      row.ratingAfter > row.ratingBefore
+                        ? t('v2.post.growthUp', {
+                            name: t(attributeNameKey(row.attributeId)),
+                            levels: row.ratingAfter - row.ratingBefore,
+                          })
+                        : t('v2.post.growthXp', {
+                            name: t(attributeNameKey(row.attributeId)),
+                            xp: row.gained,
+                          }),
+                    )
+                    .join(' · '),
+                })
+              : t('v2.post.growthNone')}
+          </p>
+          <p className="s2-note">
+            {changes.join(' · ')} · {t('v2.player.ovr', { ovr: currentOverall(career) })}
+          </p>
+        </Panel>
+      </div>
+
+      <details className="s2-disclosure" id="s2-post-details">
+        <summary>{t('v2.post.fullReport')}</summary>
+        <div className="s2-grid-2">
+          <div className="s2-stack">
+            <Panel id="s2-line" title={t('v2.post.yourGame', { name: lastName })}>
+              {stats.length > 0 ? (
+                <div className="s2-statline">
+                  {stats.map(([field, value]) => (
+                    <div className="s2-stat" key={field}>
+                      <span className="s2-stat__value s2-num">{value}</span>
+                      <span className="s2-stat__label">{t(STAT_KEYS[field]!)}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="s2-note">{t('v2.post.noLiveStats')}</p>
+              )}
+              {recap.sideline.length > 0 && (
+                <p className="s2-note" style={{ marginTop: 10 }}>
+                  {t('v2.post.sideline', { sharp, total: recap.sideline.length })}
+                </p>
+              )}
+              {recap.academicHold === true && (
+                <p className="s2-note" style={{ marginTop: 10 }}>
+                  {t('v2.post.academicHold')}
+                </p>
+              )}
+              {recap.availabilityId !== 'injury_availability_full' && (
+                <p className="s2-note" style={{ marginTop: 10 }}>
+                  {t(
+                    recap.availabilityId === 'injury_availability_out'
+                      ? 'v2.post.satOut'
+                      : 'v2.post.playedLimited',
+                  )}
+                </p>
+              )}
+            </Panel>
+            {plays.length > 0 && (
+              <Panel id="s2-plays" title={t('v2.post.definingPlays')}>
+                <ol className="s2-plays">
+                  {plays.map((play) => (
+                    <li
+                      className="s2-play"
+                      key={play.index}
+                      style={
+                        {
+                          '--accent':
+                            play.result.outcome === 'TOUCHDOWN'
+                              ? '#3ecf8e'
+                              : play.result.outcome === 'TURNOVER'
+                                ? '#ff5a5f'
+                                : '#f5c542',
+                        } as CSSProperties
+                      }
+                    >
+                      <span className="s2-play__tag">
+                        {t('v2.post.quarter', { period: play.situation.period })}
                       </span>
-                      {play.bestDecisionId !== null &&
-                        play.bestDecisionId !== play.result.decisionId && (
-                          <span className="s2-up">
-                            {t('v2.review.best', { decision: decisionName(play.bestDecisionId) })}
+                      <span>
+                        <strong>
+                          {t(
+                            playHeadlineKey(
+                              positionId,
+                              play.result.playResultId,
+                              play.result.yards,
+                              play.result.outcome,
+                            ),
+                            {
+                              name: lastName,
+                              yards: Math.abs(play.result.yards),
+                            },
+                          )}
+                        </strong>
+                        <br />
+                        <span className="s2-note">
+                          {play.lookNameKey !== null
+                            ? t(key(play.lookNameKey))
+                            : t(
+                                gameText.pattern(positionId, play.patternId).nameKey as MessageKey,
+                              )}{' '}
+                          ·{' '}
+                          {t(
+                            gameText.decision(positionId, play.result.decisionId)
+                              .nameKey as MessageKey,
+                          )}
+                        </span>
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              </Panel>
+            )}
+          </div>
+          <div className="s2-stack">
+            {reactions.length > 0 && (
+              <Panel id="s2-reactions" title={t('v2.post.reactions')}>
+                <ul className="s2-reactions">
+                  {reactions.map((reaction) => (
+                    <li className="s2-reaction" key={reaction.id}>
+                      <span className="s2-reaction__who">{t(SPEAKER_KEYS[reaction.speaker])}</span>
+                      <span>{t(reaction.key, reaction.params)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </Panel>
+            )}
+            <Panel id="s2-changes" title={t('v2.post.changes')}>
+              <div className="s2-meters">
+                <Meter
+                  after={recap.coachTrust.after}
+                  color={METER_COLORS.trust}
+                  label={t('v2.stat.trust')}
+                  value={recap.coachTrust.before}
+                />
+                <Meter
+                  after={recap.body.after}
+                  color={METER_COLORS.body}
+                  label={t('v2.stat.body')}
+                  value={recap.body.before}
+                />
+                <Meter
+                  after={recap.confidence.after}
+                  color={METER_COLORS.confidence}
+                  label={t('v2.stat.conf')}
+                  value={recap.confidence.before}
+                />
+              </div>
+              <p className="s2-note" style={{ marginTop: 6 }}>
+                {t('v2.player.ovr', { ovr: currentOverall(career) })}
+              </p>
+            </Panel>
+          </div>
+          {grown.length > 0 && (
+            <Panel className="s2-panel--wide" id="s2-post-growth" title={t('v2.post.growthTitle')}>
+              <GrowthList rows={grown} />
+            </Panel>
+          )}
+          {playReview && allPlays.length > 0 && (
+            <Panel className="s2-panel--wide" id="s2-playreview" title={t('v2.review.title')}>
+              <details className="s2-reviewfold">
+                <summary>{t('v2.review.expand')}</summary>
+                <ol className="s2-review">
+                  {allPlays.map((play) => (
+                    <li className="s2-review__row" key={play.index}>
+                      <span className="s2-play__tag">
+                        {t('v2.post.quarter', { period: play.situation.period })}
+                      </span>
+                      <span className="s2-stack" style={{ gap: 2 }}>
+                        <strong>
+                          {play.lookNameKey !== null
+                            ? t(key(play.lookNameKey))
+                            : t(gameText.pattern(positionId, play.patternId).nameKey as MessageKey)}
+                        </strong>
+                        <span>
+                          {t('v2.review.yourCall', {
+                            decision: decisionName(play.result.decisionId),
+                          })}
+                        </span>
+                        {play.bestDecisionId !== null &&
+                          play.bestDecisionId !== play.result.decisionId && (
+                            <span className="s2-up">
+                              {t('v2.review.best', { decision: decisionName(play.bestDecisionId) })}
+                            </span>
+                          )}
+                        <span className="s2-note">{headline(play)}</span>
+                        {explanations[play.index] !== undefined && (
+                          <span className="s2-note">
+                            {(() => {
+                              const lines = explanationLines(
+                                t,
+                                positionId,
+                                explanations[play.index]!,
+                                decisionName,
+                                playReview,
+                              );
+                              return `${lines.execution} ${lines.situation}`;
+                            })()}
                           </span>
                         )}
-                      <span className="s2-note">{headline(play)}</span>
-                      {explanations[play.index] !== undefined && (
-                        <span className="s2-note">
-                          {(() => {
-                            const lines = explanationLines(
-                              t,
-                              positionId,
-                              explanations[play.index]!,
-                              decisionName,
-                              playReview,
-                            );
-                            return `${lines.execution} ${lines.situation}`;
-                          })()}
-                        </span>
-                      )}
-                    </span>
-                    <span
-                      className={`s2-effect ${play.result.readQuality === 'MISSED' ? 's2-effect--down' : 's2-effect--up'}`}
-                    >
-                      {t(READ_KEYS[play.result.readQuality].name)}
-                    </span>
-                  </li>
-                ))}
-              </ol>
-            </details>
-          </Panel>
-        )}
-      </div>
+                      </span>
+                      <span
+                        className={`s2-effect ${play.result.readQuality === 'MISSED' ? 's2-effect--down' : 's2-effect--up'}`}
+                      >
+                        {t(READ_KEYS[play.result.readQuality].name)}
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              </details>
+            </Panel>
+          )}
+        </div>
+      </details>
       <div className="s2-actionbar">
         <div className="s2-actionbar__inner">
           <button

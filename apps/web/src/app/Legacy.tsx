@@ -99,7 +99,7 @@ export function HallOfFameList({
   const { t } = useAppTranslation();
   const inducted = alumni.filter(({ hallOfFame }) => hallOfFame === true);
   return (
-    <div className="s2-stack" id="s2-hall-of-fame" style={{ gap: 4 }}>
+    <div className="s2-stack" id="s2-hall-of-fame" style={{ gap: 4, marginTop: 12 }}>
       <p className="s2-eyebrow">{t('v2.hof.title')}</p>
       {inducted.length === 0 ? (
         <p className="s2-note">{t('v2.hof.none')}</p>

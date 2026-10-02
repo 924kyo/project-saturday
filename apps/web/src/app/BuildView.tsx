@@ -10,6 +10,8 @@ import { useAppTranslation } from '../i18n/i18n';
 import { cardView } from './content';
 import { Nameplate } from './Nameplate';
 import { Panel } from './ui';
+import { TermRow } from './Glossary';
+import { BUILD_TERMS } from './glossary-terms';
 
 /** One card face: grade, family, what it does on Saturday and, when it has one, its weekly effect. */
 export function CardFace({ id }: { readonly id: string }): React.JSX.Element {
@@ -59,6 +61,7 @@ export function BuildPanel({
         title={t('v2.build.title')}
       >
         <p className="s2-note">{t('v2.build.help')}</p>
+        <TermRow terms={BUILD_TERMS} />
         <div className="s2-buildslots" role="radiogroup" aria-labelledby="s2-build-slots">
           {Array.from({ length: VNEXT_BUILD_SLOTS }, (_, index) => {
             const id = equipped[index] ?? null;

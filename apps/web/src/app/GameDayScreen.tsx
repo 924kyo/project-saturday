@@ -13,6 +13,9 @@ import {
 import type { MessageKey } from '@project-saturday/game-content/locales';
 
 import { SnapMoment } from './Roles';
+import { TermRow } from './Glossary';
+import { SNAP_TERMS } from './glossary-terms';
+
 import { CardTells } from './Economy';
 import { useAppTranslation, type AppTranslate } from '../i18n/i18n';
 import {
@@ -520,6 +523,7 @@ export function GameDayScreen({
 
         <aside className="s2-gd__call">
           <header className="s2-gd__head">
+            <TermRow terms={SNAP_TERMS} />
             <p className="s2-eyebrow">
               {snapCounter}
               {live !== null && career.program !== null && (

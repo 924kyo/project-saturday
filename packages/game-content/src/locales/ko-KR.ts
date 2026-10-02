@@ -31,6 +31,7 @@ import { koKRM12RolesMessages } from './m12-roles.js';
 import { koKRM12StoryMessages } from './m12-story.js';
 import { koKRM12CardsMessages } from './m12-cards.js';
 import { koKRM12LegacyMessages } from './m12-legacy.js';
+import { koKRM12GlossaryMessages } from './m12-glossary.js';
 import { koKRM12ProgramMessages } from './m12-programs.js';
 import { koKRM8PositionMessages } from './m8-positions.js';
 import { m7BuildKo } from './m7-builds.js';
@@ -68,6 +69,7 @@ export const koKRMessages = {
   ...koKRM12StoryMessages,
   ...koKRM12CardsMessages,
   ...koKRM12LegacyMessages,
+  ...koKRM12GlossaryMessages,
   ...koKRM12ProgramMessages,
   ...koKREventBatchMessages,
   ...koKRInjuryBatchMessages,

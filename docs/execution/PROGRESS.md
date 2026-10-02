@@ -58,6 +58,10 @@ M10 is complete (plan: `docs/exec-plans/completed/m10-release-candidate.md`), an
   - LEG-01…05 and CAR-02…05 are verified complete.
   - LEG-06's harness carryover is verified; the browser journey comes in Phase 10.
   - Restart point: Phase 9, UI and information architecture.
+- 2026-10-02: Phase 9 (UI and information architecture) is done.
+  - UI-01…07 are verified complete (tests in `ui-phase9.test.tsx` and `App.test.tsx`; EN/KO screenshots at 1366 wide).
+  - Gate: typecheck, lint, format; vitest 993 with one known failure (the climbing-harness draft band, deferred to Phase 10 by the user); sim 398; e2e 20; build verified.
+  - Restart point: Phase 10, accessibility, compatibility and validation (A11Y, COMPAT, CAR-01, UI-08, LEG-06 browser journey, the harness re-base and the draft band, four-year careers, the desktop build).
 
 ## Status
 

@@ -712,6 +712,17 @@ Append concise implementation/product decisions that do not warrant their own AD
     - A `-0` stock delta broke the in-memory and saved equality, and is now normalized.
   - **Plaque fields:** honors, goals met, final GPA and the Hall of Fame call, all optional (older plaques read as zero).
   - **Balance (m10 harness):** drafted 306 → 333‰ with the Combine, still in band; the artifact was regenerated.
+- 2026-10-02 (M12 Phase 9, UI and information architecture), presentation only (no core change, no save change):
+  - **Sub-tabs** (`SubTabs.tsx`): an ARIA tablist with arrows, Home/End and a roving tab stop; the panel is labelled by its tab.
+    - Team: Depth (with the scheme panel) / Schedule / Conference / National / Records. Records hosts the Record Book and the Hall of Fame.
+    - Profile: Overview (card, figure, facts, overall breakdown) / Attributes / Stats (with academics) / Cards & NIL (NIL and the shop) / People (the cast).
+    - At 1366 wide, Team goes from 2565px to 1428px and Profile from 1980px to 1391px.
+  - **Since last week** (`SinceLastWeek.tsx`) reads only saved facts: the last log entry, its rating gains, the depth spot and role status, health, the active NIL obligation's cost (`nilDealCostVNext`), cards and Insight. Before the first game it renders nothing.
+  - **Compact post-game:** a shorter banner, then the Saturday report beside "At a glance" (grade, why the grade, a three-attribute growth line, meter changes, OVR). Stat line, defining plays, reactions, meters, growth bars and the play review fold into "Full game report". Everything key sits above the action bar at 1366×768 in EN and KO. The grade appears once, so `.s2-grade` stays unique.
+  - **Top 25:** the true 25 (ten shown, #11–#25 in a disclosure), every row with its record, plus the player's rank when outside it.
+  - **Glossary:** 15 terms, EN/KO, in Settings. Screens link their key terms (`SNAP_TERMS`, `WEEK_TERMS`, `BUILD_TERMS`, `OFFSEASON_TERMS` in `glossary-terms.ts`); a term row opens one definition below itself.
+    - The term lists live in a `.ts` module because the localized-copy checker reads same-file JSX constants as copy.
+  - **Korean:** "conference" stays 콘퍼런스 (the copy audit's glossary rule).
 - 2026-10-02 (M12 Phase 7, cards, Insight and the NIL economy), following K1 (`vnext/cards.ts`, `vnext/economy.ts`, `vnext/shop.ts`):
   - **Insight** is an earned development currency, separate from NIL money. Sources: skipping a breakthrough offer (+15), each season award (+25), every gauge point once the collection is complete, and a refund for a duplicate of a fully mastered card (+20). No real-money purchases exist.
   - **Workshop:** any unowned card at a fixed price by grade (C 30, B 50, A 80, S 120), deterministic, so no essential card is luck-gated.

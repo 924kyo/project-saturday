@@ -32,6 +32,7 @@ import { enUSM12RolesMessages } from './m12-roles.js';
 import { enUSM12StoryMessages } from './m12-story.js';
 import { enUSM12CardsMessages } from './m12-cards.js';
 import { enUSM12LegacyMessages } from './m12-legacy.js';
+import { enUSM12GlossaryMessages } from './m12-glossary.js';
 import { enUSM12ProgramMessages } from './m12-programs.js';
 import { enUSM8PositionMessages } from './m8-positions.js';
 import { m7BuildEn } from './m7-builds.js';
@@ -69,6 +70,7 @@ export const enUSMessages = {
   ...enUSM12StoryMessages,
   ...enUSM12CardsMessages,
   ...enUSM12LegacyMessages,
+  ...enUSM12GlossaryMessages,
   ...enUSM12ProgramMessages,
   ...enUSEventBatchMessages,
   ...enUSInjuryBatchMessages,

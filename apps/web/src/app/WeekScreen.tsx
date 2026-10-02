@@ -12,10 +12,15 @@ import {
   type PracticeReportVNext,
   type VNextPositionId,
   nilOfVNext,
+  type AlumniVNext,
 } from '@project-saturday/game-core';
 
 import { MovementReason } from './Roles';
 import { GoalLine } from './Story';
+import { SinceLastWeek } from './SinceLastWeek';
+import { TermRow } from './Glossary';
+import { WEEK_TERMS } from './glossary-terms';
+
 import { useAppTranslation, type AppTranslate } from '../i18n/i18n';
 import {
   CLASS_YEAR_KEYS,
@@ -37,7 +42,7 @@ import {
 } from './content';
 import { BuildPanel } from './BuildView';
 import type { CareerCommand } from './command';
-import { CardAttributionList, InsightPanel, ShopPanel } from './Economy';
+import { CardAttributionList, InsightPanel } from './Economy';
 import { DevelopmentGuide, Milestones, PlanPreview, PotentialLine } from './Development';
 import { readLastPlan, rememberPlan } from './plan-memory';
 import { GrowthList } from './Growth';
@@ -508,6 +513,7 @@ export function WeekScreen({
   onGameDay,
   onEquip,
   onRun,
+  alumni,
 }: {
   readonly career: CareerVNext;
   readonly mechanics: CareerVNextMechanics;
@@ -517,6 +523,8 @@ export function WeekScreen({
   readonly onEquip: (slotIndex: number, skillId: string | null) => void;
   /** M12 Phase 7: card economy and NIL shop commands. */
   readonly onRun?: (command: CareerCommand) => void;
+  /** M12 Phase 9: the Alumni Wall for the Team › Records view. */
+  readonly alumni?: readonly AlumniVNext[];
 }): React.JSX.Element {
   const { t } = useAppTranslation();
   const [picks, setPicks] = useState<readonly string[]>([]);
@@ -625,12 +633,18 @@ export function WeekScreen({
             )}
           </>
         ) : tab === 'team' ? (
-          <TeamPanel career={career} mechanics={mechanics} />
+          <TeamPanel
+            career={career}
+            mechanics={mechanics}
+            {...(alumni === undefined ? {} : { alumni })}
+          />
         ) : (
-          <>
-            <ProfilePanel career={career} mechanics={mechanics} />
-            {onRun !== undefined && <ShopPanel blocked={blocked} career={career} onRun={onRun} />}
-          </>
+          <ProfilePanel
+            blocked={blocked}
+            career={career}
+            mechanics={mechanics}
+            {...(onRun === undefined ? {} : { onRun })}
+          />
         )}
       </div>
     );
@@ -641,12 +655,14 @@ export function WeekScreen({
       {tabs}
       <InjuryBanner career={career} />
       <AcademicAlert career={career} mechanics={mechanics} />
+      <SinceLastWeek career={career} mechanics={mechanics} />
       <div className="s2-next">
         <p className="s2-eyebrow">{t('v2.week.nextUp')}</p>
         <h2 className="s2-display s2-next__title">{t('v2.week.planTitle')}</h2>
         <Opponent career={career} mechanics={mechanics} />
         <PotentialLine career={career} mechanics={mechanics} />
         <GoalLine career={career} />
+        <TermRow terms={WEEK_TERMS} />
         {career.development?.focus != null && career.development.focus.outcome === 'ACTIVE' && (
           <p className="s2-note">
             {t('v2.focus.progress', {
